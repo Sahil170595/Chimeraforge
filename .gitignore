@@ -223,6 +223,7 @@ processed_data/
 # Jupyter notebooks - keep source notebooks, ignore executed copies
 *.executed.ipynb
 reports/notebook_validations/*.ipynb
+outputs/reports/notebook_validations/*.ipynb
 
 # Configuration files with secrets
 config/secrets.yaml
