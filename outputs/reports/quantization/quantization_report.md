@@ -1,0 +1,13 @@
+# Quantization Benchmark ## BASELINE
+- Accuracy: 0.7500
+- Loss: 0.6085
+- Model Size Bytes: 2781 ## QAT
+- Accuracy: 0.3750
+- Loss: 1.0465
+- Model Size Bytes: 3789 ## INT8
+- Loss: 0.6080
+- Accuracy: 0.7500
+- Model Size Bytes: 3029 ## FP8
+- Loss: 0.6085
+- Accuracy: 0.7500
+- Model Size Bytes: 2781

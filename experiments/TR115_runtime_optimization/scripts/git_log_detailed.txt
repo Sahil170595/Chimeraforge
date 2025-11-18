@@ -1,0 +1,100 @@
+﻿7f74df091db38058f6f7b0a0168bc0a7b7209228|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-16 14:13:30 -0500|reorganization_v4|
+62c0dcd2a48686cc76dfebd0670f25893bc9709c|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-16 14:10:51 -0500|reorganization_v3|
+4c30c7db7d52661d03eb5cfdcb8904ecd326b77e|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-16 14:06:54 -0500|reorganization_v2|
+2f69e951e0cdded509af7821924da41b0cc5f89d|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-15 19:28:42 -0500|reorganization|
+be6e6da335187e9163c9a26d10251f19b9d733fe|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-15 18:58:07 -0500|Readme_update|
+30d2e9d6fe49168a3909e02f9a651d59c1f6d315|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-15 18:53:14 -0500|Validated reports and data after double checking all runs|
+75da4a6ac613ee137b2693a45dc58b0ce7d0d4d2|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-14 19:18:15 -0500|TR114_v2|
+a5424c38f3c6c703443b3610eb1286fe74f940b2|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-14 15:35:08 -0500|TR112_V2_update_2|
+5e4e2b3924012b8c04bb7d7c9fa114420bc5ac4f|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-14 15:24:47 -0500|TR112_V2_update|
+a0d18fdc92957a85c78c6ef8d91345afdf695a71|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-14 15:15:32 -0500|TR111_V2_update|
+adeb47e6dfedcabe3352728727799493a5024458|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-14 15:15:02 -0500|TR111_V2|
+4889e35270232545287174d0fd049b51bf8f4af7|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 22:13:55 -0500|docs_update|
+9498764ad81132a8f9d77a21676330c27a2ac97e|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 20:54:21 -0500|TR115_rust_analysis_2|
+6e6d991957d56cc888820094de9c641c2d5760eb|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 20:53:49 -0500|TR115_rust_analysis|
+65dbe5f86b08d852c37ee2786d238330662112b5|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 18:15:23 -0500|TR115 Setup: Runtime optimization infrastructure complete|Implement comprehensive runtime optimization test suite to close 3.6pp Rust efficiency gap.
+
+Runtime Variants (5):
+- tokio-default: TR114 baseline (95.7%)
+- tokio-localset: Single-threaded, expected +2-3pp
+- async-std: Simpler scheduler, expected +1-2pp
+- smol: Lightweight runtime, expected +2-3pp
+- smol-1kb: smol + custom 1KB HTTP client, expected +3-4pp (target: 98-99%)
+
+Rust Implementation:
+- Demo_rust_multiagent/Cargo.toml: Add 5 runtime feature flags
+- Demo_rust_multiagent/src/main.rs: Refactor for multi-runtime support
+  - Conditional compilation for runtime-specific entry points
+  - Runtime-agnostic async_main() core logic
+  - Feature-specific ResourceCoordinator (tokio/async-std/smol semaphores)
+- Demo_rust_multiagent/src/http_client_1kb.rs: Custom hyper-based HTTP client
+  - 1KB chunk buffering (vs reqwest 8KB)
+  - Matches Python httpx behavior
+
+TR115 Workspace:
+- TR115_runtime_optimization/
+  - results/: Benchmark outputs (150 total: 5 runtimes ├âΓÇö 6 configs ├âΓÇö 5 runs)
+  - scripts/: Orchestration and analysis
+  - analysis/: Aggregated results
+  - docs/: Research plan and status
+
+Scripts:
+- run_tr115_sweep.py: Orchestrate 150 benchmarks (8-10 hours)
+- analyze_tr115_results.py: Aggregate efficiency vs TR114/TR110
+- compare_to_tr114.py: Direct TR114 comparison
+
+Documentation:
+- TR115_PLAN.md: Research objectives, hypothesis, methodology
+- TR115_STATUS.md: Progress tracker
+- runtime_variants.md: Implementation details per runtime
+
+Test Matrix:
+- 6 configs from TR114 best performers
+- 5 runs per config for statistical significance
+- Expected outcomes: tokio-localset 97-98%, smol-1kb 98-99%
+
+Ready to execute: python TR115_runtime_optimization/scripts/run_tr115_sweep.py
+
+11b87fa6e8731d5fb47db2ad36adbaf2d2533a6b|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 17:33:45 -0500|Docs_fix|
+c7849f39f4a05576c62bf362723a737c802d8caa|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 17:17:39 -0500|Complete all missing documentation files|Created comprehensive documentation for all missing files:
+
+High Priority Documentation:
+- docs/chimera_optimization.md: Complete GPU/context/temperature tuning guide
+- docs/multi_agent.md: Multi-agent architecture and deployment patterns
+- docs/methodology.md: Research methodology and statistical rigor
+- docs/python_agents.md: Python agent development guide
+- docs/rust_agents.md: Rust agent development guide
+- docs/dual_ollama_setup.md: Dual Ollama configuration guide
+- docs/configuration.md: Complete configuration reference
+- docs/troubleshooting.md: Comprehensive troubleshooting guide
+- docs/performance_tuning.md: Advanced optimization techniques
+- docs/statistical_analysis.md: Understanding benchmark results
+- docs/production_deployment.md: Production best practices
+
+Documentation Cleanup:
+- docs/index.md: Updated to redirect to README.md
+
+All documentation now:
+- Cross-referenced with links
+- Includes code examples
+- Provides practical guidance
+- Matches existing documentation style
+- Reflects TR108-114 research findings
+
+a38d5ba52c69423a1302840c69ac9b36c55fde2c|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-13 17:13:15 -0500|Add next steps roadmap for documentation|
+495109622fe9cd7a6f8a4e74f03e3c6ace879eda|Sahil170595|147995121+Sahil170595@users.noreply.github.com|2025-11-12 21:31:06 -0500|Add installation guide and FAQ|- docs/installation.md: Complete installation instructions
+  - Prerequisites and system requirements
+  - Step-by-step setup for Python, Rust, Ollama
+  - Dual Ollama configuration
+  - Troubleshooting section
+
+- docs/faq.md: Comprehensive FAQ
+  - General questions
+  - Benchmarking questions
+  - Multi-agent questions
+  - Rust vs Python questions
+  - Configuration questions
+  - Performance questions
+  - Troubleshooting questions
+  - Research questions
+

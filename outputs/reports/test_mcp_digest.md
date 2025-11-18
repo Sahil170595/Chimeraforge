@@ -1,0 +1,69 @@
+## Performance Digest Generated: 2025-10-04T16:54:13Z ### Key KPIs
+- Overall runs analyzed: 37
+- Regressions (>=10.0%): 10
+- Backends compared: 13 ### Backend Rankings (lower latency is better)
+- ollama_benchmark_summary: - q8_0: mean_latency_ms=46.570 tokens_per_s=2.008 mem_mb=0 - q5_K_M: mean_latency_ms=65.180 tokens_per_s=1.354 mem_mb=0 - q4_0: mean_latency_ms=76.590 tokens_per_s=0.097 mem_mb=0 - 40.00: mean_latency_ms=1024.000 tokens_per_s=78.060 mem_mb=0 - 999.00: mean_latency_ms=1024.000 tokens_per_s=77.910 mem_mb=0 - 60.00: mean_latency_ms=2048.000 tokens_per_s=78.010 mem_mb=0
+- transformer_cuda_triton2508_summary: - jit: mean_latency_ms=0.308 tokens_per_s=0.157 mem_mb=0 - torch_compile: mean_latency_ms=0.413 tokens_per_s=1.658 mem_mb=0 - eager: mean_latency_ms=1.138 tokens_per_s=0.000 mem_mb=0 - onnx: mean_latency_ms=3.593 tokens_per_s=0.181 mem_mb=0 - tensorrt: mean_latency_ms=8.198 tokens_per_s=18.039 mem_mb=0
+- prompt_suite_lessons_20251002: - `llama3.1:8b-instruct-q5_K_M`: mean_latency_ms=1.551 tokens_per_s=0.000 mem_mb=0 - `llama3.1:8b-instruct-q8_0`: mean_latency_ms=2.006 tokens_per_s=0.000 mem_mb=0 ### Regressions Detected
+- ollama_benchmark_summary q5_K_M: latency +40.0% (46.570 -> 65.180 ms)
+- ollama_benchmark_summary q4_0: latency +64.5% (46.570 -> 76.590 ms)
+- ollama_benchmark_summary 40.00: latency +2098.8% (46.570 -> 1024.000 ms)
+- ollama_benchmark_summary 999.00: latency +2098.8% (46.570 -> 1024.000 ms)
+- ollama_benchmark_summary 60.00: latency +4297.7% (46.570 -> 2048.000 ms)
+- transformer_cuda_triton2508_summary torch_compile: latency +34.1% (0.308 -> 0.413 ms)
+- transformer_cuda_triton2508_summary eager: latency +269.5% (0.308 -> 1.138 ms)
+- transformer_cuda_triton2508_summary onnx: latency +1066.6% (0.308 -> 3.593 ms)
+- transformer_cuda_triton2508_summary tensorrt: latency +2561.7% (0.308 -> 8.198 ms)
+- prompt_suite_lessons_20251002 `llama3.1:8b-instruct-q8_0`: latency +29.3% (1.551 -> 2.006 ms) ### Top Suggestions
+- [backend_selection] Use q8_0 for ollama_benchmark_summary (≈28.6% latency advantage) (confidence: 79%)
+- [backend_selection] Use jit for transformer_cuda_triton2508_summary (≈25.4% latency advantage) (confidence: 75%)
+- [backend_selection] Use `llama3.1:8b-instruct-q5_K_M` for prompt_suite_lessons_20251002 (≈22.7% latency advantage) (confidence: 73%)
+- [regression] Regression on ollama_benchmark_summary/q5_K_M: +40.0% latency; compare configs and consider reverting to baseline (confidence: 85%)
+- [regression] Regression on ollama_benchmark_summary/q4_0: +64.5% latency; compare configs and consider reverting to baseline (confidence: 85%) ### System Profile
+- OS: Windows (AMD64)
+- Python: 3.13.1
+- CPU: Intel64 Family 6 Model 183 Stepping 1, GenuineIntel
+- RAM: 16002 MB
+- GPU[0]: NVIDIA GeForce RTX 4080 Laptop GPU (VRAM=12282 MB, Driver=581.29)
+- Ollama models detected: llama3.1:8b-instruct-q8_0, llama3.1:8b-instruct-q5_K_M, llama3.1:8b-instruct-q4_0, gemma3:latest ### Model Recommendations (by common task)
+- chat_assistant: llama3.1:8b-instruct-q8_0 (q8_0) -- est_latency=unknown, est_mem=unknown; confidence=60%; task=chat_assistant, tier=gpu_high, vram=12282MB
+- code_assistant: llama3.1:8b-instruct-q8_0 (q8_0) -- est_latency=unknown, est_mem=unknown; confidence=60%; task=code_assistant, tier=gpu_high, vram=12282MB
+- summarization: llama3.1:8b-instruct-q8_0 (q8_0) -- est_latency=unknown, est_mem=unknown; confidence=60%; task=summarization, tier=gpu_high, vram=12282MB
+- classification: llama3.1:8b-instruct-q8_0 (q8_0) -- est_latency=unknown, est_mem=unknown; confidence=60%; task=classification, tier=gpu_high, vram=12282MB ### Artifacts Indexed
+- reports\ollama_benchmark_summary.md
+- reports\performance_digest.md
+- reports\test_datadog_digest.md
+- reports\compilation\compilation_benchmark_lessons_20251002.md
+- reports\compilation\conv_bench_20251002-170837.md
+- reports\compilation\conv_cuda_bench_20251002-172037.md
+- reports\compilation\mlp_bench_20251002-165750.md
+- reports\compilation\mlp_cuda_bench_20251002-171845.md
+- reports\compilation\transformer_bench_20251002-170914.md
+- reports\compilation\transformer_cuda_bench_20251002-172126.md
+- reports\compilation\transformer_cuda_pytorch2508.md
+- reports\compilation\transformer_cuda_torchtrt_20251003-033530.md
+- reports\compilation\transformer_cuda_triton2508.md
+- reports\compilation\transformer_cuda_triton2508_summary.md
+- reports\compilation\triton_docker_summary.md
+- reports\ollama\prompt_suite_lessons_20251002.md
+- reports\quantization\quantization_report.md
+- reports\compilation\conv_bench_20251002-170837.json
+- reports\compilation\conv_cuda_bench_20251002-172037.json
+- reports\compilation\mlp_bench_20251002-165750.json
+- reports\compilation\mlp_cuda_bench_20251002-171845.json
+- reports\compilation\transformer_bench_20251002-170914.json
+- reports\compilation\transformer_cuda_bench_20251002-172126.json
+- reports\compilation\transformer_cuda_pytorch2508.json
+- reports\compilation\transformer_cuda_torchtrt_20251003-033530.json
+- reports\compilation\transformer_cuda_triton2508.json
+- reports\kernel_optimization\kernel_benchmarks.json
+- reports\quantization\quantization_report.json
+- reports\ollama\20251002-151204\prompt_suite_summary.json
+- reports\ollama\20251002-151446\prompt_suite_summary.json
+- reports\ollama\20251002-151527\prompt_suite_summary.json
+- reports\ollama\20251002-151615\prompt_suite_summary.json
+- reports\ollama\20251002-151824\prompt_suite_summary.json
+- csv_data\baseline_performance_summary.csv
+- csv_data\ollama_param_tuning.csv
+- csv_data\ollama_param_tuning_summary.csv
+- csv_data\ollama_quant_bench.csv

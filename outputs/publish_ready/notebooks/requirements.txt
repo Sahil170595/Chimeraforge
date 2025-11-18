@@ -1,0 +1,43 @@
+# Visualization Dependencies for PublishReady Notebooks
+# October 2025 - Latest and Greatest Visualization Stack
+
+# Core Data Science
+pandas==2.2.3
+numpy==1.26.4
+scipy==1.15.2
+
+# Visualization Libraries
+plotly==6.3.0
+seaborn==0.13.2
+matplotlib==3.9.3
+
+# Jupyter Environment
+jupyter==1.1.1
+ipywidgets>=8.0.0
+notebook>=7.0.0
+nbconvert==7.16.6
+
+# Data Processing
+scikit-learn>=1.3.0
+openpyxl>=3.1.0
+
+# Statistical Analysis
+statsmodels>=0.14.0
+
+# Export Capabilities
+kaleido==1.1.0
+
+# Color and Design
+colorcet>=3.0.0
+palettable>=3.3.0
+
+# Performance
+numba>=0.58.0
+
+# Additional utilities
+pathlib2>=2.3.0
+json5>=0.9.0
+tqdm>=4.65.0
+psutil>=5.9.0
+python-dateutil>=2.8.0
+pyyaml>=6.0

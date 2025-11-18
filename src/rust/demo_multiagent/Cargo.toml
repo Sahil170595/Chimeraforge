@@ -1,0 +1,39 @@
+[package]
+name = "Demo_rust_multiagent"
+version = "0.1.0"
+edition = "2021"
+authors = ["Banterhearts Team"]
+description = "Rust multi-agent benchmark mirroring the Chimera Python multi-agent demo"
+license = "MIT"
+
+[features]
+default = ["runtime-tokio-default"]
+runtime-tokio-default = ["tokio", "reqwest", "bytes", "futures-util"]
+runtime-tokio-localset = ["tokio", "reqwest", "bytes", "futures-util"]
+runtime-async-std = ["async-std", "tokio", "reqwest", "bytes", "futures-util"]
+runtime-smol = ["smol", "tokio", "reqwest", "bytes", "futures-util"]
+runtime-smol-1kb = ["smol", "tokio", "reqwest", "bytes", "futures-util"]
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+hostname = "0.4"
+bytes = { version = "1", optional = true }
+futures-util = { version = "0.3", optional = true }
+reqwest = { version = "0.12", features = ["json", "stream"], optional = true }
+isahc = { version = "1.7", features = ["json"], optional = true }
+rustc_version_runtime = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"], optional = true }
+async-std = { version = "1.12", features = ["attributes"], optional = true }
+smol = { version = "2.0", optional = true }
+hyper = { version = "1.0", features = ["client", "http1"], optional = true }
+hyper-util = { version = "0.1", features = ["client-legacy", "tokio"], optional = true }
+http-body-util = { version = "0.1", optional = true }
+tracing = "0.1"
+once_cell = "1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+csv = "1"
+walkdir = "2"

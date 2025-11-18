@@ -1,0 +1,21 @@
+# Patch 3: Modular scaffolding, lint-zero, and green tests (venv311) Date: 2025-09-30
+Status: Completed ## Highlights
+- Modular folders scaffolded for upcoming optimization work (quantization, kernels, attention, compilation, memory, auto-opt, predictor, distributed) with per-folder tests.
+- Linting tightened and fixed: flake8 reports 0 errors project-wide.
+- Test suite (venv311) passes fully after targeted fixes. ## Changes ### 1) New modular structure and placeholders
+- Added code folders: - `banterhearts/quantization/{int8,fp8,qat,schemes,validate}` - `banterhearts/optimization/kernels/{attention,matmul,fusion,autotune}` - `banterhearts/optimization/attention/{mqa,gqa,sliding,sparse}` - `banterhearts/compilation/{tensorrt,onnx,fx,jit}` - `banterhearts/memory/{checkpointing,peft,optimizers,dynamic_batching}` - `banterhearts/autoopt/{policies,selector,runner,ab_tests}` - `banterhearts/predictor/{features,models,eval}` - `banterhearts/distributed/{pipeline,tensor,data,hybrid}`
+- Added test folders: - `banterhearts/tests/<area>/{unit,integration,perf,ablation,latency,peakmem,microbench,simulation,worldsize}` as applicable
+- Added scripts: - `scripts/quantization/{run_int8.py,run_fp8.py,qat_train.py}` (placeholders)
+- Artifacts/config: - `artifacts/{benchmarks,profiles/{ncu,nsys},reports}` - `conf/{quant,compile,train}` with `default.yaml` placeholders
+- Docs placeholders for each module: `docs/{quantization,kernels,attention,compilation,memory,autoopt,distributed}.md` ### 2) Linting configuration and fixes
+- Added `.flake8` with strict excludes and per-file ignores where intentional.
+- Fixed E302/W391 in newly created placeholder modules.
+- Project-wide flake8 passes with 0 errors. ### 3) Test fixes (venv311)
+- Data ingestion integrity error: - Updated relationships and FK for deletion safety in `banterhearts/core/schemas.py`: - `DataSource.ingestion_jobs` now `cascade="all, delete-orphan"` - `DataIngestionJob.data_source_id` uses `ForeignKey(..., ondelete="CASCADE")` - Reset test SQLite DB during run to apply metadata updates.
+- Inference concurrency and error propagation: - `banterhearts/api/inference/main.py` now safely schedules background tasks and invokes injected model callables to surface model-level errors in tests. ### 4) Test results (venv311)
+- Collected: 68 tests
+- Result: 68 passed, warnings only (pydantic deprecations) ## Impact
+- Repository is now organized for modular development with folder-scoped testing.
+- Clean linting baseline simplifies CI gating.
+- Green test suite in `venv311` confirms stability of ingestion/inference paths. ## Next
+- Begin Phase 2 workstreams (Quantization and Kernel Optimization) inside the new module structure with per-folder tests. 

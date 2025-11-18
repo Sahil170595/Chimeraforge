@@ -1,0 +1,326 @@
+# Python package ignore patterns
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.env.production
+.venv
+env/
+venv/
+venv311/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ML/AI specific
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.model
+*.weights
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.safetensors
+*.onnx
+*.tflite
+*.pb
+
+# Data files
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.parquet
+*.feather
+*.arrow
+*.xlsx
+*.xls
+
+# Large files
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Development history and caches
+.history/
+.history
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Kubernetes
+*.yaml.bak
+*.yml.bak
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Model artifacts
+models/
+checkpoints/
+outputs/artifacts/**/*.png
+outputs/artifacts/**/*.ncu-rep
+outputs/artifacts/**/*.sqlite
+mlruns/
+mlartifacts/
+
+# Data directories (keep structure, ignore large data files)
+data/**/*.json
+data/**/*.csv
+!data/baselines/*.json
+!data/baselines/*.txt
+datasets/
+raw_data/
+processed_data/
+
+# Jupyter notebooks - keep source notebooks, ignore executed copies
+*.executed.ipynb
+reports/notebook_validations/*.ipynb
+
+# Configuration files with secrets
+config/secrets.yaml
+config/production.yaml
+secrets.json
+.secrets
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Node.js (if using any JS tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Rust (if using any Rust components)
+target/
+Cargo.lock
+
+# Go (if using any Go components)
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# GPU profiler reports
+*.ncu-rep
+reports/*.ncu-rep
+
+# Demo results directories
+src/python/banterhearts/demo_agent/results/
+src/python/banterhearts/demo_multiagent/results/
+ 
+# Comprehensive multi-agent test outputs (keep summaries, ignore per-run artifacts)
+src/python/banterhearts/demo_multiagent/comprehensive_test_results/**/run_*/
+src/python/banterhearts/demo_multiagent/comprehensive_test_results/**/metrics.json
+comprehensive_test.log
+
+# Local virtual environments (additional common names)
+.venv*/
+venv*/
+
+# Editor local state
+.fleet/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/dictionaries
+.idea/**/shelf/
+
+# OS trash
+$RECYCLE.BIN/
+
+# HTML reports (temporary)
+*.html
+
+# Benchmark results and data
+rust_benchmark_results/
+TR111_benchmark_results/
+src/rust/demo_agent/Demo_rust_agent_out*/
+src/rust/demo_multiagent/Demo_rust_multiagent_results*/
+rust_results/
+python_baseline/
+python_optimized/
+rust_baseline/
+rust_optimized/
+
+# Benchmark metrics and summaries (keep analysis, ignore raw data)
+**/benchmark_results.json
+**/benchmark_summary.csv
+**/data/metrics.json
+**/reports/*_report*.md
+!outputs/publish_ready/reports/*.md
+
+# Rust agent test outputs
+src/rust/demo_agent/**/reports/
+src/rust/demo_agent/**/data/
+!src/rust/demo_agent/README.md
+!src/rust/demo_agent/Cargo.toml
+!src/rust/demo_agent/src/
+
+# Python demo agent test outputs (keep structure, ignore results)
+src/python/banterhearts/demo_agent/demo_agent*/
+src/python/banterhearts/demo_agent/demo_agent_*/
+src/python/banterhearts/demo_agent/*/data/
+src/python/banterhearts/demo_agent/*/reports/
+
+# TR115 Runtime Optimization Study
+# Keep: analysis/, scripts/, docs/, PublishReady report
+# Ignore: raw benchmark results (900+ files, ~100MB)
+experiments/TR115_runtime_optimization/results/
+experiments/TR115_runtime_optimization/results_v2/
+!experiments/TR115_runtime_optimization/analysis/
+!experiments/TR115_runtime_optimization/scripts/
+!experiments/TR115_runtime_optimization/docs/

@@ -1,0 +1,12 @@
+# Patch 7: GPU Quantization Enablement **Version**: 1.4.1 **Date**: 2025-10-02 **Status**: Completed ## Highlights
+- Enabled CUDA-backed INT8 quantization on the local RTX 4080 system using the bitsandbytes Windows GPU wheel (0.48.1) and CUDA 12.8 toolchain.
+- Reworked `banterhearts/quantization/int8/runner.py` to detect the target device, prefer `Linear8bitLt` on CUDA, and gracefully fall back to torch dynamic quantization otherwise.
+- Reinstalled PyTorch with the official `cu128` wheel to restore GPU support after the CPU-only wheel was pulled in by the preview bitsandbytes installer. ## Key Changes
+- INT8 runner now deep-copies models to the original device and recursively replaces linear layers with bitsandbytes modules when `BANTERHEARTS_ENABLE_BITSANDBYTES=1` and CUDA is present.
+- Added `docs/Quantization_GPU_Setup_Report.md` documenting the full setup (CUDA toolkit install, PyTorch `+cu128` wheels, bitsandbytes GPU wheel) and verification steps.
+- README and quantization system docs reference the new GPU setup guide; benchmark report updated to reflect CUDA execution. ## Verification
+- `python -c "import bitsandbytes; print(bnb.__version__)"` ? `0.48.1` with no CUDA errors.
+- `python scripts/quantization/generate_report.py` runs with `BANTERHEARTS_ENABLE_BITSANDBYTES=1`, writing updated metrics under `reports/quantization/`.
+- `pytest banterhearts/tests/quantization -q` passes (expected deprecation warnings from `torch.ao.quantization`). ## Next Steps
+- Migrate dynamic-quantization fallback in QAT to TorchAO once the new APIs stabilise on Windows.
+- Extend the benchmark pipeline to record GPU tensor timings for INT8 vs. FP8 once native FP8 kernels become available. 
