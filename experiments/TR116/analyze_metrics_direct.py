@@ -3,7 +3,7 @@ import pandas as pd
 import glob
 from pathlib import Path
 
-# Direct glob to find all metrics.json files
+# Direct glob to find all multi-agent metrics.json files
 metrics_files = glob.glob('experiments/TR116/results/multi/**/metrics.json', recursive=True)
 
 print(f"Found {len(metrics_files)} metrics files")
@@ -38,16 +38,26 @@ for filepath in metrics_files:
         # Extract run number
         run = data.get('run_number', None)
         
+        # Metrics can live at the top level (python) or under summary (rust)
+        summary = data.get('summary', {})
+        concurrency_speedup = data.get('concurrency_speedup') or summary.get('concurrency_speedup')
+        efficiency_percent = data.get('efficiency_percent') or summary.get('efficiency_percent')
+        throughput_delta = data.get('throughput_delta') or summary.get('throughput_delta')
+        ttft_delta_ms = data.get('ttft_delta_ms') or summary.get('ttft_delta_ms')
+        contention_flag = data.get('resource_contention_detected')
+        if contention_flag is None:
+            contention_flag = summary.get('resource_contention_detected', False)
+
         row = {
             'model': model,
             'runtime': runtime,
             'scenario': scenario,
             'run': run,
-            'speedup': data.get('concurrency_speedup'),
-            'efficiency': data.get('efficiency_percent'),
-            'throughput_delta': data.get('throughput_delta'),
-            'ttft_delta_ms': data.get('ttft_delta_ms'),
-            'contention': data.get('resource_contention_detected', False),
+            'speedup': concurrency_speedup,
+            'efficiency': efficiency_percent,
+            'throughput_delta': throughput_delta,
+            'ttft_delta_ms': ttft_delta_ms,
+            'contention': bool(contention_flag),
             'path': filepath
         }
         rows.append(row)
@@ -76,7 +86,7 @@ def generate_table(data, title):
         out.append("_No data available_\n")
         return out
     
-    out.append("| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |")
+    out.append("| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |")
     out.append("|-----|---------|----------------|----------------------|-------------|------------|")
     
     for _, row in data.sort_values('run').iterrows():
@@ -126,7 +136,7 @@ output.append("# Multi-Level Statistical Analysis\n")
 
 # Correlation Analysis
 output.append("## 1. Correlation: Throughput Delta vs Efficiency\n")
-output.append("**Hypothesis:** Models with higher throughput imbalance (abs(Δ)) show lower efficiency.\n")
+output.append("**Hypothesis:** Models with higher throughput imbalance (absolute delta) show lower efficiency.\n")
 for model in ['qwen2.5', 'gemma3', 'llama3.1']:
     for runtime in ['rust', 'python']:
         subset = df[(df['model']==model) & (df['runtime']==runtime)]
@@ -153,9 +163,9 @@ if not rust_data.empty:
     within_var = (model_stats['std'] ** 2).mean()
     total_var = between_var + within_var
     
-    output.append(f"- **Between-Model Variance:** {between_var:.2f} pp²")
-    output.append(f"- **Within-Model Variance (avg):** {within_var:.2f} pp²")
-    output.append(f"- **Total Variance:** {total_var:.2f} pp²")
+    output.append(f"- **Between-Model Variance:** {between_var:.2f} pp^2")
+    output.append(f"- **Within-Model Variance (avg):** {within_var:.2f} pp^2")
+    output.append(f"- **Total Variance:** {total_var:.2f} pp^2")
     output.append(f"- **Between-Model % of Total:** {100*between_var/total_var:.1f}%\n")
     output.append(f"**Interpretation:** {100*between_var/total_var:.0f}% of variance in Rust comes from model choice, not run-to-run variation.\n")
 

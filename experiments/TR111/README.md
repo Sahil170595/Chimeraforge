@@ -4,5 +4,6 @@
 - Scripts:
   - `scripts/generate_summary.py`
   - `scripts/validate_data.py`
+  - `scripts/run_benchmark.py` (Automated Runner)
 - Artifacts: `artifacts/` (CSV + Markdown summaries)
 - Reports: see `PublishReady/reports/Technical_Report_111_v2.md`

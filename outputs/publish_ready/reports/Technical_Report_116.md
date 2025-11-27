@@ -638,13 +638,13 @@ cargo run --release -- --model {model} --runs 5 --scenario chimera_homo --chimer
 
 ### 9.2 Qwen 2.5 Rust (baseline-vs-chimera) - Run-by-Run
 
-| Run | Speedup | Efficiency | Throughput ? | TTFT ? | Contention | Notes |
-|-----|---------|------------|--------------|--------|------------|-------|
-| 1 | 1.78x | 89.0% | +15.7 tok/s | +368 ms | No | High imbalance  |
-| 2 | 1.82x | 91.0% | +10.2 tok/s | +325 ms | No | Improved |
-| 3 | 1.80x | 90.0% | +12.8 tok/s | +340 ms | No | Moderate |
-| 4 | 1.79x | 89.5% | +14.1 tok/s | +355 ms | No | Imbalance persists |
-| 5 | 1.81x | **90.5%** | +9.2 tok/s | +315 ms | No | Best of 5 |
+| Run | Speedup | Efficiency | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention | Notes |
+|-----|---------|------------|----------------------|-------------|------------|-------|
+| 1 | 1.70x | 85.08% | +30.47 tok/s | +1422.8 ms | No | High imbalance |
+| 2 | 1.70x | 85.18% | +30.69 tok/s | +119.4 ms | No | High imbalance |
+| 3 | 1.99x | 99.58% | -0.35 tok/s | +17.7 ms | No | Perfect balance |
+| 4 | 1.98x | 98.79% | -13.13 tok/s | +86.9 ms | No | Reverse imbalance |
+| 5 | 1.62x | 81.20% | +14.33 tok/s | +49.8 ms | No | Moderate imbalance |
 
 **Aggregate:** 1.80x speedup, 90.0% efficiency, CV 2.6%
 
@@ -675,10 +675,12 @@ cargo run --release -- --model {model} --runs 5 --scenario chimera_homo --chimer
 **Total Variance = Between-Model Variance + Within-Model Variance**
 
 **Rust:**
-- Between-Model Variance: 19.6 pp (variance across Gemma/Llama/Qwen means)
-- Within-Model Variance: 2.3 pp (average variance within each model's 5 runs)
-- **Total:** 21.9 pp
-- **Between-Model % of Total:** 89.5%
+- Between-Model Variance: 22.64 pp^2
+- Within-Model Variance (avg): 27.78 pp^2
+- **Total Variance:** 50.42 pp^2
+- **Between-Model % of Total:** 44.9%
+
+**Interpretation:** 45% of variance in Rust comes from model choice, while 55% comes from run-to-run variability (driven largely by Qwen's instability).
 
 **Interpretation:** In Rust, **90% of variance comes from model choice**, not run-to-run variability. Model selection is critical.
 
@@ -694,14 +696,33 @@ cargo run --release -- --model {model} --runs 5 --scenario chimera_homo --chimer
 
 **Throughput ? vs Efficiency:**
 
-| Model | Runtime | Correlation (r) | p-value | Interpretation |
-|-------|---------|----------------|---------|----------------|
-| Qwen | Rust | **-0.87** | 0.023 | Strong negative (high ? = low efficiency)  |
-| Qwen | Python | **-0.76** | 0.045 | Moderate negative |
-| Gemma | Rust | -0.12 | 0.82 | No correlation |
-| Llama | Rust | -0.19 | 0.75 | No correlation |
+| Model | Runtime | Correlation (r) | Interpretation |
+|-------|---------|----------------|----------------|
+| Qwen | Rust | -0.007 | Weak/no correlation |
+| Qwen | Python | -0.069 | Weak/no correlation |
+| Gemma | Rust | 0.439 | Moderate positive |
+| Gemma | Python | 0.327 | Weak/no correlation |
+| Llama | Rust | 0.391 | Weak/no correlation |
+| Llama | Python | -0.654 | Moderate negative |
 
-**Finding:** For Qwen, throughput imbalance is **strongly correlated** with low efficiency (r=-0.87, p\u003c0.05). For Gemma/Llama, no correlation exists (balanced agents  high efficiency).
+**Finding:** Contrary to expectations, throughput imbalance is **not strongly correlated** with efficiency for Qwen (r=-0.007). This suggests the efficiency loss comes from **internal contention** (e.g., memory bandwidth or cache thrashing) rather than simple scheduler starvation driven by speed differences.
+
+---
+
+## 10.3 Efficiency Distribution by Runtime
+
+### RUST
+- **Mean:** 95.1%
+- **Range:** 89.4% - 99.2%
+- **Consistency:** High (CV < 2% typical)
+- **Distribution:** Skewed towards 98-99% (Gemma/Llama), with Qwen outlier at 90%.
+
+### PYTHON
+- **Mean:** 82.73%
+- **Median (P50):** 84.25%
+- **Range:** 55.31% - 91.68%
+- **Std Dev:** 9.28pp
+- **Distribution:** Broad spread, heavy tail of low efficiency runs.
 
 ---
 
@@ -891,66 +912,112 @@ Runtimes Compared: 2
 **Generated from 60 benchmark runs**
 
 **Models:** Qwen 2.5 7B, Gemma 3, Llama 3.1 8B
-**Runtimes:** Rust (tokio-default), Python (asyncio)
-**Scenarios:** baseline-vs-chimera, chimera-homo
 
 ## 1. Rust: Qwen 2.5 7B - Baseline vs Chimera
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
-| 1 | N/A | N/A | N/A | N/A | No |
-| 2 | N/A | N/A | N/A | N/A | No |
-| 3 | N/A | N/A | N/A | N/A | No |
-| 4 | N/A | N/A | N/A | N/A | No |
-| 5 | N/A | N/A | N/A | N/A | No |
+| 1 | 1.7015x | 85.08 | +30.47 | +1422.8 | No |
+| 2 | 1.7037x | 85.18 | +30.69 | +119.4 | No |
+| 3 | 1.9916x | 99.58 | -0.35 | +17.7 | No |
+| 4 | 1.9758x | 98.79 | -13.13 | +86.9 | No |
+| 5 | 1.6239x | 81.20 | +14.33 | +49.8 | No |
+
+**Efficiency Statistics:**
+- Mean: 89.97%
+- Std Dev: 8.57pp
+- Min: 81.20% | Max: 99.58%
+- Range: 18.38pp
+- CV: 9.53%
+
 ## 2. Rust: Qwen 2.5 7B - Chimera Homo
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
-| 1 | N/A | N/A | N/A | N/A | No |
-| 2 | N/A | N/A | N/A | N/A | No |
-| 3 | N/A | N/A | N/A | N/A | No |
-| 4 | N/A | N/A | N/A | N/A | No |
-| 5 | N/A | N/A | N/A | N/A | No |
+| 1 | 1.9185x | 95.92 | -3.65 | -468.2 | No |
+| 2 | 1.9481x | 97.40 | -3.49 | +111.6 | No |
+| 3 | 1.7989x | 89.94 | -16.06 | +58.5 | No |
+| 4 | 1.8360x | 91.80 | -6.18 | +89.0 | No |
+| 5 | 1.4400x | 72.00 | -32.73 | +159.9 | Yes |
+
+**Efficiency Statistics:**
+- Mean: 89.41%
+- Std Dev: 10.19pp
+- Min: 72.00% | Max: 97.40%
+- Range: 25.41pp
+- CV: 11.40%
+
 ## 3. Rust: Gemma 3 - Baseline vs Chimera
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
-| 1 | N/A | N/A | N/A | N/A | No |
-| 2 | N/A | N/A | N/A | N/A | No |
-| 3 | N/A | N/A | N/A | N/A | No |
-| 4 | N/A | N/A | N/A | N/A | No |
-| 5 | N/A | N/A | N/A | N/A | No |
+| 1 | 1.9493x | 97.46 | +0.43 | +1270.3 | No |
+| 2 | 1.9689x | 98.45 | +2.22 | +145.3 | No |
+| 3 | 1.9140x | 95.70 | -5.75 | +116.4 | No |
+| 4 | 1.9248x | 96.24 | -4.96 | +173.9 | No |
+| 5 | 1.9744x | 98.72 | -1.57 | +159.9 | No |
+
+**Efficiency Statistics:**
+- Mean: 97.31%
+- Std Dev: 1.33pp
+- Min: 95.70% | Max: 98.72%
+- Range: 3.02pp
+- CV: 1.36%
+
 ## 4. Rust: Gemma 3 - Chimera Homo
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
-| 1 | N/A | N/A | N/A | N/A | No |
-| 2 | N/A | N/A | N/A | N/A | No |
-| 3 | N/A | N/A | N/A | N/A | No |
-| 4 | N/A | N/A | N/A | N/A | No |
-| 5 | N/A | N/A | N/A | N/A | No |
+| 1 | 1.9821x | 99.11 | -7.39 | -1563.3 | No |
+| 2 | 1.9972x | 99.86 | +0.45 | +164.0 | No |
+| 3 | 1.9829x | 99.15 | +1.11 | +259.9 | No |
+| 4 | 1.9945x | 99.73 | -0.25 | +163.0 | No |
+| 5 | 1.9651x | 98.26 | +2.27 | +275.0 | No |
+
+**Efficiency Statistics:**
+- Mean: 99.22%
+- Std Dev: 0.64pp
+- Min: 98.26% | Max: 99.86%
+- Range: 1.61pp
+- CV: 0.64%
+
 ## 5. Rust: Llama 3.1 8B - Baseline vs Chimera
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
-| 1 | N/A | N/A | N/A | N/A | No |
-| 2 | N/A | N/A | N/A | N/A | No |
-| 3 | N/A | N/A | N/A | N/A | No |
-| 4 | N/A | N/A | N/A | N/A | No |
-| 5 | N/A | N/A | N/A | N/A | No |
+| 1 | 1.9235x | 96.18 | +4.33 | +1441.1 | No |
+| 2 | 1.9333x | 96.66 | -3.13 | +149.6 | No |
+| 3 | 1.9034x | 95.17 | -5.35 | +128.1 | No |
+| 4 | 1.9100x | 95.50 | -4.31 | +127.5 | No |
+| 5 | 1.9847x | 99.23 | +0.81 | +140.6 | No |
+
+**Efficiency Statistics:**
+- Mean: 96.55%
+- Std Dev: 1.61pp
+- Min: 95.17% | Max: 99.23%
+- Range: 4.06pp
+- CV: 1.67%
+
 ## 6. Rust: Llama 3.1 8B - Chimera Homo
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
-| 1 | N/A | N/A | N/A | N/A | No |
-| 2 | N/A | N/A | N/A | N/A | No |
-| 3 | N/A | N/A | N/A | N/A | No |
-| 4 | N/A | N/A | N/A | N/A | No |
-| 5 | N/A | N/A | N/A | N/A | No |
+| 1 | 1.9809x | 99.05 | -0.71 | -487.8 | No |
+| 2 | 1.9505x | 97.52 | -2.79 | +75.6 | No |
+| 3 | 1.9701x | 98.51 | -1.42 | +149.3 | No |
+| 4 | 1.9861x | 99.30 | -0.51 | +94.3 | No |
+| 5 | 1.9672x | 98.36 | -1.57 | +78.9 | No |
+
+**Efficiency Statistics:**
+- Mean: 98.55%
+- Std Dev: 0.69pp
+- Min: 97.52% | Max: 99.30%
+- Range: 1.78pp
+- CV: 0.70%
+
 ## 7. Python: Qwen 2.5 7B - Baseline vs Chimera
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
 | 1 | 1.1063x | 55.31 | +14.32 | -11.7 | No |
 | 2 | 1.6568x | 82.84 | +16.26 | +0.8 | No |
@@ -967,7 +1034,7 @@ Runtimes Compared: 2
 
 ## 8. Python: Qwen 2.5 7B - Chimera Homo
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
 | 1 | 1.6309x | 81.54 | +13.18 | -97.4 | No |
 | 2 | 1.6858x | 84.29 | +14.64 | -5.3 | No |
@@ -984,7 +1051,7 @@ Runtimes Compared: 2
 
 ## 9. Python: Gemma 3 - Baseline vs Chimera
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
 | 1 | 1.2023x | 60.12 | +10.16 | +35.3 | No |
 | 2 | 1.6815x | 84.07 | +16.05 | +0.6 | No |
@@ -1001,7 +1068,7 @@ Runtimes Compared: 2
 
 ## 10. Python: Gemma 3 - Chimera Homo
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
 | 1 | 1.5950x | 79.75 | +12.49 | -43.5 | No |
 | 2 | 1.7251x | 86.25 | +13.03 | -0.5 | No |
@@ -1018,7 +1085,7 @@ Runtimes Compared: 2
 
 ## 11. Python: Llama 3.1 8B - Baseline vs Chimera
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
 | 1 | 1.2039x | 60.19 | +9.78 | -5.1 | No |
 | 2 | 1.8258x | 91.29 | +6.47 | +0.0 | No |
@@ -1035,7 +1102,7 @@ Runtimes Compared: 2
 
 ## 12. Python: Llama 3.1 8B - Chimera Homo
 
-| Run | Speedup | Efficiency (%) | Throughput Δ (tok/s) | TTFT Δ (ms) | Contention |
+| Run | Speedup | Efficiency (%) | Throughput Delta (tok/s) | TTFT Delta (ms) | Contention |
 |-----|---------|----------------|----------------------|-------------|------------|
 | 1 | 1.3911x | 69.56 | +15.70 | -72.9 | No |
 | 2 | 1.7874x | 89.37 | +8.43 | -0.1 | No |
@@ -1050,37 +1117,4 @@ Runtimes Compared: 2
 - Range: 22.13pp
 - CV: 10.69%
 
----
 
-# Multi-Level Statistical Analysis
-
-## 1. Correlation: Throughput Delta vs Efficiency
-
-**Hypothesis:** Models with higher throughput imbalance (abs(Δ)) show lower efficiency.
-
-- **QWEN2.5 (PYTHON)**: r = -0.069
-  - Weak/no correlation
-- **GEMMA3 (PYTHON)**: r = 0.327
-  - Weak/no correlation
-- **LLAMA3.1 (PYTHON)**: r = -0.654
-  - Moderate negative correlation
-
-
-## 2. Variance Decomposition (Rust)
-
-- **Between-Model Variance:** nan pp²
-- **Within-Model Variance (avg):** nan pp²
-- **Total Variance:** nan pp²
-- **Between-Model % of Total:** nan%
-
-**Interpretation:** nan% of variance in Rust comes from model choice, not run-to-run variation.
-
-## 3. Efficiency Distribution by Runtime
-
-### PYTHON
-
-- **Mean:** 82.73%
-- **Median (P50):** 84.25%
-- **P5:** 60.15% | **P95:** 91.31%
-- **Range:** 55.31% - 91.68% (36.37pp)
-- **Std Dev:** 9.28pp

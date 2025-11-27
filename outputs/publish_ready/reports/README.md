@@ -58,6 +58,7 @@ This directory contains the complete research journey documenting LLM performanc
 | **TR112_v2** | Rust vs Python Comparison | ✅ Complete | Rust: +15.2% throughput, -58% TTFT, -67% memory |
 | **TR114_v2** | Rust Multi-Agent Performance | ✅ Complete | 98.281% mean efficiency, 99.992% peak run |
 | **TR115_v2** | Rust Runtime Optimization | ✅ Complete | Tokio-default recommended (98.72% mean, 1.21pp σ) |
+| **TR116** | Cross-Model Multi-Agent Benchmarks | ✅ Complete | Rust + Gemma 3 is king (99.2%). Qwen shows imbalance. |
 
 ### 📚 **Historical Reports (Superseded)**
 
@@ -235,6 +236,18 @@ This directory contains the complete research journey documenting LLM performanc
   - Smol has pathological failures (72.80% min efficiency)
 - **Production Recommendation:** Use standard `#[tokio::main]` - no custom config needed
 - **Status:** ✅ Complete (Supersedes TR115)
+
+### **TR116: Cross-Model Multi-Agent Performance**
+**File:** `Technical_Report_116.md`
+
+- **Focus:** Impact of model choice (Qwen, Gemma, Llama) on multi-agent efficiency
+- **Test Matrix:** 3 models × 2 runtimes × 2 scenarios × 5 runs = 60 benchmark runs
+- **Key Findings:**
+  - Rust dominates across all models (+12-17pp efficiency vs Python)
+  - Gemma 3 is the scaling king (99.2% efficiency in Rust)
+  - Qwen 2.5 shows significant throughput imbalance (+12 tok/s delta)
+- **Production Recommendation:** Rust + Gemma 3 for max performance, Rust + Llama 3.1 for reasoning.
+- **Status:** ✅ Complete (Publication-ready)
 
 ---
 
@@ -477,7 +490,8 @@ All reports include:
 - TR112_v2: 111 runs
 - TR114_v2: 135 runs
 - TR115_v2: 150 runs
-- **Total: 843+ benchmark runs** across all reports
+- TR116: 60 runs
+- **Total: 903+ benchmark runs** across all reports
 
 ---
 
@@ -515,5 +529,5 @@ All reports include:
 
 **Last Updated:** 2025-11-15  
 **Maintainer:** Chimera Heart Development Team  
-**Total Reports:** 12 (7 production-ready, 5 historical)  
-**Total Benchmark Runs:** 843+ across all reports
+**Total Reports:** 13 (8 production-ready, 5 historical)  
+**Total Benchmark Runs:** 903+ across all reports
