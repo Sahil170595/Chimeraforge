@@ -761,7 +761,8 @@ fn parse_analysis_response(response: &str, benchmark_data: &[BenchmarkData]) -> 
 async fn ingest_benchmarks(repo_root: &Path) -> Result<Vec<BenchmarkData>> {
     let root = repo_root.to_path_buf();
     let handle = tokio::task::spawn_blocking(move || ingest_benchmarks_sync(root));
-    handle.await??.map_err(Into::into)
+    let result = handle.await??;
+    Ok(result)
 }
 
 #[cfg(feature = "runtime-async-std")]

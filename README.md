@@ -129,6 +129,22 @@ Rust supports multiple async runtimes (Tokio, async-std, smol). **Which one shou
 
 **Bottom Line:** Use **Tokio-default** for production. It's the most consistent and reliable. All working runtimes achieve ~100% peak efficiency, so consistency matters more than peak performance.
 
+### Cross-Model Benchmarks (TR116)
+
+**Question:** Does model choice (Gemma, Llama, Qwen) impact multi-agent coordination efficiency?
+
+| Model | Rust Efficiency | Python Efficiency | Verdict |
+|-------|----------------|-------------------|---------|
+| **Gemma 3** | **99.2%** | 84.9% | 🏆 **Best Scaling** |
+| **Llama 3.1** | 98.5% | 85.8% | ✅ Excellent |
+| **Qwen 2.5** | 90.0% | 77.6% | ⚠️ Throughput Imbalance |
+
+**Key Findings:**
+1. **Rust Dominates:** Rust is **+12-17pp more efficient** than Python across ALL models.
+2. **Gemma 3 is King:** Achieves near-perfect 99.2% efficiency in Rust.
+3. **Qwen Issues:** Throughput imbalance (+12 tok/s delta) hurts efficiency in both languages.
+4. **Python Ceiling:** Python never exceeds 86% efficiency, regardless of model.
+
 ---
 
 ## Research Journey: The 8 Technical Reports
@@ -304,6 +320,7 @@ Our research progressed systematically, with each report building on previous fi
 | **TR113** | What if we keep one Ollama? | Rust stalls at 82.2% efficiency (contention). | Identifies architectural bottleneck. Proves dual Ollama is necessary. |
 | **TR114_v2** | Does dual Ollama unblock Rust? | 98.281% mean, 99.396% peak, 0.74% contention. | Validates Rust can exceed Python in multi-agent scenarios with proper architecture. |
 | **TR115_v2** | Which Rust runtime should we ship? | Tokio-default: 99.89% peak / 98.72% mean / 1.21 pp sigma. | Production guidance. Consistency matters more than peak performance. |
+| **TR116** | Does model choice matter for multi-agent? | Rust + Gemma 3 is king (99.2%). Qwen shows imbalance. | Proves Rust's advantage holds across models (+12-17pp efficiency). |
 
 **Full report links:** See `docs/technical_reports.md` for complete index, or browse `outputs/publish_ready/reports/` for all technical reports.
 
@@ -519,6 +536,6 @@ This research was conducted as part of the Banterhearts program, focusing specif
 
 ---
 
-**Last Updated:** latest report: November 15, 2025
+**Last Updated:** latest report: November 26, 2025
 **Repository:** https://github.com/Sahil170595/Chimeraforge  
 **Status:** ✅ Active Research & Development

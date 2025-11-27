@@ -14,6 +14,7 @@ Complete index of all technical reports documenting LLM performance optimization
 | **TR113** | Rust Multi-Agent (Single Ollama) | Architectural analysis | 82.2% peak, identifies bottleneck |
 | **TR114_v2** | Rust Multi-Agent (Dual Ollama) | True concurrency validation | 98.281% mean, 99.396% peak, exceeds Python |
 | **TR115_v2** | Rust Runtime Optimization | Runtime scheduler investigation | Tokio-default: 98.72% mean, 1.21pp  (recommended) |
+| **TR116** | Cross-Model Benchmarks | Multi-model scaling analysis | Gemma 3 (99.2%) > Llama 3.1 (98.5%) > Qwen 2.5 (90.0%) |
 
 ## Detailed Reports
 
@@ -241,6 +242,30 @@ Complete index of all technical reports documenting LLM performance optimization
 
 ---
 
+### TR116: Cross-Model Benchmarks (Qwen 2.5 vs Gemma 3 vs Llama 3.1)
+
+**File**: [Technical_Report_116.md](../outputs/publish_ready/reports/Technical_Report_116.md)
+
+**Objective**: Determine if model choice impacts multi-agent coordination efficiency and if Rust's advantages hold across different architectures.
+
+**Key Findings**:
+- **Rust Dominates**: +12-17pp higher efficiency than Python across ALL models.
+- **Gemma 3 Champion**: 99.2% efficiency in Rust (near-perfect scaling).
+- **Qwen 2.5 Issues**: Throughput imbalance (+12 tok/s delta) hurts efficiency (90.0%).
+- **Python Ceiling**: Python never exceeds 86% efficiency, regardless of model.
+
+**Methodology**:
+- 60+ multi-agent runs across 3 models (Gemma 3, Llama 3.1, Qwen 2.5).
+- Dual Ollama architecture (ports 11434/11435).
+- Scenarios: `baseline_vs_chimera` and `chimera_homo`.
+
+**Production Verdict**:
+- **Use Rust + Gemma 3** for maximum performance (99.2% efficiency).
+- **Avoid Qwen 2.5** for high-concurrency multi-agent (imbalance issues).
+- **Rust is superior** regardless of model choice.
+
+---
+
 ## Cross-Report Relationships
 
 ```
@@ -251,6 +276,8 @@ TR109 (Python Agents)  TR110 (Python Multi-Agent)
 TR111 (Rust Agents)  TR112 (Rust vs Python)
     
 TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime Optimization)
+                                                                 |
+                                                               TR116 (Cross-Model)
 ```
 
 **Research Progression**:
@@ -262,6 +289,7 @@ TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime O
 6. **TR113**: Rust multi-agent (identifies bottleneck)
 7. **TR114**: Rust multi-agent (validates fix)
 8. **TR115**: Rust runtime optimization (closes gap to 2.9pp, validates architecture > runtime)
+9. **TR116**: Cross-model validation (proves Rust dominance holds across architectures)
 
 ## Key Insights Across Reports
 
