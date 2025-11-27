@@ -116,6 +116,7 @@ async def instrumented_call_ollama(
     options: Dict[str, Any],
     agent_id: str,
     profiler: ChunkProfiler,
+    read_buffer_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     payload = {
         "model": model,
@@ -131,18 +132,45 @@ async def instrumented_call_ollama(
     final_data = {}
     
     chunk_idx = 0
+    buffer = ""
     
     # We manually handle the request to instrument chunk processing
-    async with client.stream("POST", f"{base_url}/api/generate", json=payload, timeout=120.0) as response:
+    async with client.stream(
+        "POST",
+        f"{base_url}/api/generate",
+        json=payload,
+        timeout=120.0,
+    ) as response:
         response.raise_for_status()
-        async for chunk in response.aiter_bytes():
+        async for chunk in response.aiter_bytes(chunk_size=read_buffer_size):
             t0 = time.perf_counter()
-            # Measure JSON parse time
+            text_chunk = ""
             try:
                 text_chunk = chunk.decode("utf-8")
-                for line in text_chunk.splitlines():
-                    if not line: continue
-                    data = json.loads(line)
+            except Exception as e:
+                logger.error(f"Decode error: {e}")
+            buffer += text_chunk
+
+            # Split into lines but keep the trailing partial (if any)
+            lines = buffer.split("\n")
+            if not buffer.endswith("\n"):
+                buffer = lines.pop()
+            else:
+                buffer = ""
+
+            # Measure JSON parse time across processed lines
+            processed_any = False
+            try:
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        # Put the partial back and wait for the next chunk
+                        buffer = line + ("\n" + buffer if buffer else "")
+                        continue
                     
                     if not first_token_time and not data.get("done"):
                         first_token_time = time.perf_counter()
@@ -153,14 +181,15 @@ async def instrumented_call_ollama(
                     
                     if data.get("done"):
                         final_data = data
+                    processed_any = True
             except Exception as e:
                 logger.error(f"Parse error: {e}")
-                continue
                 
             t1 = time.perf_counter()
             parse_ms = (t1 - t0) * 1000
             
-            profiler.log(agent_id, chunk_idx, len(chunk), parse_ms)
+            if processed_any:
+                profiler.log(agent_id, chunk_idx, len(chunk), parse_ms)
             chunk_idx += 1
 
     total_time = time.perf_counter() - start_time
@@ -189,6 +218,7 @@ async def run_instrumented_pair(
     chimera2_opts: Dict[str, Any],
     coordinator: ResourceCoordinator,
     chunk_profiler: ChunkProfiler,
+    read_buffer_size: Optional[int],
 ) -> Dict[str, Any]:
     prompts = build_prompts()
 
@@ -205,7 +235,14 @@ async def run_instrumented_pair(
         async with coordinator:
             # Use instrumented call
             result = await instrumented_call_ollama(
-                client, base_url, model, prompt, opts, agent_id, chunk_profiler
+                client,
+                base_url,
+                model,
+                prompt,
+                opts,
+                agent_id,
+                chunk_profiler,
+                read_buffer_size,
             )
             return {
                 "id": agent_id,
@@ -238,6 +275,7 @@ async def run_instrumented_pair(
         "concurrent_wall_time_ms": wall_ms,
         "concurrency_speedup": speedup,
         "efficiency_percent": efficiency,
+        "read_buffer_size": read_buffer_size,
     }
 
 def parse_args():
@@ -304,6 +342,7 @@ async def main():
                 chimera_opts, # homo for now
                 coordinator,
                 chunk_profiler,
+                args.read_buffer_size,
             )
             run["run_number"] = i
             runs.append(run)

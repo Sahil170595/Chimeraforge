@@ -59,6 +59,7 @@ This directory contains the complete research journey documenting LLM performanc
 | **TR114_v2** | Rust Multi-Agent Performance | ✅ Complete | 98.281% mean efficiency, 99.992% peak run |
 | **TR115_v2** | Rust Runtime Optimization | ✅ Complete | Tokio-default recommended (98.72% mean, 1.21pp σ) |
 | **TR116** | Cross-Model Multi-Agent Benchmarks | ✅ Complete | Rust + Gemma 3 is king (99.2%). Qwen shows imbalance. |
+| **TR117** | Root Cause Analysis of Efficiency Anomalies | ✅ Complete | Python ceiling (86%) caused by Event Loop Lag (16ms spikes). |
 
 ### 📚 **Historical Reports (Superseded)**
 

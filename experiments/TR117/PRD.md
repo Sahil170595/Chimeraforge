@@ -23,7 +23,7 @@ TR117 is dedicated to explaining **why** these phenomena occur with forensic pre
 
 ## 2. Research Pathways & Experiments
 
-### 🔬 Pathway 1: The "Python MRI" (Event Loop Instrumentation)
+### Pathway 1: The "Python MRI" (Event Loop Instrumentation)
 **Goal:** Visualize the internal state of the Python `asyncio` loop during high-throughput generation.
 
 **Hypothesis:**  
@@ -52,10 +52,10 @@ The single-threaded event loop is blocked by synchronous CPU-bound operations (l
 
 ---
 
-### 🔍 Pathway 2: Hardware Forensics (The Qwen Detective)
+### Pathway 2: Hardware Forensics (The Qwen Detective)
 **Goal:** Determine if Qwen's inefficiency is a Hardware (Memory/Compute) or Software (Tokenizer) bottleneck.
 
-**Hypothesis A (Hardware):** Qwen's 7B parameter size + architecture saturates Memory Bandwidth or PCIe lanes during dual-agent inference, unlike Gemma (4B).
+**Hypothesis A (Hardware):** Qwen's 7B parameter size + architecture saturates Memory Bandwidth or PCIe lanes during dual-agent inference, unlike Gemma (4B).  
 **Hypothesis B (Software):** Qwen's BPE tokenizer is significantly more expensive than Gemma's SentencePiece, consuming CPU cycles needed for GPU submission.
 
 **Instrumentation Plan:**
@@ -66,7 +66,7 @@ The single-threaded event loop is blocked by synchronous CPU-bound operations (l
     - Create `bench_tokenizer.py` / `bench_tokenizer.rs`.
     - Task: Tokenize 10MB of identical text (CPU-only).
     - Metric: Tokens/sec, Latency.
-    - **Threshold:** ≥2–3× slowdown for Qwen vs Gemma flags CPU bottleneck.
+    - **Threshold:** 2–3x slowdown for Qwen vs Gemma flags CPU bottleneck.
 
 **Experiment 2.1: The Saturation Sweep**
 - **Config:** Rust + Qwen 2.5 vs Rust + Gemma 3.
@@ -79,7 +79,7 @@ The single-threaded event loop is blocked by synchronous CPU-bound operations (l
 
 ---
 
-### 🐢 Pathway 3: Flow Dynamics (The Tortoise & Hare)
+### Pathway 3: Flow Dynamics (The Tortoise & Hare)
 **Goal:** Prove that "Slower is Faster" in Python.
 
 **Hypothesis:**  
@@ -100,10 +100,10 @@ Python's efficiency *increases* as model speed *decreases* because the event loo
 ### 3.1 New Tools & Scripts
 | Tool | Path | Purpose |
 |------|------|---------|
-| `profiler_agent.py` | `src/python/banterhearts/profiling/` | Instrumented Python agent with Loop Lag Monitor. |
-| `bench_tokenizer.rs` | `experiments/TR117/scripts/` | Rust-based high-performance tokenizer bench. |
+| `profiler_agent.py` | `experiments/TR117/scripts/` | Instrumented Python agent with Loop Lag Monitor and chunk metrics. |
+| `bench_tokenizer.py` / `bench_tokenizer.rs` | `experiments/TR117/scripts/` | Tokenizer throughput bench (CPU-only). |
 | `dmon_wrapper.py` | `experiments/TR117/scripts/` | Wrapper to sync `nvidia-smi` query with benchmark start/stop. |
-| `throttle_shim.py` | `src/python/banterhearts/utils/` | Throttling logic for Experiment 3.1. |
+| `throttled_agent.py` | `experiments/TR117/scripts/` | Token-bucket throttling for Experiment 3.1. |
 
 ### 3.2 Execution Schedule
 1.  **Day 1:** Build Instrumentation (Python MRI + Tokenizer Bench).

@@ -87,44 +87,49 @@ async def throttled_call_ollama(
     start_time = time.perf_counter()
     first_token_time = None
     final_data = {}
+    buffer = ""
     
     # We must stream to throttle token-by-token (or chunk-by-chunk)
     async with client.stream("POST", f"{base_url}/api/generate", json=payload, timeout=120.0) as response:
         response.raise_for_status()
         async for chunk in response.aiter_bytes():
-            # Throttle based on estimated token count or just chunk count?
-            # Chunks are bytes. We don't know exact token count without tokenizing.
-            # Approximation: 1 token ~= 4 bytes. 
-            # Or better: Just throttle the *read* loop. 
-            # If we want 60 tok/s, and we get a chunk, we parse it to find token count if possible.
-            # Ollama sends JSON objects. Each "response" field is a token (usually).
-            
-            # Let's parse first, then throttle.
             try:
                 text_chunk = chunk.decode("utf-8")
-                token_count_in_chunk = 0
-                for line in text_chunk.splitlines():
-                    if not line: continue
-                    data = json.loads(line)
-                    
-                    if not first_token_time and not data.get("done"):
-                        first_token_time = time.perf_counter()
-                        
-                    if "response" in data:
-                        full_response += data["response"]
-                        token_count_in_chunk += 1
-                        eval_count += 1
-                    
-                    if data.get("done"):
-                        final_data = data
-                
-                # Throttle now
-                if throttle_rate > 0 and token_count_in_chunk > 0:
-                    await bucket.acquire(token_count_in_chunk)
-                    
             except Exception as e:
-                logger.error(f"Parse error: {e}")
+                logger.error(f"Decode error: {e}")
                 continue
+
+            buffer += text_chunk
+            lines = buffer.split("\n")
+            if not buffer.endswith("\n"):
+                buffer = lines.pop()
+            else:
+                buffer = ""
+
+            token_count_in_chunk = 0
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    buffer = line + ("\n" + buffer if buffer else "")
+                    continue
+                
+                if not first_token_time and not data.get("done"):
+                    first_token_time = time.perf_counter()
+                    
+                if "response" in data:
+                    full_response += data["response"]
+                    token_count_in_chunk += 1
+                    eval_count += 1
+                
+                if data.get("done"):
+                    final_data = data
+
+            if throttle_rate > 0 and token_count_in_chunk > 0:
+                await bucket.acquire(token_count_in_chunk)
 
     total_time = time.perf_counter() - start_time
     ttft = (first_token_time - start_time) * 1000 if first_token_time else 0
