@@ -103,7 +103,22 @@ class BaselineAgent(BaseAgent):
         return benchmark_data
 
     async def _load_file_content(self, file_path: Path) -> Optional[Any]:
-        """Load content from a file based on its type."""
+        """
+        Load content from a file based on its type.
+
+        Supports CSV (loaded as pandas DataFrame converted to dict), JSON, and
+        Markdown files. Returns None on error.
+
+        Args:
+            file_path: Path to the file to load
+
+        Returns:
+            Optional[Any]: File content as:
+                - List[Dict] for CSV files
+                - Dict or List for JSON files
+                - str for Markdown files
+                - None if loading fails
+        """
         try:
             if file_path.suffix.lower() == ".csv":
                 import pandas as pd
@@ -153,7 +168,17 @@ Format your response as structured analysis with clear sections.
         )
 
     def _create_data_summary(self, benchmark_data: List[BenchmarkData]) -> str:
-        """Create a summary of the benchmark data for analysis."""
+        """
+        Create a formatted summary of benchmark data for LLM analysis.
+
+        Groups files by type and lists up to 5 files per type with their paths.
+
+        Args:
+            benchmark_data: List of BenchmarkData objects to summarize
+
+        Returns:
+            str: Formatted summary string with file counts and paths
+        """
         summary = f"Total files analyzed: {len(benchmark_data)}\n\n"
 
         # Group by data type
@@ -175,7 +200,21 @@ Format your response as structured analysis with clear sections.
         return summary
 
     async def _call_llm(self, prompt: str) -> str:
-        """Make LLM call with metrics collection."""
+        """
+        Make an LLM call with metrics collection.
+
+        Sends a prompt to the Ollama API using the agent's baseline configuration
+        and records performance metrics for analysis.
+
+        Args:
+            prompt: Text prompt to send to the LLM
+
+        Returns:
+            str: Generated text response from the LLM
+
+        Raises:
+            RuntimeError: If the Ollama API returns a non-200 status code
+        """
         timeout = httpx.Timeout(120.0, connect=10.0)
         async with httpx.AsyncClient(timeout=timeout) as client:
             payload = {
@@ -202,7 +241,18 @@ Format your response as structured analysis with clear sections.
             return result.get("response", "")
 
     def _extract_summary(self, response: str) -> str:
-        """Extract executive summary from LLM response."""
+        """
+        Extract executive summary section from LLM response.
+
+        Searches for summary sections by looking for keywords and section headers.
+        Falls back to first 500 characters if no summary section is found.
+
+        Args:
+            response: Full LLM response text
+
+        Returns:
+            str: Extracted summary text or truncated response
+        """
         lines = response.split("\n")
         summary_lines = []
         in_summary = False
@@ -221,7 +271,18 @@ Format your response as structured analysis with clear sections.
         return "\n".join(summary_lines) if summary_lines else response[:500] + "..."
 
     def _extract_findings(self, response: str) -> List[str]:
-        """Extract key findings from LLM response."""
+        """
+        Extract key findings from LLM response.
+
+        Searches for lines containing keywords like "finding", "insight", "discovery",
+        or "key" and returns up to 10 findings.
+
+        Args:
+            response: Full LLM response text
+
+        Returns:
+            List[str]: List of extracted finding strings (max 10)
+        """
         findings = []
         lines = response.split("\n")
 
@@ -236,7 +297,22 @@ Format your response as structured analysis with clear sections.
         return findings[:10]  # Limit to top 10 findings
 
     def _extract_metrics(self, benchmark_data: List[BenchmarkData]) -> Dict[str, Any]:
-        """Extract performance metrics from benchmark data."""
+        """
+        Extract performance metrics from benchmark data.
+
+        Aggregates file counts, types, sizes, and attempts to extract numerical
+        performance metrics from CSV data.
+
+        Args:
+            benchmark_data: List of BenchmarkData objects to analyze
+
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - total_files_analyzed: Count of files processed
+                - data_types: List of unique file types found
+                - total_file_size_bytes: Sum of all file sizes
+                - csv_*: Any performance metrics found in CSV files
+        """
         metrics = {
             "total_files_analyzed": len(benchmark_data),
             "data_types": list(set(data.data_type for data in benchmark_data)),
@@ -261,7 +337,18 @@ Format your response as structured analysis with clear sections.
         return metrics
 
     def _extract_recommendations(self, response: str) -> List[str]:
-        """Extract recommendations from LLM response."""
+        """
+        Extract recommendations from LLM response.
+
+        Searches for lines containing recommendation keywords like "recommend",
+        "suggest", "should", or "consider" and returns up to 10.
+
+        Args:
+            response: Full LLM response text
+
+        Returns:
+            List[str]: List of extracted recommendation strings (max 10)
+        """
         recommendations = []
         lines = response.split("\n")
 

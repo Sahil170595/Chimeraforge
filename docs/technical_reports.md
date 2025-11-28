@@ -266,6 +266,29 @@ Complete index of all technical reports documenting LLM performance optimization
 
 ---
 
+### TR117: Root Cause Analysis of Efficiency Anomalies
+
+**File**: [Technical_Report_117.md](../outputs/publish_ready/reports/Technical_Report_117.md)
+
+**Objective**: Investigate why Python multi-agent efficiency never exceeds 86% despite optimal configurations.
+
+**Key Findings**:
+- **Python Ceiling Identified**: Event loop lag (16ms spikes) prevents Python from achieving >86% efficiency.
+- **Root Cause**: Single-threaded event loop cannot handle concurrent I/O without blocking.
+- **Rust Advantage Confirmed**: Rust's multi-threaded runtime avoids this bottleneck entirely.
+
+**Methodology**:
+- Detailed profiling of Python event loop behavior.
+- Comparison of I/O blocking patterns between Python and Rust.
+- Analysis of scheduler starvation in Python async runtime.
+
+**Production Verdict**:
+- **Python limitation is structural**, not configuration-related.
+- **Rust's advantage is fundamental** - multi-threaded runtime eliminates event loop lag.
+- **For >86% efficiency, Rust is required** - no Python optimization can overcome this ceiling.
+
+---
+
 ## Cross-Report Relationships
 
 ```
@@ -278,6 +301,8 @@ TR111 (Rust Agents)  TR112 (Rust vs Python)
 TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime Optimization)
                                                                  |
                                                                TR116 (Cross-Model)
+                                                                 |
+                                                               TR117 (Root Cause Analysis)
 ```
 
 **Research Progression**:
@@ -290,6 +315,7 @@ TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime O
 7. **TR114**: Rust multi-agent (validates fix)
 8. **TR115**: Rust runtime optimization (closes gap to 2.9pp, validates architecture > runtime)
 9. **TR116**: Cross-model validation (proves Rust dominance holds across architectures)
+10. **TR117**: Root cause analysis of Python efficiency ceiling (identifies event loop lag as bottleneck)
 
 ## Key Insights Across Reports
 

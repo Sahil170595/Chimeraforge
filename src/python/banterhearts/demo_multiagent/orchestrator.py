@@ -6,6 +6,14 @@ from typing import Any, Dict, List
 
 
 def build_prompts() -> Dict[str, str]:
+    """
+    Build prompt templates for multi-agent benchmark scenarios.
+
+    Returns:
+        Dict[str, str]: Dictionary mapping agent roles to their prompts:
+            - "collector": Prompt for DataCollector-9000 agent (data inventory task)
+            - "insight": Prompt for InsightAgent (performance analysis task)
+    """
     return {
         "collector": (
             "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\n"
@@ -27,6 +35,25 @@ def build_prompts() -> Dict[str, str]:
 
 
 def aggregate_runs(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Aggregate metrics across multiple benchmark runs.
+
+    Computes average values for key performance metrics including concurrency
+    speedup, efficiency, throughput delta, and TTFT delta.
+
+    Args:
+        runs: List of run result dictionaries, each containing metrics from
+            a single benchmark execution
+
+    Returns:
+        Dict[str, Any]: Aggregated results containing:
+            - runs: Original list of run results
+            - aggregate: Dictionary with average metrics:
+                - average_concurrency_speedup: Average speedup factor
+                - average_efficiency: Average efficiency percentage
+                - average_throughput_delta: Average throughput difference
+                - average_ttft_delta_ms: Average TTFT difference in milliseconds
+    """
     if not runs:
         return {}
 

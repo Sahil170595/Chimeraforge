@@ -35,6 +35,16 @@ class ChimeraDemoOrchestrator:
         *,
         chimera_overrides: Optional[Dict[str, Any]] = None,
     ):
+        """
+        Initialize the Chimera demo orchestrator.
+
+        Args:
+            model: Ollama model name to use (e.g., "gemma3:latest")
+            output_dir: Directory path for saving results and reports
+            runs: Number of benchmark repetitions to execute
+            chimera_overrides: Optional dictionary of Chimera configuration overrides
+                (e.g., {"num_gpu": 80, "num_ctx": 512})
+        """
         self.model = model
         self.output_dir = Path(output_dir)
         self.runs = runs
@@ -176,7 +186,15 @@ if __name__ == "__main__":
                 return json.load(fh)
 
     async def _wait_for_model_cooling(self, seconds: int = 30):
-        """Wait for model to cool down between runs."""
+        """
+        Wait for model to cool down between runs.
+
+        Ensures fair comparison by allowing GPU and memory to return to baseline
+        state between agent executions.
+
+        Args:
+            seconds: Number of seconds to wait (default: 30)
+        """
         print(f"[COOLING] Waiting {seconds} seconds for model cooling...")
         await asyncio.sleep(seconds)
 
@@ -282,7 +300,30 @@ if __name__ == "__main__":
         baseline_metrics: Dict[str, Any],
         chimera_metrics: Dict[str, Any],
     ) -> Dict[str, Any]:
-        """Calculate performance improvement delta between baseline and Chimera."""
+        """
+        Calculate performance improvement delta between baseline and Chimera.
+
+        Computes percentage improvements and absolute deltas for throughput and TTFT.
+
+        Args:
+            baseline_metrics: Metrics dictionary from baseline agent execution
+            chimera_metrics: Metrics dictionary from Chimera agent execution
+
+        Returns:
+            Dict[str, Any]: Dictionary containing:
+                - throughput_improvement_percent: Percentage improvement in throughput
+                - ttft_reduction_percent: Percentage reduction in TTFT
+                - baseline_throughput: Baseline throughput in tokens/second
+                - chimera_throughput: Chimera throughput in tokens/second
+                - baseline_ttft_ms: Baseline TTFT in milliseconds
+                - chimera_ttft_ms: Chimera TTFT in milliseconds
+                - throughput_delta_absolute: Absolute throughput difference
+                - ttft_delta_absolute_ms: Absolute TTFT difference
+                - baseline_total_duration_ms: Baseline total duration
+                - chimera_total_duration_ms: Chimera total duration
+                - baseline_total_tokens: Baseline tokens generated
+                - chimera_total_tokens: Chimera tokens generated
+        """
 
         baseline_agg = baseline_metrics.get("aggregate_metrics", {})
         chimera_agg = chimera_metrics.get("aggregate_metrics", {})
@@ -494,7 +535,14 @@ if __name__ == "__main__":
         return "\n".join(report_lines)
 
     async def _save_results(self, comparison_report: str):
-        """Save all results to files."""
+        """
+        Save all results to files in the output directory.
+
+        Creates individual agent reports, comparison report, and raw metrics JSON.
+
+        Args:
+            comparison_report: Formatted markdown comparison report to save
+        """
         # Save individual reports
         for i, result in enumerate(self.results, 1):
             # Baseline report

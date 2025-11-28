@@ -107,7 +107,8 @@ All technical reports are available in `outputs/publish_ready/reports/`:
 - **TR113**: Rust Multi-Agent (Single Ollama)
 - **TR114**: Rust Multi-Agent (Dual Ollama)
 - **TR115**: Rust Runtime Optimization
-- **TR116**: Cross-Model Benchmarks (Qwen 2.5 vs Gemma 3) [in progress]
+- **TR116**: Cross-Model Benchmarks (Qwen 2.5 vs Gemma 3) ✅ Complete
+- **TR117**: Root Cause Analysis of Efficiency Anomalies ✅ Complete
 
 See [Technical Reports](technical_reports.md) for detailed summaries.
 

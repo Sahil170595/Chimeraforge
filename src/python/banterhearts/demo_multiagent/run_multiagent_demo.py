@@ -23,6 +23,20 @@ from .orchestrator import aggregate_runs, build_prompts
 
 
 def parse_args() -> argparse.Namespace:
+    """
+    Parse command-line arguments for the multi-agent benchmark demo.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments including:
+            - model: Ollama model to use (default: "gemma3:latest")
+            - runs: Number of benchmark repetitions (default: 3)
+            - scenario: Execution scenario type
+            - output-dir: Output directory for results
+            - collector-ollama-url: Ollama URL for collector agent
+            - insight-ollama-url: Ollama URL for insight agent
+            - chimera-*: Override options for first Chimera agent
+            - chimera2-*: Override options for second Chimera agent (hetero scenario)
+    """
     parser = argparse.ArgumentParser(description="Python multi-agent benchmark demo")
     parser.add_argument("--model", default="gemma3:latest", help="Model to use")
     parser.add_argument("--runs", type=int, default=3, help="Number of repetitions")
@@ -65,6 +79,20 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_options(prefix: str, args: argparse.Namespace) -> Dict[str, Any]:
+    """
+    Build a dictionary of Ollama options from command-line arguments.
+
+    Extracts options with the given prefix from args and filters out None values.
+    Used to construct Chimera configuration overrides.
+
+    Args:
+        prefix: Prefix to match argument names (e.g., "chimera_" or "chimera2_")
+        args: Parsed command-line arguments
+
+    Returns:
+        Dict[str, Any]: Dictionary of Ollama options with None values filtered out.
+            Keys include: num_gpu, num_ctx, temperature, top_p, top_k, repeat_penalty
+    """
     options = {
         "num_gpu": getattr(args, f"{prefix}num_gpu"),
         "num_ctx": getattr(args, f"{prefix}num_ctx"),
@@ -83,6 +111,24 @@ async def call_ollama(
     prompt: str,
     options: Dict[str, Any],
 ) -> Tuple[Dict[str, Any], str]:
+    """
+    Make an asynchronous call to the Ollama API to generate text.
+
+    Args:
+        client: HTTP client for making requests
+        base_url: Base URL of the Ollama service (e.g., "http://localhost:11434")
+        model: Model name to use for generation
+        prompt: Text prompt to send to the model
+        options: Dictionary of Ollama generation options (num_gpu, num_ctx, etc.)
+
+    Returns:
+        Tuple[Dict[str, Any], str]: A tuple containing:
+            - Full response dictionary from Ollama API (includes metrics)
+            - Generated text response string
+
+    Raises:
+        httpx.HTTPStatusError: If the API request fails
+    """
     payload = {
         "model": model,
         "prompt": prompt,
@@ -96,6 +142,25 @@ async def call_ollama(
 
 
 def extract_metrics(result: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract performance metrics from an Ollama API response.
+
+    Computes derived metrics including throughput and time-to-first-token (TTFT)
+    from raw Ollama response data.
+
+    Args:
+        result: Raw response dictionary from Ollama API containing:
+            - eval_count: Number of tokens generated
+            - eval_duration: Generation duration in nanoseconds
+            - prompt_eval_duration: Prompt processing duration in nanoseconds
+
+    Returns:
+        Dict[str, Any]: Dictionary containing extracted metrics:
+            - tokens_generated: Number of tokens generated
+            - throughput_tokens_per_sec: Tokens per second throughput
+            - ttft_ms: Time-to-first-token in milliseconds
+            - total_duration_ms: Total request duration in milliseconds
+    """
     eval_count = result.get("eval_count") or 0
     eval_dur_ns = result.get("eval_duration") or 0
     prompt_dur_ns = result.get("prompt_eval_duration") or 0
@@ -123,6 +188,35 @@ async def run_pair(
     chimera2_opts: Dict[str, Any],
     coordinator: ResourceCoordinator,
 ) -> Dict[str, Any]:
+    """
+    Execute a single concurrent pair of agents and collect performance metrics.
+
+    Runs two agents (collector and insight) concurrently using asyncio.gather,
+    then calculates concurrency metrics including speedup and efficiency.
+
+    Args:
+        client: HTTP client for making Ollama requests
+        scenario: Execution scenario ("baseline_vs_chimera", "chimera_hetero", "chimera_homo")
+        model: Model name to use for both agents
+        collector_url: Ollama base URL for the collector agent
+        insight_url: Ollama base URL for the insight agent
+        chimera_opts: Configuration options for the first Chimera agent
+        chimera2_opts: Configuration options for the second Chimera agent (hetero scenario)
+        coordinator: Resource coordinator for managing concurrent access
+
+    Returns:
+        Dict[str, Any]: Dictionary containing:
+            - run_number: Will be set by caller
+            - scenario: Execution scenario used
+            - collector: Results from collector agent (id, base_url, options, response, metrics)
+            - insight: Results from insight agent (id, base_url, options, response, metrics)
+            - concurrent_wall_time_ms: Wall-clock time for concurrent execution
+            - sequential_estimate_ms: Estimated time if run sequentially
+            - concurrency_speedup: Speedup factor (sequential / concurrent)
+            - efficiency_percent: Efficiency percentage (speedup / num_agents * 100)
+            - throughput_delta: Difference in throughput between agents
+            - ttft_delta_ms: Difference in TTFT between agents
+    """
     prompts = build_prompts()
 
     def options_for(agent_role: str) -> Dict[str, Any]:
@@ -135,6 +229,18 @@ async def run_pair(
         return {}
 
     async def run_agent(agent_id: str, base_url: str, prompt: str, opts: Dict[str, Any]):
+        """
+        Run a single agent with resource coordination.
+
+        Args:
+            agent_id: Identifier for the agent ("collector" or "insight")
+            base_url: Ollama base URL for this agent
+            prompt: Prompt to send to the agent
+            opts: Ollama configuration options
+
+        Returns:
+            Dict containing agent results with id, base_url, options, response, and metrics
+        """
         async with coordinator:
             start = time.perf_counter()
             result, response = await call_ollama(client, base_url, model, prompt, opts)
@@ -181,6 +287,12 @@ async def run_pair(
 
 
 async def main():
+    """
+    Main entry point for the multi-agent benchmark demo.
+
+    Orchestrates multiple benchmark runs, saves results to disk, and generates
+    summary reports. Creates output directories organized by model and scenario.
+    """
     args = parse_args()
     output_root = Path(args.output_dir) / args.model.replace(":", "_")
     scenario_suffix = args.scenario.replace("_", "-")
