@@ -115,6 +115,8 @@ async def instrumented_call_ollama(
     
     full_response = ""
     eval_count = 0
+    final_data: Dict[str, Any] = {}
+    parse_errors = 0
     start_time = time.perf_counter()
     first_token_time = None
     
@@ -141,11 +143,13 @@ async def instrumented_call_ollama(
                         
                     if "response" in data:
                         full_response += data["response"]
-                        eval_count += 1
+                        # Prefer server-provided eval_count when available; fall back to counting chunks
+                        eval_count = data.get("eval_count", eval_count + 1)
                     
                     if data.get("done"):
                         final_data = data
             except Exception as e:
+                parse_errors += 1
                 logger.error(f"Parse error: {e}")
                 continue
                 
@@ -159,14 +163,18 @@ async def instrumented_call_ollama(
     ttft = (first_token_time - start_time) * 1000 if first_token_time else 0
     
     # Reconstruct a "metrics" dict similar to non-streaming
+    tokens_generated = final_data.get("eval_count", eval_count)
+    eval_duration = final_data.get("eval_duration", 0)
+    prompt_eval_duration = final_data.get("prompt_eval_duration", 0)
     metrics = {
-        "tokens_generated": eval_count,
-        "throughput_tokens_per_sec": eval_count / total_time if total_time > 0 else 0,
+        "tokens_generated": tokens_generated,
+        "throughput_tokens_per_sec": tokens_generated / total_time if total_time > 0 else 0,
         "ttft_ms": ttft,
         "total_duration_ms": total_time * 1000,
-        "eval_count": eval_count, # for compatibility
-        "eval_duration": final_data.get("eval_duration", 0),
-        "prompt_eval_duration": final_data.get("prompt_eval_duration", 0),
+        "eval_count": tokens_generated, # for compatibility
+        "eval_duration": eval_duration,
+        "prompt_eval_duration": prompt_eval_duration,
+        "parse_errors": parse_errors,
     }
     
     return {"response": full_response, "metrics": metrics}

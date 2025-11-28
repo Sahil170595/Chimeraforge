@@ -1,0 +1,44 @@
+FROM data/models/gpt-oss-20b-derestricted-q4_k_m.gguf
+
+# Harmony chat template for gpt-oss-20b (derestricted) on Ollama.
+# Renders messages using the Harmony format the model was trained on.
+TEMPLATE """<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.
+Knowledge cutoff: 2024-06
+Current date: 2025-06-28
+
+Reasoning: high
+
+# Valid channels: analysis, commentary, final. Channel must be included for every message.
+Calls to these tools must go to the commentary channel: 'functions'.<|end|>
+{{- if .System }}
+
+<|start|>developer<|message|># Instructions
+
+{{ .System }}<|end|>
+{{- end }}
+{{- if not .Messages }}
+<|start|>user<|message|>{{ .Prompt }}<|end|>
+{{- end }}
+{{- range .Messages }}
+{{- if eq .Role "system" }}
+
+<|start|>system<|message|>{{ .Content }}<|end|>
+{{- else if eq .Role "developer" }}
+
+<|start|>developer<|message|>{{ .Content }}<|end|>
+{{- else if eq .Role "user" }}
+
+<|start|>user<|message|>{{ .Content }}<|end|>
+{{- else if eq .Role "assistant" }}
+
+<|start|>assistant<|channel|>final<|message|>{{ .Content }}<|end|>
+{{- end }}
+{{- end }}
+
+<|start|>assistant"""
+
+PARAMETER num_ctx 8192
+PARAMETER temperature 1
+PARAMETER top_p 1
+PARAMETER stop "<|return|>"
+PARAMETER stop "<|call|>"
