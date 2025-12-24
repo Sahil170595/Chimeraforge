@@ -1,0 +1,141 @@
+{
+  "collector": {
+    "config": {
+      "base_url": "http://localhost:11434",
+      "id": "chimera_a",
+      "label": "Chimera Agent A",
+      "model": "gemma3:latest",
+      "options": {
+        "num_ctx": 1024,
+        "num_gpu": 80,
+        "repeat_penalty": 1.100000023841858,
+        "temperature": 0.6000000238418579,
+        "top_k": 40,
+        "top_p": 0.8999999761581421
+      },
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+    },
+    "execution_time_s": 10.3107377,
+    "result": {
+      "agent_type": "Chimera Agent A",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 102.67753762048716,
+        "average_ttft_ms": 6753.4019,
+        "eval_duration_ms": 3554.8184,
+        "load_duration_ms": 203.0212,
+        "prompt_eval_duration_ms": 28.0356,
+        "stddev_throughput": 0.0,
+        "stddev_ttft": 0.0,
+        "total_duration_ms": 10310.737700000001,
+        "total_tokens_generated": 365
+      },
+      "configuration": {
+        "num_ctx": 1024,
+        "num_gpu": 80,
+        "repeat_penalty": 1.100000023841858,
+        "temperature": 0.6000000238418579,
+        "top_k": 40,
+        "top_p": 0.8999999761581421
+      },
+      "individual_runs": [
+        {
+          "eval_duration_ms": 3554.8184,
+          "load_duration_ms": 203.0212,
+          "prompt_eval_duration_ms": 28.0356,
+          "throughput_tokens_per_sec": 102.67753762048716,
+          "tokens_generated": 365,
+          "total_duration_ms": 10310.737700000001,
+          "ttft_ms": 6753.4019
+        }
+      ],
+      "model": "gemma3:latest",
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them.",
+      "runs": 1,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-13T00:43:36.542017100Z"
+    }
+  },
+  "insight": {
+    "config": {
+      "base_url": "http://localhost:11434",
+      "id": "chimera_b",
+      "label": "Chimera Agent B",
+      "model": "gemma3:latest",
+      "options": {
+        "num_ctx": 1024,
+        "num_gpu": 80,
+        "repeat_penalty": 1.100000023841858,
+        "temperature": 0.6000000238418579,
+        "top_k": 40,
+        "top_p": 0.8999999761581421
+      },
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+    },
+    "execution_time_s": 6.7255875,
+    "result": {
+      "agent_type": "Chimera Agent B",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 100.9408396234345,
+        "average_ttft_ms": 240.6717,
+        "eval_duration_ms": 6479.0426,
+        "load_duration_ms": 201.7015,
+        "prompt_eval_duration_ms": 25.6063,
+        "stddev_throughput": 0.0,
+        "stddev_ttft": 0.0,
+        "total_duration_ms": 6725.5875,
+        "total_tokens_generated": 654
+      },
+      "configuration": {
+        "num_ctx": 1024,
+        "num_gpu": 80,
+        "repeat_penalty": 1.100000023841858,
+        "temperature": 0.6000000238418579,
+        "top_k": 40,
+        "top_p": 0.8999999761581421
+      },
+      "individual_runs": [
+        {
+          "eval_duration_ms": 6479.0426,
+          "load_duration_ms": 201.7015,
+          "prompt_eval_duration_ms": 25.6063,
+          "throughput_tokens_per_sec": 100.9408396234345,
+          "tokens_generated": 654,
+          "total_duration_ms": 6725.5875,
+          "ttft_ms": 240.6717
+        }
+      ],
+      "model": "gemma3:latest",
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts.",
+      "runs": 1,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-13T00:43:32.957204300Z"
+    }
+  },
+  "run_number": 1,
+  "scenario": "chimera_homo",
+  "summary": {
+    "collector_throughput": 102.67753762048716,
+    "collector_ttft_ms": 6753.4019,
+    "concurrency_speedup": 1.6522690756308047,
+    "concurrent_wall_time_s": 10.3108661,
+    "efficiency_percent": 82.61345378154023,
+    "insight_throughput": 100.9408396234345,
+    "insight_ttft_ms": 240.6717,
+    "resource_contention_detected": false,
+    "run_number": 1,
+    "scenario": "chimera_homo",
+    "sequential_estimated_s": 17.0363252,
+    "throughput_delta": -1.7366979970526586,
+    "ttft_delta_ms": 6512.7302
+  }
+}

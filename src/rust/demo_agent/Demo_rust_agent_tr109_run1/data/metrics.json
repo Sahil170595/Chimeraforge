@@ -1,0 +1,92 @@
+{
+  "baseline": {
+    "agent_type": "Baseline",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 0.0,
+      "average_ttft_ms": 4573.0256,
+      "eval_duration_ms": 0.0,
+      "load_duration_ms": 0.0,
+      "prompt_eval_duration_ms": 0.0,
+      "stddev_throughput": 0.0,
+      "stddev_ttft": 0.0,
+      "total_duration_ms": 21139.2991,
+      "total_tokens_generated": 0
+    },
+    "configuration": {},
+    "individual_runs": [
+      {
+        "eval_duration_ms": 0.0,
+        "load_duration_ms": 0.0,
+        "prompt_eval_duration_ms": 0.0,
+        "throughput_tokens_per_sec": 0.0,
+        "tokens_generated": 0,
+        "total_duration_ms": 21139.2991,
+        "ttft_ms": 4573.0256
+      }
+    ],
+    "model": "gemma3:latest",
+    "runs": 1,
+    "system_info": {
+      "arch": "x86_64",
+      "hostname": "SahilKadadekar",
+      "os": "windows",
+      "rust_version": "1.90.0"
+    },
+    "timestamp": "2025-11-10T04:36:10.151388Z"
+  },
+  "benchmark_type": "rust_vs_python_agent",
+  "chimera": {
+    "agent_type": "Chimera",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 0.0,
+      "average_ttft_ms": 4038.7126000000003,
+      "eval_duration_ms": 0.0,
+      "load_duration_ms": 0.0,
+      "prompt_eval_duration_ms": 0.0,
+      "stddev_throughput": 0.0,
+      "stddev_ttft": 0.0,
+      "total_duration_ms": 19438.1669,
+      "total_tokens_generated": 0
+    },
+    "configuration": {
+      "num_ctx": 512,
+      "num_gpu": 60,
+      "repeat_penalty": 1.100000023841858,
+      "temperature": 0.800000011920929,
+      "top_k": 40,
+      "top_p": 0.8999999761581421
+    },
+    "individual_runs": [
+      {
+        "eval_duration_ms": 0.0,
+        "load_duration_ms": 0.0,
+        "prompt_eval_duration_ms": 0.0,
+        "throughput_tokens_per_sec": 0.0,
+        "tokens_generated": 0,
+        "total_duration_ms": 19438.1669,
+        "ttft_ms": 4038.7126000000003
+      }
+    ],
+    "model": "gemma3:latest",
+    "runs": 1,
+    "system_info": {
+      "arch": "x86_64",
+      "hostname": "SahilKadadekar",
+      "os": "windows",
+      "rust_version": "1.90.0"
+    },
+    "timestamp": "2025-11-10T04:36:29.589978700Z"
+  },
+  "delta": {
+    "baseline_throughput": 0.0,
+    "baseline_ttft_ms": 4573.0256,
+    "chimera_throughput": 0.0,
+    "chimera_ttft_ms": 4038.7126000000003,
+    "throughput_delta_absolute": 0.0,
+    "throughput_improvement_percent": 0.0,
+    "ttft_delta_absolute_ms": 534.3129999999996,
+    "ttft_reduction_percent": 11.684015064337267
+  },
+  "language": "rust",
+  "timestamp": "2025-11-10T04:36:29.596549Z"
+}

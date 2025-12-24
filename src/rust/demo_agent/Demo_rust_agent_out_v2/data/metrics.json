@@ -1,0 +1,36 @@
+{
+  "baseline": {
+    "agent_type": "baseline",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 30.32717854870106,
+      "average_ttft_ms": 6594.744699999999,
+      "total_duration_ms": 6594.744699999999,
+      "total_tokens_generated": 200
+    },
+    "configuration": {},
+    "model": "gemma3:latest"
+  },
+  "chimera": {
+    "agent_type": "chimera_optimized",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 35.5838457227401,
+      "average_ttft_ms": 6491.7098,
+      "total_duration_ms": 6491.7098,
+      "total_tokens_generated": 231
+    },
+    "configuration": {
+      "num_ctx": 2048,
+      "num_gpu": 120,
+      "temperature": 0.30000001192092896
+    },
+    "model": "gemma3:latest"
+  },
+  "delta": {
+    "baseline_throughput": 30.32717854870106,
+    "baseline_ttft_ms": 6594.744699999999,
+    "chimera_throughput": 35.5838457227401,
+    "chimera_ttft_ms": 6491.7098,
+    "throughput_improvement_percent": 17.333188992828973,
+    "ttft_reduction_percent": 1.5623789045237744
+  }
+}

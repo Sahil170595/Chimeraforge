@@ -1,0 +1,115 @@
+﻿{
+  "model": "gemma3:latest",
+  "runs_per_config": 5,
+  "results_dir": "Demo_rust_multiagent_phase1_dual_results",
+  "configs": [
+    {
+      "scenario": "baseline_vs_chimera",
+      "name": "gpu60_ctx512_temp0p8",
+      "baseline": {},
+      "chimera": {"gpu": 60, "ctx": 512, "temperature": 0.8}
+    },
+    {
+      "scenario": "baseline_vs_chimera",
+      "name": "gpu60_ctx1024_temp0p8",
+      "baseline": {},
+      "chimera": {"gpu": 60, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "baseline_vs_chimera",
+      "name": "gpu80_ctx512_temp0p8",
+      "baseline": {},
+      "chimera": {"gpu": 80, "ctx": 512, "temperature": 0.8}
+    },
+    {
+      "scenario": "baseline_vs_chimera",
+      "name": "gpu80_ctx1024_temp0p8",
+      "baseline": {},
+      "chimera": {"gpu": 80, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "baseline_vs_chimera",
+      "name": "gpu120_ctx512_temp0p8",
+      "baseline": {},
+      "chimera": {"gpu": 120, "ctx": 512, "temperature": 0.8}
+    },
+    {
+      "scenario": "baseline_vs_chimera",
+      "name": "gpu120_ctx1024_temp0p8",
+      "baseline": {},
+      "chimera": {"gpu": 120, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_hetero",
+      "name": "gpu60_ctx512_vs_gpu80_ctx1024",
+      "agent_a": {"gpu": 60, "ctx": 512, "temperature": 0.8},
+      "agent_b": {"gpu": 80, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_hetero",
+      "name": "gpu60_ctx1024_vs_gpu80_ctx2048",
+      "agent_a": {"gpu": 60, "ctx": 1024, "temperature": 0.8},
+      "agent_b": {"gpu": 80, "ctx": 2048, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_hetero",
+      "name": "gpu80_ctx512_vs_gpu100_ctx1024",
+      "agent_a": {"gpu": 80, "ctx": 512, "temperature": 0.8},
+      "agent_b": {"gpu": 100, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_hetero",
+      "name": "gpu80_ctx1024_vs_gpu100_ctx2048",
+      "agent_a": {"gpu": 80, "ctx": 1024, "temperature": 0.8},
+      "agent_b": {"gpu": 100, "ctx": 2048, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_hetero",
+      "name": "gpu120_ctx512_vs_gpu140_ctx1024",
+      "agent_a": {"gpu": 120, "ctx": 512, "temperature": 0.8},
+      "agent_b": {"gpu": 140, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_hetero",
+      "name": "gpu120_ctx1024_vs_gpu140_ctx2048",
+      "agent_a": {"gpu": 120, "ctx": 1024, "temperature": 0.8},
+      "agent_b": {"gpu": 140, "ctx": 2048, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_homo",
+      "name": "gpu60_ctx512",
+      "agent_a": {"gpu": 60, "ctx": 512, "temperature": 0.8},
+      "agent_b": {"gpu": 60, "ctx": 512, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_homo",
+      "name": "gpu60_ctx1024",
+      "agent_a": {"gpu": 60, "ctx": 1024, "temperature": 0.8},
+      "agent_b": {"gpu": 60, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_homo",
+      "name": "gpu80_ctx512",
+      "agent_a": {"gpu": 80, "ctx": 512, "temperature": 0.8},
+      "agent_b": {"gpu": 80, "ctx": 512, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_homo",
+      "name": "gpu80_ctx1024",
+      "agent_a": {"gpu": 80, "ctx": 1024, "temperature": 0.8},
+      "agent_b": {"gpu": 80, "ctx": 1024, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_homo",
+      "name": "gpu120_ctx512",
+      "agent_a": {"gpu": 120, "ctx": 512, "temperature": 0.8},
+      "agent_b": {"gpu": 120, "ctx": 512, "temperature": 0.8}
+    },
+    {
+      "scenario": "chimera_homo",
+      "name": "gpu120_ctx1024",
+      "agent_a": {"gpu": 120, "ctx": 1024, "temperature": 0.8},
+      "agent_b": {"gpu": 120, "ctx": 1024, "temperature": 0.8}
+    }
+  ]
+}

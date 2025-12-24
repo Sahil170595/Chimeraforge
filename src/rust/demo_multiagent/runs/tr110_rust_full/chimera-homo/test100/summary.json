@@ -1,0 +1,111 @@
+{
+  "agent_a": {
+    "base_url": "http://localhost:11434",
+    "id": "chimera_a",
+    "label": "Chimera Agent A",
+    "model": "gemma3:latest",
+    "options": {
+      "num_ctx": 512,
+      "num_gpu": 80,
+      "temperature": 0.6000000238418579
+    },
+    "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+  },
+  "agent_b": {
+    "base_url": "http://localhost:11435",
+    "id": "chimera_b",
+    "label": "Chimera Agent B",
+    "model": "gemma3:latest",
+    "options": {
+      "num_ctx": 512,
+      "num_gpu": 80,
+      "temperature": 0.6000000238418579
+    },
+    "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+  },
+  "aggregate": {
+    "average_concurrency_speedup": 1.8845863649105339,
+    "average_efficiency": 94.2293182455267,
+    "average_throughput_delta": 4.844963172761115,
+    "average_ttft_delta_ms": -28.96589000000008
+  },
+  "generated_at": "2025-11-14T22:56:25.232941300Z",
+  "runs": [
+    {
+      "collector_throughput": 41.22630619595996,
+      "collector_ttft_ms": 3513.89095,
+      "concurrency_speedup": 1.95696112652894,
+      "concurrent_wall_time_s": 60.0313668,
+      "efficiency_percent": 97.848056326447,
+      "insight_throughput": 44.84687766601907,
+      "insight_ttft_ms": 3566.9176500000003,
+      "resource_contention_detected": false,
+      "run_number": 1,
+      "scenario": "chimera_homo",
+      "sequential_estimated_s": 117.4790512,
+      "throughput_delta": 3.6205714700591116,
+      "ttft_delta_ms": -53.026700000000346
+    },
+    {
+      "collector_throughput": 41.30621211062014,
+      "collector_ttft_ms": 678.69955,
+      "concurrency_speedup": 1.5151503197982652,
+      "concurrent_wall_time_s": 109.1169772,
+      "efficiency_percent": 75.75751598991326,
+      "insight_throughput": 64.13195798976233,
+      "insight_ttft_ms": 564.3244,
+      "resource_contention_detected": false,
+      "run_number": 2,
+      "scenario": "chimera_homo",
+      "sequential_estimated_s": 165.3286229,
+      "throughput_delta": 22.82574587914219,
+      "ttft_delta_ms": 114.37515000000008
+    },
+    {
+      "collector_throughput": 42.32099493078354,
+      "collector_ttft_ms": 503.08709999999996,
+      "concurrency_speedup": 1.9778058697444523,
+      "concurrent_wall_time_s": 54.8639251,
+      "efficiency_percent": 98.8902934872226,
+      "insight_throughput": 41.18134240514083,
+      "insight_ttft_ms": 653.5794000000001,
+      "resource_contention_detected": false,
+      "run_number": 3,
+      "scenario": "chimera_homo",
+      "sequential_estimated_s": 108.5101931,
+      "throughput_delta": -1.1396525256427097,
+      "ttft_delta_ms": -150.4923000000001
+    },
+    {
+      "collector_throughput": 42.43186329675774,
+      "collector_ttft_ms": 672.05535,
+      "concurrency_speedup": 1.977643019489497,
+      "concurrent_wall_time_s": 58.353533,
+      "efficiency_percent": 98.88215097447485,
+      "insight_throughput": 40.85447463801211,
+      "insight_ttft_ms": 663.5840499999999,
+      "resource_contention_detected": false,
+      "run_number": 4,
+      "scenario": "chimera_homo",
+      "sequential_estimated_s": 115.4024572,
+      "throughput_delta": -1.5773886587456332,
+      "ttft_delta_ms": 8.471300000000042
+    },
+    {
+      "collector_throughput": 40.95969367772412,
+      "collector_ttft_ms": 596.5758999999999,
+      "concurrency_speedup": 1.9953714889915155,
+      "concurrent_wall_time_s": 59.0769471,
+      "efficiency_percent": 99.76857444957578,
+      "insight_throughput": 41.455233376716734,
+      "insight_ttft_ms": 660.7328,
+      "resource_contention_detected": false,
+      "run_number": 5,
+      "scenario": "chimera_homo",
+      "sequential_estimated_s": 117.88045589999999,
+      "throughput_delta": 0.49553969899261574,
+      "ttft_delta_ms": -64.15690000000006
+    }
+  ],
+  "scenario": "chimera_homo"
+}

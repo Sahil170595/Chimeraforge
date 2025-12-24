@@ -1,0 +1,16 @@
+{
+  "instances": [
+    {
+      "port": 11434,
+      "pid": 24296,
+      "models_dir": "C:\\Users\\sahil\\.banter_dual_ollama\\instance1",
+      "log_file": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\Demo_rust_multiagent\\pipelines\\dual_ollama_phase1\\ollama_11434.log"
+    },
+    {
+      "port": 11435,
+      "pid": 26604,
+      "models_dir": "C:\\Users\\sahil\\.banter_dual_ollama\\instance2",
+      "log_file": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\Demo_rust_multiagent\\pipelines\\dual_ollama_phase1\\ollama_11435.log"
+    }
+  ]
+}

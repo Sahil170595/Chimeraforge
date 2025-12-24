@@ -1,0 +1,164 @@
+{
+  "baseline": {
+    "agent_type": "Baseline",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 97.82257335013728,
+      "average_ttft_ms": 398.47785999999996,
+      "eval_duration_ms": 15167.406079999997,
+      "load_duration_ms": 196.88786,
+      "prompt_eval_duration_ms": 196.81704000000002,
+      "stddev_throughput": 0.45957114619470485,
+      "stddev_ttft": 38.09927346712797,
+      "total_duration_ms": 15582.8037,
+      "total_tokens_generated": 7419
+    },
+    "configuration": {},
+    "individual_runs": [
+      {
+        "eval_duration_ms": 15106.2959,
+        "load_duration_ms": 180.5323,
+        "prompt_eval_duration_ms": 270.2572,
+        "throughput_tokens_per_sec": 97.84000060531054,
+        "tokens_generated": 1478,
+        "total_duration_ms": 15583.0093,
+        "ttft_ms": 462.31460000000004
+      },
+      {
+        "eval_duration_ms": 15178.9326,
+        "load_duration_ms": 206.0154,
+        "prompt_eval_duration_ms": 188.2865,
+        "throughput_tokens_per_sec": 97.37180070224437,
+        "tokens_generated": 1478,
+        "total_duration_ms": 15599.5762,
+        "ttft_ms": 397.6982
+      },
+      {
+        "eval_duration_ms": 15662.6526,
+        "load_duration_ms": 185.5411,
+        "prompt_eval_duration_ms": 184.8093,
+        "throughput_tokens_per_sec": 98.57844896591781,
+        "tokens_generated": 1544,
+        "total_duration_ms": 16054.2074,
+        "ttft_ms": 374.1667
+      },
+      {
+        "eval_duration_ms": 15015.3936,
+        "load_duration_ms": 199.5566,
+        "prompt_eval_duration_ms": 162.3527,
+        "throughput_tokens_per_sec": 97.56653998067691,
+        "tokens_generated": 1465,
+        "total_duration_ms": 15390.8195,
+        "ttft_ms": 365.1617
+      },
+      {
+        "eval_duration_ms": 14873.7557,
+        "load_duration_ms": 212.7939,
+        "prompt_eval_duration_ms": 178.3795,
+        "throughput_tokens_per_sec": 97.75607649653678,
+        "tokens_generated": 1454,
+        "total_duration_ms": 15286.4061,
+        "ttft_ms": 393.04810000000003
+      }
+    ],
+    "model": "gemma3:latest",
+    "runs": 5,
+    "system_info": {
+      "arch": "x86_64",
+      "hostname": "SahilKadadekar",
+      "os": "windows",
+      "rust_version": "1.90.0"
+    },
+    "timestamp": "2025-11-10T04:42:34.196263800Z"
+  },
+  "benchmark_type": "rust_vs_python_agent",
+  "chimera": {
+    "agent_type": "Chimera",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 97.9599673077835,
+      "average_ttft_ms": 1102.38774,
+      "eval_duration_ms": 16110.543480000002,
+      "load_duration_ms": 910.62798,
+      "prompt_eval_duration_ms": 188.57862,
+      "stddev_throughput": 0.14495508026123166,
+      "stddev_ttft": 1665.9075275345635,
+      "total_duration_ms": 17239.4708,
+      "total_tokens_generated": 7891
+    },
+    "configuration": {
+      "num_ctx": 512,
+      "num_gpu": 60,
+      "repeat_penalty": 1.100000023841858,
+      "temperature": 0.800000011920929,
+      "top_k": 40,
+      "top_p": 0.8999999761581421
+    },
+    "individual_runs": [
+      {
+        "eval_duration_ms": 15818.0475,
+        "load_duration_ms": 3759.3657,
+        "prompt_eval_duration_ms": 318.45,
+        "throughput_tokens_per_sec": 97.7996810289007,
+        "tokens_generated": 1547,
+        "total_duration_ms": 19960.2342,
+        "ttft_ms": 4082.0955999999996
+      },
+      {
+        "eval_duration_ms": 16765.4787,
+        "load_duration_ms": 215.9059,
+        "prompt_eval_duration_ms": 154.5969,
+        "throughput_tokens_per_sec": 97.93934485151325,
+        "tokens_generated": 1642,
+        "total_duration_ms": 17160.6623,
+        "ttft_ms": 373.62469999999996
+      },
+      {
+        "eval_duration_ms": 15091.0377,
+        "load_duration_ms": 187.7353,
+        "prompt_eval_duration_ms": 141.017,
+        "throughput_tokens_per_sec": 98.1377178588587,
+        "tokens_generated": 1481,
+        "total_duration_ms": 15441.3909,
+        "ttft_ms": 330.49440000000004
+      },
+      {
+        "eval_duration_ms": 17333.4458,
+        "load_duration_ms": 203.4972,
+        "prompt_eval_duration_ms": 185.5462,
+        "throughput_tokens_per_sec": 98.0762867127089,
+        "tokens_generated": 1700,
+        "total_duration_ms": 17736.5422,
+        "ttft_ms": 391.3321
+      },
+      {
+        "eval_duration_ms": 15544.7077,
+        "load_duration_ms": 186.6358,
+        "prompt_eval_duration_ms": 143.283,
+        "throughput_tokens_per_sec": 97.84680608693594,
+        "tokens_generated": 1521,
+        "total_duration_ms": 15898.5244,
+        "ttft_ms": 334.3919
+      }
+    ],
+    "model": "gemma3:latest",
+    "runs": 5,
+    "system_info": {
+      "arch": "x86_64",
+      "hostname": "SahilKadadekar",
+      "os": "windows",
+      "rust_version": "1.90.0"
+    },
+    "timestamp": "2025-11-10T04:44:08.412531200Z"
+  },
+  "delta": {
+    "baseline_throughput": 97.82257335013728,
+    "baseline_ttft_ms": 398.47785999999996,
+    "chimera_throughput": 97.9599673077835,
+    "chimera_ttft_ms": 1102.38774,
+    "throughput_delta_absolute": 0.13739395764622486,
+    "throughput_improvement_percent": 0.14045220130782018,
+    "ttft_delta_absolute_ms": -703.9098799999999,
+    "ttft_reduction_percent": -176.64968387453195
+  },
+  "language": "rust",
+  "timestamp": "2025-11-10T04:44:08.415798300Z"
+}

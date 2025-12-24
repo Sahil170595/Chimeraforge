@@ -1,0 +1,92 @@
+{
+  "baseline": {
+    "agent_type": "Baseline",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 98.19272958881388,
+      "average_ttft_ms": 3927.0641,
+      "eval_duration_ms": 16253.7492,
+      "load_duration_ms": 3640.9209,
+      "prompt_eval_duration_ms": 272.6913,
+      "stddev_throughput": 0.0,
+      "stddev_ttft": 0.0,
+      "total_duration_ms": 20227.932200000003,
+      "total_tokens_generated": 1596
+    },
+    "configuration": {},
+    "individual_runs": [
+      {
+        "eval_duration_ms": 16253.7492,
+        "load_duration_ms": 3640.9209,
+        "prompt_eval_duration_ms": 272.6913,
+        "throughput_tokens_per_sec": 98.19272958881388,
+        "tokens_generated": 1596,
+        "total_duration_ms": 20227.932200000003,
+        "ttft_ms": 3927.0641
+      }
+    ],
+    "model": "gemma3:latest",
+    "runs": 1,
+    "system_info": {
+      "arch": "x86_64",
+      "hostname": "SahilKadadekar",
+      "os": "windows",
+      "rust_version": "1.90.0"
+    },
+    "timestamp": "2025-11-10T05:08:48.747704600Z"
+  },
+  "benchmark_type": "rust_vs_python_agent",
+  "chimera": {
+    "agent_type": "Chimera",
+    "aggregate_metrics": {
+      "average_tokens_per_second": 98.19779569235224,
+      "average_ttft_ms": 3829.1824,
+      "eval_duration_ms": 16232.5436,
+      "load_duration_ms": 3542.1271,
+      "prompt_eval_duration_ms": 284.3428,
+      "stddev_throughput": 0.0,
+      "stddev_ttft": 0.0,
+      "total_duration_ms": 20105.193199999998,
+      "total_tokens_generated": 1594
+    },
+    "configuration": {
+      "num_ctx": 512,
+      "num_gpu": 60,
+      "repeat_penalty": 1.100000023841858,
+      "temperature": 0.800000011920929,
+      "top_k": 40,
+      "top_p": 0.8999999761581421
+    },
+    "individual_runs": [
+      {
+        "eval_duration_ms": 16232.5436,
+        "load_duration_ms": 3542.1271,
+        "prompt_eval_duration_ms": 284.3428,
+        "throughput_tokens_per_sec": 98.19779569235224,
+        "tokens_generated": 1594,
+        "total_duration_ms": 20105.193199999998,
+        "ttft_ms": 3829.1824
+      }
+    ],
+    "model": "gemma3:latest",
+    "runs": 1,
+    "system_info": {
+      "arch": "x86_64",
+      "hostname": "SahilKadadekar",
+      "os": "windows",
+      "rust_version": "1.90.0"
+    },
+    "timestamp": "2025-11-10T05:09:08.853061800Z"
+  },
+  "delta": {
+    "baseline_throughput": 98.19272958881388,
+    "baseline_ttft_ms": 3927.0641,
+    "chimera_throughput": 98.19779569235224,
+    "chimera_ttft_ms": 3829.1824,
+    "throughput_delta_absolute": 0.005066103538368338,
+    "throughput_improvement_percent": 0.005159346888087191,
+    "ttft_delta_absolute_ms": 97.88169999999991,
+    "ttft_reduction_percent": 2.49249050964052
+  },
+  "language": "rust",
+  "timestamp": "2025-11-10T05:09:08.855683Z"
+}
