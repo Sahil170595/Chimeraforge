@@ -251,7 +251,7 @@ def parse_args():
     parser.add_argument("--model", default="gemma3:latest")
     parser.add_argument("--runs", type=int, default=2)
     parser.add_argument("--scenario", default="chimera_homo")
-    parser.add_argument("--output-dir", default="experiments/TR117/results/phase1")
+    parser.add_argument("--output-dir", default="experiments/TR117_multiagent/results/phase1")
     parser.add_argument("--collector-ollama-url", default="http://localhost:11434")
     parser.add_argument("--insight-ollama-url", default="http://localhost:11435")
     
