@@ -219,8 +219,6 @@ temp/
 *.gguf
 *.bin
 *.safetensors
-!data/models/*.gguf
-!data/models/*.bin
 
 # Data directories - KEEP project artifacts
 # data/**/*.json

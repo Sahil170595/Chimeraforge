@@ -1,0 +1,36 @@
+# Chimera Agent Report
+
+**Model:** gemma3:latest  
+**Runs:** 1  
+**Timestamp:** 2025-11-10 04:20:10 UTC  
+**Language:** Rust  
+**System:** windows (x86_64)
+
+## Configuration
+
+num_gpu=80, num_ctx=512, temp=default, top_p=default, top_k=default, repeat_penalty=default
+
+## Aggregate Metrics
+
+| Metric | Value |
+|--------|-------|
+| Average Throughput | 0.00 ± 0.00 tok/s |
+| Average TTFT | 5312.16 ± 0.00 ms |
+| Total Tokens Generated | 0 |
+| Average Total Duration | 21416.99 ms |
+| Average Prompt Eval Duration | 0.00 ms |
+| Average Eval Duration | 0.00 ms |
+| Average Load Duration | 0.00 ms |
+
+## Individual Run Results
+
+| Run | TTFT (ms) | Throughput (tok/s) | Tokens | Duration (ms) |
+|-----|-----------|-------------------|--------|---------------|
+| 1 | 5312.16 | 0.00 | 0 | 21416.99 |
+
+
+## Statistical Summary
+
+- **Throughput CV**: NaN%
+- **TTFT CV**: 0.0%
+- **Runs**: 1

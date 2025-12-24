@@ -1,0 +1,2 @@
+{ "export_timestamp": 1759253524.486649, "export_datetime": "2025-09-30T13:32:04.486649", "metrics_count": 1, "metrics": [ { "timestamp": 1759253523.2013364, "datetime": "2025-09-30T13:32:03.201336", "system": { "timestamp": 1759253523.2013364, "cpu_percent": 9.2, "memory_percent": 78.2, "memory_used_gb": 12.220420837402344, "memory_total_gb": 15.627552032470703, "disk_usage_percent": 53.9, "network_sent_mb": 26.39976692199707, "network_recv_mb": 1178.3997030258179 }, "gpu": [], "ollama": { "timestamp": 1759253523.9854765, "ollama_processes": [], "process_count": 0 } } ]
+}

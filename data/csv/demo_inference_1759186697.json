@@ -1,0 +1,2 @@
+{ "benchmark_name": "demo_inference", "timestamp": 1759186697, "timing": { "samples": 10, "p50_ms": 0.07344999721681233, "p95_ms": 0.07569999797851779, "p99_ms": 0.07569999797851779, "mean_ms": 0.07214999932330102, "stdev_ms": 0.003118412840871864 }, "environment": { "python_version": "3.13.1", "os": "Windows", "os_version": "10.0.26100", "cuda_available": true, "torch_version": "2.8.0.dev20250327+cu128", "torch_cuda_version": "12.8", "gpu_name": "NVIDIA GeForce RTX 4080 Laptop GPU", "gpu_count": 1, "nvidia_driver": "581.29" }
+}

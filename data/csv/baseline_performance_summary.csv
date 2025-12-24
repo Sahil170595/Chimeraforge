@@ -1,0 +1,6 @@
+Test Name,Context,Tone,Generation Time (ms),Tokens,Tokens per Second,Success
+Player Died (Encouraging),player_died,encouraging,3089.02,44,14.24,TRUE
+Boss Defeated (Celebratory),boss_defeated,celebratory,3234.48,44,13.60,TRUE
+Rare Item Drop (Excited),rare_item_drop,excited,2797.72,40,14.30,TRUE
+Level Up (Motivational),level_up,motivational,2527.22,35,13.85,TRUE
+PVP Victory (Celebratory),pvp_victory,celebratory,4369.26,58,13.27,TRUE
