@@ -1,0 +1,55 @@
+{
+  "model": "gemma3:1b-it-qat",
+  "results": [
+    {
+      "prompt": "banter prompt: Player failed a mission but needs encouragement.",
+      "ttft_s": 2.3189992000000004,
+      "tokens_s": 181.96533720183703,
+      "load_s": 2.0743547,
+      "prompt_eval_s": 0.2446445,
+      "eval_s": 2.9401204,
+      "eval_count": 535,
+      "response_chars": 2037
+    },
+    {
+      "prompt": "Give a battle quote for a co-op shooter win.",
+      "ttft_s": 0.1258889,
+      "tokens_s": 182.6378183544046,
+      "load_s": 0.1020623,
+      "prompt_eval_s": 0.0238266,
+      "eval_s": 2.4419915,
+      "eval_count": 446,
+      "response_chars": 1664
+    },
+    {
+      "prompt": "Prompt for rare loot find celebration banter.",
+      "ttft_s": 0.1380218,
+      "tokens_s": 184.2363135373321,
+      "load_s": 0.0805535,
+      "prompt_eval_s": 0.0574683,
+      "eval_s": 3.3218207,
+      "eval_count": 612,
+      "response_chars": 2216
+    },
+    {
+      "prompt": "Craft a witty remark after a close racing finish.",
+      "ttft_s": 0.0889836,
+      "tokens_s": 182.66757650517033,
+      "load_s": 0.071002,
+      "prompt_eval_s": 0.0179816,
+      "eval_s": 1.428825,
+      "eval_count": 261,
+      "response_chars": 908
+    },
+    {
+      "prompt": "Motivate a teammate before a final boss fight.",
+      "ttft_s": 0.07032719999999999,
+      "tokens_s": 182.8489434688796,
+      "load_s": 0.0549755,
+      "prompt_eval_s": 0.0153517,
+      "eval_s": 4.2439403,
+      "eval_count": 776,
+      "response_chars": 2821
+    }
+  ]
+}

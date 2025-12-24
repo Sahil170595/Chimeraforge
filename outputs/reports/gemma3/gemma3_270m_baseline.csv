@@ -1,0 +1,6 @@
+prompt,ttft_s,tokens_s,load_s,prompt_eval_s,eval_s,eval_count,response_chars,error
+banter prompt: Player failed a mission but needs encouragement.,7.8366299,238.23929187638413,0.948917,6.8877129,1.5698502,374,1742,
+Give a battle quote for a co-op shooter win.,0.0631949,289.3668737909358,0.0506345,0.0125604,0.1174979,34,116,
+Prompt for rare loot find celebration banter.,0.0873913,294.9590366184081,0.0521152,0.0352761,1.8511045,546,2157,
+Craft a witty remark after a close racing finish.,0.0620672,299.1941610721553,0.049944,0.0121232,0.3576273,107,378,
+Motivate a teammate before a final boss fight.,0.0550553,296.03138763674247,0.0451143,0.009941,2.3105658,684,3230,

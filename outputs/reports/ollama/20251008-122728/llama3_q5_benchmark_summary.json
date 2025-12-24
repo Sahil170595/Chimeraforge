@@ -1,0 +1,25 @@
+{
+  "generated_at": "2025-10-08T16:27:28.938709+00:00",
+  "prompt_count": 5,
+  "prompts": [
+    "banter prompt: Player failed a mission but needs encouragement.",
+    "Give a battle quote for a co-op shooter win.",
+    "Prompt for rare loot find celebration banter.",
+    "Craft a witty remark after a close racing finish.",
+    "Motivate a teammate before a final boss fight."
+  ],
+  "models": [
+    {
+      "model": "llama3.1:8b-instruct-q5_K_M",
+      "prompt_count": 5,
+      "completed": 0,
+      "options": {
+        "temperature": 0.3,
+        "top_p": 0.9
+      },
+      "mean_ttft_s": null,
+      "mean_tokens_s": null
+    }
+  ],
+  "ollama_host": "http://0.0.0.0:11434"
+}

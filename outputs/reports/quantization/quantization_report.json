@@ -1,0 +1,2 @@
+{ "baseline": { "accuracy": 0.75, "loss": 0.6084538698196411, "model_size_bytes": 2781 }, "qat": { "accuracy": 0.375, "loss": 1.0465490818023682, "model_size_bytes": 3789 }, "int8": { "loss": 0.6080140769481659, "accuracy": 0.75, "model_size_bytes": 3029 }, "fp8": { "loss": 0.6084538698196411, "accuracy": 0.75, "model_size_bytes": 2781 }
+}

@@ -1,0 +1,6 @@
+timestamp,model,prompt_index,prompt_text,ttft_s,tokens_s,load_s,prompt_eval_s,eval_s,prompt_eval_count,eval_count,response_chars,error,options
+2025-10-08T16:29:11.043983+00:00,gemma3:latest,1,banter prompt: Player failed a mission but needs encouragement.,29.987070,35.98,3.666465,26.320605,21.147718,21,761,3087,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:11.043983+00:00,gemma3:latest,2,Give a battle quote for a co-op shooter win.,0.121263,102.76,0.103993,0.017270,2.977742,21,306,979,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:11.043983+00:00,gemma3:latest,3,Prompt for rare loot find celebration banter.,0.138286,101.52,0.116591,0.021695,7.131285,17,724,2841,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:11.043983+00:00,gemma3:latest,4,Craft a witty remark after a close racing finish.,0.124909,102.76,0.107119,0.017790,2.997369,19,308,1090,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:11.043983+00:00,gemma3:latest,5,Motivate a teammate before a final boss fight.,0.127544,101.50,0.110269,0.017276,6.768696,19,687,2609,,"{""temperature"":0.3,""top_p"":0.9}"

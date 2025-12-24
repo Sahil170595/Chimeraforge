@@ -1,0 +1,6 @@
+timestamp,model,prompt_index,prompt_text,ttft_s,tokens_s,load_s,prompt_eval_s,eval_s,prompt_eval_count,eval_count,response_chars,error,options
+2025-10-08T16:29:55.589333+00:00,llama3.1:8b-instruct-q4_0,1,banter prompt: Player failed a mission but needs encouragement.,13.037231,78.74,5.040849,7.996382,4.495993,22,354,1335,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:55.589333+00:00,llama3.1:8b-instruct-q4_0,2,Give a battle quote for a co-op shooter win.,0.089279,79.99,0.053927,0.035353,0.312549,21,25,102,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:55.589333+00:00,llama3.1:8b-instruct-q4_0,3,Prompt for rare loot find celebration banter.,0.052959,79.26,0.046571,0.006387,3.621221,19,287,1054,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:55.589333+00:00,llama3.1:8b-instruct-q4_0,4,Craft a witty remark after a close racing finish.,0.052714,79.63,0.046311,0.006404,2.549310,20,203,824,,"{""temperature"":0.3,""top_p"":0.9}"
+2025-10-08T16:29:55.589333+00:00,llama3.1:8b-instruct-q4_0,5,Motivate a teammate before a final boss fight.,0.051085,78.73,0.045341,0.005744,3.861317,20,304,1302,,"{""temperature"":0.3,""top_p"":0.9}"
