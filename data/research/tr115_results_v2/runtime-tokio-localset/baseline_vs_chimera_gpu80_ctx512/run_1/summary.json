@@ -1,0 +1,47 @@
+{
+  "agent_a": {
+    "base_url": "http://localhost:11434",
+    "id": "collector",
+    "label": "Baseline Collector",
+    "model": "gemma3:latest",
+    "options": {},
+    "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+  },
+  "agent_b": {
+    "base_url": "http://localhost:11435",
+    "id": "insight",
+    "label": "Chimera Insight",
+    "model": "gemma3:latest",
+    "options": {
+      "num_ctx": 512,
+      "num_gpu": 80,
+      "temperature": 1.0
+    },
+    "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+  },
+  "aggregate": {
+    "average_concurrency_speedup": 1.9467130733883657,
+    "average_efficiency": 97.33565366941829,
+    "average_throughput_delta": -4.1060790172574,
+    "average_ttft_delta_ms": 295.63544999999976
+  },
+  "generated_at": "2025-11-15T19:43:50.725939800Z",
+  "runs": [
+    {
+      "collector_throughput": 45.032100411237934,
+      "collector_ttft_ms": 4430.4234,
+      "concurrency_speedup": 1.9467130733883657,
+      "concurrent_wall_time_s": 62.937578,
+      "efficiency_percent": 97.33565366941829,
+      "insight_throughput": 40.926021393980534,
+      "insight_ttft_ms": 4134.78795,
+      "resource_contention_detected": false,
+      "run_number": 1,
+      "scenario": "baseline_vs_chimera",
+      "sequential_estimated_s": 122.52140589999999,
+      "throughput_delta": -4.1060790172574,
+      "ttft_delta_ms": 295.63544999999976
+    }
+  ],
+  "scenario": "baseline_vs_chimera"
+}
