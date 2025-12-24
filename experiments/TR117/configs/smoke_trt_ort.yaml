@@ -1,0 +1,41 @@
+# TR117 Smoke Matrix (ORT/TRT)
+# Purpose: fast validation that ONNXRuntime + TensorRT runs are non-degraded end-to-end.
+
+repetitions: 1
+
+prompt_sets:
+  short:
+    - "Summarize RLHF in one sentence."
+
+scenarios:
+  - name: single_short
+    prompt_set: short
+    stream: false
+    mode: single
+
+models:
+  - name: models/tiny-gpt2
+    description: "124M params - local HF model"
+    params_millions: 124
+
+backends:
+  - transformers-gpu-compile
+  - onnxruntime
+  - tensorrt
+
+quantization:
+  modes:
+    - fp16
+
+baseline_backend: transformers-gpu-compile
+accuracy_threshold: 0.70
+
+# Resource monitoring off for smoke.
+enable_resource_monitoring: false
+
+# Reproducibility (kept for parity with other configs).
+seed: 42
+temperature: 0.7
+top_p: 0.9
+max_tokens: 32
+
