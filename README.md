@@ -3,7 +3,7 @@
 **Benchmarking hub for answering one question:** *How do we ship the fastest, most reliable LLM agents?*
 
 
-This repository contains everything behind Technical Reports TR108 through TR115 — source code, benchmark harnesses, datasets, logs, and publish-ready technical reports. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
+This repository contains everything behind Technical Reports TR108 through TR123 — source code, benchmark harnesses, datasets, logs, and publish-ready technical reports. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
 
 ---
 
@@ -20,7 +20,7 @@ When building AI agents that use Large Language Models (LLMs), you face a fundam
 
 **Chimeraforge answers this question with data, not opinions.**
 
-Through **840+ benchmark runs** across Technical Reports TR108–TR115 — plus **300+ additional runs** in the Gemma3 and Ollama baseline reports — we've systematically compared Python and Rust implementations of LLM agents. We've tested single-agent performance, multi-agent concurrency, optimization strategies, and runtime choices. Every finding is reproducible, every claim is defensible, and every number comes from real benchmarks on real hardware.
+Through **2000+ benchmark runs** across Technical Reports TR108–TR123 — including single-agent performance, multi-agent concurrency, optimization strategies, runtime choices, backend comparisons, cost analysis, and scaling studies — we've systematically compared Python and Rust implementations of LLM agents. We've tested inference backends (ONNX Runtime, TensorRT), quantified cost/energy economics, and root-caused performance anomalies. Every finding is reproducible, every claim is defensible, and every number comes from real benchmarks on real hardware.
 
 ---
 
@@ -66,7 +66,7 @@ Through **840+ benchmark runs** across Technical Reports TR108–TR115 — plus 
 
 ## Quick Takeaways: What We Discovered
 
-All findings below are verified across 840+ benchmark runs documented in Technical Reports TR108 through TR115 (with another 300+ runs in the Gemma3/Ollama baseline studies). Every number is reproducible and traceable to raw data.
+All findings below are verified across 2000+ benchmark runs documented in Technical Reports TR108 through TR123. Every number is reproducible and traceable to raw data.
 
 ### Single-Agent Performance: Rust vs Python
 
@@ -145,11 +145,41 @@ Rust supports multiple async runtimes (Tokio, async-std, smol). **Which one shou
 3. **Qwen Issues:** Throughput imbalance (+12 tok/s delta) hurts efficiency in both languages.
 4. **Python Ceiling:** Python never exceeds 86% efficiency, regardless of model.
 
+### Backend & Infrastructure Studies (TR117-TR121)
+
+**Inference Backend Performance (TR117):**
+- **Best Mean Latency:** GPU-compile (389ms) - but reveals "compile paradox" (wins mean, loses median)
+- **Best Median Latency:** Plain GPU (323ms) - more consistent
+- **Python Efficiency Ceiling:** 86% maximum due to event loop lag (16ms spikes)
+- **Scale:** 3,017 inference runs across multiple backends
+
+**Specialized Runtime Performance (TR118_v2.2):**
+- **Best Prefill:** TensorRT-fp16 (2.48ms, -87% vs baseline)
+- **Best Generate:** ONNX Runtime-CPU (43.3ms, -73% vs baseline)
+- **Degraded Rate:** 25% of runs with explicit reasons documented
+- **Key Insight:** Specialized runtimes offer substantial gains but require careful optimization
+
+**Cost & Energy Economics (TR119):**
+- **Best Cost Efficiency:** onnxruntime-gpu ($0.1279/1M tokens on-demand)
+- **Spot Pricing:** 69.8% savings vs on-demand
+- **Energy Efficiency:** 503M tokens/kWh
+- **Carbon Impact:** ~1.0 gCO2e per 1M tokens
+
+**Root Cause Analysis (TR120):**
+- **Compile Paradox Explained:** TR117 compile label was misattributed; shape stability is the critical factor
+- **Key Insight:** Shape stability matters more than compilation for consistent performance
+- **Production Impact:** Padding/bucketing strategies can collapse compiled tail to sub-millisecond
+
+**Model Scaling (TR121v1):**
+- **Scale Range:** 5M to 20B parameters
+- **Pipeline Established:** Consistent phase definitions (prefill vs decode)
+- **Two-Family Study:** HuggingFace local models (5M-124M) + Ollama models (270M-20B)
+
 ---
 
-## Research Journey: The 8 Technical Reports
+## Research Journey: Technical Reports TR108-TR123
 
-Our research progressed systematically, with each report building on previous findings and answering specific questions.
+Our research progressed systematically, with each report building on previous findings and answering specific questions. We've conducted **2000+ benchmark runs** across **16 technical reports** (TR108-TR123, with TR122 and TR123 planned), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, and scaling studies.
 
 ### TR108: Single-Inference Optimization
 **Question:** What's the best configuration for a single LLM request?  
@@ -206,6 +236,48 @@ Our research progressed systematically, with each report building on previous fi
 **Why It Matters:** Provides production guidance. Peak performance is similar across runtimes, but consistency varies dramatically.  
 **Scale:** 150 benchmark runs, 5 runtimes, 6 configurations each  
 **Key Insight:** For production, choose based on consistency, not peak performance. Tokio-default is the most reliable.
+
+### TR116: Cross-Model Multi-Agent Benchmarks
+**Question:** Does model choice (Gemma, Llama, Qwen) impact multi-agent coordination efficiency?  
+**Answer:** Yes! Gemma 3 achieves 99.2% efficiency in Rust (best scaling), while Python never exceeds 86% regardless of model.  
+**Why It Matters:** Model choice affects scaling characteristics. Rust's advantages hold across all models, but some models scale better than others.  
+**Scale:** 60+ multi-agent runs across 3 models  
+**Key Insight:** Rust + Gemma 3 is the optimal combination for high-concurrency agent swarms.
+
+### TR117: Cross-Backend Inference Benchmark & Multi-Agent Root Cause
+**Question:** Which inference backend is fastest, and why does Python have an 86% efficiency ceiling?  
+**Answer:** GPU-compile wins on mean latency (389ms), but plain GPU wins on median (323ms) - revealing the "compile paradox". Python's 86% ceiling is caused by event loop lag (16ms spikes).  
+**Why It Matters:** Backend choice matters for latency, and Python's structural limitations prevent >86% efficiency in multi-agent scenarios.  
+**Scale:** 3,017 inference runs + multi-agent root cause analysis  
+**Key Insight:** Transformers-gpu-compile for best mean latency, but Python's event loop is the bottleneck preventing higher efficiency.
+
+### TR118_v2.2: ONNX Runtime + TensorRT Deep Dive
+**Question:** Can specialized runtimes (ONNX, TensorRT) beat PyTorch for inference?  
+**Answer:** TensorRT-fp16 achieves best prefill latency (2.48ms, -87% vs baseline), but requires careful optimization.  
+**Why It Matters:** Specialized runtimes can provide significant latency improvements for production workloads.  
+**Scale:** Comprehensive ONNX/TensorRT optimization study  
+**Key Insight:** TensorRT offers substantial gains but requires infrastructure investment.
+
+### TR119: Cost & Energy Analysis
+**Question:** What are the cost and energy implications of different backends?  
+**Answer:** onnxruntime-gpu provides best cost efficiency ($0.1279/1M tokens on-demand).  
+**Why It Matters:** Cost and energy efficiency are critical for production deployment at scale.  
+**Scale:** Comprehensive cost/energy economics analysis  
+**Key Insight:** Backend choice significantly impacts operational costs.
+
+### TR120: The "Compile Paradox" Root-Cause Audit
+**Question:** Why does GPU-compile win on mean but lose on median?  
+**Answer:** TR117 compile label was misattributed; shape stability is the critical factor, not compilation itself.  
+**Why It Matters:** Understanding the true cause of performance differences enables better optimization strategies.  
+**Scale:** Root-cause analysis of compile paradox  
+**Key Insight:** Shape stability matters more than compilation for consistent performance.
+
+### TR121v1: Model Scaling Study
+**Question:** How does performance scale from 5M to 20B parameters?  
+**Answer:** Scaling pipeline established, demonstrating performance characteristics across model sizes.  
+**Why It Matters:** Understanding scaling behavior is essential for choosing appropriate model sizes.  
+**Scale:** Model scaling study from 5M to 20B parameters  
+**Key Insight:** Performance characteristics vary significantly with model size.
 
 ---
 
@@ -304,7 +376,7 @@ Our research progressed systematically, with each report building on previous fi
 - Full reproducibility: code, data, and methodology all available
 - Statistical rigor: confidence intervals, variance measures, multiple runs
 - Process isolation: cold-start testing to avoid warm-cache bias
-- Comprehensive coverage: 1,100+ runs across multiple dimensions (TR108–TR115 + Gemma3/Ollama baselines)
+- Comprehensive coverage: 2000+ benchmark runs across Technical Reports TR108–TR123 (including TR117 with 3,017 inference runs)
 
 ---
 
@@ -321,6 +393,12 @@ Our research progressed systematically, with each report building on previous fi
 | **TR114_v2** | Does dual Ollama unblock Rust? | 98.281% mean, 99.396% peak, 0.74% contention. | Validates Rust can exceed Python in multi-agent scenarios with proper architecture. |
 | **TR115_v2** | Which Rust runtime should we ship? | Tokio-default: 99.89% peak / 98.72% mean / 1.21 pp sigma. | Production guidance. Consistency matters more than peak performance. |
 | **TR116** | Does model choice matter for multi-agent? | Rust + Gemma 3 is king (99.2%). Qwen shows imbalance. | Proves Rust's advantage holds across models (+12-17pp efficiency). |
+| **TR117** | Which inference backend is fastest? | GPU-compile wins mean (389ms), plain GPU wins median (323ms) - "compile paradox". Python 86% ceiling from event loop lag. | Backend choice matters for latency. Python's structural limitations prevent >86% efficiency. |
+| **TR117_multi_agent** | Why does Python have an 86% efficiency ceiling? | Event loop saturation: 5.33ms mean lag, 15.22ms max. CPU-bound JSON parsing monopolizes single-threaded loop. | Python limitation is structural. Rust's multi-threaded runtime eliminates this bottleneck. |
+| **TR118_v2.2** | Can specialized runtimes beat PyTorch? | TensorRT-fp16: 2.48ms prefill (-87% vs baseline). ONNX Runtime-CPU: 43.3ms generate (-73% vs baseline). | Specialized runtimes provide significant latency improvements but require infrastructure investment. |
+| **TR119** | What are the cost/energy implications? | onnxruntime-gpu: $0.1279/1M tokens (on-demand), best cost efficiency. | Backend choice significantly impacts operational costs and energy consumption. |
+| **TR120** | Why does GPU-compile win mean but lose median? | TR117 compile label misattributed; shape stability is critical, not compilation. | Understanding true cause enables better optimization. Shape stability matters more than compilation. |
+| **TR121v1** | How does performance scale with model size? | Scaling pipeline established from 5M to 20B parameters. | Understanding scaling behavior essential for choosing appropriate model sizes. |
 
 **Full report links:** See `docs/technical_reports.md` for complete index, or browse `outputs/publish_ready/reports/` for all technical reports.
 
@@ -393,7 +471,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`data/csv/`** | CSV exports of benchmark data | When you want to analyze data in Excel, Python, or other tools |
 | **`data/research/`** | Research data from experiments | When you want to access experiment-specific datasets |
 | **`outputs/reports/`** | Intermediate technical reports | When you want to see work-in-progress analysis |
-| **`outputs/publish_ready/reports/`** | Final technical reports (TR108-TR115) | **Start here** for comprehensive findings and analysis |
+| **`outputs/publish_ready/reports/`** | Final technical reports (TR108-TR123) | **Start here** for comprehensive findings and analysis |
 | **`outputs/publish_ready/notebooks/`** | Jupyter notebooks for analysis | When you want to reproduce analysis or create visualizations |
 | **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
@@ -468,7 +546,7 @@ All reports include:
 ### For Understanding the Research
 
 - **`docs/technical_reports.md`** – Complete index of all technical reports
-- **`outputs/publish_ready/reports/`** – All 8 technical reports with full analysis
+- **`outputs/publish_ready/reports/`** – All technical reports (TR108-TR123) with full analysis
 - **`outputs/publish_ready/notebooks/`** – Jupyter notebooks for data analysis
 - **`resources/patches/`** – Narrative changelog of major updates and discoveries
 
@@ -485,9 +563,9 @@ All reports include:
 
 ### Total Research Investment
 
-- **1,100+ benchmark runs** across all published studies (TR108–TR115 plus Gemma3/Ollama baselines)
-- **Up to 30 configurations per major report** (see “Research Journey” above for exact counts)
-- **8 comprehensive technical reports** documenting findings
+- **2000+ benchmark runs** across all published studies (TR108–TR123, including TR117 with 3,017 inference runs)
+- **Up to 30 configurations per major report** (see "Research Journey" above for exact counts)
+- **16+ comprehensive technical reports** documenting findings (TR108-TR123, with TR122 and TR123 planned)
 - **Multiple hardware/software combinations** validated
 - **Statistical analysis** with confidence intervals on all key metrics
 

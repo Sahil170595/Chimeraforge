@@ -15,6 +15,8 @@ Complete index of all technical reports documenting LLM performance optimization
 | **TR114_v2** | Rust Multi-Agent (Dual Ollama) | True concurrency validation | 98.281% mean, 99.396% peak, exceeds Python |
 | **TR115_v2** | Rust Runtime Optimization | Runtime scheduler investigation | Tokio-default: 98.72% mean, 1.21pp  (recommended) |
 | **TR116** | Cross-Model Benchmarks | Multi-model scaling analysis | Gemma 3 (99.2%) > Llama 3.1 (98.5%) > Qwen 2.5 (90.0%) |
+| **TR117** | Cross-Backend Inference Benchmark | Backend matrix + degradation | Compile-paradox discovery (inference track) |
+| **TR117 (Multi-Agent)** | Root Cause Analysis of Efficiency Anomalies | Event loop + streaming bottlenecks | Python ceiling explained (agent track) |
 
 ## Detailed Reports
 
@@ -289,6 +291,223 @@ Complete index of all technical reports documenting LLM performance optimization
 
 ---
 
+### TR117_multi_agent: Multi-Agent Root Cause Analysis
+
+**File**: [Technical_Report_117_multi_agent.md](../outputs/publish_ready/reports/Technical_Report_117_multi_agent.md)
+
+**Objective**: Definitive root cause analysis of Python Ceiling, Qwen Mystery, and Ranking Flip through invasive instrumentation.
+
+**Key Findings**:
+- **Python Event Loop Saturation**: Mean lag 5.33ms, p99 12.13ms, max 15.22ms (Gemma, default buffer).
+- **CPU-Bound Serialization**: Each chunk triggers JSON parsing, monopolizing single-threaded event loop.
+- **Efficiency Correlation**: Loop lag + chunk gaps = 40ms cycle time → caps efficiency at ~91%.
+- **Qwen Mystery**: BPE tokenizer overhead + chunk amplification explains lower efficiency.
+- **Ranking Flip**: Slower models provide "breathing room" for event loop, improving efficiency.
+
+**Methodology**:
+- Phase 1: Python MRI (Event Loop Instrumentation) - invasive loop lag measurement.
+- Phase 2: Hardware Forensics (GPU/PCIe Profiling) - hardware bottleneck analysis.
+- Phase 3: Flow Dynamics (Artificial Throttling) - controlled rate limiting experiments.
+
+**Production Verdict**:
+- **For >100 tok/s multi-agent systems, Rust is mandatory**.
+- Python mitigation: Token bucket throttling, batched HTTP processing, uvloop.
+- **Rust immunity**: Tokio's multi-threaded work-stealing scheduler eliminates loop lag.
+
+---
+
+### TR118_v2.2: ONNX Runtime + TensorRT Deep Dive
+
+**File**: [Technical_Report_118_v2.2.md](../outputs/publish_ready/reports/Technical_Report_118_v2.2.md)
+
+**Objective**: Make ONNX export + TRT engine builds real and measurable with explicit degraded reasons and accuracy gates.
+
+**Key Findings**:
+- **Best Prefill**: TensorRT-fp16 (2.48ms, -87.08% vs baseline transformers-gpu-compile).
+- **Best Generate**: ONNX Runtime-CPU (43.3ms, -73.34% vs baseline).
+- **Degraded Rate**: 25.0% (90/360 runs) with explicit reasons.
+- **Accuracy Gate**: Perplexity validation passed.
+
+**Methodology**:
+- 360 run-level records across prefill and generate modes.
+- Explicit degraded reasons and accuracy gates.
+- Artifact-driven reproducibility (JSONL + CSV + manifests).
+
+**Production Verdict**:
+- **TensorRT-fp16 for prefill** (fastest latency).
+- **ONNX Runtime for generate** (best throughput).
+- Shape stability and quantization strategy critical.
+
+---
+
+### TR119: Cost & Energy Analysis
+
+**File**: [Technical_Report_119.md](../outputs/publish_ready/reports/Technical_Report_119.md)
+
+**Objective**: Convert benchmark latency/throughput into dollars, kWh, and carbon per 1M tokens.
+
+**Key Findings**:
+- **Best-Cost Backend**: onnxruntime-gpu at ~$0.1279 per 1M tokens (on-demand).
+- **Best Spot Pricing**: onnxruntime-gpu at ~$0.03868 per 1M tokens (69.8% savings).
+- **Lowest Carbon**: onnxruntime-gpu at ~1.0 gCO2e per 1M tokens.
+- **Best Energy Efficiency**: onnxruntime-gpu at ~503M tokens/kWh.
+- **Runs**: 350 total, 0 degraded (0.0%).
+
+**Methodology**:
+- 5 backends × 5 scenarios × 7 repetitions × 2 modes = 350 runs.
+- On-device telemetry (power, energy, carbon).
+- Multiple pricing tiers (on-demand, spot, reserved).
+
+**Production Verdict**:
+- **onnxruntime-gpu is the default recommendation** for GPU-available systems.
+- **onnxruntime-cpu preferred over transformers-cpu** for CPU-only systems.
+- Pricing tier lever (spot vs on-demand) provides 69.8% cost savings.
+
+---
+
+### TR120: The "Compile Paradox" Root-Cause Audit
+
+**File**: [Technical_Report_120.md](../outputs/publish_ready/reports/Technical_Report_120.md)
+
+**Objective**: Root-cause audit of why "-compile" backend wins mean while losing median.
+
+**Key Findings**:
+- **TR117's "compile paradox" is real but misattributed**: Label-only, no actual torch.compile() call path.
+- **When torch.compile is actually enabled**: Prefill becomes fast at p50 but develops heavy tail.
+- **Shape stability fix**: Padding/bucketing collapses compiled tail (p99 drops to sub-millisecond).
+- **KV-cached decode**: Inductor improves prefill but regresses KV decode.
+
+**Methodology**:
+- Backend label audit (TR117 codebase review).
+- Controlled reproduction with explicit compile attempts (TR120 runner).
+- Shape stability experiments (padding/bucketing).
+
+**Production Verdict**:
+- **Do not rely on backend labels** - wire compilation explicitly and record compile metadata.
+- **Treat prefill and decode as separate optimization targets**.
+- **Stabilize shapes** (padding/bucketing) or use dynamic strategy for shape polymorphism.
+- **Gate compile availability** on Triton (Windows/Python combos cannot run Inductor on GPU).
+
+---
+
+### TR121v1: Model Scaling Study
+
+**File**: [Technical_Report_121v1.md](../outputs/publish_ready/reports/Technical_Report_121v1.md)
+
+**Objective**: How inference behavior changes from ~5M to ~20B parameters (HF + Ollama).
+
+**Key Findings**:
+- **Scaling pipeline established**: Consistent phase definitions (prefill vs decode).
+- **Two-family study**: HF local models (5M-124M) + Ollama models (270M-20B).
+- **Artifact-backed measurements**: Ready for full matrix sweep.
+
+**Methodology**:
+- Consistent phase definitions (prefill vs KV decode).
+- Fixed decode token budget (gen_tokens).
+- Artifact-backed measurements for extension.
+
+**Status**: ✅ Pipeline complete (scaling harness established, ready for full sweep).
+
+**Note**: This is the pipeline draft; full matrix run pending for publish-ready report.
+
+---
+
+### TR122: Resource Profiling Deep Dive
+
+**File**: Planned (see [experiments/tr122/README.md](../../experiments/tr122/README.md))
+
+**Status**: 🔬 Planned (Target: Week of 2026-01-06)
+
+**Research Question**: Where do resources (GPU VRAM, CPU RAM, power, thermal) bottleneck?
+
+**Scope**:
+- Full instrumentation (GPU memory, CPU memory, swap, power, temp).
+- Per-layer profiling (attention vs MLP vs sampling).
+- KV cache analysis (memory growth, eviction).
+- Thermal throttling detection.
+- Optimization experiments (cache offloading, mixed precision).
+
+**Expected Deliverables**:
+1. Resource telemetry with <1% overhead.
+2. Bottleneck identification (e.g., "VRAM at 89% causes 2x slowdown").
+3. 3+ validated optimization strategies.
+4. Technical report with production tuning guide.
+
+---
+
+### TR123: Multi-Hardware Generalization
+
+**File**: Planned (see [experiments/tr123/README.md](../../experiments/tr123/README.md))
+
+**Status**: 🔬 Planned (Target: Week of 2026-01-13)
+
+**Research Question**: Do TR117 findings generalize across GPU types, CPU architectures, and cloud providers?
+
+**Scope**:
+- Hardware matrix: NVIDIA (RTX 4080, A100, H100), AMD, Apple M-series.
+- CPU comparison: Intel Xeon vs AMD EPYC vs ARM Graviton.
+- Cloud validation: AWS g5 vs Azure NC vs GCP A2.
+- Real workload traces (1M production requests).
+- Cross-platform reproducibility (Linux, macOS, Windows).
+
+**Expected Deliverables**:
+1. 3+ GPU types, 2+ CPU architectures tested.
+2. Findings replicated on 2+ cloud providers.
+3. Hardware-specific decision matrix.
+4. Technical report with deployment guide.
+
+---
+
+### TR117: Root Cause Analysis of Efficiency Anomalies (Inference Track)
+
+**File**: [Technical_Report_117.md](../outputs/publish_ready/reports/Technical_Report_117.md)
+
+**Objective**: Benchmark local-first inference backends (CPU vs GPU, eager vs compile paths, and serving runtimes) and quantify performance + degradation.
+
+**Key Findings**:
+- **Cross-Backend Baseline**: Established performance matrix across multiple inference backends.
+- **Compile Paradox**: Surfaces mean-vs-median inversion that requires attribution-correct follow-up (see TR120).
+- **Degradation Tracking**: Explicit degraded reasons and accuracy gates.
+
+**Methodology**:
+- Matrix sweep across backends (torch CPU/compile, ONNX Runtime, Ollama).
+- Quant modes (fp32/fp16/int8 labels).
+- Capability detection and graceful degradation.
+
+**Production Verdict**:
+- Backend selection depends on workload (prefill vs generate).
+- Compile labels must be verified (see TR120 for root cause).
+- Accuracy gates prevent deployment of degraded backends.
+
+---
+
+### TR117_multi_agent: Multi-Agent Root Cause Analysis
+
+**File**: [Technical_Report_117_multi_agent.md](../outputs/publish_ready/reports/Technical_Report_117_multi_agent.md)
+
+**Objective**: Definitive root cause analysis of Python Ceiling, Qwen Mystery, and Ranking Flip through invasive instrumentation.
+
+**Key Findings**:
+- **Python Event Loop Saturation**: Mean lag 5.33ms, p99 12.13ms, max 15.22ms (Gemma, default buffer).
+- **CPU-Bound Serialization**: Each chunk triggers JSON parsing, monopolizing single-threaded event loop.
+- **Efficiency Correlation**: Loop lag + chunk gaps = 40ms cycle time → caps efficiency at ~91%.
+- **Qwen Mystery**: BPE tokenizer overhead + chunk amplification explains lower efficiency.
+- **Ranking Flip**: Slower models provide "breathing room" for event loop, improving efficiency.
+- **Root Cause**: Single-threaded event loop cannot handle concurrent I/O without blocking.
+- **Rust Advantage Confirmed**: Rust's multi-threaded runtime avoids this bottleneck entirely.
+
+**Methodology**:
+- Detailed profiling of Python event loop behavior.
+- Comparison of I/O blocking patterns between Python and Rust.
+- Analysis of scheduler starvation in Python async runtime.
+
+**Production Verdict**:
+- **Python limitation is structural**, not configuration-related.
+- **Rust's advantage is fundamental** - multi-threaded runtime eliminates event loop lag.
+- **For >86% efficiency, Rust is required** - no Python optimization can overcome this ceiling.
+
+---
+
 ## Cross-Report Relationships
 
 ```
@@ -302,7 +521,7 @@ TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime O
                                                                  |
                                                                TR116 (Cross-Model)
                                                                  |
-                                                               TR117 (Root Cause Analysis)
+                                                               TR117 (Multi-Agent Root Cause)
 ```
 
 **Research Progression**:
@@ -315,7 +534,14 @@ TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime O
 7. **TR114**: Rust multi-agent (validates fix)
 8. **TR115**: Rust runtime optimization (closes gap to 2.9pp, validates architecture > runtime)
 9. **TR116**: Cross-model validation (proves Rust dominance holds across architectures)
-10. **TR117**: Root cause analysis of Python efficiency ceiling (identifies event loop lag as bottleneck)
+10. **TR117**: Root cause analysis (identifies Python event loop lag as structural bottleneck)
+11. **TR117_multi_agent**: Multi-agent root cause (quantifies event loop saturation)
+12. **TR118_v2.2**: ONNX/TRT deep dive (establishes TensorRT-fp16 as optimal prefill)
+13. **TR119**: Cost/energy analysis (quantifies $/token and kWh/token economics)
+14. **TR120**: Compile paradox audit (root-causes TR117 compile label misattribution)
+15. **TR121v1**: Model scaling study (establishes scaling pipeline from 5M to 20B)
+10. **TR117**: Cross-backend inference benchmark (inference track)
+11. **TR117 (Multi-Agent)**: Root cause analysis of Python efficiency ceiling (agent track)
 
 ## Key Insights Across Reports
 
@@ -376,4 +602,3 @@ TR113 (Rust Multi-Agent Single)  TR114 (Rust Multi-Agent Dual)  TR115 (Runtime O
 ---
 
 **All reports available in**: [outputs/publish_ready/reports/](../outputs/publish_ready/reports/)
-

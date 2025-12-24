@@ -27,7 +27,7 @@ Comprehensive documentation for Chimeraforge, a benchmarking and research reposi
 ### Analysis & Reporting
 - **[Statistical Analysis](statistical_analysis.md)** - Statistical rigor, sample sizes, and analysis methods
 - **[Rust vs Python](rust_vs_python.md)** - Cross-language performance comparison
-- **[Technical Reports](technical_reports.md)** - Complete index of all technical reports (TR108-TR115)
+- **[Technical Reports](technical_reports.md)** - Complete index of all technical reports (TR108+)
 - **[Methodology](methodology.md)** - Research methodology and experimental design
 
 ### Reference
@@ -106,9 +106,20 @@ All technical reports are available in `outputs/publish_ready/reports/`:
 - **TR112**: Rust vs Python Single-Agent
 - **TR113**: Rust Multi-Agent (Single Ollama)
 - **TR114**: Rust Multi-Agent (Dual Ollama)
-- **TR115**: Rust Runtime Optimization
+- **TR115**: Rust Runtime Optimization ✅ Complete
 - **TR116**: Cross-Model Benchmarks (Qwen 2.5 vs Gemma 3) ✅ Complete
-- **TR117**: Root Cause Analysis of Efficiency Anomalies ✅ Complete
+- **TR117**: Cross-Backend Inference Benchmark & Multi-Agent Root Cause ✅ Complete
+- **TR117_multi_agent**: Multi-Agent Root Cause Analysis ✅ Complete
+- **TR118**: ONNX Runtime + TensorRT Deep Dive ✅ Complete
+- **TR119**: Cost & Energy Analysis ✅ Complete
+- **TR120**: The "Compile Paradox" Root-Cause Audit ✅ Complete
+- **TR121**: Model Scaling Study ✅ Complete
+- **TR118_v2.2**: ONNX Runtime + TensorRT Deep Dive ✅ Complete
+- **TR119**: Cost & Energy Analysis ✅ Complete
+- **TR120**: The "Compile Paradox" Root-Cause Audit ✅ Complete
+- **TR121v1**: Model Scaling Study ✅ Complete (Pipeline)
+- **TR122**: Resource Profiling Deep Dive 🔬 Planned
+- **TR123**: Multi-Hardware Generalization 🔬 Planned
 
 See [Technical Reports](technical_reports.md) for detailed summaries.
 
