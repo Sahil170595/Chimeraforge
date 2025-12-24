@@ -349,11 +349,9 @@ dist/**/*.html
 !src/rust/demo_multiagent/**/pipelines/
 !src/rust/demo_multiagent/**/pipelines/**/*
 
-# Python demo agent test outputs - KEEP project artifacts
-# src/python/banterhearts/demo_agent/demo_agent*/
-# src/python/banterhearts/demo_agent/demo_agent_*/
-# src/python/banterhearts/demo_agent/*/data/
-# src/python/banterhearts/demo_agent/*/reports/
+# Python demo agent test outputs - Ignore local test runs
+src/python/banterhearts/demo_agent/demo_agent*/
+src/python/banterhearts/demo_agent/demo_agent_*/
 
 # TR115 Runtime Optimization Study - KEEP project artifacts
 # Keep: analysis/, scripts/, docs/, results/, PublishReady report
