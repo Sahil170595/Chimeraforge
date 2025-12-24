@@ -1,0 +1,78 @@
+{
+  "runs": [
+    {
+      "run_number": 1,
+      "collector_ollama_url": "http://127.0.0.1:11434",
+      "insight_ollama_url": "http://127.0.0.1:11435",
+      "baseline_throughput": 41.78990684928125,
+      "chimera_throughput": 37.34790326170521,
+      "throughput_delta": -4.442003587576039,
+      "baseline_ttft_ms": 1781.4002500000001,
+      "chimera_ttft_ms": 1863.88475,
+      "ttft_delta_ms": -82.4844999999998,
+      "baseline_duration": 67.844348,
+      "chimera_duration": 62.831391,
+      "concurrent_wall_time": 67.84446716308594,
+      "sequential_estimated_time": 130.675739,
+      "concurrency_speedup": 1.9261075289437963,
+      "gpu_memory_peak": null,
+      "resource_contention_detected": false
+    },
+    {
+      "run_number": 2,
+      "collector_ollama_url": "http://127.0.0.1:11434",
+      "insight_ollama_url": "http://127.0.0.1:11435",
+      "baseline_throughput": 39.27422524144578,
+      "chimera_throughput": 37.26563220328702,
+      "throughput_delta": -2.0085930381587573,
+      "baseline_ttft_ms": 299.91420000000005,
+      "chimera_ttft_ms": 497.41360000000003,
+      "ttft_delta_ms": -197.49939999999998,
+      "baseline_duration": 61.468547,
+      "chimera_duration": 58.88754,
+      "concurrent_wall_time": 61.46868634223938,
+      "sequential_estimated_time": 120.356087,
+      "concurrency_speedup": 1.958006493418341,
+      "gpu_memory_peak": null,
+      "resource_contention_detected": false
+    },
+    {
+      "run_number": 3,
+      "collector_ollama_url": "http://127.0.0.1:11434",
+      "insight_ollama_url": "http://127.0.0.1:11435",
+      "baseline_throughput": 37.421270979292316,
+      "chimera_throughput": 37.07330413306563,
+      "throughput_delta": -0.34796684622668295,
+      "baseline_ttft_ms": 356.137,
+      "chimera_ttft_ms": 509.78575,
+      "ttft_delta_ms": -153.64875,
+      "baseline_duration": 63.320992,
+      "chimera_duration": 62.610323,
+      "concurrent_wall_time": 63.321144819259644,
+      "sequential_estimated_time": 125.931315,
+      "concurrency_speedup": 1.9887719238092005,
+      "gpu_memory_peak": null,
+      "resource_contention_detected": false
+    }
+  ],
+  "aggregate": {
+    "average_throughput_delta": -2.26618782398716,
+    "average_ttft_delta_ms": -144.54421666666659,
+    "baseline_throughput": 39.49513435667311,
+    "chimera_throughput": 37.22894653268595,
+    "average_concurrency_speedup": 1.9576286487237793,
+    "average_wall_time": 64.21143277486165,
+    "average_efficiency": 97.88143243618896,
+    "contention_detected_runs": 0
+  },
+  "scenario": "baseline_vs_chimera",
+  "chimera_overrides": {
+    "num_gpu": 60,
+    "num_ctx": 512,
+    "temperature": 0.8
+  },
+  "chimera_overrides_agent2": {},
+  "collector_ollama_url": "http://127.0.0.1:11434",
+  "insight_ollama_url": "http://127.0.0.1:11435",
+  "generated_at": "2025-10-09T20:06:47.639764"
+}

@@ -1,0 +1,38 @@
+{
+  "runs": [
+    {
+      "run_number": 1,
+      "baseline_throughput": 105.18980190787697,
+      "chimera_throughput": 106.2690606510763,
+      "throughput_delta": 1.0792587431993326,
+      "baseline_ttft_ms": 13030.1358,
+      "chimera_ttft_ms": 6672.0444,
+      "ttft_delta_ms": 6358.0914,
+      "baseline_duration": 50.245363,
+      "chimera_duration": 33.881941,
+      "concurrent_wall_time": 50.24549984931946,
+      "sequential_estimated_time": 84.127304,
+      "concurrency_speedup": 1.6743251485663038,
+      "gpu_memory_peak": null,
+      "resource_contention_detected": false
+    }
+  ],
+  "aggregate": {
+    "average_throughput_delta": 1.0792587431993326,
+    "average_ttft_delta_ms": 6358.0914,
+    "baseline_throughput": 105.18980190787697,
+    "chimera_throughput": 106.2690606510763,
+    "average_concurrency_speedup": 1.6743251485663038,
+    "average_wall_time": 50.24549984931946,
+    "average_efficiency": 83.71625742831519,
+    "contention_detected_runs": 0
+  },
+  "scenario": "baseline_vs_chimera",
+  "chimera_overrides": {
+    "num_gpu": 60,
+    "num_ctx": 512,
+    "temperature": 0.8
+  },
+  "chimera_overrides_agent2": {},
+  "generated_at": "2025-10-09T19:25:31.075058"
+}

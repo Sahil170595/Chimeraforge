@@ -1,0 +1,64 @@
+{
+  "collector": {
+    "agent_type": "baseline",
+    "model": "gemma3:latest",
+    "configuration": {},
+    "aggregate_metrics": {
+      "total_requests": 2,
+      "total_duration_ms": 25608.4329,
+      "total_tokens_generated": 2179,
+      "average_ttft_ms": 1848.2277000000001,
+      "average_tokens_per_second": 99.57880495918889,
+      "p95_ttft_ms": 3392.3767000000003,
+      "p95_tokens_per_second": 100.3171033439677,
+      "average_gpu_utilization": null,
+      "peak_gpu_memory_gb": null,
+      "peak_gpu_temperature_c": null
+    },
+    "execution_summary": "Execution not completed"
+  },
+  "insight": {
+    "agent_type": "chimera_optimized",
+    "model": "gemma3:latest",
+    "configuration": {
+      "num_gpu": 60,
+      "num_ctx": 512,
+      "temperature": 0.8,
+      "top_p": 0.9,
+      "top_k": 40,
+      "repeat_penalty": 1.1
+    },
+    "chimera_config": {
+      "expected_throughput": 102.31,
+      "expected_ttft": 0.128,
+      "description": "Chimera-Optimized Configuration:\n- Model: gemma3:latest\n- GPU Layers: 60 (full offload - optimal for Gemma3)\n- Context: 512 tokens (larger context - optimal for Gemma3)\n- Temperature: 0.8 (balanced creativity/coherence)\n- Top-p: 0.9\n- Top-k: 40\n- Expected Throughput: 102.31 tok/s\n- Expected TTFT: 0.128s",
+      "citations": "Citations from Technical Report 108:\n- Section 4.3: Gemma3:latest Parameter Tuning Results\n- Rank 1 Configuration: num_gpu=999, num_ctx=4096, temp=0.4\n- Performance: 102.31 tok/s throughput, 0.128s TTFT\n- Section 4.2: Gemma3:latest Baseline Performance\n- 34% faster than Llama3.1 q4_0 baseline"
+    },
+    "aggregate_metrics": {
+      "total_requests": 2,
+      "total_duration_ms": 25750.3924,
+      "total_tokens_generated": 2229,
+      "average_ttft_ms": 1663.8484500000002,
+      "average_tokens_per_second": 99.42498561608618,
+      "p95_ttft_ms": 2918.5298000000003,
+      "p95_tokens_per_second": 99.55163489031791,
+      "average_gpu_utilization": null,
+      "peak_gpu_memory_gb": null,
+      "peak_gpu_temperature_c": null
+    },
+    "execution_summary": "Execution not completed"
+  },
+  "summary": {
+    "run_number": 1,
+    "baseline_throughput": 99.57880495918889,
+    "chimera_throughput": 99.42498561608618,
+    "throughput_delta": -0.15381934310271106,
+    "baseline_ttft_ms": 1848.2277000000001,
+    "chimera_ttft_ms": 1663.8484500000002,
+    "ttft_delta_ms": 184.37924999999996,
+    "baseline_duration": 26.285382,
+    "chimera_duration": 26.264149
+  },
+  "collector_execution_time": 26.285382,
+  "insight_execution_time": 26.264149
+}

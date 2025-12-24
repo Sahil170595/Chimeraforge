@@ -1,0 +1,27 @@
+{
+  "runs": [
+    {
+      "run_number": 1,
+      "baseline_throughput": 99.57880495918889,
+      "chimera_throughput": 99.42498561608618,
+      "throughput_delta": -0.15381934310271106,
+      "baseline_ttft_ms": 1848.2277000000001,
+      "chimera_ttft_ms": 1663.8484500000002,
+      "ttft_delta_ms": 184.37924999999996,
+      "baseline_duration": 26.285382,
+      "chimera_duration": 26.264149
+    }
+  ],
+  "aggregate": {
+    "average_throughput_delta": -0.15381934310271106,
+    "average_ttft_delta_ms": 184.37924999999996,
+    "baseline_throughput": 99.57880495918889,
+    "chimera_throughput": 99.42498561608618
+  },
+  "chimera_overrides": {
+    "num_gpu": 60,
+    "num_ctx": 512,
+    "temperature": 0.8
+  },
+  "generated_at": "2025-10-09T18:59:01.661900"
+}

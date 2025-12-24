@@ -1,0 +1,71 @@
+{
+  "collector": {
+    "agent_type": "baseline",
+    "model": "gemma3:latest",
+    "configuration": {},
+    "aggregate_metrics": {
+      "total_requests": 2,
+      "total_duration_ms": 66936.1116,
+      "total_tokens_generated": 2665,
+      "average_ttft_ms": 1781.4002500000001,
+      "average_tokens_per_second": 41.78990684928125,
+      "p95_ttft_ms": 2951.027,
+      "p95_tokens_per_second": 44.69197208085273,
+      "average_gpu_utilization": null,
+      "peak_gpu_memory_gb": null,
+      "peak_gpu_temperature_c": null
+    },
+    "execution_summary": "Execution not completed"
+  },
+  "insight": {
+    "agent_type": "chimera_optimized",
+    "model": "gemma3:latest",
+    "configuration": {
+      "num_gpu": 60,
+      "num_ctx": 512,
+      "temperature": 0.8,
+      "top_p": 0.9,
+      "top_k": 40,
+      "repeat_penalty": 1.1
+    },
+    "chimera_config": {
+      "expected_throughput": 102.31,
+      "expected_ttft": 0.128,
+      "description": "Chimera-Optimized Configuration:\n- Model: gemma3:latest\n- GPU Layers: 60 (full offload - optimal for Gemma3)\n- Context: 512 tokens (larger context - optimal for Gemma3)\n- Temperature: 0.8 (balanced creativity/coherence)\n- Top-p: 0.9\n- Top-k: 40\n- Expected Throughput: 102.31 tok/s\n- Expected TTFT: 0.128s",
+      "citations": "Citations from Technical Report 108:\n- Section 4.3: Gemma3:latest Parameter Tuning Results\n- Rank 1 Configuration: num_gpu=999, num_ctx=4096, temp=0.4\n- Performance: 102.31 tok/s throughput, 0.128s TTFT\n- Section 4.2: Gemma3:latest Baseline Performance\n- 34% faster than Llama3.1 q4_0 baseline"
+    },
+    "aggregate_metrics": {
+      "total_requests": 2,
+      "total_duration_ms": 62101.5989,
+      "total_tokens_generated": 2178,
+      "average_ttft_ms": 1863.88475,
+      "average_tokens_per_second": 37.34790326170521,
+      "p95_ttft_ms": 2958.0254,
+      "p95_tokens_per_second": 37.89964437341531,
+      "average_gpu_utilization": null,
+      "peak_gpu_memory_gb": null,
+      "peak_gpu_temperature_c": null
+    },
+    "execution_summary": "Execution not completed"
+  },
+  "summary": {
+    "run_number": 1,
+    "collector_ollama_url": "http://127.0.0.1:11434",
+    "insight_ollama_url": "http://127.0.0.1:11435",
+    "baseline_throughput": 41.78990684928125,
+    "chimera_throughput": 37.34790326170521,
+    "throughput_delta": -4.442003587576039,
+    "baseline_ttft_ms": 1781.4002500000001,
+    "chimera_ttft_ms": 1863.88475,
+    "ttft_delta_ms": -82.4844999999998,
+    "baseline_duration": 67.844348,
+    "chimera_duration": 62.831391,
+    "concurrent_wall_time": 67.84446716308594,
+    "sequential_estimated_time": 130.675739,
+    "concurrency_speedup": 1.9261075289437963,
+    "gpu_memory_peak": null,
+    "resource_contention_detected": false
+  },
+  "collector_execution_time": 67.844348,
+  "insight_execution_time": 62.831391
+}
