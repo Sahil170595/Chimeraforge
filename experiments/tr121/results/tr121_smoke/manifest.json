@@ -1,0 +1,26 @@
+{
+  "config_path": "scripts\\tr121\\configs\\scaling.yaml",
+  "cuda_available": true,
+  "gen_tokens": 16,
+  "git_head": "0b79b5efc8657f392bc32037e02c4e64f39ec69c",
+  "nvml": {
+    "memory_total_mb": 12282.0,
+    "name": "NVIDIA GeForce RTX 4080 Laptop GPU"
+  },
+  "ollama_timeout_s": 300.0,
+  "platform": {
+    "machine": "AMD64",
+    "os": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python": "3.13.1"
+  },
+  "repetitions": 1,
+  "run_id": "20251222_210931",
+  "run_name": "tr121_scaling_v0",
+  "torch": {
+    "cuda": "12.8",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0"
+  },
+  "warmup_repetitions": 1
+}

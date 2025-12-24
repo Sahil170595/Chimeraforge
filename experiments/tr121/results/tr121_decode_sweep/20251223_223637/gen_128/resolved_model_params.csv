@@ -1,0 +1,16 @@
+model,kind,params_millions_config,params_millions_measured,device,dtype
+gemma3:270m,ollama,268.1,268.1,,
+qwen2.5:7b,ollama,7600.0,7600.0,,
+gpt-oss-20b:latest,ollama,20900.0,20900.0,,
+models/gpt2-45m,hf,,45.1712,cpu,fp32
+models/gpt2-100m,hf,,96.08832,cpu,fp32
+models/gpt2-100m,hf,,96.08832,cuda,fp16
+models/gpt2-50m,hf,,51.475968,cuda,fp16
+models/gpt2-50m,hf,,51.475968,cpu,fp32
+models/gpt2-45m,hf,,45.1712,cuda,fp16
+models/gpt2-5m,hf,,5.03672,cpu,fp32
+models/gpt2-75m,hf,,74.824704,cuda,fp16
+models/gpt2-5m,hf,,5.03672,cuda,fp16
+models/gpt2-25m,hf,,25.016064,cuda,fp16
+models/gpt2-25m,hf,,25.016064,cpu,fp32
+models/gpt2-75m,hf,,74.824704,cpu,fp32

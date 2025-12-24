@@ -1,0 +1,165 @@
+{
+  "argv": [
+    "scripts/tr121/run_scaling.py",
+    "--config",
+    "scripts/tr121/configs/boundary_shift_batch8.yaml",
+    "--ollama-timeout-s",
+    "900"
+  ],
+  "config_path": "scripts\\tr121\\configs\\boundary_shift_batch8.yaml",
+  "config_sha256": "91a2787b9409ab2360fd88a847246b31784ea787d2343dd1d30fd1acd3d84c7d",
+  "cuda_available": true,
+  "gen_tokens": 64,
+  "git_head": "dbf0ac00357fa86c5043bf452786942e8c002bbd",
+  "measured_params": {
+    "hf_params_millions": [
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-100m",
+        "params_millions_measured": 96.08832
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-25m",
+        "params_millions_measured": 25.016064
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-45m",
+        "params_millions_measured": 45.1712
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-50m",
+        "params_millions_measured": 51.475968
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-5m",
+        "params_millions_measured": 5.03672
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-75m",
+        "params_millions_measured": 74.824704
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/tiny-gpt2",
+        "params_millions_measured": 0.102714
+      }
+    ],
+    "ollama_params_millions": []
+  },
+  "modes": [
+    "prefill",
+    "kv_decode",
+    "e2e_kv"
+  ],
+  "nvml": {
+    "memory_total_mb": 12282.0,
+    "name": "NVIDIA GeForce RTX 4080 Laptop GPU"
+  },
+  "ollama_timeout_s": 900.0,
+  "platform": {
+    "machine": "AMD64",
+    "os": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python": "3.13.1"
+  },
+  "records_expected": 252,
+  "repetitions": 5,
+  "resolved": {
+    "backends": [
+      {
+        "batch_size": 1,
+        "device": "cuda",
+        "dtype": "fp16",
+        "kind": "hf",
+        "name": "hf_gpu_fp16_bs1",
+        "options": null,
+        "url": null
+      },
+      {
+        "batch_size": 8,
+        "device": "cuda",
+        "dtype": "fp16",
+        "kind": "hf",
+        "name": "hf_gpu_fp16_bs8",
+        "options": null,
+        "url": null
+      }
+    ],
+    "filters": {
+      "backends_allowlist": null,
+      "models_allowlist": null,
+      "scenarios_allowlist": null
+    },
+    "models": [
+      {
+        "kind": "hf",
+        "name": "models/tiny-gpt2",
+        "params_millions": 0.103
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-5m",
+        "params_millions": 5.037
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-25m",
+        "params_millions": 25.016
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-45m",
+        "params_millions": 45.171
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-50m",
+        "params_millions": 51.476
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-75m",
+        "params_millions": 74.825
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-100m",
+        "params_millions": 96.088
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "medium",
+        "prompt": "Explain how backpressure works in an inference service and when to enable queueing."
+      }
+    ]
+  },
+  "results": {
+    "hf_load_ms_csv": "scripts\\tr121\\results\\20251224_002740\\hf_load_ms.csv",
+    "metrics_csv": "scripts\\tr121\\results\\20251224_002740\\metrics.csv",
+    "resolved_model_params_csv": "scripts\\tr121\\results\\20251224_002740\\resolved_model_params.csv",
+    "runs_jsonl": "scripts\\tr121\\results\\20251224_002740\\runs.jsonl"
+  },
+  "run_id": "20251224_002740",
+  "run_name": "tr121_boundary_shift_batch8_v1",
+  "seed": 42,
+  "task_count": 14,
+  "torch": {
+    "cuda": "12.8",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0"
+  },
+  "warmup_repetitions": 1
+}

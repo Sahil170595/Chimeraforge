@@ -1,0 +1,162 @@
+[
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\onnx\\gpt2.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\tensorrt\\gpt2_fp32.plan",
+    "precision": "fp32",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 57.23784100000012,
+    "file_size_mb": 778.362361907959,
+    "engine_sha256": null,
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\tensorrt\\gpt2_fp32.plan",
+      "exists": true,
+      "file_size_bytes": 816172092,
+      "file_size_mb": 778.362361907959,
+      "deserialize_error": null,
+      "num_layers": 901,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 248,
+        "Float": 780
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765653128.5847259,
+    "built": true,
+    "reused": false
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\onnx\\gpt2.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\tensorrt\\gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 96.85176750000028,
+    "file_size_mb": 941.8324089050293,
+    "engine_sha256": null,
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\tensorrt\\gpt2_fp16.plan",
+      "exists": true,
+      "file_size_bytes": 987582860,
+      "file_size_mb": 941.8324089050293,
+      "deserialize_error": null,
+      "num_layers": 792,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Half": 224,
+        "Int64": 243,
+        "Float": 450
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765653231.33721,
+    "built": true,
+    "reused": false
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\onnx\\gpt2.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\tensorrt\\gpt2_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 83.4072971000005,
+    "file_size_mb": 779.870677947998,
+    "engine_sha256": null,
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\tensorrt\\gpt2_int8.plan",
+      "exists": true,
+      "file_size_bytes": 817753676,
+      "file_size_mb": 779.870677947998,
+      "deserialize_error": null,
+      "num_layers": 1025,
+      "num_profiles": 6,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 249,
+        "Float": 930
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": {
+      "source": "dataset",
+      "tokenizer_available": true,
+      "datasets_available": true,
+      "dataset_name": "wikitext",
+      "dataset_config": "wikitext-2-raw-v1",
+      "split": "test",
+      "text_field": "text",
+      "samples": 512,
+      "texts_loaded": 512,
+      "batch_size": 8,
+      "seq_len": 128,
+      "seed": 42,
+      "num_batches": 64,
+      "random_vocab_size": null,
+      "cache_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\calib\\gpt2_wikitext-2-raw-v1_test_512x8x128.calib",
+      "cache_hit_before": true,
+      "cache_size_bytes_before": 51819,
+      "cache_sha256_before": "f733866440893b46e6f3bdc2fc0d69f1188ec4975cf7227052857ddc17eeac31",
+      "cache_size_bytes_after": 51819,
+      "cache_sha256_after": "f733866440893b46e6f3bdc2fc0d69f1188ec4975cf7227052857ddc17eeac31"
+    },
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765653321.6665063,
+    "built": true,
+    "reused": false
+  }
+]

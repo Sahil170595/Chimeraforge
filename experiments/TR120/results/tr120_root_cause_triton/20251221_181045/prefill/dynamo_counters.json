@@ -1,0 +1,97 @@
+{
+  "mode": "prefill",
+  "backend_labels": [
+    "transformers-gpu",
+    "transformers-gpu-compile"
+  ],
+  "compile_meta": {
+    "enabled": true,
+    "backend": "inductor",
+    "mode": "reduce-overhead",
+    "dynamic": true,
+    "fullgraph": false,
+    "disable_cudagraphs": false,
+    "compile_wrapper_ms": 9884.551209000165,
+    "dynamo_counters_after_compile": {
+      "frames": {
+        "total": 4,
+        "ok": 4
+      },
+      "inline_call": {},
+      "stats": {
+        "calls_captured": 250,
+        "unique_graphs": 1
+      },
+      "inductor": {
+        "pattern_matcher_count": 54,
+        "pattern_matcher_nodes": 63,
+        "benchmarking.InductorBenchmarker.benchmark_gpu": 10,
+        "fxgraph_cache_miss": 1,
+        "async_compile_cache_miss": 30,
+        "extern_calls": 13,
+        "async_compile_cache_hit": 15,
+        "triton_bundler_save_kernel": 105
+      },
+      "aot_autograd": {
+        "total": 2,
+        "autograd_cache_miss": 2,
+        "autograd_cache_saved": 1,
+        "ok": 1
+      },
+      "graph_break": {},
+      "aten_mm_info": {
+        "aten.addmm_s70_6_2": 2,
+        "aten.bmm_s70_s70_1": 2,
+        "aten.bmm_s70_1_s70": 2,
+        "aten.mm_s70_2_2": 2,
+        "aten.mm_s70_8_2": 2,
+        "aten.mm_s70_2_8": 2,
+        "aten.mm_s70_50257_2": 1
+      }
+    }
+  },
+  "dynamo_counters": {
+    "frames": {
+      "total": 2,
+      "ok": 2
+    },
+    "inline_call": {},
+    "stats": {
+      "calls_captured": 259,
+      "unique_graphs": 2
+    },
+    "aot_autograd": {
+      "total": 2,
+      "autograd_cache_miss": 2,
+      "autograd_cache_saved": 2,
+      "ok": 2
+    },
+    "inductor": {
+      "pattern_matcher_count": 108,
+      "pattern_matcher_nodes": 126,
+      "benchmarking.InductorBenchmarker.benchmark_gpu": 20,
+      "fxgraph_cache_miss": 2,
+      "async_compile_cache_miss": 48,
+      "extern_calls": 26,
+      "async_compile_cache_hit": 24,
+      "triton_bundler_save_kernel": 168,
+      "cudagraph_recorded_non_static_inputs": 30
+    },
+    "graph_break": {},
+    "aten_mm_info": {
+      "aten.addmm_1_6_2": 2,
+      "aten.bmm_1_1_1": 4,
+      "aten.mm_1_2_2": 2,
+      "aten.mm_1_8_2": 2,
+      "aten.mm_1_2_8": 2,
+      "aten.mm_1_50257_2": 1,
+      "aten.addmm_s53_6_2": 2,
+      "aten.bmm_s53_s53_1": 2,
+      "aten.bmm_s53_1_s53": 2,
+      "aten.mm_s53_2_2": 2,
+      "aten.mm_s53_8_2": 2,
+      "aten.mm_s53_2_8": 2,
+      "aten.mm_s53_50257_2": 1
+    }
+  }
+}

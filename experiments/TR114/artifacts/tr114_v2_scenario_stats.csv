@@ -1,0 +1,5 @@
+scenario,config_count,mean_efficiency,peak_efficiency,peak_config,min_efficiency,min_config,mean_speedup
+baseline-vs-chimera,7,97.371,98.984,test004,91.603,test005,1.947
+chimera-hetero,7,98.792,99.396,test011,97.901,test007,1.976
+chimera-homo,11,98.399,99.356,test018,94.229,test100,1.968
+chimera_homo,2,99.032,99.240,test103,98.823,test104,1.981

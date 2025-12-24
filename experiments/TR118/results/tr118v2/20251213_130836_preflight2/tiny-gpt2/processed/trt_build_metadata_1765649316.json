@@ -1,0 +1,48 @@
+[
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\onnx\\tiny-gpt2.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\tensorrt\\tiny-gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 2,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 15.966163400000369,
+    "file_size_mb": 2.165760040283203,
+    "engine_sha256": "723c1b37ecc238fa5ba3216ca26790a738d16d0130fd3e60f4c838c6ac7f658e",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\tensorrt\\tiny-gpt2_fp16.plan",
+      "exists": true,
+      "file_size_bytes": 2270964,
+      "file_size_mb": 2.165760040283203,
+      "deserialize_error": null,
+      "num_layers": 33,
+      "num_profiles": 1,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Float": 29,
+        "Int64": 9
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": null,
+    "dynamic_shapes": true,
+    "profiles": 1,
+    "timestamp": 1765649346.0932584,
+    "built": true,
+    "reused": false
+  }
+]

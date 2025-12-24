@@ -1,0 +1,40 @@
+{
+  "run_number": 3,
+  "scenario": "baseline_vs_chimera",
+  "collector": {
+    "id": "collector",
+    "base_url": "http://localhost:11434",
+    "options": {},
+    "response": "- **Directory Coverage:**\n  - `reports/`: Contains high-level summary reports.\n  - `csv_data/`: Stores detailed data records in CSV format.\n  - `artifacts/`: Houses benchmark artifacts, including models and configurations.\n\n- **File Counts per Type (latest timestamps):**\n  - `md` files:\n    - Count: 15\n    - Latest Modified Timestamp: 2023-10-09 14:30:00 UTC\n  - `csv` files:\n    - Count: 78\n    - Latest Modified Timestamp: 2023-10-08 16:50:00 UTC\n  - `json` files:\n    - Count: 42\n    - Latest Modified Timestamp: 2023-10-09 10:15:00 UTC\n\n- **Gaps or Missing Telemetry:**\n  - No recent model evaluation reports in the `reports/` directory (last update was on 2023-10-02).\n  - Several `csv` files older than a week, indicating potential data staleness.\n  - A missing artifact version control log in the `artifacts/` directory.\n\nThese observations can guide further analysis and ensure comprehensive model evaluation.",
+    "metrics": {
+      "tokens_generated": 278,
+      "throughput_tokens_per_sec": 22.53401956069621,
+      "ttft_ms": 39.8498,
+      "total_duration_ms": 12376.7522,
+      "wall_clock_ms": 12725.41949999993
+    }
+  },
+  "insight": {
+    "id": "insight",
+    "base_url": "http://localhost:11435",
+    "options": {
+      "num_gpu": 80,
+      "num_ctx": 2048,
+      "temperature": 1.0
+    },
+    "response": "### 1. Executive Summary of Model Performance\n\nThe current model performance is satisfactory across a range of metrics but exhibits variability in specific areas that need improvement. Key observations include:\n- **Throughput**: The model operates efficiently, processing up to 200 requests per second under standard load conditions.\n- **TTFT (Time to First Text)**: Under ideal network and computing conditions, TTFT is typically between 150-300 milliseconds. However, there have been instances where this time has increased significantly due to back-end resource contention.\n- **Quality**: The accuracy of generated text meets the baseline requirements but faces occasional degradation during high-volume processing.\n\n### 2. Optimisation Recommendations\n\n#### Recommendation 1: Implement Load Balancing\nImplementing a load balancer can help distribute incoming requests more evenly across multiple instances, thereby reducing individual server load and maintaining lower TTFT. This will also allow for horizontal scaling as demand increases, enhancing both throughput and quality of service.\n\n**Metric Impact**: \n- **Throughput**: +50% by distributing the load.\n- **TTFT**: ~200 ms average, with minimal fluctuations.\n- **Quality**: No significant impact but improved consistency during peak times.\n\n#### Recommendation 2: Optimise Model Inference Code\nReview and optimise the inference code to reduce latency. This can include minimising unnecessary computations and using more efficient algorithms or libraries. Additionally, implementing Just-In-Time (JIT) compilation techniques can significantly improve runtime performance for frequently called functions.\n\n**Metric Impact**: \n- **Throughput**: +30% by reducing per-request processing time.\n- **TTFT**: ~180 ms average during peak times.\n- **Quality**: Minor increase in computational accuracy due to more efficient use of resources.\n\n#### Recommendation 3: Upgrade Infrastructure\nUpgrading the hardware infrastructure can provide a significant boost in performance. This includes increasing the CPU and memory capacity, using faster network connections, and optimizing storage solutions for better data access speed.\n\n**Metric Impact**: \n- **Throughput**: +70% by reducing backend processing bottlenecks.\n- **TTFT**: ~150 ms during all conditions due to increased computational power.\n- **Quality**: Improved accuracy from enhanced hardware capabilities but may come with higher costs.\n\n### 3. Risk/Mitigation Table\n\n| **Risk**            | **Mitigating Action**                         | **Expected Impact**                           |\n|---------------------|----------------------------------------------|---------------------------------------------|\n| Increased Costs     | Carefully evaluate and budget for upgrades    | Contain costs by prioritizing critical areas  |\n| Overfitting         | Implement cross-validation and regularisation | Ensure model generalises well under various   |\n|                     |                                             | conditions                                    |\n| Downtime Risk       | Conduct comprehensive testing before roll-out | Minimise downtime by thorough pre-release    |\n|                     |                                             | validation                                   |\n\nThese recommendations aim to strike a balance between throughput, TTFT, and quality while addressing potential risks associated with the optimisation process.",
+    "metrics": {
+      "tokens_generated": 617,
+      "throughput_tokens_per_sec": 37.24464862158008,
+      "ttft_ms": 44.1836,
+      "total_duration_ms": 16610.3219,
+      "wall_clock_ms": 17253.030200000125
+    }
+  },
+  "concurrent_wall_time_ms": 17253.96069999988,
+  "sequential_estimate_ms": 28987.074099999998,
+  "concurrency_speedup": 1.6800243494237355,
+  "efficiency_percent": 84.00121747118678,
+  "throughput_delta": 14.710629060883875,
+  "ttft_delta_ms": 4.3337999999999965
+}

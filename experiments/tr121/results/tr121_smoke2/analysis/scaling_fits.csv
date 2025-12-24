@@ -1,0 +1,10 @@
+backend,backend_kind,mode,scenario,n_models,ok
+hf_cpu_fp32,hf,e2e_kv,micro,1,False
+hf_cpu_fp32,hf,kv_decode,micro,1,False
+hf_cpu_fp32,hf,prefill,micro,1,False
+hf_gpu_fp16,hf,e2e_kv,micro,1,False
+hf_gpu_fp16,hf,kv_decode,micro,1,False
+hf_gpu_fp16,hf,prefill,micro,1,False
+ollama,ollama,e2e_kv,micro,1,False
+ollama,ollama,kv_decode,micro,1,False
+ollama,ollama,prefill,micro,1,False

@@ -1,0 +1,49 @@
+run_name: tr121_boundary_shift_batch8_v1
+
+# Boundary-shift experiment: show that GPU scaling becomes more identifiable when overhead is amortized.
+# We run the same HF models at batch_size=1 vs batch_size=8 under the same decode budget.
+gen_tokens: 64
+
+repetitions: 5
+warmup_repetitions: 1
+seed: 42
+
+scenarios:
+  - name: medium
+    prompt: "Explain how backpressure works in an inference service and when to enable queueing."
+
+backends:
+  - name: hf_gpu_fp16_bs1
+    kind: hf
+    device: cuda
+    dtype: fp16
+    batch_size: 1
+  - name: hf_gpu_fp16_bs8
+    kind: hf
+    device: cuda
+    dtype: fp16
+    batch_size: 8
+
+models:
+  - name: models/tiny-gpt2
+    kind: hf
+    params_millions: 0.103
+  - name: models/gpt2-5m
+    kind: hf
+    params_millions: 5.037
+  - name: models/gpt2-25m
+    kind: hf
+    params_millions: 25.016
+  - name: models/gpt2-45m
+    kind: hf
+    params_millions: 45.171
+  - name: models/gpt2-50m
+    kind: hf
+    params_millions: 51.476
+  - name: models/gpt2-75m
+    kind: hf
+    params_millions: 74.825
+  - name: models/gpt2-100m
+    kind: hf
+    params_millions: 96.088
+

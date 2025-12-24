@@ -1,0 +1,55 @@
+{
+  "model": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-25m",
+  "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\onnx\\gpt2-25m.onnx",
+  "export_time_s": 5.091383599999972,
+  "file_size_mb": 169.1706199645996,
+  "opset_version": 17,
+  "dynamic_axes": true,
+  "trt_friendly_inputs": true,
+  "onnx_sanitization": {
+    "changed": false,
+    "constant_of_shape_scalar_rewrites": 0
+  },
+  "valid": true,
+  "onnx_sha256": "3d2e663ac2a9fc311176f4d1248b13f9a72966bbf490ae5aaed52655ad02575a",
+  "onnx_inspect": {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\onnx\\gpt2-25m.onnx",
+    "exists": true,
+    "onnx_file_size_bytes": 177388252,
+    "onnx_file_size_mb": 169.1706199645996,
+    "external_data": false,
+    "external_files": [],
+    "external_total_size_bytes": 0,
+    "external_total_size_mb": 0.0,
+    "total_artifact_size_bytes": 177388252,
+    "total_artifact_size_mb": 169.1706199645996,
+    "initializer_count": 41,
+    "initializer_numel": 44314752,
+    "initializer_bytes_est": 177259008,
+    "initializer_bytes_est_mb": 169.04736328125,
+    "initializer_dtype_counts": {
+      "FLOAT": 41
+    },
+    "opset_import": {
+      "ai.onnx": 17
+    },
+    "ir_version": 8,
+    "parse_error": null
+  },
+  "model_weight_files": {
+    "model_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-25m",
+    "is_local_dir": true,
+    "weight_files": [
+      {
+        "path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-25m\\model.safetensors",
+        "name": "model.safetensors",
+        "size_bytes": 100068208,
+        "size_mb": 95.43247985839844
+      }
+    ],
+    "total_size_bytes": 100068208,
+    "total_size_mb": 95.43247985839844
+  },
+  "timestamp": 1765752283.8598948,
+  "reused": false
+}

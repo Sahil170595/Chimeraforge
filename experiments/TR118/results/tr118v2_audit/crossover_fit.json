@@ -1,0 +1,85 @@
+{
+  "points": [
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\processed",
+      "model_ref": "models/tiny-gpt2",
+      "parameter_count": 102714,
+      "onnx_cpu_tput": 87995.71539408503,
+      "pytorch_tput": 4010.8236539079066,
+      "ratio": 21.939562291238424
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2_crossover\\gpt2-5m\\processed",
+      "model_ref": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-5m",
+      "parameter_count": 5036720,
+      "onnx_cpu_tput": 7554.394141351716,
+      "pytorch_tput": 1483.6896762178367,
+      "ratio": 5.091626815527274
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2\\20251213_153314_gpt2_11m\\gpt2-1m\\processed",
+      "model_ref": "scripts/tr118/models/gpt2-1m",
+      "parameter_count": 11180928,
+      "onnx_cpu_tput": 11762.095997166167,
+      "pytorch_tput": 2650.7605114247526,
+      "ratio": 4.43725336425967
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2_crossover\\gpt2-25m\\processed",
+      "model_ref": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-25m",
+      "parameter_count": 25016064,
+      "onnx_cpu_tput": 6802.927309581886,
+      "pytorch_tput": 4318.889323501368,
+      "ratio": 1.5751566664520782
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\validation_45m\\processed",
+      "model_ref": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-45m",
+      "parameter_count": 45171200,
+      "onnx_cpu_tput": 4182.090647600023,
+      "pytorch_tput": 2936.5526149886937,
+      "ratio": 1.4241497415213602
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2_crossover\\gpt2-50m\\processed",
+      "model_ref": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-50m",
+      "parameter_count": 51475968,
+      "onnx_cpu_tput": 2173.43915018399,
+      "pytorch_tput": 1721.8693636505661,
+      "ratio": 1.2622555439258427
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2_crossover\\gpt2-75m\\processed",
+      "model_ref": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-75m",
+      "parameter_count": 74824704,
+      "onnx_cpu_tput": 2018.5737110966336,
+      "pytorch_tput": 2812.267165691666,
+      "ratio": 0.7177745186240773
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2_crossover\\gpt2-100m\\processed",
+      "model_ref": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\gpt2-100m",
+      "parameter_count": 96088320,
+      "onnx_cpu_tput": 1546.9299402822132,
+      "pytorch_tput": 1804.3766322777444,
+      "ratio": 0.8573209786747543
+    },
+    {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\processed",
+      "model_ref": "gpt2",
+      "parameter_count": 124439808,
+      "onnx_cpu_tput": 1433.7408987826927,
+      "pytorch_tput": 2120.9746962476006,
+      "ratio": 0.6759820856511148
+    }
+  ],
+  "fit": {
+    "slope_k": -0.5057334853154661,
+    "intercept_logA0": 9.17990032209637,
+    "crossover_params": 76412445.21646284,
+    "crossover_ci_95": [
+      56194690.07151843,
+      120279123.13488889
+    ]
+  }
+}

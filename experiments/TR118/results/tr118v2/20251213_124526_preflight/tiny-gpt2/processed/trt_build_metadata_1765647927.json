@@ -1,0 +1,18 @@
+[
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\onnx\\tiny-gpt2.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\tensorrt\\tiny-gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 2,
+    "builder_settings": {},
+    "int8_calibration_config": null,
+    "dynamic_shapes": true,
+    "profiles": 1,
+    "timestamp": 1765647974.2430227,
+    "build_time_s": null,
+    "file_size_mb": null,
+    "built": false,
+    "reused": false,
+    "error": "[Errno 2] No such file or directory: 'C:\\\\Users\\\\sahil\\\\OneDrive\\\\Documents\\\\GitHub\\\\Banterhearts\\\\artifacts\\\\tr118v2\\\\tiny-gpt2\\\\onnx\\\\tiny-gpt2.onnx'"
+  }
+]

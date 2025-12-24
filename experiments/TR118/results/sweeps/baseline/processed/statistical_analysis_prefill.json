@@ -1,0 +1,87 @@
+{
+  "comparisons": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "latency_ms",
+      "mean_a": 55.840366669144714,
+      "mean_b": 5.353283333533909,
+      "difference": -50.487083335610805,
+      "percent_change": -90.41323749671591,
+      "t_statistic": 0.9895381978829508,
+      "p_value": 0.3784160071090256,
+      "significant": false,
+      "effect_size": -0.8079545552688128
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "tensorrt-fp16",
+      "metric": "latency_ms",
+      "mean_a": 55.840366669144714,
+      "mean_b": 4.086416664601226,
+      "difference": -51.75395000454349,
+      "percent_change": -92.68196663389887,
+      "t_statistic": 1.0143673638147652,
+      "p_value": 0.3677769218188603,
+      "significant": false,
+      "effect_size": -0.8282274843594266
+    }
+  ],
+  "comparisons_by_scenario": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "latency_ms::single_short",
+      "mean_a": 55.840366669144714,
+      "mean_b": 5.353283333533909,
+      "difference": -50.487083335610805,
+      "percent_change": -90.41323749671591,
+      "t_statistic": 0.9895381978829508,
+      "p_value": 0.3784160071090256,
+      "significant": false,
+      "effect_size": -0.8079545552688128
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "tensorrt-fp16",
+      "metric": "latency_ms::single_short",
+      "mean_a": 55.840366669144714,
+      "mean_b": 4.086416664601226,
+      "difference": -51.75395000454349,
+      "percent_change": -92.68196663389887,
+      "t_statistic": 1.0143673638147652,
+      "p_value": 0.3677769218188603,
+      "significant": false,
+      "effect_size": -0.8282274843594266
+    }
+  ],
+  "throughput_comparisons_by_scenario": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "throughput_tok_s::single_short",
+      "mean_a": 22101.410201499264,
+      "mean_b": 24056.88073446008,
+      "difference": 1955.470532960815,
+      "percent_change": 8.847718381464023,
+      "t_statistic": -0.40152780750459477,
+      "p_value": 0.7085588083545042,
+      "significant": false,
+      "effect_size": 0.3278460819749077
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "tensorrt-fp16",
+      "metric": "throughput_tok_s::single_short",
+      "mean_a": 22101.410201499264,
+      "mean_b": 31630.014864994093,
+      "difference": 9528.604663494829,
+      "percent_change": 43.11310715751726,
+      "t_statistic": -1.89455352594816,
+      "p_value": 0.13105985118052144,
+      "significant": false,
+      "effect_size": 1.5468964763212405
+    }
+  ],
+  "ttft_comparisons": []
+}

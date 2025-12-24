@@ -1,0 +1,7 @@
+backend,backend_kind,model,model_kind,params_millions_effective,mode,n_scenarios,latency_geomean_ms,latency_median_of_medians_ms,tokens_per_s_geomean,gpu_peak_mb_median,ollama_load_ms_median,params_millions_config_median,params_millions_measured_median
+ollama,ollama,gemma3:270m,ollama,268.1,e2e_kv,3,131.74145057442541,132.1345,615.6205955585831,,148.3116,268.1,268.1
+ollama,ollama,gemma3:1b-it-qat,ollama,999.89,e2e_kv,3,275.4425094837918,274.8523,298.0859972407701,,143.2413,999.9,999.89
+ollama,ollama,gemma3:270m,ollama,268.1,kv_decode,3,128.84374441485934,129.1385,496.72570671284325,,148.3116,268.1,268.1
+ollama,ollama,gemma3:1b-it-qat,ollama,999.89,kv_decode,3,270.65417313029326,269.8314,236.46411677232976,,143.2413,999.9,999.89
+ollama,ollama,gemma3:270m,ollama,268.1,prefill,3,2.688015208712312,2.6504,6026.029523154025,,148.3116,268.1,268.1
+ollama,ollama,gemma3:1b-it-qat,ollama,999.89,prefill,3,4.741702887031862,4.6714,3641.4848568770003,,143.2413,999.9,999.89

@@ -1,0 +1,38 @@
+{
+  "tr": "TR119",
+  "started_at": 1766113913.2965178,
+  "run_id": 1766113913,
+  "config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\configs\\smoke.yaml",
+  "git_sha": "4f09b5c5381989515a29b321bcb24d1804e370e2",
+  "platform": {
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "os": "Windows-10-10.0.26200-SP0",
+    "machine": "AMD64",
+    "cuda_device": {
+      "index": 0,
+      "name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "capability": "8.9",
+      "total_memory_mb": 12281.5
+    },
+    "onnxruntime_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  },
+  "package_versions": {
+    "torch": "2.1.1+cu118",
+    "transformers": "4.36.2",
+    "onnx": "1.15.0",
+    "onnxruntime": "1.16.3",
+    "tensorrt": "10.14.1.48.post1",
+    "numpy": "1.25.2",
+    "pandas": "2.1.4",
+    "scipy": "1.11.4"
+  },
+  "config_snapshot_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_smoke\\processed\\config_used_1766113913.yaml",
+  "statistical_analysis_error": "Command '['C:\\\\Users\\\\sahil\\\\OneDrive\\\\Documents\\\\GitHub\\\\Banterhearts\\\\venv311\\\\Scripts\\\\python.exe', 'scripts/tr119/statistical_analysis.py', '--cost-summary', 'C:\\\\Users\\\\sahil\\\\OneDrive\\\\Documents\\\\GitHub\\\\Banterhearts\\\\scripts\\\\tr119\\\\results\\\\tr119_smoke\\\\processed\\\\cost_energy_summary.json']' returned non-zero exit status 1.",
+  "plots_dir": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_smoke\\plots",
+  "ended_at": 1766113933.6920516,
+  "duration_s": 20.395533800125122
+}

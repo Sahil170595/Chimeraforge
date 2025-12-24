@@ -1,0 +1,122 @@
+accuracy:
+  perplexity_batch_size: 4
+  perplexity_dataset: wikitext-2-raw-v1
+  perplexity_max_length: 128
+  perplexity_samples: 1000
+  perplexity_thresholds:
+    fp16: 0.005
+    fp32: 0.001
+    int8: 0.02
+baseline:
+  backend: transformers-gpu-compile
+benchmark:
+  backends:
+  - transformers-gpu-compile
+  - onnxruntime-cpu
+  - onnxruntime-gpu
+  - tensorrt-fp32
+  - tensorrt-fp16
+  - tensorrt-int8
+  enable_resource_monitoring: true
+  max_new_tokens: 8
+  max_seq_len: 512
+  modes:
+  - prefill
+  - generate
+  prompt_config_path: scripts/tr117/configs/matrix_tier3.yaml
+  repetitions: 5
+  scenarios:
+  - single_micro
+  - single_short
+  - single_medium
+  - single_long
+  - batch_short
+  - batch_medium
+  stop_on_eos: true
+  timeout_s: 180
+  warmup_runs: 3
+model:
+  description: Custom gpt2-50m model for crossover validation
+  name: gpt2-50m
+  path: C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-50m
+onnx:
+  dynamic_axes: true
+  opset_version: 17
+  optimize_for_inference: true
+  trt_friendly_inputs: true
+output:
+  onnx_dir: C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\artifacts\tr118v2_crossover\gpt2-50m\onnx
+  results_dir: C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\scripts\tr118\results\tr118v2_crossover\gpt2-50m
+  tensorrt_dir: C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\artifacts\tr118v2_crossover\gpt2-50m\tensorrt
+resource_sampling_interval_s: 0.1
+seed: 42
+tensorrt:
+  dynamic_shapes:
+    enabled: true
+    profiles:
+    - max_shape:
+      - 1
+      - 64
+      min_shape:
+      - 1
+      - 8
+      name: single_short
+      opt_shape:
+      - 1
+      - 32
+    - max_shape:
+      - 1
+      - 256
+      min_shape:
+      - 1
+      - 32
+      name: single_medium
+      opt_shape:
+      - 1
+      - 128
+    - max_shape:
+      - 1
+      - 512
+      min_shape:
+      - 1
+      - 128
+      name: single_long
+      opt_shape:
+      - 1
+      - 256
+    - max_shape:
+      - 4
+      - 64
+      min_shape:
+      - 4
+      - 8
+      name: batch_short
+      opt_shape:
+      - 4
+      - 32
+    - max_shape:
+      - 4
+      - 256
+      min_shape:
+      - 4
+      - 32
+      name: batch_medium
+      opt_shape:
+      - 4
+      - 128
+  int8_calibration:
+    batch_size: 8
+    cache_path: artifacts/tensorrt/calib/gpt2_wikitext2_test_512x8x128.calib
+    dataset_config: wikitext-2-raw-v1
+    dataset_name: wikitext
+    samples: 512
+    seed: 42
+    seq_len: 128
+    split: test
+    text_field: text
+  precisions:
+  - fp32
+  - fp16
+  - int8
+  workspace_gb: 6
+torch_deterministic: true

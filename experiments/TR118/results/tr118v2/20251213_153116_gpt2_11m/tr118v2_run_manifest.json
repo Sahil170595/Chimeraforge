@@ -1,0 +1,24 @@
+{
+  "tr": "TR118v2",
+  "started_at": 1765657876.4376388,
+  "ended_at": 1765657890.148724,
+  "duration_s": 13.711085319519043,
+  "run_slug": "20251213_153116_gpt2_11m",
+  "git_sha": "f73684a2d4d8a87c52032f18dcff57dc3c9584f6",
+  "base_config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\configs\\matrix_postdoc.yaml",
+  "device": "cuda",
+  "results_root": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2",
+  "artifacts_root": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2",
+  "runs": [
+    {
+      "key": "tiny",
+      "model": "models/gpt2-1m",
+      "model_tag": "gpt2-1m",
+      "success": false,
+      "error": "CalledProcessError: Command '['C:\\\\Users\\\\sahil\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe', 'scripts/tr118/run_experiment.py', '--config', 'C:\\\\Users\\\\sahil\\\\OneDrive\\\\Documents\\\\GitHub\\\\Banterhearts\\\\scripts\\\\tr118\\\\results\\\\tr118v2\\\\20251213_153116_gpt2_11m\\\\gpt2-1m\\\\processed\\\\config_generated_tr118v2_tiny.yaml', '--device', 'cuda', '--no-plots', '--no-report']' returned non-zero exit status 1.",
+      "generated_config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2\\20251213_153116_gpt2_11m\\gpt2-1m\\processed\\config_generated_tr118v2_tiny.yaml",
+      "results_dir": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2\\20251213_153116_gpt2_11m\\gpt2-1m",
+      "manifest_path": null
+    }
+  ]
+}

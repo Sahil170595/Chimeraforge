@@ -1,0 +1,38 @@
+{
+  "tr": "TR118",
+  "started_at": 1765589634.5217083,
+  "config_path": "scripts\\tr118\\configs\\matrix_postdoc.yaml",
+  "prompt_config_path": "scripts\\tr117\\configs\\matrix_tier3.yaml",
+  "git_sha": "92275d856cfcabbe058e8fec534ba0a378052705",
+  "platform": {
+    "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+    "os": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64"
+  },
+  "package_versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0",
+    "onnx": "1.19.0",
+    "onnxruntime": "1.23.0",
+    "tensorrt": "10.12.0.36",
+    "pycuda": "None",
+    "datasets": "3.5.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "scipy": "1.15.2",
+    "matplotlib": "3.9.3"
+  },
+  "config_snapshot_path": "scripts\\tr118\\results\\processed\\config_used_1765589634.yaml",
+  "plots_dir": "scripts\\tr118\\results\\plots",
+  "runs": {
+    "prefill": {
+      "raw_results_path": "scripts\\tr118\\results\\raw\\bench_prefill_1765589646.jsonl",
+      "latency_summary_path": "scripts\\tr118\\results\\processed\\latency_summary_prefill.csv",
+      "statistical_analysis_path": "scripts\\tr118\\results\\processed\\statistical_analysis_prefill.json"
+    }
+  },
+  "perplexity_results_csv": "scripts\\tr118\\results\\processed\\perplexity_results.csv",
+  "perplexity_results_json": "scripts\\tr118\\results\\processed\\perplexity_results.json",
+  "ended_at": 1765590304.1040213,
+  "duration_s": 669.5823130607605
+}

@@ -1,0 +1,253 @@
+{
+  "collector": {
+    "config": {
+      "base_url": "http://localhost:11434",
+      "id": "collector",
+      "label": "Baseline Collector",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "options": {},
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+    },
+    "execution_time_s": 26.7086631,
+    "result": {
+      "agent_type": "Baseline Collector",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 31.551360818404532,
+        "average_ttft_ms": 407.45039999999995,
+        "eval_duration_ms": 25429.4165,
+        "load_duration_ms": 373.94320000000005,
+        "prompt_eval_duration_ms": 435.29409999999996,
+        "stddev_throughput": 7.084766880838844,
+        "stddev_ttft": 247.17044815596378,
+        "total_duration_ms": 26708.3077,
+        "total_tokens_generated": 801
+      },
+      "analysis": {
+        "key_findings": [
+          "Key Performance Findings**",
+          "**Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.",
+          "Given the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:"
+        ],
+        "performance_metrics": {
+          "data_types": [],
+          "total_file_size_bytes": 0,
+          "total_files_analyzed": 0
+        },
+        "raw_response": "**Structured Analysis Report**\n\n**Executive Summary**\n--------------------------------------------------------\n\nThe provided benchmark data indicates that a total of 0 files were analyzed, resulting in no meaningful performance metrics to analyze. This suggests that the benchmarking process was likely interrupted or did not execute correctly.\n\n**Key Performance Findings**\n---------------------------\n\n*   **No execution**: The benchmarking process appears to have been terminated prematurely, preventing any actual data collection.\n*   **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n\n**Performance Metrics Analysis**\n---------------------------------\n\nGiven the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n\n*   **Lack of system utilization**: Without files being analyzed, there's no evidence of system resource usage (e.g., CPU, memory, or disk I/O).\n*   **Insufficient testing scope**: The inability to analyze files might indicate issues with the benchmarking framework, file input/output mechanisms, or underlying system conditions.\n\n**Recommendations for Optimization**\n--------------------------------------\n\nTo improve performance and gather meaningful data:\n\n1.  **Re-run benchmarking process**: Restart the benchmarking process from scratch, ensuring that all necessary components are functional and configured correctly.\n2.  **Troubleshoot execution issues**: Investigate possible reasons why the previous run terminated prematurely or didn't produce any results.\n3.  **Validate system readiness**: Verify that the system, framework, and file input/output mechanisms are stable and functioning as expected before re-running the benchmarking process.\n\nBy addressing these concerns, you can generate accurate performance metrics for analysis and identify potential areas for optimization within your system.",
+        "recommendations": [
+          "The provided benchmark data indicates that a total of 0 files were analyzed, resulting in no meaningful performance metrics to analyze. This suggests that the benchmarking process was likely interrupted or did not execute correctly.",
+          "Recommendations for Optimization**"
+        ],
+        "summary": "--------------------------------------------------------\nThe provided benchmark data indicates that a total of 0 files were analyzed, resulting in no meaningful performance metrics to analyze. This suggests that the benchmarking process was likely interrupted or did not execute correctly.\n**Key Performance Findings**\n---------------------------\n*   **No execution**: The benchmarking process appears to have been terminated prematurely, preventing any actual data collection.\n*   **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n**Performance Metrics Analysis**\n---------------------------------\nGiven the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n*   **Lack of system utilization**: Without files being analyzed, there's no evidence of system resource usage (e.g., CPU, memory, or disk I/O).\n*   **Insufficient testing scope**: The inability to analyze files might indicate issues with the benchmarking framework, file input/output mechanisms, or underlying system conditions.\n**Recommendations for Optimization**\n--------------------------------------\nTo improve performance and gather meaningful data:\n1.  **Re-run benchmarking process**: Restart the benchmarking process from scratch, ensuring that all necessary components are functional and configured correctly.\n2.  **Troubleshoot execution issues**: Investigate possible reasons why the previous run terminated prematurely or didn't produce any results.\n3.  **Validate system readiness**: Verify that the system, framework, and file input/output mechanisms are stable and functioning as expected before re-running the benchmarking process.\nBy addressing these concerns, you can generate accurate performance metrics for analysis and identify potential areas for optimization within your system."
+      },
+      "benchmark_data_count": 0,
+      "configuration": {},
+      "data_summary": "Total files analyzed: 0\n\n",
+      "individual_runs": [
+        {
+          "eval_duration_ms": 12847.7201,
+          "load_duration_ms": 167.4002,
+          "prompt_eval_duration_ms": 62.2863,
+          "throughput_tokens_per_sec": 26.54167411383752,
+          "tokens_generated": 341,
+          "total_duration_ms": 13288.644100000001,
+          "ttft_ms": 232.6745
+        },
+        {
+          "eval_duration_ms": 12581.6964,
+          "load_duration_ms": 206.543,
+          "prompt_eval_duration_ms": 373.0078,
+          "throughput_tokens_per_sec": 36.56104752297154,
+          "tokens_generated": 460,
+          "total_duration_ms": 13419.6636,
+          "ttft_ms": 582.2262999999999
+        }
+      ],
+      "llm_calls": [
+        {
+          "metrics": {
+            "eval_duration_ms": 12847.7201,
+            "load_duration_ms": 167.4002,
+            "prompt_eval_duration_ms": 62.2863,
+            "throughput_tokens_per_sec": 26.54167411383752,
+            "tokens_generated": 341,
+            "total_duration_ms": 13288.644100000001,
+            "ttft_ms": 232.6745
+          },
+          "prompt": "You are a performance analysis expert. Analyze the following benchmark data and provide insights.\n\nBenchmark Data Summary:\nTotal files analyzed: 0\n\n\n\nPlease provide:\n1. Executive summary of the data\n2. Key performance findings\n3. Performance metrics analysis\n4. Recommendations for optimization\n\nFormat your response as structured analysis with clear sections.",
+          "response": "**Structured Analysis Report**\n\n**Executive Summary**\n--------------------------------------------------------\n\nThe provided benchmark data indicates that a total of 0 files were analyzed, resulting in no meaningful performance metrics to analyze. This suggests that the benchmarking process was likely interrupted or did not execute correctly.\n\n**Key Performance Findings**\n---------------------------\n\n*   **No execution**: The benchmarking process appears to have been terminated prematurely, preventing any actual data collection.\n*   **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n\n**Performance Metrics Analysis**\n---------------------------------\n\nGiven the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n\n*   **Lack of system utilization**: Without files being analyzed, there's no evidence of system resource usage (e.g., CPU, memory, or disk I/O).\n*   **Insufficient testing scope**: The inability to analyze files might indicate issues with the benchmarking framework, file input/output mechanisms, or underlying system conditions.\n\n**Recommendations for Optimization**\n--------------------------------------\n\nTo improve performance and gather meaningful data:\n\n1.  **Re-run benchmarking process**: Restart the benchmarking process from scratch, ensuring that all necessary components are functional and configured correctly.\n2.  **Troubleshoot execution issues**: Investigate possible reasons why the previous run terminated prematurely or didn't produce any results.\n3.  **Validate system readiness**: Verify that the system, framework, and file input/output mechanisms are stable and functioning as expected before re-running the benchmarking process.\n\nBy addressing these concerns, you can generate accurate performance metrics for analysis and identify potential areas for optimization within your system.",
+          "stage": "analysis"
+        },
+        {
+          "metrics": {
+            "eval_duration_ms": 12581.6964,
+            "load_duration_ms": 206.543,
+            "prompt_eval_duration_ms": 373.0078,
+            "throughput_tokens_per_sec": 36.56104752297154,
+            "tokens_generated": 460,
+            "total_duration_ms": 13419.6636,
+            "ttft_ms": 582.2262999999999
+          },
+          "prompt": "Generate a comprehensive technical report in the style of Technical Report 108.\n\nAnalysis Results:\n- Summary: --------------------------------------------------------\nThe provided benchmark data indicates that a total of 0 files were analyzed, resulting in no meaningful performance metrics to analyze. This suggests that the benchmarking process was likely interrupted or did not execute correctly.\n**Key Performance Findings**\n---------------------------\n*   **No execution**: The benchmarking process appears to have been terminated prematurely, preventing any actual data collection.\n*   **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n**Performance Metrics Analysis**\n---------------------------------\nGiven the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n*   **Lack of system utilization**: Without files being analyzed, there's no evidence of system resource usage (e.g., CPU, memory, or disk I/O).\n*   **Insufficient testing scope**: The inability to analyze files might indicate issues with the benchmarking framework, file input/output mechanisms, or underlying system conditions.\n**Recommendations for Optimization**\n--------------------------------------\nTo improve performance and gather meaningful data:\n1.  **Re-run benchmarking process**: Restart the benchmarking process from scratch, ensuring that all necessary components are functional and configured correctly.\n2.  **Troubleshoot execution issues**: Investigate possible reasons why the previous run terminated prematurely or didn't produce any results.\n3.  **Validate system readiness**: Verify that the system, framework, and file input/output mechanisms are stable and functioning as expected before re-running the benchmarking process.\nBy addressing these concerns, you can generate accurate performance metrics for analysis and identify potential areas for optimization within your system.\n- Key Findings:\n1. Key Performance Findings**\n2. **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n3. Given the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n- Performance Metrics: {\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n- Recommendations:\n1. The provided benchmark data indicates that a total of 0 files were analyzed, resulting in no meaningful performance metrics to analyze. This suggests that the benchmarking process was likely interrupted or did not execute correctly.\n2. Recommendations for Optimization**\n\nCreate a professional technical report with the following structure:\n1. Executive Summary\n2. Data Ingestion Summary\n3. Performance Analysis\n4. Key Findings\n5. Recommendations\n6. Appendix\n\nUse markdown formatting and include specific metrics and data points.",
+          "response": "**Technical Report 108: Benchmarking Process Analysis**\n\n**Executive Summary**\n=====================\n\nThe benchmarking process for file analysis was interrupted, resulting in no meaningful performance metrics to analyze. This technical report summarizes the findings of an investigation into the cause of this interruption and provides recommendations for optimizing the benchmarking process.\n\n**Data Ingestion Summary**\n=========================\n\n### Total Files Analyzed\nNo files were analyzed during the benchmarking process.\n\n### Performance Metrics\nDue to the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n\n*   **Total File Size Bytes**: 0 bytes\n*   **Data Types**: None\n\n**Performance Analysis**\n=====================\n\nThe benchmarking process appears to have been terminated prematurely, preventing any actual data collection.\n\n### Key Performance Findings\n*   **No execution**: The benchmarking process was interrupted before it could collect any meaningful performance metrics.\n*   **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n\n**Key Findings**\n================\n\n1.  **Benchmarking Process Interrupted**: The benchmarking process was terminated prematurely, preventing data collection and resulting in no meaningful performance metrics.\n2.  **No Files Analyzed**: A total of 0 files were analyzed during the benchmarking process, making it impossible to report on key performance metrics.\n\n**Recommendations**\n==================\n\n1.  **Re-run Benchmarking Process**: Restart the benchmarking process from scratch, ensuring that all necessary components are functional and configured correctly.\n2.  **Troubleshoot Execution Issues**: Investigate possible reasons why the previous run terminated prematurely or didn't produce any results.\n3.  **Validate System Readiness**: Verify that the system, framework, and file input/output mechanisms are stable and functioning as expected before re-running the benchmarking process.\n\n**Appendix**\n==========\n\n*   **Performance Metrics Data**: {\n        \"data_types\": [],\n        \"total_files_analyzed\": 0,\n        \"total_file_size_bytes\": 0\n    }\n*   **Recommendations for Optimization**\n\nBy addressing these concerns, you can generate accurate performance metrics for analysis and identify potential areas for optimization within your system.",
+          "stage": "report"
+        }
+      ],
+      "model": "llama3.1:8b-instruct-q4_0",
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them.",
+      "report_markdown": "# Technical Report: Baseline Collector Analysis\n\n**Date:** 2025-11-27\n**Agent Type:** Baseline Collector\n**Model:** llama3.1:8b-instruct-q4_0\n**Configuration:** Ollama defaults\n\n---\n\n**Technical Report 108: Benchmarking Process Analysis**\n\n**Executive Summary**\n=====================\n\nThe benchmarking process for file analysis was interrupted, resulting in no meaningful performance metrics to analyze. This technical report summarizes the findings of an investigation into the cause of this interruption and provides recommendations for optimizing the benchmarking process.\n\n**Data Ingestion Summary**\n=========================\n\n### Total Files Analyzed\nNo files were analyzed during the benchmarking process.\n\n### Performance Metrics\nDue to the absence of data, we cannot analyze any specific performance metrics. However, some general insights can be inferred:\n\n*   **Total File Size Bytes**: 0 bytes\n*   **Data Types**: None\n\n**Performance Analysis**\n=====================\n\nThe benchmarking process appears to have been terminated prematurely, preventing any actual data collection.\n\n### Key Performance Findings\n*   **No execution**: The benchmarking process was interrupted before it could collect any meaningful performance metrics.\n*   **Incomplete results**: No files were analyzed, making it impossible to report on key performance metrics such as file analysis time, throughput, or errors encountered.\n\n**Key Findings**\n================\n\n1.  **Benchmarking Process Interrupted**: The benchmarking process was terminated prematurely, preventing data collection and resulting in no meaningful performance metrics.\n2.  **No Files Analyzed**: A total of 0 files were analyzed during the benchmarking process, making it impossible to report on key performance metrics.\n\n**Recommendations**\n==================\n\n1.  **Re-run Benchmarking Process**: Restart the benchmarking process from scratch, ensuring that all necessary components are functional and configured correctly.\n2.  **Troubleshoot Execution Issues**: Investigate possible reasons why the previous run terminated prematurely or didn't produce any results.\n3.  **Validate System Readiness**: Verify that the system, framework, and file input/output mechanisms are stable and functioning as expected before re-running the benchmarking process.\n\n**Appendix**\n==========\n\n*   **Performance Metrics Data**: {\n        \"data_types\": [],\n        \"total_files_analyzed\": 0,\n        \"total_file_size_bytes\": 0\n    }\n*   **Recommendations for Optimization**\n\nBy addressing these concerns, you can generate accurate performance metrics for analysis and identify potential areas for optimization within your system.",
+      "runs": 2,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-27T01:26:39.320684300Z",
+      "workflow": {
+        "analysis_seconds": 13.28867,
+        "ingest_seconds": 0.0002128,
+        "report_seconds": 13.4196843,
+        "total_seconds": 26.7086631
+      }
+    }
+  },
+  "insight": {
+    "config": {
+      "base_url": "http://localhost:11435",
+      "id": "insight",
+      "label": "Chimera Insight",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "options": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+    },
+    "execution_time_s": 24.1294954,
+    "result": {
+      "agent_type": "Chimera Insight",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 26.19836395433675,
+        "average_ttft_ms": 279.3582,
+        "eval_duration_ms": 23172.752099999998,
+        "load_duration_ms": 254.9941,
+        "prompt_eval_duration_ms": 297.5563,
+        "stddev_throughput": 0.3268411599863277,
+        "stddev_ttft": 185.6811495707628,
+        "total_duration_ms": 24128.988100000002,
+        "total_tokens_generated": 606
+      },
+      "analysis": {
+        "key_findings": [
+          "Key Performance Findings**",
+          "**Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed. This indicates a failure or misconfiguration within the system or process being tested."
+        ],
+        "performance_metrics": {
+          "data_types": [],
+          "total_file_size_bytes": 0,
+          "total_files_analyzed": 0
+        },
+        "raw_response": "**Performance Analysis Report**\n\n**Executive Summary**\n\nThe benchmark data provided indicates that no files were analyzed, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n\n**Key Performance Findings**\n\n1. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed. This indicates a failure or misconfiguration within the system or process being tested.\n2. **Lack of Data**: There are no data points to analyze, making it impossible to determine any performance metrics.\n\n**Performance Metrics Analysis**\n\nNone applicable due to the lack of data.\n\n**Recommendations for Optimization**\n\n1. **System Re-Configuration**: Review and reconfigure the system or process being measured to ensure correct execution and file analysis.\n2. **Issue Identification**: Investigate the root cause of why no files were analyzed, which may involve checking system logs, configuration settings, or dependencies.\n3. **Test Run Replication**: Attempt to replicate the test run conditions to understand if the issue is specific to this instance or a broader problem.\n\nPlease provide additional data for a more in-depth analysis and recommendations tailored to your specific situation.",
+        "recommendations": [
+          "The benchmark data provided indicates that no files were analyzed, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.",
+          "Recommendations for Optimization**",
+          "Please provide additional data for a more in-depth analysis and recommendations tailored to your specific situation."
+        ],
+        "summary": "The benchmark data provided indicates that no files were analyzed, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n**Key Performance Findings**\n1. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed. This indicates a failure or misconfiguration within the system or process being tested.\n2. **Lack of Data**: There are no data points to analyze, making it impossible to determine any performance metrics.\n**Performance Metrics Analysis**\nNone applicable due to the lack of data.\n**Recommendations for Optimization**\n1. **System Re-Configuration**: Review and reconfigure the system or process being measured to ensure correct execution and file analysis.\n2. **Issue Identification**: Investigate the root cause of why no files were analyzed, which may involve checking system logs, configuration settings, or dependencies.\n3. **Test Run Replication**: Attempt to replicate the test run conditions to understand if the issue is specific to this instance or a broader problem.\nPlease provide additional data for a more in-depth analysis and recommendations tailored to your specific situation."
+      },
+      "benchmark_data_count": 0,
+      "configuration": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "data_summary": "Total files analyzed: 0\n\n",
+      "individual_runs": [
+        {
+          "eval_duration_ms": 9232.1166,
+          "load_duration_ms": 121.5684,
+          "prompt_eval_duration_ms": 23.0933,
+          "throughput_tokens_per_sec": 26.42947555493396,
+          "tokens_generated": 244,
+          "total_duration_ms": 9551.3484,
+          "ttft_ms": 148.0618
+        },
+        {
+          "eval_duration_ms": 13940.6355,
+          "load_duration_ms": 133.4257,
+          "prompt_eval_duration_ms": 274.463,
+          "throughput_tokens_per_sec": 25.96725235373954,
+          "tokens_generated": 362,
+          "total_duration_ms": 14577.639700000002,
+          "ttft_ms": 410.65459999999996
+        }
+      ],
+      "llm_calls": [
+        {
+          "metrics": {
+            "eval_duration_ms": 9232.1166,
+            "load_duration_ms": 121.5684,
+            "prompt_eval_duration_ms": 23.0933,
+            "throughput_tokens_per_sec": 26.42947555493396,
+            "tokens_generated": 244,
+            "total_duration_ms": 9551.3484,
+            "ttft_ms": 148.0618
+          },
+          "prompt": "You are a performance analysis expert. Analyze the following benchmark data and provide insights.\n\nBenchmark Data Summary:\nTotal files analyzed: 0\n\n\n\nPlease provide:\n1. Executive summary of the data\n2. Key performance findings\n3. Performance metrics analysis\n4. Recommendations for optimization\n\nFormat your response as structured analysis with clear sections.",
+          "response": "**Performance Analysis Report**\n\n**Executive Summary**\n\nThe benchmark data provided indicates that no files were analyzed, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n\n**Key Performance Findings**\n\n1. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed. This indicates a failure or misconfiguration within the system or process being tested.\n2. **Lack of Data**: There are no data points to analyze, making it impossible to determine any performance metrics.\n\n**Performance Metrics Analysis**\n\nNone applicable due to the lack of data.\n\n**Recommendations for Optimization**\n\n1. **System Re-Configuration**: Review and reconfigure the system or process being measured to ensure correct execution and file analysis.\n2. **Issue Identification**: Investigate the root cause of why no files were analyzed, which may involve checking system logs, configuration settings, or dependencies.\n3. **Test Run Replication**: Attempt to replicate the test run conditions to understand if the issue is specific to this instance or a broader problem.\n\nPlease provide additional data for a more in-depth analysis and recommendations tailored to your specific situation.",
+          "stage": "analysis"
+        },
+        {
+          "metrics": {
+            "eval_duration_ms": 13940.6355,
+            "load_duration_ms": 133.4257,
+            "prompt_eval_duration_ms": 274.463,
+            "throughput_tokens_per_sec": 25.96725235373954,
+            "tokens_generated": 362,
+            "total_duration_ms": 14577.639700000002,
+            "ttft_ms": 410.65459999999996
+          },
+          "prompt": "Generate a comprehensive technical report in the style of Technical Report 108.\n\nAnalysis Results:\n- Summary: The benchmark data provided indicates that no files were analyzed, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n**Key Performance Findings**\n1. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed. This indicates a failure or misconfiguration within the system or process being tested.\n2. **Lack of Data**: There are no data points to analyze, making it impossible to determine any performance metrics.\n**Performance Metrics Analysis**\nNone applicable due to the lack of data.\n**Recommendations for Optimization**\n1. **System Re-Configuration**: Review and reconfigure the system or process being measured to ensure correct execution and file analysis.\n2. **Issue Identification**: Investigate the root cause of why no files were analyzed, which may involve checking system logs, configuration settings, or dependencies.\n3. **Test Run Replication**: Attempt to replicate the test run conditions to understand if the issue is specific to this instance or a broader problem.\nPlease provide additional data for a more in-depth analysis and recommendations tailored to your specific situation.\n- Key Findings:\n1. Key Performance Findings**\n2. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed. This indicates a failure or misconfiguration within the system or process being tested.\n- Performance Metrics: {\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n- Recommendations:\n1. The benchmark data provided indicates that no files were analyzed, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n2. Recommendations for Optimization**\n3. Please provide additional data for a more in-depth analysis and recommendations tailored to your specific situation.\n\nCreate a professional technical report with the following structure:\n1. Executive Summary\n2. Data Ingestion Summary\n3. Performance Analysis\n4. Key Findings\n5. Recommendations\n6. Appendix\n\nUse markdown formatting and include specific metrics and data points.",
+          "response": "**Technical Report 108: File Analysis Failure Analysis**\n\n**Executive Summary**\n=================================================================\n\nThe benchmark data provided indicates a complete failure in file analysis, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n\n**Data Ingestion Summary**\n==========================\n\n### Data Description\n-------------------\n\nThe data provided consists of a single JSON object containing metrics related to file analysis. The data is as follows:\n\n```json\n{\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n```\n\n### Ingestion Methodology\n-------------------------\n\nThe data was ingested in its raw form, with no transformations or processing applied.\n\n**Performance Analysis**\n=========================\n\nNo performance metrics were collected, as the file analysis process failed to execute.\n\n**Key Findings**\n===============\n\n1. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed, indicating a failure in the file analysis process.\n2. No other key findings are reported, as no performance metrics were collected.\n\n### Performance Metrics\n-----------------------\n\n| Metric | Value |\n| --- | --- |\n| Total Files Analyzed | 0 |\n| Total File Size (Bytes) | 0 |\n\n**Recommendations**\n=====================\n\n1. **Investigate Root Cause**: The root cause of the file analysis failure should be investigated and addressed.\n2. **Implement Monitoring**: Performance monitoring should be implemented to collect metrics for future analysis.\n\n**Next Steps**\n==============\n\nThe recommended next steps are:\n\n1. Investigate the root cause of the file analysis failure\n2. Implement performance monitoring\n3. Re-run the data ingestion process with the above recommendations in mind.",
+          "stage": "report"
+        }
+      ],
+      "model": "llama3.1:8b-instruct-q4_0",
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts.",
+      "report_markdown": "# Technical Report: Chimera Insight Analysis\n\n**Date:** 2025-11-27\n**Agent Type:** Chimera Insight\n**Model:** llama3.1:8b-instruct-q4_0\n**Configuration:** num_gpu=80, num_ctx=512, temp=1, top_p=default, top_k=default, repeat_penalty=default\n\n---\n\n**Technical Report 108: File Analysis Failure Analysis**\n\n**Executive Summary**\n=================================================================\n\nThe benchmark data provided indicates a complete failure in file analysis, resulting in a total of 0 files processed. This suggests that the system or process being measured was not executed or encountered an issue preventing file analysis.\n\n**Data Ingestion Summary**\n==========================\n\n### Data Description\n-------------------\n\nThe data provided consists of a single JSON object containing metrics related to file analysis. The data is as follows:\n\n```json\n{\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n```\n\n### Ingestion Methodology\n-------------------------\n\nThe data was ingested in its raw form, with no transformations or processing applied.\n\n**Performance Analysis**\n=========================\n\nNo performance metrics were collected, as the file analysis process failed to execute.\n\n**Key Findings**\n===============\n\n1. **Total Files Analyzed**: The most critical finding is the complete absence of any files being analyzed, indicating a failure in the file analysis process.\n2. No other key findings are reported, as no performance metrics were collected.\n\n### Performance Metrics\n-----------------------\n\n| Metric | Value |\n| --- | --- |\n| Total Files Analyzed | 0 |\n| Total File Size (Bytes) | 0 |\n\n**Recommendations**\n=====================\n\n1. **Investigate Root Cause**: The root cause of the file analysis failure should be investigated and addressed.\n2. **Implement Monitoring**: Performance monitoring should be implemented to collect metrics for future analysis.\n\n**Next Steps**\n==============\n\nThe recommended next steps are:\n\n1. Investigate the root cause of the file analysis failure\n2. Implement performance monitoring\n3. Re-run the data ingestion process with the above recommendations in mind.",
+      "runs": 2,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-27T01:26:36.741524800Z",
+      "workflow": {
+        "analysis_seconds": 9.5513582,
+        "ingest_seconds": 0.0004329,
+        "report_seconds": 14.577664500000001,
+        "total_seconds": 24.1294954
+      }
+    }
+  },
+  "run_number": 3,
+  "scenario": "baseline_vs_chimera",
+  "summary": {
+    "collector_throughput": 31.551360818404532,
+    "collector_ttft_ms": 407.45039999999995,
+    "concurrency_speedup": 1.9034227791483909,
+    "concurrent_wall_time_s": 26.7088106,
+    "efficiency_percent": 95.17113895741954,
+    "insight_throughput": 26.19836395433675,
+    "insight_ttft_ms": 279.3582,
+    "resource_contention_detected": false,
+    "run_number": 3,
+    "scenario": "baseline_vs_chimera",
+    "sequential_estimated_s": 50.8381585,
+    "throughput_delta": -5.352996864067784,
+    "ttft_delta_ms": 128.09219999999993
+  }
+}

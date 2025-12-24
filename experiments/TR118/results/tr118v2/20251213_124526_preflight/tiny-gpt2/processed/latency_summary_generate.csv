@@ -1,0 +1,4 @@
+backend,scenario,n_total,n_ok,n_degraded,degraded_rate,throughput_mean_tok_s,throughput_median_tok_s,ttft_mean_ms,ttft_median_ms,warmup_mean_latency_ms,warmup_median_latency_ms,mean,median,std,min,max,q25,q75,ci_lower,ci_upper,n
+onnxruntime-gpu,single_short,1,0,1,1.0,,,,,,,,,,,,,,,,0
+tensorrt-fp16,single_short,1,0,1,1.0,,,,,,,,,,,,,,,,0
+transformers-gpu-compile,single_short,1,1,0,0.0,323.07053978293027,323.07053978293027,135.1014000001669,135.1014000001669,2064.7053000002416,2064.7053000002416,147.34614999997575,147.34614999997575,,147.34614999997575,147.34614999997575,147.34614999997575,147.34614999997575,,,1

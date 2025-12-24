@@ -1,0 +1,59 @@
+model:
+  name: models/tiny-gpt2
+  description: Tiny GPT-2 (124M) for fast, comparable sweeps
+onnx:
+  opset_version: 17
+  dynamic_axes: true
+  trt_friendly_inputs: true
+  optimize_for_inference: true
+tensorrt:
+  precisions:
+  - fp16
+  workspace_gb: 4
+  dynamic_shapes:
+    enabled: true
+    profiles:
+    - name: fixed_128
+      min_shape:
+      - 1
+      - 128
+      opt_shape:
+      - 1
+      - 128
+      max_shape:
+      - 1
+      - 128
+benchmark:
+  prompt_config_path: scripts/tr117/configs/matrix_tier3.yaml
+  modes:
+  - prefill
+  - generate
+  backends:
+  - transformers-gpu-compile
+  - onnxruntime-gpu
+  - tensorrt-fp16
+  scenarios:
+  - single_short
+  repetitions: 3
+  warmup_runs: 1
+  timeout_s: 60
+  min_seq_len: 128
+  max_seq_len: 128
+  max_new_tokens: 8
+  stop_on_eos: true
+  enable_resource_monitoring: false
+accuracy:
+  perplexity_dataset: wikitext-2-raw-v1
+  perplexity_samples: 256
+  perplexity_batch_size: 4
+  perplexity_max_length: 128
+  perplexity_thresholds:
+    fp16: 0.01
+baseline:
+  backend: transformers-gpu-compile
+output:
+  onnx_dir: artifacts/onnx
+  tensorrt_dir: artifacts/tr118/sweeps/static_shapes/tensorrt
+  results_dir: scripts/tr118/results/sweeps/static_shapes
+seed: 42
+torch_deterministic: true

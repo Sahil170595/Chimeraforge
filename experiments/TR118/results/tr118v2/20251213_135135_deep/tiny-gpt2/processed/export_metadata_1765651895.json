@@ -1,0 +1,63 @@
+{
+  "model": "models/tiny-gpt2",
+  "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\onnx\\tiny-gpt2.onnx",
+  "export_time_s": null,
+  "file_size_mb": 0.864893913269043,
+  "opset_version": 17,
+  "dynamic_axes": true,
+  "trt_friendly_inputs": true,
+  "valid": null,
+  "reused": true,
+  "onnx_sha256": "9a33f688342aa5860dd9863d416f47e9e81fcb244aa9bdc2b857c9ff1b22f3c0",
+  "onnx_inspect": {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\tiny-gpt2\\onnx\\tiny-gpt2.onnx",
+    "exists": true,
+    "onnx_file_size_bytes": 906907,
+    "onnx_file_size_mb": 0.864893913269043,
+    "external_data": false,
+    "external_files": [],
+    "external_total_size_bytes": 0,
+    "external_total_size_mb": 0.0,
+    "total_artifact_size_bytes": 906907,
+    "total_artifact_size_mb": 0.864893913269043,
+    "initializer_count": 15,
+    "initializer_numel": 203190,
+    "initializer_bytes_est": 812760,
+    "initializer_bytes_est_mb": 0.7751083374023438,
+    "initializer_dtype_counts": {
+      "FLOAT": 15
+    },
+    "opset_import": {
+      "ai.onnx": 17
+    },
+    "ir_version": 8,
+    "parse_error": null
+  },
+  "model_weight_files": {
+    "model_path": "models\\tiny-gpt2",
+    "is_local_dir": true,
+    "weight_files": [
+      {
+        "path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\tiny-gpt2\\flax_model.msgpack",
+        "name": "flax_model.msgpack",
+        "size_bytes": 411642,
+        "size_mb": 0.39257240295410156
+      },
+      {
+        "path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\tiny-gpt2\\pytorch_model.bin",
+        "name": "pytorch_model.bin",
+        "size_bytes": 2514146,
+        "size_mb": 2.397676467895508
+      },
+      {
+        "path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\models\\tiny-gpt2\\tf_model.h5",
+        "name": "tf_model.h5",
+        "size_bytes": 452120,
+        "size_mb": 0.43117523193359375
+      }
+    ],
+    "total_size_bytes": 3377908,
+    "total_size_mb": 3.221424102783203
+  },
+  "timestamp": 1765651904.0839114
+}

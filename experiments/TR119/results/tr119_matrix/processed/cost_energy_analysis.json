@@ -1,0 +1,275 @@
+{
+  "cost_breakdown": {
+    "onnxruntime-cpu": {
+      "infra_cost_usd_per_1m": 2.773925489229694,
+      "energy_cost_usd_per_1m": 0.048666573678101135,
+      "total_cost_usd_per_1m": 2.8225920629077947,
+      "infra_pct": 98.2758197928196,
+      "energy_pct": 1.7241802071803998
+    },
+    "onnxruntime-gpu": {
+      "infra_cost_usd_per_1m": 0.6622381186458209,
+      "energy_cost_usd_per_1m": 0.00376121807517337,
+      "total_cost_usd_per_1m": 0.6659993367209943,
+      "infra_pct": 99.43525197882455,
+      "energy_pct": 0.5647480211754399
+    },
+    "transformers-cpu": {
+      "infra_cost_usd_per_1m": 9.58314523790884,
+      "energy_cost_usd_per_1m": 0.13868139863344228,
+      "total_cost_usd_per_1m": 9.72182663654228,
+      "infra_pct": 98.57350471451356,
+      "energy_pct": 1.4264952854864577
+    },
+    "transformers-gpu": {
+      "infra_cost_usd_per_1m": 1.9344737061459412,
+      "energy_cost_usd_per_1m": 0.00861186968307513,
+      "total_cost_usd_per_1m": 1.943085575829016,
+      "infra_pct": 99.5567941118908,
+      "energy_pct": 0.4432058881092194
+    },
+    "transformers-gpu-compile": {
+      "infra_cost_usd_per_1m": 1.6675577690850378,
+      "energy_cost_usd_per_1m": 0.008965415539637268,
+      "total_cost_usd_per_1m": 1.6765231846246755,
+      "infra_pct": 99.46523760471318,
+      "energy_pct": 0.5347623952867888
+    }
+  },
+  "roi_by_tier": {
+    "onnxruntime-cpu": {
+      "on_demand_cost": 2.8225920629077947,
+      "spot_cost": 0.8813956966874127,
+      "reserved_cost": 1.9898629398984826,
+      "spot_savings_pct": 68.7735359186332,
+      "spot_savings_usd": 23294.356394644587,
+      "reserved_savings_pct": 29.502283874186432,
+      "reserved_savings_usd": 9992.749476111749,
+      "best_tier": "spot",
+      "best_cost": 0.8813956966874127
+    },
+    "onnxruntime-gpu": {
+      "on_demand_cost": 0.6659993367209943,
+      "spot_cost": 0.20256431134658284,
+      "reserved_cost": 0.46719624344958477,
+      "spot_savings_pct": 69.58490794541997,
+      "spot_savings_usd": 5561.220304492937,
+      "reserved_savings_pct": 29.850344033404596,
+      "reserved_savings_usd": 2385.637119256914,
+      "best_tier": "spot",
+      "best_cost": 0.20256431134658284
+    },
+    "transformers-cpu": {
+      "on_demand_cost": 9.72182663654228,
+      "spot_cost": 3.015530167866513,
+      "reserved_cost": 6.844977867309209,
+      "spot_savings_pct": 68.98185618192598,
+      "spot_savings_usd": 80475.5576241092,
+      "reserved_savings_pct": 29.591648532587556,
+      "reserved_savings_usd": 34522.18523079684,
+      "best_tier": "spot",
+      "best_cost": 3.015530167866513
+    },
+    "transformers-gpu": {
+      "on_demand_cost": 1.943085575829016,
+      "spot_cost": 0.589338568744779,
+      "reserved_cost": 1.362358876767312,
+      "spot_savings_pct": 69.6699632751204,
+      "spot_savings_usd": 16244.964085010844,
+      "reserved_savings_pct": 29.88683083677039,
+      "reserved_savings_usd": 6968.720388740447,
+      "best_tier": "spot",
+      "best_cost": 0.589338568744779
+    },
+    "transformers-gpu-compile": {
+      "on_demand_cost": 1.6765231846246755,
+      "spot_cost": 0.5095642686844499,
+      "reserved_cost": 1.1759243314798626,
+      "spot_savings_pct": 69.60589192218501,
+      "spot_savings_usd": 14003.506991282711,
+      "reserved_savings_pct": 29.859345682528236,
+      "reserved_savings_usd": 6007.1862377377565,
+      "best_tier": "spot",
+      "best_cost": 0.5095642686844499
+    }
+  },
+  "energy_efficiency_ranking": {
+    "onnxruntime-gpu": 269476245.25990826,
+    "transformers-gpu": 218787639.16385245,
+    "transformers-gpu-compile": 175331810.5069801,
+    "onnxruntime-cpu": 22477886.033383604,
+    "transformers-cpu": 10736928.915228898
+  },
+  "carbon_comparison": {
+    "lowest_carbon_backend": "onnxruntime-gpu",
+    "lowest_carbon_gco2e": 9.403045187933422,
+    "highest_carbon_backend": "transformers-cpu",
+    "highest_carbon_gco2e": 346.70349658360567,
+    "carbon_range_gco2e": 337.30045139567227,
+    "by_backend": {
+      "onnxruntime-gpu": 9.403045187933422,
+      "transformers-gpu": 21.529674207687826,
+      "transformers-gpu-compile": 22.413538849093165,
+      "onnxruntime-cpu": 121.66643419525283,
+      "transformers-cpu": 346.70349658360567
+    }
+  },
+  "cost_amortization": {
+    "onnxruntime-cpu": {
+      "cost_per_1m_tokens": 2.8225920629077947,
+      "cost_per_month": 2822.592062907795,
+      "upfront_cost": 0.0,
+      "break_even_months": null,
+      "total_cost_month_1": 2822.592062907795,
+      "total_cost_month_3": 8467.776188723385,
+      "total_cost_month_6": 16935.55237744677,
+      "total_cost_month_12": 33871.10475489354,
+      "total_cost_month_24": 67742.20950978708
+    },
+    "onnxruntime-gpu": {
+      "cost_per_1m_tokens": 0.6659993367209943,
+      "cost_per_month": 665.9993367209943,
+      "upfront_cost": 0.0,
+      "break_even_months": null,
+      "total_cost_month_1": 665.9993367209943,
+      "total_cost_month_3": 1997.9980101629828,
+      "total_cost_month_6": 3995.9960203259657,
+      "total_cost_month_12": 7991.992040651931,
+      "total_cost_month_24": 15983.984081303863
+    },
+    "transformers-cpu": {
+      "cost_per_1m_tokens": 9.72182663654228,
+      "cost_per_month": 9721.82663654228,
+      "upfront_cost": 0.0,
+      "break_even_months": null,
+      "total_cost_month_1": 9721.82663654228,
+      "total_cost_month_3": 29165.47990962684,
+      "total_cost_month_6": 58330.95981925368,
+      "total_cost_month_12": 116661.91963850736,
+      "total_cost_month_24": 233323.83927701472
+    },
+    "transformers-gpu": {
+      "cost_per_1m_tokens": 1.943085575829016,
+      "cost_per_month": 1943.085575829016,
+      "upfront_cost": 0.0,
+      "break_even_months": null,
+      "total_cost_month_1": 1943.085575829016,
+      "total_cost_month_3": 5829.256727487048,
+      "total_cost_month_6": 11658.513454974096,
+      "total_cost_month_12": 23317.026909948192,
+      "total_cost_month_24": 46634.053819896384
+    },
+    "transformers-gpu-compile": {
+      "cost_per_1m_tokens": 1.6765231846246755,
+      "cost_per_month": 1676.5231846246757,
+      "upfront_cost": 0.0,
+      "break_even_months": null,
+      "total_cost_month_1": 1676.5231846246757,
+      "total_cost_month_3": 5029.569553874027,
+      "total_cost_month_6": 10059.139107748055,
+      "total_cost_month_12": 20118.27821549611,
+      "total_cost_month_24": 40236.55643099222
+    }
+  },
+  "tco_by_backend": {
+    "onnxruntime-cpu": {
+      "total_cost_usd": 33871.104754893546,
+      "infra_cost_usd": 33287.10587075633,
+      "energy_cost_usd": 583.9988841372136,
+      "upfront_cost_usd": 0.0,
+      "cost_per_month_usd": 2822.5920629077955,
+      "cost_per_1m_tokens_usd": 2.822592062907795
+    },
+    "onnxruntime-gpu": {
+      "total_cost_usd": 7991.992040651931,
+      "infra_cost_usd": 7946.857423749851,
+      "energy_cost_usd": 45.13461690208044,
+      "upfront_cost_usd": 0.0,
+      "cost_per_month_usd": 665.9993367209943,
+      "cost_per_1m_tokens_usd": 0.6659993367209943
+    },
+    "transformers-cpu": {
+      "total_cost_usd": 116661.91963850739,
+      "infra_cost_usd": 114997.74285490607,
+      "energy_cost_usd": 1664.1767836013073,
+      "upfront_cost_usd": 0.0,
+      "cost_per_month_usd": 9721.826636542282,
+      "cost_per_1m_tokens_usd": 9.721826636542282
+    },
+    "transformers-gpu": {
+      "total_cost_usd": 23317.026909948192,
+      "infra_cost_usd": 23213.684473751295,
+      "energy_cost_usd": 103.34243619690157,
+      "upfront_cost_usd": 0.0,
+      "cost_per_month_usd": 1943.085575829016,
+      "cost_per_1m_tokens_usd": 1.9430855758290162
+    },
+    "transformers-gpu-compile": {
+      "total_cost_usd": 20118.278215496102,
+      "infra_cost_usd": 20010.693229020453,
+      "energy_cost_usd": 107.58498647564721,
+      "upfront_cost_usd": 0.0,
+      "cost_per_month_usd": 1676.5231846246752,
+      "cost_per_1m_tokens_usd": 1.676523184624675
+    }
+  },
+  "request_costs": {
+    "onnxruntime-cpu": {
+      "prompt_tokens": 256.0,
+      "generate_tokens": 128.0,
+      "time_prefill_s": 0.20913997342030174,
+      "time_generate_s": 2.1354939911034188,
+      "energy_kwh_per_request": 5.758911377171877e-05,
+      "infra_cost_usd_per_request": 0.0006551949356419063,
+      "energy_cost_usd_per_request": 1.1517822754343755e-05,
+      "total_cost_usd_per_request": 0.0006667127583962501
+    },
+    "onnxruntime-gpu": {
+      "prompt_tokens": 256.0,
+      "generate_tokens": 128.0,
+      "time_prefill_s": 0.11398482707533882,
+      "time_generate_s": 0.4108221936255825,
+      "energy_kwh_per_request": 4.0420130560900594e-06,
+      "infra_cost_usd_per_request": 0.00014665440634031304,
+      "energy_cost_usd_per_request": 8.084026112180119e-07,
+      "total_cost_usd_per_request": 0.00014746280895153104
+    },
+    "transformers-cpu": {
+      "prompt_tokens": 256.0,
+      "generate_tokens": 128.0,
+      "time_prefill_s": 0.6782319707367875,
+      "time_generate_s": 6.364242364705555,
+      "energy_kwh_per_request": 0.00014446860311265132,
+      "infra_cost_usd_per_request": 0.0019679803281819432,
+      "energy_cost_usd_per_request": 2.8893720622530265e-05,
+      "total_cost_usd_per_request": 0.0019968740488044735
+    },
+    "transformers-gpu": {
+      "prompt_tokens": 256.0,
+      "generate_tokens": 128.0,
+      "time_prefill_s": 0.12359111179491762,
+      "time_generate_s": 1.2128680653932975,
+      "energy_kwh_per_request": 8.501875258384501e-06,
+      "infra_cost_usd_per_request": 0.0003734660922920401,
+      "energy_cost_usd_per_request": 1.7003750516769003e-06,
+      "total_cost_usd_per_request": 0.00037516646734371697
+    },
+    "transformers-gpu-compile": {
+      "prompt_tokens": 256.0,
+      "generate_tokens": 128.0,
+      "time_prefill_s": 0.14086941798768993,
+      "time_generate_s": 1.0962846951060503,
+      "energy_kwh_per_request": 1.0149221469536297e-05,
+      "infra_cost_usd_per_request": 0.00034571584382563964,
+      "energy_cost_usd_per_request": 2.0298442939072596e-06,
+      "total_cost_usd_per_request": 0.0003477456881195469
+    }
+  },
+  "assumptions": {
+    "tokens_per_month": 1000000000.0,
+    "months": 12,
+    "upfront_cost_usd": 0.0,
+    "prompt_tokens": 256.0,
+    "generate_tokens": 128.0
+  }
+}

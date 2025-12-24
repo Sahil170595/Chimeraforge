@@ -1,0 +1,113 @@
+{
+  "root": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep",
+  "models": {
+    "tiny-gpt2": {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\processed",
+      "raw_dir": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\raw",
+      "summaries": [
+        {
+          "raw_path": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\raw\\bench_prefill_1765651895.jsonl",
+          "mode": "prefill",
+          "total_runs": 180,
+          "expected_runs": 180,
+          "degraded_runs": 10,
+          "degraded_rate": 0.05555555555555555,
+          "unique_backends": [
+            "onnxruntime-cpu",
+            "onnxruntime-gpu",
+            "tensorrt-fp16",
+            "tensorrt-fp32",
+            "tensorrt-int8",
+            "transformers-gpu-compile"
+          ],
+          "unique_scenarios": [
+            "batch_medium",
+            "batch_short",
+            "single_long",
+            "single_medium",
+            "single_micro",
+            "single_short"
+          ]
+        },
+        {
+          "raw_path": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\raw\\bench_generate_1765651895.jsonl",
+          "mode": "generate",
+          "total_runs": 180,
+          "expected_runs": 180,
+          "degraded_runs": 90,
+          "degraded_rate": 0.5,
+          "unique_backends": [
+            "onnxruntime-cpu",
+            "onnxruntime-gpu",
+            "tensorrt-fp16",
+            "tensorrt-fp32",
+            "tensorrt-int8",
+            "transformers-gpu-compile"
+          ],
+          "unique_scenarios": [
+            "batch_medium",
+            "batch_short",
+            "single_long",
+            "single_medium",
+            "single_micro",
+            "single_short"
+          ]
+        }
+      ]
+    },
+    "gpt2": {
+      "processed_dir": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\processed",
+      "raw_dir": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\raw",
+      "summaries": [
+        {
+          "raw_path": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\raw\\bench_prefill_1765652089.jsonl",
+          "mode": "prefill",
+          "total_runs": 180,
+          "expected_runs": 180,
+          "degraded_runs": 10,
+          "degraded_rate": 0.05555555555555555,
+          "unique_backends": [
+            "onnxruntime-cpu",
+            "onnxruntime-gpu",
+            "tensorrt-fp16",
+            "tensorrt-fp32",
+            "tensorrt-int8",
+            "transformers-gpu-compile"
+          ],
+          "unique_scenarios": [
+            "batch_medium",
+            "batch_short",
+            "single_long",
+            "single_medium",
+            "single_micro",
+            "single_short"
+          ]
+        },
+        {
+          "raw_path": "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\raw\\bench_generate_1765652089.jsonl",
+          "mode": "generate",
+          "total_runs": 180,
+          "expected_runs": 180,
+          "degraded_runs": 90,
+          "degraded_rate": 0.5,
+          "unique_backends": [
+            "onnxruntime-cpu",
+            "onnxruntime-gpu",
+            "tensorrt-fp16",
+            "tensorrt-fp32",
+            "tensorrt-int8",
+            "transformers-gpu-compile"
+          ],
+          "unique_scenarios": [
+            "batch_medium",
+            "batch_short",
+            "single_long",
+            "single_medium",
+            "single_micro",
+            "single_short"
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,161 @@
+[
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\onnx\\gpt2-45m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\tensorrt\\gpt2-45m_fp32.plan",
+    "precision": "fp32",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 45.79022270000132,
+    "file_size_mb": 276.80974197387695,
+    "engine_sha256": "95504ef204fb3dfdc88641ccbdec13b3208fbca880716d7c4bb5c1c2d299f95b",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\tensorrt\\gpt2-45m_fp32.plan",
+      "exists": true,
+      "file_size_bytes": 290256052,
+      "file_size_mb": 276.80974197387695,
+      "deserialize_error": null,
+      "num_layers": 463,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 128,
+        "Float": 402
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765660189.1847,
+    "built": true,
+    "reused": false
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\onnx\\gpt2-45m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\tensorrt\\gpt2-45m_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 68.84500610000032,
+    "file_size_mb": 276.6881904602051,
+    "engine_sha256": "b872af57dd6deaedc499aa37213b1c41c12723381daf42af16d08a726e536029",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\tensorrt\\gpt2-45m_fp16.plan",
+      "exists": true,
+      "file_size_bytes": 290128596,
+      "file_size_mb": 276.6881904602051,
+      "deserialize_error": null,
+      "num_layers": 463,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 128,
+        "Float": 402
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765660262.606315,
+    "built": true,
+    "reused": false
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\onnx\\gpt2-45m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\tensorrt\\gpt2-45m_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "applied_builder_settings": {
+      "builder_optimization_level": 3,
+      "max_num_tactics": -1,
+      "tiling_optimization_level": "TilingOptimizationLevel.NONE",
+      "profiling_verbosity": "ProfilingVerbosity.DETAILED"
+    },
+    "tensorrt_version": "10.12.0.36",
+    "build_time_s": 75.6025533999964,
+    "file_size_mb": 278.26504135131836,
+    "engine_sha256": "5651d210a7ad3eddfd52d977f66c0f31e70bd1f05004e2af2d9f8fe98cd6ebe2",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\validation_45m\\tensorrt\\gpt2-45m_int8.plan",
+      "exists": true,
+      "file_size_bytes": 291782044,
+      "file_size_mb": 278.26504135131836,
+      "deserialize_error": null,
+      "num_layers": 528,
+      "num_profiles": 6,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 129,
+        "Float": 481
+      },
+      "has_int8_tensors": false
+    },
+    "int8_calibration": {
+      "source": "dataset",
+      "tokenizer_available": true,
+      "datasets_available": true,
+      "dataset_name": "wikitext",
+      "dataset_config": "wikitext-2-raw-v1",
+      "split": "test",
+      "text_field": "text",
+      "samples": 512,
+      "texts_loaded": 512,
+      "batch_size": 8,
+      "seq_len": 128,
+      "seed": 42,
+      "num_batches": 64,
+      "random_vocab_size": null,
+      "cache_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tensorrt\\calib\\gpt2_wikitext2_test_512x8x128.calib",
+      "cache_hit_before": false,
+      "cache_size_bytes_before": null,
+      "cache_sha256_before": null,
+      "cache_size_bytes_after": 27442,
+      "cache_sha256_after": "23b9c1599ffc55be49127dd3fb5331b9086b53eac70f77438b2c7c78600540b5"
+    },
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765660343.732812,
+    "built": true,
+    "reused": false
+  }
+]

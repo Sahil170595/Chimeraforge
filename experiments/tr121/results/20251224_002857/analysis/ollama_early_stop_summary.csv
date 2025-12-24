@@ -1,0 +1,7 @@
+backend,model,scenario,n,params_millions_effective_median,gen_tokens_target,gen_tokens_raw_median,early_stop_rate,done_reason_mode
+ollama,gemma3:1b-it-qat,medium,5,999.89,64.0,64.0,0.0,length
+ollama,gemma3:1b-it-qat,short,5,999.89,64.0,34.0,1.0,stop
+ollama,gemma3:270m,medium,5,268.1,64.0,64.0,0.0,length
+ollama,gemma3:270m,short,5,268.1,64.0,48.0,1.0,stop
+ollama,gemma3:latest,medium,5,4300.0,64.0,64.0,0.0,length
+ollama,gemma3:latest,short,5,4300.0,64.0,41.0,1.0,stop

@@ -1,0 +1,13 @@
+backend,backend_kind,mode,scenario,aggregation,n_models,ok,log10_intercept,slope,r2
+ollama,ollama,e2e_kv,__all__,geomean_across_scenarios,2,True,0.7591052636681138,0.5603174906560985,1.0
+ollama,ollama,e2e_kv,medium,scenario,2,True,0.7698520722424937,0.5564246288352157,1.0
+ollama,ollama,e2e_kv,micro,scenario,2,True,0.654674866557567,0.59306333321721,1.0
+ollama,ollama,e2e_kv,short,scenario,2,True,0.8527888522042743,0.5314645099158721,1.0
+ollama,ollama,kv_decode,__all__,geomean_across_scenarios,2,True,0.7407684120146549,0.5638910852067608,1.0
+ollama,ollama,kv_decode,medium,scenario,2,True,0.7515930206402401,0.5598420708337021,1.0
+ollama,ollama,kv_decode,micro,scenario,2,True,0.6285488656459169,0.5994095907116722,1.0
+ollama,ollama,kv_decode,short,scenario,2,True,0.8421633497578139,0.5324215940749056,1.0
+ollama,ollama,prefill,__all__,geomean_across_scenarios,2,True,-0.6176702667561991,0.43120840184816844,1.0
+ollama,ollama,prefill,medium,scenario,2,True,-0.46151320712550803,0.37654892007275287,1.0
+ollama,ollama,prefill,micro,scenario,2,True,-0.6222316844036699,0.430566437042216,1.0
+ollama,ollama,prefill,short,scenario,2,True,-0.7692659087394232,0.48650984842953776,1.0

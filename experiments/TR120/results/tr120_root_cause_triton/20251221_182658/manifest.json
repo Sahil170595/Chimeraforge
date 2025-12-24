@@ -1,0 +1,46 @@
+{
+  "run_id": "20251221_182658",
+  "model_path": "models/tiny-gpt2",
+  "tier3_config": "scripts/tr117/configs/matrix_tier3.yaml",
+  "scenarios": [
+    "single_micro",
+    "single_short",
+    "single_medium",
+    "single_long",
+    "stress_single"
+  ],
+  "device": "cuda",
+  "dtype": "fp32",
+  "repetitions": 30,
+  "warmup_repetitions": 3,
+  "max_new_tokens": 64,
+  "modes": [
+    "prefill",
+    "kv_decode",
+    "e2e_kv"
+  ],
+  "torch_compile_config": {
+    "enabled": true,
+    "backend": "inductor",
+    "fallback_backend": "aot_eager",
+    "mode": "reduce-overhead",
+    "dynamic": false,
+    "fullgraph": false,
+    "disable_cudagraphs": true
+  },
+  "env": {
+    "CUDA_VISIBLE_DEVICES": null,
+    "HF_HUB_OFFLINE": null
+  },
+  "torch": {
+    "version": "2.8.0a0+5228986c39.nv25.05",
+    "cuda_available": true,
+    "cuda_version": "12.9",
+    "cudnn_version": 91001,
+    "gpu_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+    "gpu_cc": [
+      8,
+      9
+    ]
+  }
+}

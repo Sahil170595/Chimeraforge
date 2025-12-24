@@ -1,0 +1,43 @@
+{
+  "model": "gpt2",
+  "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\artifacts\\onnx\\gpt2.onnx",
+  "export_time_s": null,
+  "file_size_mb": 622.3690748214722,
+  "opset_version": 17,
+  "dynamic_axes": true,
+  "trt_friendly_inputs": true,
+  "valid": null,
+  "reused": true,
+  "onnx_sha256": null,
+  "onnx_inspect": {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\artifacts\\onnx\\gpt2.onnx",
+    "exists": true,
+    "onnx_file_size_bytes": 652601275,
+    "onnx_file_size_mb": 622.3690748214722,
+    "external_data": false,
+    "external_files": [],
+    "external_total_size_bytes": 0,
+    "external_total_size_mb": 0.0,
+    "total_artifact_size_bytes": 652601275,
+    "total_artifact_size_mb": 622.3690748214722,
+    "initializer_count": 149,
+    "initializer_numel": 163037184,
+    "initializer_bytes_est": 652148736,
+    "initializer_bytes_est_mb": 621.9375,
+    "initializer_dtype_counts": {
+      "FLOAT": 149
+    },
+    "opset_import": {
+      "ai.onnx": 17
+    },
+    "ir_version": 8,
+    "parse_error": null
+  },
+  "model_weight_files": {
+    "model_path": "gpt2",
+    "is_local_dir": false,
+    "weight_files": [],
+    "total_size_bytes": 0
+  },
+  "timestamp": 1766278019.0789952
+}

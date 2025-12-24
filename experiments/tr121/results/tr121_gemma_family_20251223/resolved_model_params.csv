@@ -1,0 +1,3 @@
+model,kind,params_millions_config,params_millions_measured
+gemma3:270m,ollama,268.1,268.1
+gemma3:1b-it-qat,ollama,999.9,999.89

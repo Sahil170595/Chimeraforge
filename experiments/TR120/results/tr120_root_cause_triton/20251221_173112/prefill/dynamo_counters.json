@@ -1,0 +1,133 @@
+{
+  "mode": "prefill",
+  "backend_labels": [
+    "transformers-gpu",
+    "transformers-gpu-compile"
+  ],
+  "compile_meta": {
+    "enabled": true,
+    "backend": "inductor",
+    "mode": "reduce-overhead",
+    "dynamic": false,
+    "fullgraph": false,
+    "compile_wrapper_ms": 6510.590301999969,
+    "dynamo_counters_after_compile": {
+      "frames": {
+        "total": 1,
+        "ok": 1
+      },
+      "inline_call": {},
+      "stats": {
+        "calls_captured": 110,
+        "unique_graphs": 1
+      },
+      "inductor": {
+        "pattern_matcher_count": 54,
+        "pattern_matcher_nodes": 63,
+        "benchmarking.InductorBenchmarker.benchmark_gpu": 12,
+        "fxgraph_cache_miss": 1,
+        "async_compile_cache_miss": 30,
+        "extern_calls": 13,
+        "async_compile_cache_hit": 15,
+        "triton_bundler_save_kernel": 112
+      },
+      "aot_autograd": {
+        "total": 1,
+        "autograd_cache_miss": 1,
+        "autograd_cache_saved": 1,
+        "ok": 1
+      },
+      "graph_break": {},
+      "aten_mm_info": {
+        "aten.addmm_8_6_2": 2,
+        "aten.bmm_8_8_1": 2,
+        "aten.bmm_8_1_8": 2,
+        "aten.mm_8_2_2": 2,
+        "aten.mm_8_8_2": 2,
+        "aten.mm_8_2_8": 2,
+        "aten.mm_8_50257_2": 1
+      }
+    }
+  },
+  "dynamo_counters": {
+    "frames": {
+      "total": 8,
+      "ok": 7
+    },
+    "inline_call": {},
+    "stats": {
+      "calls_captured": 759,
+      "unique_graphs": 7
+    },
+    "aot_autograd": {
+      "total": 7,
+      "autograd_cache_miss": 7,
+      "autograd_cache_saved": 7,
+      "ok": 7
+    },
+    "inductor": {
+      "pattern_matcher_count": 378,
+      "pattern_matcher_nodes": 441,
+      "benchmarking.InductorBenchmarker.benchmark_gpu": 122,
+      "fxgraph_cache_miss": 7,
+      "async_compile_cache_miss": 206,
+      "extern_calls": 91,
+      "async_compile_cache_hit": 103,
+      "triton_bundler_save_kernel": 840,
+      "cudagraph_recorded_non_static_inputs": 7
+    },
+    "graph_break": {},
+    "aten_mm_info": {
+      "aten.addmm_1_6_2": 2,
+      "aten.bmm_1_1_1": 4,
+      "aten.mm_1_2_2": 2,
+      "aten.mm_1_8_2": 2,
+      "aten.mm_1_2_8": 2,
+      "aten.mm_1_50257_2": 1,
+      "aten.addmm_9_6_2": 2,
+      "aten.bmm_9_9_1": 2,
+      "aten.bmm_9_1_9": 2,
+      "aten.mm_9_2_2": 2,
+      "aten.mm_9_8_2": 2,
+      "aten.mm_9_2_8": 2,
+      "aten.mm_9_50257_2": 1,
+      "aten.addmm_11_6_2": 2,
+      "aten.bmm_11_11_1": 2,
+      "aten.bmm_11_1_11": 2,
+      "aten.mm_11_2_2": 2,
+      "aten.mm_11_8_2": 2,
+      "aten.mm_11_2_8": 2,
+      "aten.mm_11_50257_2": 1,
+      "aten.addmm_17_6_2": 2,
+      "aten.bmm_17_17_1": 2,
+      "aten.bmm_17_1_17": 2,
+      "aten.mm_17_2_2": 2,
+      "aten.mm_17_8_2": 2,
+      "aten.mm_17_2_8": 2,
+      "aten.mm_20_50260_4": 2,
+      "aten.addmm_19_6_2": 2,
+      "aten.bmm_19_19_1": 2,
+      "aten.bmm_19_1_19": 2,
+      "aten.mm_19_2_2": 2,
+      "aten.mm_19_8_2": 2,
+      "aten.mm_19_2_8": 2,
+      "aten.addmm_27_6_2": 2,
+      "aten.bmm_27_27_1": 2,
+      "aten.bmm_27_1_27": 2,
+      "aten.mm_27_2_2": 2,
+      "aten.mm_27_8_2": 2,
+      "aten.mm_27_2_8": 2,
+      "aten.mm_27_50257_2": 1,
+      "aten.addmm_25_6_2": 2,
+      "aten.bmm_25_25_1": 2,
+      "aten.bmm_25_1_25": 2,
+      "aten.mm_25_2_2": 2,
+      "aten.mm_25_8_2": 2,
+      "aten.mm_25_2_8": 2,
+      "aten.mm_25_50257_2": 1
+    },
+    "unimplemented": {
+      "recompile_limit reached": 1
+    }
+  }
+}

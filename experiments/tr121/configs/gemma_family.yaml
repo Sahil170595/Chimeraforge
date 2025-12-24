@@ -1,0 +1,33 @@
+run_name: tr121_gemma_family_v1
+
+# Focused within-family check to reduce "model family confound" when interpreting Ollama scaling.
+gen_tokens: 64
+
+repetitions: 5
+warmup_repetitions: 1
+seed: 42
+
+scenarios:
+  - name: short
+    prompt: "Summarize RLHF in one sentence."
+  - name: medium
+    prompt: "Explain how backpressure works in an inference service and when to enable queueing."
+
+backends:
+  - name: ollama
+    kind: ollama
+    url: "http://localhost:11434"
+    options:
+      temperature: 0
+      top_p: 1
+
+models:
+  - name: gemma3:270m
+    kind: ollama
+    params_millions: 268.1
+  - name: gemma3:1b-it-qat
+    kind: ollama
+    params_millions: 999.9
+  - name: gemma3:latest
+    kind: ollama
+    params_millions: 4300

@@ -1,0 +1,124 @@
+{
+  "results": [
+    {
+      "backend": "transformers-gpu-compile",
+      "perplexity": 58.34344751286238,
+      "nll_sum": 294936.2183303833,
+      "token_count": 72531,
+      "mean_nll": 4.066347056160584,
+      "delta_frac": 0.0,
+      "pass": true
+    },
+    {
+      "backend": "onnxruntime-cpu",
+      "perplexity": 58.34265741810369,
+      "nll_sum": 294935.23609924316,
+      "token_count": 72531,
+      "mean_nll": 4.0663335139353265,
+      "delta_frac": -1.3542133562087952e-05,
+      "providers_used": [
+        "CPUExecutionProvider"
+      ],
+      "pass": true,
+      "threshold": 0.001
+    },
+    {
+      "backend": "onnxruntime-gpu",
+      "perplexity": 58.35438384161863,
+      "nll_sum": 294949.8128051758,
+      "token_count": 72531,
+      "mean_nll": 4.066534486015301,
+      "delta_frac": 0.00018744742078934375,
+      "providers_used": [
+        "CUDAExecutionProvider",
+        "CPUExecutionProvider"
+      ],
+      "pass": true,
+      "threshold": 0.001
+    },
+    {
+      "backend": "tensorrt-fp32",
+      "perplexity": 58.34522535264584,
+      "nll_sum": 294938.4284591675,
+      "token_count": 72531,
+      "mean_nll": 4.066377527666343,
+      "delta_frac": 3.0471970019694804e-05,
+      "pass": true,
+      "threshold": 0.001
+    },
+    {
+      "backend": "tensorrt-fp16",
+      "perplexity": null,
+      "nll_sum": null,
+      "token_count": 0,
+      "mean_nll": null,
+      "delta_frac": null,
+      "error": "set_input_shape_failed:input_ids:4x128",
+      "pass": false
+    },
+    {
+      "backend": "tensorrt-int8",
+      "perplexity": 58.34431936477173,
+      "nll_sum": 294937.3021850586,
+      "token_count": 72531,
+      "mean_nll": 4.066361999490681,
+      "delta_frac": 1.494344174901052e-05,
+      "pass": true,
+      "threshold": 0.02
+    }
+  ],
+  "diagnostics": {
+    "formula": "Perplexity = exp(NLL_sum / token_count), where NLL is summed cross-entropy on shifted logits/labels and token_count = sum(attention_mask[:,1:]).",
+    "dataset": {
+      "name": "wikitext",
+      "config": "wikitext-2-raw-v1",
+      "split": "test",
+      "samples": 1000
+    },
+    "vocab_size": 50257,
+    "ln_vocab": 10.82490511970208,
+    "expected_uniform_perplexity": 50257.0,
+    "pytorch_device": "cuda",
+    "baseline": {
+      "perplexity": 58.34344751286238,
+      "nll_sum": 294936.2183303833,
+      "token_count": 72531,
+      "mean_nll": 4.066347056160584
+    },
+    "reference_check_pytorch_loss": {
+      "ok": true,
+      "mean_nll": 4.138311862945557,
+      "token_count": 533,
+      "perplexity": 62.696891116806086
+    },
+    "logit_diffs_last_token": {
+      "onnxruntime-cpu": {
+        "providers_used": [
+          "CPUExecutionProvider"
+        ],
+        "mean_abs": 4.124749102629721e-05,
+        "max_abs": 0.000213623046875
+      },
+      "onnxruntime-gpu": {
+        "providers_used": [
+          "CUDAExecutionProvider",
+          "CPUExecutionProvider"
+        ],
+        "mean_abs": 0.020250458270311356,
+        "max_abs": 0.05011749267578125
+      },
+      "tensorrt-fp32": {
+        "mean_abs": 0.028247099369764328,
+        "max_abs": 0.05690765380859375
+      },
+      "tensorrt-fp16": {
+        "error": "RuntimeError: set_input_shape_failed:input_ids:1x128"
+      },
+      "tensorrt-int8": {
+        "mean_abs": 0.006076753605157137,
+        "max_abs": 0.03185272216796875
+      }
+    },
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2\\gpt2\\onnx\\gpt2.onnx"
+  }
+}

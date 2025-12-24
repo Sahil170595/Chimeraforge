@@ -1,0 +1,13 @@
+{
+  "model_ref": "models/tiny-gpt2",
+  "vocab_size": 50257,
+  "parameter_count": 102714,
+  "perplexity_baseline": {
+    "backend": "transformers-gpu-compile",
+    "mean_nll": 10.825478194515332,
+    "perplexity": 50285.80927503612
+  },
+  "perplexity_from_mean_nll": 50285.80927503612,
+  "uniform_perplexity": 50257,
+  "ratio_vs_uniform": 1.000573239051995
+}

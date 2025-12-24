@@ -1,0 +1,7 @@
+# TR118 variant: TensorRT FP32 only
+tensorrt:
+  precisions: [fp32]
+benchmark:
+  backends:
+    - tensorrt-fp32
+

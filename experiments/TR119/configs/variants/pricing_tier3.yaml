@@ -1,0 +1,10 @@
+# TR119 variant: Budget cloud pricing (on-premise equivalent, low overhead)
+cloud_pricing:
+  on_demand_usd_per_hour: 0.1
+  spot_usd_per_hour: 0.03
+  reserved_usd_per_hour: 0.06
+
+energy:
+  usd_per_kwh: 0.12  # Lower energy cost for on-prem
+  carbon_intensity_gco2e_per_kwh: 300.0  # Assumes some renewable
+

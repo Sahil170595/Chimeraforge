@@ -1,0 +1,54 @@
+{
+  "tr": "TR118",
+  "started_at": 1765600415.6174529,
+  "run_id": 1765600415,
+  "config_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\config_generated_baseline.yaml",
+  "prompt_config_path": "scripts\\tr117\\configs\\matrix_tier3.yaml",
+  "git_sha": "92275d856cfcabbe058e8fec534ba0a378052705",
+  "platform": {
+    "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+    "os": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "cuda_device": {
+      "index": 0,
+      "name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "capability": "8.9",
+      "total_memory_mb": 12281.5
+    },
+    "onnxruntime_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  },
+  "package_versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0",
+    "onnx": "1.19.0",
+    "onnxruntime": "1.23.2",
+    "tensorrt": "10.12.0.36",
+    "pycuda": "None",
+    "datasets": "3.5.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "scipy": "1.15.2",
+    "matplotlib": "3.9.3"
+  },
+  "config_snapshot_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\config_used_1765600415.yaml",
+  "runs": {
+    "prefill": {
+      "raw_results_path": "scripts\\tr118\\results\\sweeps\\_base\\raw\\bench_prefill_1765600415.jsonl",
+      "latency_summary_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\latency_summary_prefill.csv",
+      "statistical_analysis_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\statistical_analysis_prefill.json"
+    },
+    "generate": {
+      "raw_results_path": "scripts\\tr118\\results\\sweeps\\_base\\raw\\bench_generate_1765600415.jsonl",
+      "latency_summary_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\latency_summary_generate.csv",
+      "statistical_analysis_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\statistical_analysis_generate.json"
+    }
+  },
+  "export_metadata_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\export_metadata_1765600415.json",
+  "trt_build_metadata_path": "scripts\\tr118\\results\\sweeps\\_base\\processed\\trt_build_metadata_1765600415.json",
+  "ended_at": 1765600460.538399,
+  "duration_s": 44.92094612121582
+}

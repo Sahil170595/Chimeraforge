@@ -1,0 +1,46 @@
+[
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "build_time_s": 41.043937799997366,
+    "file_size_mb": 3.333454132080078,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765575955.5167906
+  },
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_fp32.plan",
+    "precision": "fp32",
+    "workspace_gb": 6,
+    "build_time_s": 48.29126779999933,
+    "file_size_mb": 3.882091522216797,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765590114.0165188
+  },
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 6,
+    "build_time_s": 50.42814189999626,
+    "file_size_mb": 4.447216033935547,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765590172.012917
+  },
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "build_time_s": 33.04578510000283,
+    "file_size_mb": 5.102054595947266,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765590214.2496016
+  }
+]

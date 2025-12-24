@@ -1,0 +1,8 @@
+model,device,dtype,hf_load_ms
+models/gpt2-50m,cuda,fp16,9566.628600001422
+models/gpt2-100m,cuda,fp16,439.9403000006714
+models/gpt2-45m,cuda,fp16,308.8712000007945
+models/gpt2-75m,cuda,fp16,318.3679000012489
+models/gpt2-25m,cuda,fp16,207.7833000003011
+models/gpt2-5m,cuda,fp16,229.26139999981388
+models/tiny-gpt2,cuda,fp16,167.06920000069658

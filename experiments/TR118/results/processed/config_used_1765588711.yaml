@@ -1,0 +1,123 @@
+# TR118 Postdoc Matrix Configuration
+# Goal: TR115_v2-level (or deeper) run-level statistical rigor for fully local inference.
+#
+# This config is designed to produce publishable artifacts:
+# - ONNX export metadata
+# - TRT build metadata (including INT8 calibration cache when available)
+# - Run-level JSONL benchmarks
+# - Aggregated CSV summaries + statistical tests
+# - Perplexity-based accuracy gates
+
+model:
+  name: "models/tiny-gpt2"
+  description: "Tiny GPT-2 (124M) for fast, repeatable local benchmarking"
+
+onnx:
+  opset_version: 17
+  dynamic_axes: true
+  trt_friendly_inputs: true
+  optimize_for_inference: true
+
+tensorrt:
+  precisions: [fp32, fp16, int8]
+  workspace_gb: 6
+
+  # Dynamic optimization profiles (required for dynamic-axis ONNX).
+  # Include both batch=1 and batch=4 to cover single and batch scenarios.
+  dynamic_shapes:
+    enabled: true
+    profiles:
+      - name: "single_short"
+        min_shape: [1, 8]
+        opt_shape: [1, 32]
+        max_shape: [1, 64]
+      - name: "single_medium"
+        min_shape: [1, 32]
+        opt_shape: [1, 128]
+        max_shape: [1, 256]
+      - name: "single_long"
+        min_shape: [1, 128]
+        opt_shape: [1, 256]
+        max_shape: [1, 512]
+      - name: "batch_short"
+        min_shape: [4, 8]
+        opt_shape: [4, 32]
+        max_shape: [4, 64]
+      - name: "batch_medium"
+        min_shape: [4, 32]
+        opt_shape: [4, 128]
+        max_shape: [4, 256]
+
+  # INT8 calibration (preferred: real text calibration; falls back to random tokens if deps missing).
+  # For publishable INT8 claims: ensure `tensorrt` + `pycuda` + `datasets` are installed and this completes.
+  int8_calibration:
+    dataset_name: "wikitext"
+    dataset_config: "wikitext-2-raw-v1"
+    split: "test"
+    text_field: "text"
+    samples: 512
+    batch_size: 8
+    seq_len: 128
+    seed: 42
+    cache_path: "artifacts/tensorrt/calib/tiny-gpt2_wikitext2_test_512x8x128.calib"
+
+benchmark:
+  # Default prompt config for scenario definitions (TR117 Tier 3).
+  prompt_config_path: "scripts/tr117/configs/matrix_tier3.yaml"
+
+  # Benchmark modes:
+  # - prefill: single forward pass
+  # - generate: uncached greedy loop (repeated full forward passes)
+  modes: [prefill, generate]
+
+  # 6 backends × 6 scenarios × 5 reps = 180 run-level samples (deeper than TR115_v2's 150).
+  backends:
+    - transformers-gpu-compile
+    - onnxruntime-cpu
+    - onnxruntime-gpu
+    - tensorrt-fp32
+    - tensorrt-fp16
+    - tensorrt-int8
+
+  scenarios:
+    - single_micro
+    - single_short
+    - single_medium
+    - single_long
+    - batch_short
+    - batch_medium
+
+  repetitions: 5
+  warmup_runs: 3
+  timeout_s: 60
+  max_seq_len: 512
+  max_new_tokens: 8
+  stop_on_eos: true
+
+  enable_resource_monitoring: true
+
+resource_sampling_interval_s: 0.1
+
+accuracy:
+  # Perplexity is the default publishable accuracy gate for TRT/ORT speed claims.
+  perplexity_dataset: "wikitext-2-raw-v1"
+  perplexity_samples: 1000
+  perplexity_batch_size: 4
+  perplexity_max_length: 128
+
+  # Allowed fractional perplexity increase vs PyTorch baseline.
+  perplexity_thresholds:
+    fp32: 0.001
+    fp16: 0.005
+    int8: 0.020
+
+baseline:
+  backend: "transformers-gpu-compile"
+
+output:
+  onnx_dir: "artifacts/onnx"
+  tensorrt_dir: "artifacts/tensorrt"
+  results_dir: "scripts/tr118/results"
+
+seed: 42
+torch_deterministic: true

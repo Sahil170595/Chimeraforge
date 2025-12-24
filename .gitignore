@@ -370,6 +370,17 @@ dist/**/*.html
 !experiments/**/*
 !outputs/
 !outputs/**/*
+# But ignore large model files in experiments/
+experiments/**/models/**/*.pt
+experiments/**/models/**/*.bin
+experiments/**/models/**/*.safetensors
+experiments/**/models/**/*.onnx
+experiments/**/models/**/*.pth
+experiments/**/models/**/*.ckpt
+experiments/**/checkpoint-*/optimizer.pt
+experiments/**/checkpoint-*/optimizer.bin
+experiments/**/artifacts/onnx/*.onnx
+experiments/**/results/**/artifacts/onnx/*.onnx
 # Explicitly KEEP all data/research artifacts
 !data/research/
 !data/research/**/*

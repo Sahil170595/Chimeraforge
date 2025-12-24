@@ -1,0 +1,75 @@
+{
+  "comparisons": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "latency_ms",
+      "mean_a": 146.18139999993218,
+      "mean_b": 13.781900000140013,
+      "difference": -132.39949999979217,
+      "percent_change": -90.57205636274766,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ],
+  "comparisons_by_scenario": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "latency_ms::single_short",
+      "mean_a": 146.18139999993218,
+      "mean_b": 13.781900000140013,
+      "difference": -132.39949999979217,
+      "percent_change": -90.57205636274766,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ],
+  "throughput_comparisons_by_scenario": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "throughput_tok_s::single_short",
+      "mean_a": 366.8649562541751,
+      "mean_b": 580.7772018022675,
+      "difference": 213.91224554809241,
+      "percent_change": 58.30817086816206,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ],
+  "ttft_comparisons": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "ttft_ms",
+      "mean_a": 135.24969999980385,
+      "mean_b": 1.7322500002592278,
+      "difference": -133.51744999954462,
+      "percent_change": -98.71922081878056,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "ttft_ms::single_short",
+      "mean_a": 135.24969999980385,
+      "mean_b": 1.7322500002592278,
+      "difference": -133.51744999954462,
+      "percent_change": -98.71922081878056,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ]
+}

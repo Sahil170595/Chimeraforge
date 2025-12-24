@@ -1,0 +1,22 @@
+{
+  "tr": "TR118",
+  "sweep_started_at": 1765600729.8504796,
+  "sweep_ended_at": 1765600842.8031437,
+  "duration_s": 112.9526641368866,
+  "base_config_path": "scripts\\tr118\\configs\\sweep_base.yaml",
+  "variants_dir": "scripts\\tr118\\configs\\variants",
+  "variants": [
+    {
+      "variant": "baseline",
+      "generated_config_path": "scripts\\tr118\\results\\sweeps\\baseline\\processed\\config_generated_baseline.yaml",
+      "results_dir": "scripts\\tr118\\results\\sweeps\\baseline",
+      "manifest_path": "scripts\\tr118\\results\\sweeps\\baseline\\processed\\experiment_manifest_1765600729.json"
+    },
+    {
+      "variant": "static_shapes",
+      "generated_config_path": "scripts\\tr118\\results\\sweeps\\static_shapes\\processed\\config_generated_static_shapes.yaml",
+      "results_dir": "scripts\\tr118\\results\\sweeps\\static_shapes",
+      "manifest_path": "scripts\\tr118\\results\\sweeps\\static_shapes\\processed\\experiment_manifest_1765600787.json"
+    }
+  ]
+}

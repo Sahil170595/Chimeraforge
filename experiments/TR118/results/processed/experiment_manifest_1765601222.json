@@ -1,0 +1,56 @@
+{
+  "tr": "TR118",
+  "started_at": 1765601222.5778017,
+  "run_id": 1765601222,
+  "config_path": "scripts\\tr118\\configs\\matrix_postdoc.yaml",
+  "prompt_config_path": "scripts\\tr117\\configs\\matrix_tier3.yaml",
+  "git_sha": "92275d856cfcabbe058e8fec534ba0a378052705",
+  "platform": {
+    "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+    "os": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "cuda_device": {
+      "index": 0,
+      "name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "capability": "8.9",
+      "total_memory_mb": 12281.5
+    },
+    "onnxruntime_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  },
+  "package_versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0",
+    "onnx": "1.19.0",
+    "onnxruntime": "1.23.2",
+    "tensorrt": "10.12.0.36",
+    "pycuda": "None",
+    "datasets": "3.5.0",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "scipy": "1.15.2",
+    "matplotlib": "3.9.3"
+  },
+  "config_snapshot_path": "scripts\\tr118\\results\\processed\\config_used_1765601222.yaml",
+  "runs": {
+    "prefill": {
+      "raw_results_path": "scripts\\tr118\\results\\raw\\bench_prefill_1765601222.jsonl",
+      "latency_summary_path": "scripts\\tr118\\results\\processed\\latency_summary_prefill.csv",
+      "statistical_analysis_path": "scripts\\tr118\\results\\processed\\statistical_analysis_prefill.json"
+    },
+    "generate": {
+      "raw_results_path": "scripts\\tr118\\results\\raw\\bench_generate_1765601222.jsonl",
+      "latency_summary_path": "scripts\\tr118\\results\\processed\\latency_summary_generate.csv",
+      "statistical_analysis_path": "scripts\\tr118\\results\\processed\\statistical_analysis_generate.json"
+    }
+  },
+  "export_metadata_path": "scripts\\tr118\\results\\processed\\export_metadata_1765601222.json",
+  "trt_build_metadata_path": "scripts\\tr118\\results\\processed\\trt_build_metadata_1765601222.json",
+  "perplexity_results_csv": "scripts\\tr118\\results\\processed\\perplexity_results.csv",
+  "perplexity_results_json": "scripts\\tr118\\results\\processed\\perplexity_results.json",
+  "ended_at": 1765601390.838444,
+  "duration_s": 168.26064229011536
+}

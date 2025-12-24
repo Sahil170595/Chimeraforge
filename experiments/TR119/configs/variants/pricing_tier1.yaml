@@ -1,0 +1,10 @@
+# TR119 variant: High-end cloud pricing (AWS p4d.24xlarge equivalent)
+cloud_pricing:
+  on_demand_usd_per_hour: 32.77
+  spot_usd_per_hour: 9.83
+  reserved_usd_per_hour: 19.66
+
+energy:
+  usd_per_kwh: 0.15  # US average
+  carbon_intensity_gco2e_per_kwh: 500.0
+

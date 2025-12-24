@@ -1,0 +1,87 @@
+{
+  "comparisons": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "latency_ms",
+      "mean_a": 282.3447000005217,
+      "mean_b": 21.959100000003673,
+      "difference": -260.385600000518,
+      "percent_change": -92.22259174690967,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "tensorrt-fp16",
+      "metric": "latency_ms",
+      "mean_a": 282.3447000005217,
+      "mean_b": 1.6762499999458669,
+      "difference": -280.66845000057583,
+      "percent_change": -99.40631079671664,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ],
+  "comparisons_by_scenario": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "latency_ms::single_short",
+      "mean_a": 282.3447000005217,
+      "mean_b": 21.959100000003673,
+      "difference": -260.385600000518,
+      "percent_change": -92.22259174690967,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "tensorrt-fp16",
+      "metric": "latency_ms::single_short",
+      "mean_a": 282.3447000005217,
+      "mean_b": 1.6762499999458669,
+      "difference": -280.66845000057583,
+      "percent_change": -99.40631079671664,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ],
+  "throughput_comparisons_by_scenario": [
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "onnxruntime-gpu",
+      "metric": "throughput_tok_s::single_short",
+      "mean_a": 58.56490856567511,
+      "mean_b": 500.9387648708592,
+      "difference": 442.37385630518406,
+      "percent_change": 755.3565217456164,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    },
+    {
+      "group_a": "transformers-gpu-compile",
+      "group_b": "tensorrt-fp16",
+      "metric": "throughput_tok_s::single_short",
+      "mean_a": 58.56490856567511,
+      "mean_b": 6608.463469952362,
+      "difference": 6549.898561386687,
+      "percent_change": 11183.998612482394,
+      "t_statistic": NaN,
+      "p_value": NaN,
+      "significant": false,
+      "effect_size": NaN
+    }
+  ],
+  "ttft_comparisons": []
+}

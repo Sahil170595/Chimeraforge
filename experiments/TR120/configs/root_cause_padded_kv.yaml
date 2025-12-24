@@ -1,0 +1,40 @@
+model_path: models/tiny-gpt2
+tier3_config: scripts/tr117/configs/matrix_tier3.yaml
+
+# Targeted subset for root-cause and ablation.
+scenarios:
+  - single_micro
+  - single_short
+  - single_medium
+  - single_long
+  - stress_single
+
+device: cuda
+dtype: fp32
+
+repetitions: 30
+warmup_repetitions: 3
+
+max_new_tokens: 64
+
+tokenization:
+  # Make shapes stable to test the hypothesis:
+  # variable prompt lengths -> recompiles -> tail inflation.
+  pad_to_max_length: true
+  pad_scope: per_scenario  # per_scenario | global
+  pad_to_multiple_of: 8
+
+torch_compile:
+  enabled: true
+  backend: inductor
+  fallback_backend: aot_eager
+  mode: reduce-overhead
+  dynamic: false
+  fullgraph: false
+  disable_cudagraphs: true
+
+modes:
+  - prefill
+  - kv_decode
+  - e2e_kv
+

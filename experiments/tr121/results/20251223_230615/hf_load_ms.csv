@@ -1,0 +1,15 @@
+model,device,dtype,hf_load_ms
+models/gpt2-45m,cpu,fp32,12764.581700000235
+models/tiny-gpt2,cuda,fp16,319.4110999993427
+models/gpt2-100m,cuda,fp16,541.504800000439
+models/gpt2-5m,cuda,fp16,280.0201999998535
+models/gpt2-5m,cpu,fp32,250.55720000000292
+models/gpt2-75m,cuda,fp16,632.3296000000482
+models/gpt2-50m,cuda,fp16,481.3285000000178
+models/tiny-gpt2,cpu,fp32,166.45289999996749
+models/gpt2-25m,cuda,fp16,284.3991999998252
+models/gpt2-25m,cpu,fp32,106.51850000067498
+models/gpt2-100m,cpu,fp32,234.14950000005774
+models/gpt2-45m,cuda,fp16,245.24730000030104
+models/gpt2-50m,cpu,fp32,209.40330000030372
+models/gpt2-75m,cpu,fp32,322.4867999997514

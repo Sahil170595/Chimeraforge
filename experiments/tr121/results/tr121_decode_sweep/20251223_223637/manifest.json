@@ -1,0 +1,34 @@
+{
+  "run_id": "20251223_223637",
+  "config_path": "scripts\\tr121\\configs\\decode_sweep.yaml",
+  "run_name": "tr121_decode_length_sweep_v1",
+  "gen_tokens_list": [
+    8,
+    32,
+    64,
+    128
+  ],
+  "repetitions": 3,
+  "warmup_repetitions": 1,
+  "seed": 42,
+  "models": [
+    "models/gpt2-5m",
+    "models/gpt2-25m",
+    "models/gpt2-45m",
+    "models/gpt2-50m",
+    "models/gpt2-75m",
+    "models/gpt2-100m",
+    "gemma3:270m",
+    "qwen2.5:7b",
+    "gpt-oss-20b:latest"
+  ],
+  "backends": [
+    "hf_cpu_fp32",
+    "hf_gpu_fp16",
+    "ollama"
+  ],
+  "scenarios": [
+    "short",
+    "medium"
+  ]
+}

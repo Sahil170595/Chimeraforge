@@ -1,0 +1,10 @@
+backend,backend_kind,mode,scenario,aggregation,n_models,ok,log10_intercept,slope,r2
+ollama,ollama,e2e_kv,__all__,geomean_across_scenarios,2,True,0.9683322064479074,0.4938859919205692,1.0
+ollama,ollama,e2e_kv,medium,scenario,2,True,0.8420817473918188,0.536618356972816,1.0
+ollama,ollama,e2e_kv,short,scenario,2,True,1.094582665504005,0.45115362686831956,1.0
+ollama,ollama,kv_decode,__all__,geomean_across_scenarios,2,True,0.9571659539789684,0.49493277512279416,1.0
+ollama,ollama,kv_decode,medium,scenario,2,True,0.8307152269654736,0.5376532266010876,1.0
+ollama,ollama,kv_decode,short,scenario,2,True,1.0836166809924723,0.45221232364449776,1.0
+ollama,ollama,prefill,__all__,geomean_across_scenarios,2,True,-0.5932513665048501,0.43420106849882,1.0
+ollama,ollama,prefill,medium,scenario,2,True,-0.6998879712583359,0.4735632923709275,1.0
+ollama,ollama,prefill,short,scenario,2,True,-0.4866147617513637,0.3948388446267123,1.0

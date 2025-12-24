@@ -1,0 +1,16 @@
+backend,model,scenario,n,params_millions_effective_median,gen_tokens_target,gen_tokens_raw_median,early_stop_rate,done_reason_mode
+ollama,gemma3:1b-it-qat,medium,3,999.89,64.0,64.0,0.0,length
+ollama,gemma3:1b-it-qat,micro,3,999.89,64.0,64.0,0.0,length
+ollama,gemma3:1b-it-qat,short,3,999.89,64.0,34.0,1.0,stop
+ollama,gemma3:270m,medium,3,268.1,64.0,64.0,0.0,length
+ollama,gemma3:270m,micro,3,268.1,64.0,11.0,1.0,stop
+ollama,gemma3:270m,short,3,268.1,64.0,48.0,1.0,stop
+ollama,gpt-oss-20b:latest,medium,3,20900.0,64.0,64.0,0.0,length
+ollama,gpt-oss-20b:latest,micro,3,20900.0,64.0,34.0,1.0,stop
+ollama,gpt-oss-20b:latest,short,3,20900.0,64.0,64.0,0.0,length
+ollama,llama3.1:8b-instruct-q4_0,medium,3,8000.0,64.0,64.0,0.0,length
+ollama,llama3.1:8b-instruct-q4_0,micro,3,8000.0,64.0,10.0,1.0,stop
+ollama,llama3.1:8b-instruct-q4_0,short,3,8000.0,64.0,57.0,1.0,stop
+ollama,qwen2.5:7b,medium,3,7600.0,64.0,64.0,0.0,length
+ollama,qwen2.5:7b,micro,3,7600.0,64.0,29.0,1.0,stop
+ollama,qwen2.5:7b,short,3,7600.0,64.0,35.0,1.0,stop

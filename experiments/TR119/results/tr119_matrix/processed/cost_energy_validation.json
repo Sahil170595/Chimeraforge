@@ -1,0 +1,15 @@
+{
+  "cost_validation": {
+    "valid": true,
+    "issues": [],
+    "warnings": [],
+    "on_demand_rate": 1.006,
+    "energy_rate": 0.2
+  },
+  "energy_validation": {
+    "valid": true,
+    "issues": [],
+    "warnings": []
+  },
+  "overall_valid": true
+}

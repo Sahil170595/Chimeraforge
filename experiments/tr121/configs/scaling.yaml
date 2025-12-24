@@ -1,0 +1,75 @@
+run_name: tr121_scaling_v0
+
+# Fixed-token decode budget for all measurements.
+gen_tokens: 64
+
+# Keep moderate by default; large Ollama models can be slow.
+repetitions: 3
+warmup_repetitions: 1
+seed: 42
+
+scenarios:
+  - name: micro
+    prompt: "Hello"
+  - name: short
+    prompt: "Summarize RLHF in one sentence."
+  - name: medium
+    prompt: "Explain how backpressure works in an inference service and when to enable queueing."
+
+backends:
+  - name: hf_cpu_fp32
+    kind: hf
+    device: cpu
+    dtype: fp32
+  - name: hf_gpu_fp16
+    kind: hf
+    device: cuda
+    dtype: fp16
+  - name: ollama
+    kind: ollama
+    url: "http://localhost:11434"
+    options:
+      temperature: 0
+      top_p: 1
+      # num_predict is set from gen_tokens at runtime unless overridden here.
+
+models:
+  # Local HF models (repo checked in / downloaded already)
+  - name: models/gpt2-5m
+    kind: hf
+    params_millions: 5.037
+  - name: models/gpt2-25m
+    kind: hf
+    params_millions: 25.016
+  - name: models/gpt2-45m
+    kind: hf
+    params_millions: 45.171
+  - name: models/gpt2-50m
+    kind: hf
+    params_millions: 51.476
+  - name: models/gpt2-75m
+    kind: hf
+    params_millions: 74.825
+  - name: models/gpt2-100m
+    kind: hf
+    params_millions: 96.088
+  - name: models/tiny-gpt2
+    kind: hf
+    params_millions: 0.103
+
+  # Local Ollama models (for 270M -> 20B scaling coverage)
+  - name: gemma3:270m
+    kind: ollama
+    params_millions: 268.1
+  - name: gemma3:1b-it-qat
+    kind: ollama
+    params_millions: 999.9
+  - name: qwen2.5:7b
+    kind: ollama
+    params_millions: 7600
+  - name: llama3.1:8b-instruct-q4_0
+    kind: ollama
+    params_millions: 8000
+  - name: gpt-oss-20b:latest
+    kind: ollama
+    params_millions: 20900

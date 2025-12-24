@@ -1,0 +1,73 @@
+# TR119 Matrix Configuration
+# Goal: Comprehensive cost/energy analysis across backends and scenarios.
+
+model:
+  name: "gpt2"
+  description: "GPT-2 base (~124M params) for cost/energy analysis"
+
+benchmark:
+  backends:
+    - transformers-gpu-compile
+    - transformers-gpu
+    - transformers-cpu
+    - onnxruntime-gpu
+    - onnxruntime-cpu
+  scenarios:
+    - single_short
+    - single_medium
+    - single_long
+    - batch_short
+    - batch_medium
+  repetitions: 7
+  warmup_runs: 2
+  mode: prefill
+
+telemetry:
+  sample_interval_s: 0.25
+  enable_gpu: true
+  enable_cpu: true
+  cpu_power_model:
+    idle_watts: 10.0
+    max_watts: 65.0
+
+cloud_pricing:
+  # AWS g5.xlarge pricing (approximate)
+  on_demand_usd_per_hour: 1.006
+  spot_usd_per_hour: 0.302
+  reserved_1yr_usd_per_hour: 0.704
+  reserved_3yr_usd_per_hour: 0.503
+  on_prem_usd_per_hour: 0.0  # CapEx only
+  # Approximate provider comparison (replace with region-accurate rates)
+  providers:
+    aws_g5_xlarge:
+      on_demand_usd_per_hour: 1.006
+      spot_usd_per_hour: 0.302
+      reserved_1yr_usd_per_hour: 0.704
+      reserved_3yr_usd_per_hour: 0.503
+    azure_nc_t4_v3:
+      on_demand_usd_per_hour: 0.90
+      spot_usd_per_hour: 0.27
+      reserved_1yr_usd_per_hour: 0.60
+      reserved_3yr_usd_per_hour: 0.42
+    gcp_a2_highgpu:
+      on_demand_usd_per_hour: 1.20
+      spot_usd_per_hour: 0.36
+      reserved_1yr_usd_per_hour: 0.80
+      reserved_3yr_usd_per_hour: 0.56
+
+energy:
+  usd_per_kwh: 0.20  # US average
+  carbon_intensity_gco2e_per_kwh: 500.0  # US grid average
+
+analysis:
+  tokens_per_month: 1000000000.0
+  months: 12
+  upfront_cost_usd: 0.0
+  prompt_tokens: 256
+  generate_tokens: 128
+
+output:
+  results_dir: "scripts/tr119/results/tr119_matrix"
+
+seed: 42
+

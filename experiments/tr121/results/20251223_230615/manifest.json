@@ -1,0 +1,287 @@
+{
+  "argv": [
+    "scripts/tr121/run_scaling.py",
+    "--config",
+    "scripts/tr121/configs/scaling.yaml",
+    "--out-dir",
+    "scripts/tr121/results/20251223_230615",
+    "--ollama-timeout-s",
+    "900"
+  ],
+  "config_path": "scripts\\tr121\\configs\\scaling.yaml",
+  "config_sha256": "5291e18bc612158e476a7c57d18b20e8950e75405581f418d0d4232cbc5c1ccd",
+  "cuda_available": true,
+  "gen_tokens": 64,
+  "git_head": "dbf0ac00357fa86c5043bf452786942e8c002bbd",
+  "measured_params": {
+    "hf_params_millions": [
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/gpt2-100m",
+        "params_millions_measured": 96.08832
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-100m",
+        "params_millions_measured": 96.08832
+      },
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/gpt2-25m",
+        "params_millions_measured": 25.016064
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-25m",
+        "params_millions_measured": 25.016064
+      },
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/gpt2-45m",
+        "params_millions_measured": 45.1712
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-45m",
+        "params_millions_measured": 45.1712
+      },
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/gpt2-50m",
+        "params_millions_measured": 51.475968
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-50m",
+        "params_millions_measured": 51.475968
+      },
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/gpt2-5m",
+        "params_millions_measured": 5.03672
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-5m",
+        "params_millions_measured": 5.03672
+      },
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/gpt2-75m",
+        "params_millions_measured": 74.824704
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/gpt2-75m",
+        "params_millions_measured": 74.824704
+      },
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "model": "models/tiny-gpt2",
+        "params_millions_measured": 0.102714
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "model": "models/tiny-gpt2",
+        "params_millions_measured": 0.102714
+      }
+    ],
+    "ollama_params_millions": [
+      {
+        "family": "gemma3",
+        "model": "gemma3:270m",
+        "parameter_size_raw": "268.10M",
+        "params_millions_measured": 268.1,
+        "quantization_level": "Q8_0"
+      },
+      {
+        "family": "gemma3",
+        "model": "gemma3:1b-it-qat",
+        "parameter_size_raw": "999.89M",
+        "params_millions_measured": 999.89,
+        "quantization_level": "Q4_0"
+      },
+      {
+        "family": "qwen2",
+        "model": "qwen2.5:7b",
+        "parameter_size_raw": "7.6B",
+        "params_millions_measured": 7600.0,
+        "quantization_level": "Q4_K_M"
+      },
+      {
+        "family": "llama",
+        "model": "llama3.1:8b-instruct-q4_0",
+        "parameter_size_raw": "8.0B",
+        "params_millions_measured": 8000.0,
+        "quantization_level": "Q4_0"
+      },
+      {
+        "family": "gpt-oss",
+        "model": "gpt-oss-20b:latest",
+        "parameter_size_raw": "20.9B",
+        "params_millions_measured": 20900.0,
+        "quantization_level": "Q4_K_M"
+      }
+    ]
+  },
+  "modes": [
+    "prefill",
+    "kv_decode",
+    "e2e_kv"
+  ],
+  "nvml": {
+    "memory_total_mb": 12282.0,
+    "name": "NVIDIA GeForce RTX 4080 Laptop GPU"
+  },
+  "ollama_timeout_s": 900.0,
+  "platform": {
+    "machine": "AMD64",
+    "os": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python": "3.13.1"
+  },
+  "records_expected": 684,
+  "repetitions": 3,
+  "resolved": {
+    "backends": [
+      {
+        "device": "cpu",
+        "dtype": "fp32",
+        "kind": "hf",
+        "name": "hf_cpu_fp32",
+        "options": null,
+        "url": null
+      },
+      {
+        "device": "cuda",
+        "dtype": "fp16",
+        "kind": "hf",
+        "name": "hf_gpu_fp16",
+        "options": null,
+        "url": null
+      },
+      {
+        "device": null,
+        "dtype": null,
+        "kind": "ollama",
+        "name": "ollama",
+        "options": {
+          "temperature": 0,
+          "top_p": 1
+        },
+        "url": "http://localhost:11434"
+      }
+    ],
+    "filters": {
+      "backends_allowlist": null,
+      "models_allowlist": null,
+      "scenarios_allowlist": null
+    },
+    "models": [
+      {
+        "kind": "hf",
+        "name": "models/gpt2-5m",
+        "params_millions": 5.037
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-25m",
+        "params_millions": 25.016
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-45m",
+        "params_millions": 45.171
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-50m",
+        "params_millions": 51.476
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-75m",
+        "params_millions": 74.825
+      },
+      {
+        "kind": "hf",
+        "name": "models/gpt2-100m",
+        "params_millions": 96.088
+      },
+      {
+        "kind": "hf",
+        "name": "models/tiny-gpt2",
+        "params_millions": 0.103
+      },
+      {
+        "kind": "ollama",
+        "name": "gemma3:270m",
+        "params_millions": 268.1
+      },
+      {
+        "kind": "ollama",
+        "name": "gemma3:1b-it-qat",
+        "params_millions": 999.9
+      },
+      {
+        "kind": "ollama",
+        "name": "qwen2.5:7b",
+        "params_millions": 7600
+      },
+      {
+        "kind": "ollama",
+        "name": "llama3.1:8b-instruct-q4_0",
+        "params_millions": 8000
+      },
+      {
+        "kind": "ollama",
+        "name": "gpt-oss-20b:latest",
+        "params_millions": 20900
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "micro",
+        "prompt": "Hello"
+      },
+      {
+        "name": "short",
+        "prompt": "Summarize RLHF in one sentence."
+      },
+      {
+        "name": "medium",
+        "prompt": "Explain how backpressure works in an inference service and when to enable queueing."
+      }
+    ]
+  },
+  "results": {
+    "hf_load_ms_csv": "scripts\\tr121\\results\\20251223_230615\\hf_load_ms.csv",
+    "metrics_csv": "scripts\\tr121\\results\\20251223_230615\\metrics.csv",
+    "resolved_model_params_csv": "scripts\\tr121\\results\\20251223_230615\\resolved_model_params.csv",
+    "runs_jsonl": "scripts\\tr121\\results\\20251223_230615\\runs.jsonl"
+  },
+  "run_id": "20251223_230615",
+  "run_name": "tr121_scaling_v0",
+  "seed": 42,
+  "task_count": 57,
+  "torch": {
+    "cuda": "12.8",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0"
+  },
+  "warmup_repetitions": 1
+}

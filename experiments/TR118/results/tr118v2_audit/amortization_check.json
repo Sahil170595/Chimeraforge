@@ -1,0 +1,14 @@
+{
+  "baseline_backend": "transformers-gpu-compile",
+  "target_backend": "tensorrt-int8",
+  "baseline_throughput": 2120.9746962476006,
+  "target_throughput": 6284.336791170564,
+  "throughput_delta": 4163.362094922963,
+  "build_time_s": 240.0,
+  "time_to_recover_s": 122.26511062301515,
+  "tokens_to_recover_baseline": 259321.20586532884,
+  "total_time_s": 362.2651106230152,
+  "total_tokens_baseline": 768355.1329647531,
+  "exact_tokens_needed": 768355.1329647531,
+  "speedup_ratio": 2.962947555333275
+}

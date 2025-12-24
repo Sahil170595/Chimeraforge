@@ -1,0 +1,11 @@
+{
+  "model": "models/tiny-gpt2",
+  "output_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+  "export_time_s": 4.254480399999011,
+  "file_size_mb": 1.859323501586914,
+  "opset_version": 17,
+  "dynamic_axes": true,
+  "trt_friendly_inputs": true,
+  "valid": true,
+  "timestamp": 1765566569.2765727
+}

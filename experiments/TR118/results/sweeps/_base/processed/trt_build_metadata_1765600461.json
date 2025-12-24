@@ -1,0 +1,16 @@
+[
+  {
+    "onnx_path": "artifacts\\tr118\\sweeps\\_base\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tr118\\sweeps\\_base\\tensorrt\\tiny-gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 4,
+    "dynamic_shapes": false,
+    "profiles": 0,
+    "timestamp": 1765600495.0484245,
+    "build_time_s": null,
+    "file_size_mb": null,
+    "built": false,
+    "reused": false,
+    "error": "[Errno 2] No such file or directory: 'artifacts\\\\tr118\\\\sweeps\\\\_base\\\\onnx\\\\tiny-gpt2.onnx'"
+  }
+]

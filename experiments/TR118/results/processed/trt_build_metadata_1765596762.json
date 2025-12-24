@@ -1,0 +1,44 @@
+[
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_fp32.plan",
+    "precision": "fp32",
+    "workspace_gb": 6,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765596780.240797,
+    "build_time_s": null,
+    "file_size_mb": null,
+    "built": false,
+    "reused": false,
+    "error": "[Errno 2] No such file or directory: 'artifacts\\\\onnx\\\\tiny-gpt2.onnx'"
+  },
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 6,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765596783.7112029,
+    "build_time_s": null,
+    "file_size_mb": null,
+    "built": false,
+    "reused": false,
+    "error": "[Errno 2] No such file or directory: 'artifacts\\\\onnx\\\\tiny-gpt2.onnx'"
+  },
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tensorrt\\tiny-gpt2_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1765596786.0595422,
+    "build_time_s": null,
+    "file_size_mb": null,
+    "built": false,
+    "reused": false,
+    "error": "[Errno 2] No such file or directory: 'artifacts\\\\onnx\\\\tiny-gpt2.onnx'"
+  }
+]

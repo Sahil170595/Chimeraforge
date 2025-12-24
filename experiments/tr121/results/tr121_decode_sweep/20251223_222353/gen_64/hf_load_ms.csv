@@ -1,0 +1,5 @@
+model,device,dtype,hf_load_ms
+models/gpt2-25m,cpu,fp32,8398.287799999707
+models/gpt2-100m,cpu,fp32,207.91630000030636
+models/gpt2-25m,cuda,fp16,411.53940000003786
+models/gpt2-100m,cuda,fp16,388.34899999983463

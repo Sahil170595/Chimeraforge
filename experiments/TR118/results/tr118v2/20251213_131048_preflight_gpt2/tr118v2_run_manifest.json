@@ -1,0 +1,24 @@
+{
+  "tr": "TR118v2",
+  "started_at": 1765649448.832878,
+  "ended_at": 1765649551.760147,
+  "duration_s": 102.9272689819336,
+  "run_slug": "20251213_131048_preflight_gpt2",
+  "git_sha": "f73684a2d4d8a87c52032f18dcff57dc3c9584f6",
+  "base_config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\configs\\smoke.yaml",
+  "device": "cuda",
+  "results_root": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2",
+  "artifacts_root": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2",
+  "runs": [
+    {
+      "key": "gpt2",
+      "model": "gpt2",
+      "model_tag": "gpt2",
+      "success": true,
+      "error": null,
+      "generated_config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2\\20251213_131048_preflight_gpt2\\gpt2\\processed\\config_generated_tr118v2_gpt2.yaml",
+      "results_dir": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2\\20251213_131048_preflight_gpt2\\gpt2",
+      "manifest_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr118\\results\\tr118v2\\20251213_131048_preflight_gpt2\\gpt2\\processed\\experiment_manifest_1765649448.json"
+    }
+  ]
+}

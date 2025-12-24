@@ -1,0 +1,257 @@
+{
+  "collector": {
+    "config": {
+      "base_url": "http://localhost:11434",
+      "id": "collector",
+      "label": "Baseline Collector",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "options": {},
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+    },
+    "execution_time_s": 32.6438518,
+    "result": {
+      "agent_type": "Baseline Collector",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 29.14720168280752,
+        "average_ttft_ms": 429.12109999999996,
+        "eval_duration_ms": 31204.4239,
+        "load_duration_ms": 393.8433,
+        "prompt_eval_duration_ms": 458.2744,
+        "stddev_throughput": 3.89498396639259,
+        "stddev_ttft": 272.2161703455913,
+        "total_duration_ms": 32643.345699999998,
+        "total_tokens_generated": 922
+      },
+      "analysis": {
+        "key_findings": [
+          "Key Performance Findings**",
+          "Based on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:",
+          "Implementing corrective actions based on the findings."
+        ],
+        "performance_metrics": {
+          "data_types": [],
+          "total_file_size_bytes": 0,
+          "total_files_analyzed": 0
+        },
+        "raw_response": "**Structured Analysis Report**\n\n**Executive Summary**\n-------------------\n\nThe benchmark data provided indicates that no files were analyzed during the testing period. This suggests a potential issue with the input or configuration of the system being tested.\n\n**Key Performance Findings**\n-----------------------------\n\n* **Total Files Analyzed**: 0\n\t+ This is the primary performance metric, and it has failed to meet expectations.\n\t+ The absence of any file analysis activity raises concerns about the effectiveness of the system.\n\n**Performance Metrics Analysis**\n--------------------------------\n\n* **Completion Rate**: N/A (no files were processed)\n\t+ A completion rate of 0% indicates a complete failure in meeting the intended performance goals.\n* **Throughput**: N/A (no files were processed)\n\t+ The lack of any file processing activity renders this metric irrelevant.\n\n**Recommendations for Optimization**\n----------------------------------------\n\nBased on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:\n\n1. **Validate Input**: Ensure that the input configuration and files are correctly set up for analysis.\n2. **System Configuration Review**: Verify that all necessary settings and parameters are properly configured within the system.\n3. **Debugging and Troubleshooting**: Conduct thorough debugging and troubleshooting procedures to identify any underlying issues or errors preventing file analysis.\n\n**Action Items**\n----------------\n\nTo address these concerns, we recommend:\n\n1. Investigating the source of the issue (e.g., input configuration, system settings).\n2. Implementing corrective actions based on the findings.\n3. Re-running the benchmark with corrected configurations to assess performance improvements.\n\nBy following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome.",
+        "recommendations": [
+          "The benchmark data provided indicates that no files were analyzed during the testing period. This suggests a potential issue with the input or configuration of the system being tested.",
+          "Recommendations for Optimization**",
+          "Based on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:",
+          "To address these concerns, we recommend:",
+          "By following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome."
+        ],
+        "summary": "-------------------\nThe benchmark data provided indicates that no files were analyzed during the testing period. This suggests a potential issue with the input or configuration of the system being tested.\n**Key Performance Findings**\n-----------------------------\n* **Total Files Analyzed**: 0\n+ This is the primary performance metric, and it has failed to meet expectations.\n+ The absence of any file analysis activity raises concerns about the effectiveness of the system.\n**Performance Metrics Analysis**\n--------------------------------\n* **Completion Rate**: N/A (no files were processed)\n+ A completion rate of 0% indicates a complete failure in meeting the intended performance goals.\n* **Throughput**: N/A (no files were processed)\n+ The lack of any file processing activity renders this metric irrelevant.\n**Recommendations for Optimization**\n----------------------------------------\nBased on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:\n1. **Validate Input**: Ensure that the input configuration and files are correctly set up for analysis.\n2. **System Configuration Review**: Verify that all necessary settings and parameters are properly configured within the system.\n3. **Debugging and Troubleshooting**: Conduct thorough debugging and troubleshooting procedures to identify any underlying issues or errors preventing file analysis.\n**Action Items**\n----------------\nTo address these concerns, we recommend:\n1. Investigating the source of the issue (e.g., input configuration, system settings).\n2. Implementing corrective actions based on the findings.\n3. Re-running the benchmark with corrected configurations to assess performance improvements.\nBy following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome."
+      },
+      "benchmark_data_count": 0,
+      "configuration": {},
+      "data_summary": "Total files analyzed: 0\n\n",
+      "individual_runs": [
+        {
+          "eval_duration_ms": 13336.8534,
+          "load_duration_ms": 172.4477,
+          "prompt_eval_duration_ms": 61.2971,
+          "throughput_tokens_per_sec": 26.393032107558444,
+          "tokens_generated": 352,
+          "total_duration_ms": 13792.605,
+          "ttft_ms": 236.6352
+        },
+        {
+          "eval_duration_ms": 17867.5705,
+          "load_duration_ms": 221.3956,
+          "prompt_eval_duration_ms": 396.9773,
+          "throughput_tokens_per_sec": 31.901371258056596,
+          "tokens_generated": 570,
+          "total_duration_ms": 18850.7407,
+          "ttft_ms": 621.607
+        }
+      ],
+      "llm_calls": [
+        {
+          "metrics": {
+            "eval_duration_ms": 13336.8534,
+            "load_duration_ms": 172.4477,
+            "prompt_eval_duration_ms": 61.2971,
+            "throughput_tokens_per_sec": 26.393032107558444,
+            "tokens_generated": 352,
+            "total_duration_ms": 13792.605,
+            "ttft_ms": 236.6352
+          },
+          "prompt": "You are a performance analysis expert. Analyze the following benchmark data and provide insights.\n\nBenchmark Data Summary:\nTotal files analyzed: 0\n\n\n\nPlease provide:\n1. Executive summary of the data\n2. Key performance findings\n3. Performance metrics analysis\n4. Recommendations for optimization\n\nFormat your response as structured analysis with clear sections.",
+          "response": "**Structured Analysis Report**\n\n**Executive Summary**\n-------------------\n\nThe benchmark data provided indicates that no files were analyzed during the testing period. This suggests a potential issue with the input or configuration of the system being tested.\n\n**Key Performance Findings**\n-----------------------------\n\n* **Total Files Analyzed**: 0\n\t+ This is the primary performance metric, and it has failed to meet expectations.\n\t+ The absence of any file analysis activity raises concerns about the effectiveness of the system.\n\n**Performance Metrics Analysis**\n--------------------------------\n\n* **Completion Rate**: N/A (no files were processed)\n\t+ A completion rate of 0% indicates a complete failure in meeting the intended performance goals.\n* **Throughput**: N/A (no files were processed)\n\t+ The lack of any file processing activity renders this metric irrelevant.\n\n**Recommendations for Optimization**\n----------------------------------------\n\nBased on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:\n\n1. **Validate Input**: Ensure that the input configuration and files are correctly set up for analysis.\n2. **System Configuration Review**: Verify that all necessary settings and parameters are properly configured within the system.\n3. **Debugging and Troubleshooting**: Conduct thorough debugging and troubleshooting procedures to identify any underlying issues or errors preventing file analysis.\n\n**Action Items**\n----------------\n\nTo address these concerns, we recommend:\n\n1. Investigating the source of the issue (e.g., input configuration, system settings).\n2. Implementing corrective actions based on the findings.\n3. Re-running the benchmark with corrected configurations to assess performance improvements.\n\nBy following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome.",
+          "stage": "analysis"
+        },
+        {
+          "metrics": {
+            "eval_duration_ms": 17867.5705,
+            "load_duration_ms": 221.3956,
+            "prompt_eval_duration_ms": 396.9773,
+            "throughput_tokens_per_sec": 31.901371258056596,
+            "tokens_generated": 570,
+            "total_duration_ms": 18850.7407,
+            "ttft_ms": 621.607
+          },
+          "prompt": "Generate a comprehensive technical report in the style of Technical Report 108.\n\nAnalysis Results:\n- Summary: -------------------\nThe benchmark data provided indicates that no files were analyzed during the testing period. This suggests a potential issue with the input or configuration of the system being tested.\n**Key Performance Findings**\n-----------------------------\n* **Total Files Analyzed**: 0\n+ This is the primary performance metric, and it has failed to meet expectations.\n+ The absence of any file analysis activity raises concerns about the effectiveness of the system.\n**Performance Metrics Analysis**\n--------------------------------\n* **Completion Rate**: N/A (no files were processed)\n+ A completion rate of 0% indicates a complete failure in meeting the intended performance goals.\n* **Throughput**: N/A (no files were processed)\n+ The lack of any file processing activity renders this metric irrelevant.\n**Recommendations for Optimization**\n----------------------------------------\nBased on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:\n1. **Validate Input**: Ensure that the input configuration and files are correctly set up for analysis.\n2. **System Configuration Review**: Verify that all necessary settings and parameters are properly configured within the system.\n3. **Debugging and Troubleshooting**: Conduct thorough debugging and troubleshooting procedures to identify any underlying issues or errors preventing file analysis.\n**Action Items**\n----------------\nTo address these concerns, we recommend:\n1. Investigating the source of the issue (e.g., input configuration, system settings).\n2. Implementing corrective actions based on the findings.\n3. Re-running the benchmark with corrected configurations to assess performance improvements.\nBy following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome.\n- Key Findings:\n1. Key Performance Findings**\n2. Based on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:\n3. Implementing corrective actions based on the findings.\n- Performance Metrics: {\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0,\n  \"data_types\": []\n}\n- Recommendations:\n1. The benchmark data provided indicates that no files were analyzed during the testing period. This suggests a potential issue with the input or configuration of the system being tested.\n2. Recommendations for Optimization**\n3. Based on the provided data, it is essential to investigate and address the underlying causes of the system's inability to analyze files. Key recommendations include:\n4. To address these concerns, we recommend:\n5. By following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome.\n\nCreate a professional technical report with the following structure:\n1. Executive Summary\n2. Data Ingestion Summary\n3. Performance Analysis\n4. Key Findings\n5. Recommendations\n6. Appendix\n\nUse markdown formatting and include specific metrics and data points.",
+          "response": "**Technical Report 108**\n==========================\n\n**Executive Summary**\n---------------------\n\nThe benchmark data provided indicates that no files were analyzed during the testing period, suggesting a potential issue with the input or configuration of the system being tested. This technical report summarizes the findings from the analysis, highlights key performance metrics, and provides recommendations for optimization.\n\n**Data Ingestion Summary**\n-------------------------\n\n| **Metric** | **Value** |\n| --- | --- |\n| Total Files Analyzed | 0 |\n| Total File Size (Bytes) | 0 |\n| Data Types | [] |\n\nThe benchmark data did not include any files to be analyzed, resulting in a complete failure of the system's intended performance goals.\n\n**Performance Analysis**\n----------------------\n\n### Completion Rate\n\n*   The completion rate is N/A (no files were processed), indicating a complete failure in meeting the intended performance goals.\n*   A completion rate of 0% suggests that no files were successfully analyzed or processed during the testing period.\n\n### Throughput\n\n*   The throughput is N/A (no files were processed), rendering this metric irrelevant due to the absence of any file processing activity.\n\n**Key Findings**\n----------------\n\n1.  **Total Files Analyzed**: 0\n    *   This is the primary performance metric, and it has failed to meet expectations.\n    *   The absence of any file analysis activity raises concerns about the effectiveness of the system.\n2.  **Completion Rate**: N/A (no files were processed)\n    *   A completion rate of 0% indicates a complete failure in meeting the intended performance goals.\n3.  **Throughput**: N/A (no files were processed)\n    *   The lack of any file processing activity renders this metric irrelevant.\n\n**Recommendations**\n------------------\n\n1.  **Validate Input**: Ensure that the input configuration and files are correctly set up for analysis.\n2.  **System Configuration Review**: Verify that all necessary settings and parameters are properly configured within the system.\n3.  **Debugging and Troubleshooting**: Conduct thorough debugging and troubleshooting procedures to identify any underlying issues or errors preventing file analysis.\n\n**Action Items**\n----------------\n\n1.  Investigate the source of the issue (e.g., input configuration, system settings).\n2.  Implement corrective actions based on the findings.\n3.  Re-run the benchmark with corrected configurations to assess performance improvements.\n\nBy following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome.\n\n**Appendix**\n-------------\n\n*   **Performance Metrics**: { \"total_files_analyzed\": 0, \"total_file_size_bytes\": 0, \"data_types\": [] }\n*   **Recommendations Document**: A detailed document outlining the recommendations for optimization, including a list of action items and responsible individuals.",
+          "stage": "report"
+        }
+      ],
+      "model": "llama3.1:8b-instruct-q4_0",
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them.",
+      "report_markdown": "# Technical Report: Baseline Collector Analysis\n\n**Date:** 2025-11-27\n**Agent Type:** Baseline Collector\n**Model:** llama3.1:8b-instruct-q4_0\n**Configuration:** Ollama defaults\n\n---\n\n**Technical Report 108**\n==========================\n\n**Executive Summary**\n---------------------\n\nThe benchmark data provided indicates that no files were analyzed during the testing period, suggesting a potential issue with the input or configuration of the system being tested. This technical report summarizes the findings from the analysis, highlights key performance metrics, and provides recommendations for optimization.\n\n**Data Ingestion Summary**\n-------------------------\n\n| **Metric** | **Value** |\n| --- | --- |\n| Total Files Analyzed | 0 |\n| Total File Size (Bytes) | 0 |\n| Data Types | [] |\n\nThe benchmark data did not include any files to be analyzed, resulting in a complete failure of the system's intended performance goals.\n\n**Performance Analysis**\n----------------------\n\n### Completion Rate\n\n*   The completion rate is N/A (no files were processed), indicating a complete failure in meeting the intended performance goals.\n*   A completion rate of 0% suggests that no files were successfully analyzed or processed during the testing period.\n\n### Throughput\n\n*   The throughput is N/A (no files were processed), rendering this metric irrelevant due to the absence of any file processing activity.\n\n**Key Findings**\n----------------\n\n1.  **Total Files Analyzed**: 0\n    *   This is the primary performance metric, and it has failed to meet expectations.\n    *   The absence of any file analysis activity raises concerns about the effectiveness of the system.\n2.  **Completion Rate**: N/A (no files were processed)\n    *   A completion rate of 0% indicates a complete failure in meeting the intended performance goals.\n3.  **Throughput**: N/A (no files were processed)\n    *   The lack of any file processing activity renders this metric irrelevant.\n\n**Recommendations**\n------------------\n\n1.  **Validate Input**: Ensure that the input configuration and files are correctly set up for analysis.\n2.  **System Configuration Review**: Verify that all necessary settings and parameters are properly configured within the system.\n3.  **Debugging and Troubleshooting**: Conduct thorough debugging and troubleshooting procedures to identify any underlying issues or errors preventing file analysis.\n\n**Action Items**\n----------------\n\n1.  Investigate the source of the issue (e.g., input configuration, system settings).\n2.  Implement corrective actions based on the findings.\n3.  Re-run the benchmark with corrected configurations to assess performance improvements.\n\nBy following these recommendations and addressing the underlying issues, it should be possible to improve the system's performance and achieve the desired outcome.\n\n**Appendix**\n-------------\n\n*   **Performance Metrics**: { \"total_files_analyzed\": 0, \"total_file_size_bytes\": 0, \"data_types\": [] }\n*   **Recommendations Document**: A detailed document outlining the recommendations for optimization, including a list of action items and responsible individuals.",
+      "runs": 2,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-27T01:26:12.605445200Z",
+      "workflow": {
+        "analysis_seconds": 13.7926118,
+        "ingest_seconds": 0.0004351,
+        "report_seconds": 18.8507596,
+        "total_seconds": 32.6438518
+      }
+    }
+  },
+  "insight": {
+    "config": {
+      "base_url": "http://localhost:11435",
+      "id": "insight",
+      "label": "Chimera Insight",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "options": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+    },
+    "execution_time_s": 30.4655057,
+    "result": {
+      "agent_type": "Chimera Insight",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 26.013997215191722,
+        "average_ttft_ms": 279.5054,
+        "eval_duration_ms": 29413.324699999997,
+        "load_duration_ms": 249.1884,
+        "prompt_eval_duration_ms": 305.712,
+        "stddev_throughput": 0.4315612622047826,
+        "stddev_ttft": 196.78795862557243,
+        "total_duration_ms": 30464.9442,
+        "total_tokens_generated": 763
+      },
+      "analysis": {
+        "key_findings": [
+          "Key Performance Findings:**",
+          "To provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:",
+          "By addressing these points and incorporating additional data, a comprehensive performance analysis can be conducted, providing valuable insights for optimization opportunities."
+        ],
+        "performance_metrics": {
+          "data_types": [],
+          "total_file_size_bytes": 0,
+          "total_files_analyzed": 0
+        },
+        "raw_response": "**Performance Analysis Report**\n\n**Executive Summary:**\nThe benchmark data provided indicates that no files were analyzed during the test run. This suggests an absence of workload or input data, rendering it impossible to assess performance.\n\n**Key Performance Findings:**\n\n1. **Zero Files Analyzed**: The most striking aspect of this dataset is the complete lack of files being processed.\n2. **No Performance Metrics Available**: Since no files were analyzed, no performance metrics can be reported.\n\n**Performance Metrics Analysis:**\nDue to the absence of data, it's impossible to calculate or report any performance metrics, including:\n\n* Throughput\n* Execution Time\n* CPU Utilization\n* Memory Usage\n* I/O Operations\n\nThese metrics are crucial in assessing the performance of a system, application, or process. Without them, it's challenging to identify areas for optimization.\n\n**Recommendations for Optimization:**\nTo provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:\n\n1. **Verify System Configuration**: Ensure that the system being tested has files available for analysis.\n2. **Update Benchmark Test**: Revise the benchmark test to include input files or data, which will enable performance metric calculation.\n3. **Provide Additional Context**: Offer more information about the testing environment, including any specific requirements or constraints.\n\nBy addressing these points and incorporating additional data, a comprehensive performance analysis can be conducted, providing valuable insights for optimization opportunities.",
+        "recommendations": [
+          "The benchmark data provided indicates that no files were analyzed during the test run. This suggests an absence of workload or input data, rendering it impossible to assess performance.",
+          "Recommendations for Optimization:**",
+          "To provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:"
+        ],
+        "summary": "The benchmark data provided indicates that no files were analyzed during the test run. This suggests an absence of workload or input data, rendering it impossible to assess performance.\n**Key Performance Findings:**\n1. **Zero Files Analyzed**: The most striking aspect of this dataset is the complete lack of files being processed.\n2. **No Performance Metrics Available**: Since no files were analyzed, no performance metrics can be reported.\n**Performance Metrics Analysis:**\nDue to the absence of data, it's impossible to calculate or report any performance metrics, including:\n* Throughput\n* Execution Time\n* CPU Utilization\n* Memory Usage\n* I/O Operations\nThese metrics are crucial in assessing the performance of a system, application, or process. Without them, it's challenging to identify areas for optimization.\n**Recommendations for Optimization:**\nTo provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:\n1. **Verify System Configuration**: Ensure that the system being tested has files available for analysis.\n2. **Update Benchmark Test**: Revise the benchmark test to include input files or data, which will enable performance metric calculation.\n3. **Provide Additional Context**: Offer more information about the testing environment, including any specific requirements or constraints.\nBy addressing these points and incorporating additional data, a comprehensive performance analysis can be conducted, providing valuable insights for optimization opportunities."
+      },
+      "benchmark_data_count": 0,
+      "configuration": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "data_summary": "Total files analyzed: 0\n\n",
+      "individual_runs": [
+        {
+          "eval_duration_ms": 11170.5705,
+          "load_duration_ms": 115.5168,
+          "prompt_eval_duration_ms": 23.7424,
+          "throughput_tokens_per_sec": 26.319157110194148,
+          "tokens_generated": 294,
+          "total_duration_ms": 11510.9581,
+          "ttft_ms": 140.3553
+        },
+        {
+          "eval_duration_ms": 18242.7542,
+          "load_duration_ms": 133.6716,
+          "prompt_eval_duration_ms": 281.9696,
+          "throughput_tokens_per_sec": 25.708837320189293,
+          "tokens_generated": 469,
+          "total_duration_ms": 18953.986100000002,
+          "ttft_ms": 418.6555
+        }
+      ],
+      "llm_calls": [
+        {
+          "metrics": {
+            "eval_duration_ms": 11170.5705,
+            "load_duration_ms": 115.5168,
+            "prompt_eval_duration_ms": 23.7424,
+            "throughput_tokens_per_sec": 26.319157110194148,
+            "tokens_generated": 294,
+            "total_duration_ms": 11510.9581,
+            "ttft_ms": 140.3553
+          },
+          "prompt": "You are a performance analysis expert. Analyze the following benchmark data and provide insights.\n\nBenchmark Data Summary:\nTotal files analyzed: 0\n\n\n\nPlease provide:\n1. Executive summary of the data\n2. Key performance findings\n3. Performance metrics analysis\n4. Recommendations for optimization\n\nFormat your response as structured analysis with clear sections.",
+          "response": "**Performance Analysis Report**\n\n**Executive Summary:**\nThe benchmark data provided indicates that no files were analyzed during the test run. This suggests an absence of workload or input data, rendering it impossible to assess performance.\n\n**Key Performance Findings:**\n\n1. **Zero Files Analyzed**: The most striking aspect of this dataset is the complete lack of files being processed.\n2. **No Performance Metrics Available**: Since no files were analyzed, no performance metrics can be reported.\n\n**Performance Metrics Analysis:**\nDue to the absence of data, it's impossible to calculate or report any performance metrics, including:\n\n* Throughput\n* Execution Time\n* CPU Utilization\n* Memory Usage\n* I/O Operations\n\nThese metrics are crucial in assessing the performance of a system, application, or process. Without them, it's challenging to identify areas for optimization.\n\n**Recommendations for Optimization:**\nTo provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:\n\n1. **Verify System Configuration**: Ensure that the system being tested has files available for analysis.\n2. **Update Benchmark Test**: Revise the benchmark test to include input files or data, which will enable performance metric calculation.\n3. **Provide Additional Context**: Offer more information about the testing environment, including any specific requirements or constraints.\n\nBy addressing these points and incorporating additional data, a comprehensive performance analysis can be conducted, providing valuable insights for optimization opportunities.",
+          "stage": "analysis"
+        },
+        {
+          "metrics": {
+            "eval_duration_ms": 18242.7542,
+            "load_duration_ms": 133.6716,
+            "prompt_eval_duration_ms": 281.9696,
+            "throughput_tokens_per_sec": 25.708837320189293,
+            "tokens_generated": 469,
+            "total_duration_ms": 18953.986100000002,
+            "ttft_ms": 418.6555
+          },
+          "prompt": "Generate a comprehensive technical report in the style of Technical Report 108.\n\nAnalysis Results:\n- Summary: The benchmark data provided indicates that no files were analyzed during the test run. This suggests an absence of workload or input data, rendering it impossible to assess performance.\n**Key Performance Findings:**\n1. **Zero Files Analyzed**: The most striking aspect of this dataset is the complete lack of files being processed.\n2. **No Performance Metrics Available**: Since no files were analyzed, no performance metrics can be reported.\n**Performance Metrics Analysis:**\nDue to the absence of data, it's impossible to calculate or report any performance metrics, including:\n* Throughput\n* Execution Time\n* CPU Utilization\n* Memory Usage\n* I/O Operations\nThese metrics are crucial in assessing the performance of a system, application, or process. Without them, it's challenging to identify areas for optimization.\n**Recommendations for Optimization:**\nTo provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:\n1. **Verify System Configuration**: Ensure that the system being tested has files available for analysis.\n2. **Update Benchmark Test**: Revise the benchmark test to include input files or data, which will enable performance metric calculation.\n3. **Provide Additional Context**: Offer more information about the testing environment, including any specific requirements or constraints.\nBy addressing these points and incorporating additional data, a comprehensive performance analysis can be conducted, providing valuable insights for optimization opportunities.\n- Key Findings:\n1. Key Performance Findings:**\n2. To provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:\n3. By addressing these points and incorporating additional data, a comprehensive performance analysis can be conducted, providing valuable insights for optimization opportunities.\n- Performance Metrics: {\n  \"data_types\": [],\n  \"total_file_size_bytes\": 0,\n  \"total_files_analyzed\": 0\n}\n- Recommendations:\n1. The benchmark data provided indicates that no files were analyzed during the test run. This suggests an absence of workload or input data, rendering it impossible to assess performance.\n2. Recommendations for Optimization:**\n3. To provide actionable insights and recommendations for optimization, additional data is required. In the absence of this, consider the following:\n\nCreate a professional technical report with the following structure:\n1. Executive Summary\n2. Data Ingestion Summary\n3. Performance Analysis\n4. Key Findings\n5. Recommendations\n6. Appendix\n\nUse markdown formatting and include specific metrics and data points.",
+          "response": "**Technical Report: Performance Analysis of File Processing**\n\n**Executive Summary**\n======================\n\nThis report summarizes the performance analysis of a file processing system, highlighting key findings and recommendations for optimization. The analysis was conducted based on benchmark data provided, which indicates an absence of workload or input data during the test run.\n\n**Data Ingestion Summary**\n========================\n\n* **Total Files Analyzed:** 0\n* **Total File Size (Bytes):** 0 bytes\n* **Data Types:** None\n\nThe benchmark data provided did not contain any files to process, rendering it impossible to assess performance. To overcome this limitation, additional data is required for a comprehensive performance analysis.\n\n**Performance Analysis**\n=====================\n\nDue to the lack of data, no performance metrics could be calculated. However, based on general guidelines and best practices, we can propose a framework for a more in-depth analysis.\n\n### Performance Metrics Framework\n\n| Metric | Description |\n| --- | --- |\n| Average Time per File (seconds) | The average time taken to process each file |\n| Total Processing Time (seconds) | The total time taken to process all files |\n| Throughput (files/second) | The rate at which the system can process files |\n\n### Recommended Performance Metrics\n\nBased on industry standards, we recommend collecting data for the following performance metrics:\n\n* Average Time per File (seconds)\n* Total Processing Time (seconds)\n\n**Recommendations for Optimization**\n=====================================\n\n1. **Increase processing power:** Consider adding more computing resources to improve processing speed.\n2. **Optimize file handling:** Review and refine the file handling mechanisms to minimize overhead and maximize throughput.\n3. **Implement load balancing:** Distribute incoming data across multiple nodes or instances to ensure even processing and prevent bottlenecks.\n\n**Conclusion**\n==============\n\nThis report highlights the importance of having sufficient workload or input data for a comprehensive performance analysis. To address this limitation, additional data is required to calculate meaningful performance metrics and identify areas for optimization.\n\nWe recommend implementing the proposed framework and collecting data for recommended performance metrics to inform future optimization efforts.\n\n---\n\n**Appendix: Data Collection Plan**\n\n* **Data sources:** Identify reliable sources of workload or input data\n* **Data formats:** Determine suitable file formats for data collection\n* **Collection frequency:** Schedule regular data collection to ensure consistent performance measurements",
+          "stage": "report"
+        }
+      ],
+      "model": "llama3.1:8b-instruct-q4_0",
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts.",
+      "report_markdown": "# Technical Report: Chimera Insight Analysis\n\n**Date:** 2025-11-27\n**Agent Type:** Chimera Insight\n**Model:** llama3.1:8b-instruct-q4_0\n**Configuration:** num_gpu=80, num_ctx=512, temp=1, top_p=default, top_k=default, repeat_penalty=default\n\n---\n\n**Technical Report: Performance Analysis of File Processing**\n\n**Executive Summary**\n======================\n\nThis report summarizes the performance analysis of a file processing system, highlighting key findings and recommendations for optimization. The analysis was conducted based on benchmark data provided, which indicates an absence of workload or input data during the test run.\n\n**Data Ingestion Summary**\n========================\n\n* **Total Files Analyzed:** 0\n* **Total File Size (Bytes):** 0 bytes\n* **Data Types:** None\n\nThe benchmark data provided did not contain any files to process, rendering it impossible to assess performance. To overcome this limitation, additional data is required for a comprehensive performance analysis.\n\n**Performance Analysis**\n=====================\n\nDue to the lack of data, no performance metrics could be calculated. However, based on general guidelines and best practices, we can propose a framework for a more in-depth analysis.\n\n### Performance Metrics Framework\n\n| Metric | Description |\n| --- | --- |\n| Average Time per File (seconds) | The average time taken to process each file |\n| Total Processing Time (seconds) | The total time taken to process all files |\n| Throughput (files/second) | The rate at which the system can process files |\n\n### Recommended Performance Metrics\n\nBased on industry standards, we recommend collecting data for the following performance metrics:\n\n* Average Time per File (seconds)\n* Total Processing Time (seconds)\n\n**Recommendations for Optimization**\n=====================================\n\n1. **Increase processing power:** Consider adding more computing resources to improve processing speed.\n2. **Optimize file handling:** Review and refine the file handling mechanisms to minimize overhead and maximize throughput.\n3. **Implement load balancing:** Distribute incoming data across multiple nodes or instances to ensure even processing and prevent bottlenecks.\n\n**Conclusion**\n==============\n\nThis report highlights the importance of having sufficient workload or input data for a comprehensive performance analysis. To address this limitation, additional data is required to calculate meaningful performance metrics and identify areas for optimization.\n\nWe recommend implementing the proposed framework and collecting data for recommended performance metrics to inform future optimization efforts.\n\n---\n\n**Appendix: Data Collection Plan**\n\n* **Data sources:** Identify reliable sources of workload or input data\n* **Data formats:** Determine suitable file formats for data collection\n* **Collection frequency:** Schedule regular data collection to ensure consistent performance measurements",
+      "runs": 2,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-27T01:26:10.427115800Z",
+      "workflow": {
+        "analysis_seconds": 11.5109683,
+        "ingest_seconds": 0.0004791,
+        "report_seconds": 18.9540104,
+        "total_seconds": 30.4655057
+      }
+    }
+  },
+  "run_number": 2,
+  "scenario": "baseline_vs_chimera",
+  "summary": {
+    "collector_throughput": 29.14720168280752,
+    "collector_ttft_ms": 429.12109999999996,
+    "concurrency_speedup": 1.9332615422579265,
+    "concurrent_wall_time_s": 32.6439833,
+    "efficiency_percent": 96.66307711289632,
+    "insight_throughput": 26.013997215191722,
+    "insight_ttft_ms": 279.5054,
+    "resource_contention_detected": false,
+    "run_number": 2,
+    "scenario": "baseline_vs_chimera",
+    "sequential_estimated_s": 63.1093575,
+    "throughput_delta": -3.1332044676157977,
+    "ttft_delta_ms": 149.61569999999995
+  }
+}

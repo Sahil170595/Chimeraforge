@@ -1,0 +1,44 @@
+run_name: tr121_boundary_shift_gen512_v1
+
+# Boundary-shift experiment: make decode compute dominate by increasing generation length.
+# This should improve the identifiability of any scaling relationship on GPU for small models.
+gen_tokens: 512
+
+repetitions: 3
+warmup_repetitions: 1
+seed: 42
+
+scenarios:
+  - name: medium
+    prompt: "Explain how backpressure works in an inference service and when to enable queueing."
+
+backends:
+  - name: hf_gpu_fp16
+    kind: hf
+    device: cuda
+    dtype: fp16
+    batch_size: 1
+
+models:
+  - name: models/tiny-gpt2
+    kind: hf
+    params_millions: 0.103
+  - name: models/gpt2-5m
+    kind: hf
+    params_millions: 5.037
+  - name: models/gpt2-25m
+    kind: hf
+    params_millions: 25.016
+  - name: models/gpt2-45m
+    kind: hf
+    params_millions: 45.171
+  - name: models/gpt2-50m
+    kind: hf
+    params_millions: 51.476
+  - name: models/gpt2-75m
+    kind: hf
+    params_millions: 74.825
+  - name: models/gpt2-100m
+    kind: hf
+    params_millions: 96.088
+

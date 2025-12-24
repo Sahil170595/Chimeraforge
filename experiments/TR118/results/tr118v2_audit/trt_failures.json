@@ -1,0 +1,14 @@
+{
+  "sources": [
+    "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\raw\\bench_generate_1765652089.jsonl",
+    "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\gpt2\\raw\\bench_prefill_1765652089.jsonl",
+    "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\raw\\bench_generate_1765651895.jsonl",
+    "scripts\\tr118\\results\\tr118v2\\20251213_135135_deep\\tiny-gpt2\\raw\\bench_prefill_1765651895.jsonl"
+  ],
+  "failures": {
+    "tensorrt-fp32:generate:profile_mismatch": 60,
+    "tensorrt-fp16:generate:profile_mismatch": 60,
+    "tensorrt-int8:generate:profile_mismatch": 60,
+    "tensorrt-fp16:prefill:profile_mismatch": 20
+  }
+}

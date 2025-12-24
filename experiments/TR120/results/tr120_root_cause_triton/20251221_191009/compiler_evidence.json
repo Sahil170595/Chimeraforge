@@ -1,0 +1,24 @@
+{
+  "prefill_explain": {
+    "available": true,
+    "graph_count": 1,
+    "graph_break_count": 0,
+    "break_reasons_count": 0,
+    "break_reasons_sample": [],
+    "out_guards_count": 463,
+    "ops_per_graph_len": [
+      55
+    ]
+  },
+  "kv_decode_step_explain": {
+    "available": true,
+    "graph_count": 1,
+    "graph_break_count": 0,
+    "break_reasons_count": 0,
+    "break_reasons_sample": [],
+    "out_guards_count": 471,
+    "ops_per_graph_len": [
+      55
+    ]
+  }
+}

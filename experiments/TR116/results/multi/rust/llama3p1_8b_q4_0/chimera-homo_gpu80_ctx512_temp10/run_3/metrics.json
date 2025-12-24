@@ -1,0 +1,262 @@
+{
+  "collector": {
+    "config": {
+      "base_url": "http://localhost:11434",
+      "id": "chimera_a",
+      "label": "Chimera Agent A",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "options": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+    },
+    "execution_time_s": 24.6182113,
+    "result": {
+      "agent_type": "Chimera Agent A",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 27.223173669557543,
+        "average_ttft_ms": 375.9125,
+        "eval_duration_ms": 23513.917800000003,
+        "load_duration_ms": 409.3422,
+        "prompt_eval_duration_ms": 336.3109,
+        "stddev_throughput": 0.5710885327866326,
+        "stddev_ttft": 208.28014087612868,
+        "total_duration_ms": 24617.838300000003,
+        "total_tokens_generated": 642
+      },
+      "analysis": {
+        "key_findings": [
+          "The provided benchmark data is incomplete, indicating that no files were analyzed during the testing process. As a result, there are no key performance findings or performance metrics to analyze.",
+          "Key Performance Findings**",
+          "The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment."
+        ],
+        "performance_metrics": {
+          "data_types": [],
+          "total_file_size_bytes": 0,
+          "total_files_analyzed": 0
+        },
+        "raw_response": "**Structured Analysis Report**\n\n**Executive Summary**\n\nThe provided benchmark data is incomplete, indicating that no files were analyzed during the testing process. As a result, there are no key performance findings or performance metrics to analyze.\n\n**Key Performance Findings**\n\n* None reported due to lack of data.\n* The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.\n\n**Performance Metrics Analysis**\n\nSince no data was collected, there are no performance metrics available for analysis. However, some possible issues that may have contributed to this outcome include:\n\n* Insufficient input data (i.e., no files were provided)\n* Errors in the testing script or configuration\n* Issues with the benchmarking environment or setup\n\n**Recommendations for Optimization**\n\n1. **Verify Input Data**: Ensure that valid input data is available and being processed correctly.\n2. **Investigate Configuration Issues**: Review the testing script, configuration files, and benchmarking environment to identify any potential issues.\n3. **Test and Validate**: Perform additional tests to validate the benchmarking process and ensure it produces meaningful results.\n\nTo proceed with a meaningful analysis, please provide updated benchmark data or clarify any specific requirements you'd like me to address.",
+        "recommendations": [
+          "The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.",
+          "Recommendations for Optimization**"
+        ],
+        "summary": "The provided benchmark data is incomplete, indicating that no files were analyzed during the testing process. As a result, there are no key performance findings or performance metrics to analyze.\n**Key Performance Findings**\n* None reported due to lack of data.\n* The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.\n**Performance Metrics Analysis**\nSince no data was collected, there are no performance metrics available for analysis. However, some possible issues that may have contributed to this outcome include:\n* Insufficient input data (i.e., no files were provided)\n* Errors in the testing script or configuration\n* Issues with the benchmarking environment or setup\n**Recommendations for Optimization**\n1. **Verify Input Data**: Ensure that valid input data is available and being processed correctly.\n2. **Investigate Configuration Issues**: Review the testing script, configuration files, and benchmarking environment to identify any potential issues.\n3. **Test and Validate**: Perform additional tests to validate the benchmarking process and ensure it produces meaningful results.\nTo proceed with a meaningful analysis, please provide updated benchmark data or clarify any specific requirements you'd like me to address."
+      },
+      "benchmark_data_count": 0,
+      "configuration": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "data_summary": "Total files analyzed: 0\n\n",
+      "individual_runs": [
+        {
+          "eval_duration_ms": 9433.4863,
+          "load_duration_ms": 161.8888,
+          "prompt_eval_duration_ms": 63.5566,
+          "throughput_tokens_per_sec": 26.81935309536624,
+          "tokens_generated": 253,
+          "total_duration_ms": 9801.1838,
+          "ttft_ms": 228.6362
+        },
+        {
+          "eval_duration_ms": 14080.4315,
+          "load_duration_ms": 247.4534,
+          "prompt_eval_duration_ms": 272.7543,
+          "throughput_tokens_per_sec": 27.626994243748847,
+          "tokens_generated": 389,
+          "total_duration_ms": 14816.6545,
+          "ttft_ms": 523.1888
+        }
+      ],
+      "llm_calls": [
+        {
+          "metrics": {
+            "eval_duration_ms": 9433.4863,
+            "load_duration_ms": 161.8888,
+            "prompt_eval_duration_ms": 63.5566,
+            "throughput_tokens_per_sec": 26.81935309536624,
+            "tokens_generated": 253,
+            "total_duration_ms": 9801.1838,
+            "ttft_ms": 228.6362
+          },
+          "prompt": "You are a performance analysis expert. Analyze the following benchmark data and provide insights.\n\nBenchmark Data Summary:\nTotal files analyzed: 0\n\n\n\nPlease provide:\n1. Executive summary of the data\n2. Key performance findings\n3. Performance metrics analysis\n4. Recommendations for optimization\n\nFormat your response as structured analysis with clear sections.",
+          "response": "**Structured Analysis Report**\n\n**Executive Summary**\n\nThe provided benchmark data is incomplete, indicating that no files were analyzed during the testing process. As a result, there are no key performance findings or performance metrics to analyze.\n\n**Key Performance Findings**\n\n* None reported due to lack of data.\n* The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.\n\n**Performance Metrics Analysis**\n\nSince no data was collected, there are no performance metrics available for analysis. However, some possible issues that may have contributed to this outcome include:\n\n* Insufficient input data (i.e., no files were provided)\n* Errors in the testing script or configuration\n* Issues with the benchmarking environment or setup\n\n**Recommendations for Optimization**\n\n1. **Verify Input Data**: Ensure that valid input data is available and being processed correctly.\n2. **Investigate Configuration Issues**: Review the testing script, configuration files, and benchmarking environment to identify any potential issues.\n3. **Test and Validate**: Perform additional tests to validate the benchmarking process and ensure it produces meaningful results.\n\nTo proceed with a meaningful analysis, please provide updated benchmark data or clarify any specific requirements you'd like me to address.",
+          "stage": "analysis"
+        },
+        {
+          "metrics": {
+            "eval_duration_ms": 14080.4315,
+            "load_duration_ms": 247.4534,
+            "prompt_eval_duration_ms": 272.7543,
+            "throughput_tokens_per_sec": 27.626994243748847,
+            "tokens_generated": 389,
+            "total_duration_ms": 14816.6545,
+            "ttft_ms": 523.1888
+          },
+          "prompt": "Generate a comprehensive technical report in the style of Technical Report 108.\n\nAnalysis Results:\n- Summary: The provided benchmark data is incomplete, indicating that no files were analyzed during the testing process. As a result, there are no key performance findings or performance metrics to analyze.\n**Key Performance Findings**\n* None reported due to lack of data.\n* The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.\n**Performance Metrics Analysis**\nSince no data was collected, there are no performance metrics available for analysis. However, some possible issues that may have contributed to this outcome include:\n* Insufficient input data (i.e., no files were provided)\n* Errors in the testing script or configuration\n* Issues with the benchmarking environment or setup\n**Recommendations for Optimization**\n1. **Verify Input Data**: Ensure that valid input data is available and being processed correctly.\n2. **Investigate Configuration Issues**: Review the testing script, configuration files, and benchmarking environment to identify any potential issues.\n3. **Test and Validate**: Perform additional tests to validate the benchmarking process and ensure it produces meaningful results.\nTo proceed with a meaningful analysis, please provide updated benchmark data or clarify any specific requirements you'd like me to address.\n- Key Findings:\n1. The provided benchmark data is incomplete, indicating that no files were analyzed during the testing process. As a result, there are no key performance findings or performance metrics to analyze.\n2. Key Performance Findings**\n3. The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.\n- Performance Metrics: {\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n- Recommendations:\n1. The most significant finding is the absence of any files being analyzed, which suggests an issue with the input data, configuration, or execution environment.\n2. Recommendations for Optimization**\n\nCreate a professional technical report with the following structure:\n1. Executive Summary\n2. Data Ingestion Summary\n3. Performance Analysis\n4. Key Findings\n5. Recommendations\n6. Appendix\n\nUse markdown formatting and include specific metrics and data points.",
+          "response": "**Technical Report 108: Benchmarking Analysis**\n\n**Executive Summary**\n=====================================================\n\nThe provided benchmark data for analysis is incomplete, indicating that no files were analyzed during the testing process. This report summarizes the key findings, performance analysis, and recommendations for optimization.\n\n**Data Ingestion Summary**\n==========================\n\n### Data Availability\n\n* No files were analyzed during the testing process.\n* The `total_files_analyzed` metric is 0.\n* The `data_types` array is empty.\n\n### Key Metrics\n\n| Metric | Value |\n| --- | --- |\n| Total Files Analyzed | 0 |\n| Total File Size (bytes) | 0 |\n\n**Performance Analysis**\n=========================\n\nThe performance analysis reveals that no files were processed, resulting in a lack of key performance findings and metrics. The most significant finding is the absence of any files being analyzed, suggesting an issue with the input data, configuration, or execution environment.\n\n**Key Findings**\n==============\n\n1. **Incomplete Benchmark Data**: No files were analyzed during the testing process.\n2. **Lack of Performance Metrics**: As a result of no files being processed, there are no key performance findings or metrics to analyze.\n\n**Performance Metrics**\n=======================\n\n```json\n{\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n```\n\n**Recommendations**\n=====================\n\n1. **Investigate Configuration Issues**: Review the configuration settings to ensure that files were intended to be processed.\n2. **Optimize Input Data**: Ensure that input data is properly formatted and available for processing.\n\n**Next Steps**\n==============\n\nTo address the incomplete benchmark data, revisit the configuration settings and optimize the input data. Once these issues are resolved, re-run the performance analysis to obtain accurate key metrics and insights.\n\nNote: This report serves as a starting point for further investigation and optimization efforts.",
+          "stage": "report"
+        }
+      ],
+      "model": "llama3.1:8b-instruct-q4_0",
+      "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them.",
+      "report_markdown": "# Technical Report: Chimera Agent A Analysis\n\n**Date:** 2025-11-27\n**Agent Type:** Chimera Agent A\n**Model:** llama3.1:8b-instruct-q4_0\n**Configuration:** num_gpu=80, num_ctx=512, temp=1, top_p=default, top_k=default, repeat_penalty=default\n\n---\n\n**Technical Report 108: Benchmarking Analysis**\n\n**Executive Summary**\n=====================================================\n\nThe provided benchmark data for analysis is incomplete, indicating that no files were analyzed during the testing process. This report summarizes the key findings, performance analysis, and recommendations for optimization.\n\n**Data Ingestion Summary**\n==========================\n\n### Data Availability\n\n* No files were analyzed during the testing process.\n* The `total_files_analyzed` metric is 0.\n* The `data_types` array is empty.\n\n### Key Metrics\n\n| Metric | Value |\n| --- | --- |\n| Total Files Analyzed | 0 |\n| Total File Size (bytes) | 0 |\n\n**Performance Analysis**\n=========================\n\nThe performance analysis reveals that no files were processed, resulting in a lack of key performance findings and metrics. The most significant finding is the absence of any files being analyzed, suggesting an issue with the input data, configuration, or execution environment.\n\n**Key Findings**\n==============\n\n1. **Incomplete Benchmark Data**: No files were analyzed during the testing process.\n2. **Lack of Performance Metrics**: As a result of no files being processed, there are no key performance findings or metrics to analyze.\n\n**Performance Metrics**\n=======================\n\n```json\n{\n  \"data_types\": [],\n  \"total_files_analyzed\": 0,\n  \"total_file_size_bytes\": 0\n}\n```\n\n**Recommendations**\n=====================\n\n1. **Investigate Configuration Issues**: Review the configuration settings to ensure that files were intended to be processed.\n2. **Optimize Input Data**: Ensure that input data is properly formatted and available for processing.\n\n**Next Steps**\n==============\n\nTo address the incomplete benchmark data, revisit the configuration settings and optimize the input data. Once these issues are resolved, re-run the performance analysis to obtain accurate key metrics and insights.\n\nNote: This report serves as a starting point for further investigation and optimization efforts.",
+      "runs": 2,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-27T01:24:07.906852100Z",
+      "workflow": {
+        "analysis_seconds": 9.8012135,
+        "ingest_seconds": 0.000288,
+        "report_seconds": 14.8166828,
+        "total_seconds": 24.6182113
+      }
+    }
+  },
+  "insight": {
+    "config": {
+      "base_url": "http://localhost:11435",
+      "id": "chimera_b",
+      "label": "Chimera Agent B",
+      "model": "llama3.1:8b-instruct-q4_0",
+      "options": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+    },
+    "execution_time_s": 23.8825921,
+    "result": {
+      "agent_type": "Chimera Agent B",
+      "aggregate_metrics": {
+        "average_tokens_per_second": 25.804625197107345,
+        "average_ttft_ms": 226.63444999999996,
+        "eval_duration_ms": 23108.350700000003,
+        "load_duration_ms": 272.2785,
+        "prompt_eval_duration_ms": 175.0609,
+        "stddev_throughput": 0.4041227671979037,
+        "stddev_ttft": 107.31144435168598,
+        "total_duration_ms": 23882.177900000002,
+        "total_tokens_generated": 595
+      },
+      "analysis": {
+        "key_findings": [
+          "Key Performance Findings**",
+          "**No meaningful metrics**: The lack of processed files means there are no key performance findings to report.",
+          "**Inconclusive results**: As a result, no conclusive insights can be derived from this dataset.",
+          "By following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics."
+        ],
+        "performance_metrics": {
+          "data_types": [],
+          "total_file_size_bytes": 0,
+          "total_files_analyzed": 0
+        },
+        "raw_response": "**Performance Analysis Report**\n\n**Executive Summary**\n--------------------------------\n\nThe provided benchmark data indicates a total of 0 files analyzed. This is likely due to an absence of input or no processing being performed, resulting in no performance metrics to analyze.\n\n**Key Performance Findings**\n-----------------------------\n\n* **No meaningful metrics**: The lack of processed files means there are no key performance findings to report.\n* **Process interruption**: It appears that the benchmarking process was terminated prematurely, or no input data was provided for analysis.\n* **Inconclusive results**: As a result, no conclusive insights can be derived from this dataset.\n\n**Performance Metrics Analysis**\n-------------------------------\n\nNone. The absence of processed files means there are no performance metrics to analyze.\n\n**Recommendations for Optimization**\n---------------------------------------\n\n1. **Review benchmarking setup**: Ensure the benchmarking framework and input data configuration are correctly set up.\n2. **Verify process completion**: Confirm that the processing step has completed successfully, or identify why it terminated prematurely.\n3. **Provide input data**: Run the benchmark with actual input files to obtain meaningful performance metrics for analysis.\n\nBy following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics.",
+        "recommendations": [
+          "Recommendations for Optimization**",
+          "By following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics."
+        ],
+        "summary": "--------------------------------\nThe provided benchmark data indicates a total of 0 files analyzed. This is likely due to an absence of input or no processing being performed, resulting in no performance metrics to analyze.\n**Key Performance Findings**\n-----------------------------\n* **No meaningful metrics**: The lack of processed files means there are no key performance findings to report.\n* **Process interruption**: It appears that the benchmarking process was terminated prematurely, or no input data was provided for analysis.\n* **Inconclusive results**: As a result, no conclusive insights can be derived from this dataset.\n**Performance Metrics Analysis**\n-------------------------------\nNone. The absence of processed files means there are no performance metrics to analyze.\n**Recommendations for Optimization**\n---------------------------------------\n1. **Review benchmarking setup**: Ensure the benchmarking framework and input data configuration are correctly set up.\n2. **Verify process completion**: Confirm that the processing step has completed successfully, or identify why it terminated prematurely.\n3. **Provide input data**: Run the benchmark with actual input files to obtain meaningful performance metrics for analysis.\nBy following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics."
+      },
+      "benchmark_data_count": 0,
+      "configuration": {
+        "num_ctx": 512,
+        "num_gpu": 80,
+        "temperature": 1.0
+      },
+      "data_summary": "Total files analyzed: 0\n\n",
+      "individual_runs": [
+        {
+          "eval_duration_ms": 9275.4483,
+          "load_duration_ms": 125.6146,
+          "prompt_eval_duration_ms": 23.1722,
+          "throughput_tokens_per_sec": 26.090383146224855,
+          "tokens_generated": 242,
+          "total_duration_ms": 9559.1312,
+          "ttft_ms": 150.75379999999998
+        },
+        {
+          "eval_duration_ms": 13832.9024,
+          "load_duration_ms": 146.6639,
+          "prompt_eval_duration_ms": 151.8887,
+          "throughput_tokens_per_sec": 25.518867247989835,
+          "tokens_generated": 353,
+          "total_duration_ms": 14323.0467,
+          "ttft_ms": 302.51509999999996
+        }
+      ],
+      "llm_calls": [
+        {
+          "metrics": {
+            "eval_duration_ms": 9275.4483,
+            "load_duration_ms": 125.6146,
+            "prompt_eval_duration_ms": 23.1722,
+            "throughput_tokens_per_sec": 26.090383146224855,
+            "tokens_generated": 242,
+            "total_duration_ms": 9559.1312,
+            "ttft_ms": 150.75379999999998
+          },
+          "prompt": "You are a performance analysis expert. Analyze the following benchmark data and provide insights.\n\nBenchmark Data Summary:\nTotal files analyzed: 0\n\n\n\nPlease provide:\n1. Executive summary of the data\n2. Key performance findings\n3. Performance metrics analysis\n4. Recommendations for optimization\n\nFormat your response as structured analysis with clear sections.",
+          "response": "**Performance Analysis Report**\n\n**Executive Summary**\n--------------------------------\n\nThe provided benchmark data indicates a total of 0 files analyzed. This is likely due to an absence of input or no processing being performed, resulting in no performance metrics to analyze.\n\n**Key Performance Findings**\n-----------------------------\n\n* **No meaningful metrics**: The lack of processed files means there are no key performance findings to report.\n* **Process interruption**: It appears that the benchmarking process was terminated prematurely, or no input data was provided for analysis.\n* **Inconclusive results**: As a result, no conclusive insights can be derived from this dataset.\n\n**Performance Metrics Analysis**\n-------------------------------\n\nNone. The absence of processed files means there are no performance metrics to analyze.\n\n**Recommendations for Optimization**\n---------------------------------------\n\n1. **Review benchmarking setup**: Ensure the benchmarking framework and input data configuration are correctly set up.\n2. **Verify process completion**: Confirm that the processing step has completed successfully, or identify why it terminated prematurely.\n3. **Provide input data**: Run the benchmark with actual input files to obtain meaningful performance metrics for analysis.\n\nBy following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics.",
+          "stage": "analysis"
+        },
+        {
+          "metrics": {
+            "eval_duration_ms": 13832.9024,
+            "load_duration_ms": 146.6639,
+            "prompt_eval_duration_ms": 151.8887,
+            "throughput_tokens_per_sec": 25.518867247989835,
+            "tokens_generated": 353,
+            "total_duration_ms": 14323.0467,
+            "ttft_ms": 302.51509999999996
+          },
+          "prompt": "Generate a comprehensive technical report in the style of Technical Report 108.\n\nAnalysis Results:\n- Summary: --------------------------------\nThe provided benchmark data indicates a total of 0 files analyzed. This is likely due to an absence of input or no processing being performed, resulting in no performance metrics to analyze.\n**Key Performance Findings**\n-----------------------------\n* **No meaningful metrics**: The lack of processed files means there are no key performance findings to report.\n* **Process interruption**: It appears that the benchmarking process was terminated prematurely, or no input data was provided for analysis.\n* **Inconclusive results**: As a result, no conclusive insights can be derived from this dataset.\n**Performance Metrics Analysis**\n-------------------------------\nNone. The absence of processed files means there are no performance metrics to analyze.\n**Recommendations for Optimization**\n---------------------------------------\n1. **Review benchmarking setup**: Ensure the benchmarking framework and input data configuration are correctly set up.\n2. **Verify process completion**: Confirm that the processing step has completed successfully, or identify why it terminated prematurely.\n3. **Provide input data**: Run the benchmark with actual input files to obtain meaningful performance metrics for analysis.\nBy following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics.\n- Key Findings:\n1. Key Performance Findings**\n2. **No meaningful metrics**: The lack of processed files means there are no key performance findings to report.\n3. **Inconclusive results**: As a result, no conclusive insights can be derived from this dataset.\n4. By following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics.\n- Performance Metrics: {\n  \"total_file_size_bytes\": 0,\n  \"total_files_analyzed\": 0,\n  \"data_types\": []\n}\n- Recommendations:\n1. Recommendations for Optimization**\n2. By following these recommendations, you can re-run the benchmark and gather valuable insights from the resulting performance metrics.\n\nCreate a professional technical report with the following structure:\n1. Executive Summary\n2. Data Ingestion Summary\n3. Performance Analysis\n4. Key Findings\n5. Recommendations\n6. Appendix\n\nUse markdown formatting and include specific metrics and data points.",
+          "response": "**Technical Report 108**\n\n**Analysis Results: Benchmarking Evaluation**\n\n**Executive Summary**\n------------------------\n\nThis technical report presents the results of a benchmarking evaluation, which indicates an absence of processed files. The provided input or processing setup appears to be incomplete, resulting in no performance metrics or key findings.\n\n**Data Ingestion Summary**\n---------------------------\n\n### Input Data\n\n* Total file size: 0 bytes\n* Total files analyzed: 0 files\n* Data types: none reported\n\nThe input data summary reveals an empty dataset, suggesting that the benchmarking process did not ingest any relevant data.\n\n**Performance Analysis**\n-------------------------\n\nNo performance metrics were generated due to the absence of processed files. The following section summarizes key findings related to this issue.\n\n**Key Findings**\n---------------\n\n1. **Lack of Processed Files**: No processed files were produced, indicating incomplete or failed processing.\n2. **Zero Performance Metrics**: All relevant performance metrics (e.g., total_file_size_bytes, total_files_analyzed) are set to 0.\n3. **Incomplete Data Types**: No data types were reported for the input data.\n\n**Recommendations**\n-------------------\n\n1. **Verify Input Data**: Ensure that the input dataset contains valid and relevant data for processing.\n2. **Correct Processing Setup**: Review and correct any issues with the processing setup or pipeline to ensure successful execution.\n3. **Re-run Benchmarking Evaluation**: Re-execute the benchmarking process using corrected input and/or processing settings.\n\n**Appendix**\n------------\n\nAdditional information related to this issue:\n\n* Input data validation scripts: [insert script location]\n* Processing pipeline documentation: [insert document URL]\n\nPlease address the issues identified in this report to ensure successful completion of the benchmarking evaluation.",
+          "stage": "report"
+        }
+      ],
+      "model": "llama3.1:8b-instruct-q4_0",
+      "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts.",
+      "report_markdown": "# Technical Report: Chimera Agent B Analysis\n\n**Date:** 2025-11-27\n**Agent Type:** Chimera Agent B\n**Model:** llama3.1:8b-instruct-q4_0\n**Configuration:** num_gpu=80, num_ctx=512, temp=1, top_p=default, top_k=default, repeat_penalty=default\n\n---\n\n**Technical Report 108**\n\n**Analysis Results: Benchmarking Evaluation**\n\n**Executive Summary**\n------------------------\n\nThis technical report presents the results of a benchmarking evaluation, which indicates an absence of processed files. The provided input or processing setup appears to be incomplete, resulting in no performance metrics or key findings.\n\n**Data Ingestion Summary**\n---------------------------\n\n### Input Data\n\n* Total file size: 0 bytes\n* Total files analyzed: 0 files\n* Data types: none reported\n\nThe input data summary reveals an empty dataset, suggesting that the benchmarking process did not ingest any relevant data.\n\n**Performance Analysis**\n-------------------------\n\nNo performance metrics were generated due to the absence of processed files. The following section summarizes key findings related to this issue.\n\n**Key Findings**\n---------------\n\n1. **Lack of Processed Files**: No processed files were produced, indicating incomplete or failed processing.\n2. **Zero Performance Metrics**: All relevant performance metrics (e.g., total_file_size_bytes, total_files_analyzed) are set to 0.\n3. **Incomplete Data Types**: No data types were reported for the input data.\n\n**Recommendations**\n-------------------\n\n1. **Verify Input Data**: Ensure that the input dataset contains valid and relevant data for processing.\n2. **Correct Processing Setup**: Review and correct any issues with the processing setup or pipeline to ensure successful execution.\n3. **Re-run Benchmarking Evaluation**: Re-execute the benchmarking process using corrected input and/or processing settings.\n\n**Appendix**\n------------\n\nAdditional information related to this issue:\n\n* Input data validation scripts: [insert script location]\n* Processing pipeline documentation: [insert document URL]\n\nPlease address the issues identified in this report to ensure successful completion of the benchmarking evaluation.",
+      "runs": 2,
+      "system_info": {
+        "arch": "x86_64",
+        "hostname": "SahilKadadekar",
+        "os": "windows",
+        "rust_version": "1.90.0"
+      },
+      "timestamp": "2025-11-27T01:24:07.171224400Z",
+      "workflow": {
+        "analysis_seconds": 9.5591584,
+        "ingest_seconds": 0.0003408,
+        "report_seconds": 14.3230588,
+        "total_seconds": 23.8825921
+      }
+    }
+  },
+  "run_number": 3,
+  "scenario": "chimera_homo",
+  "summary": {
+    "collector_throughput": 27.223173669557543,
+    "collector_ttft_ms": 375.9125,
+    "concurrency_speedup": 1.9701120991057368,
+    "concurrent_wall_time_s": 24.6182963,
+    "efficiency_percent": 98.50560495528684,
+    "insight_throughput": 25.804625197107345,
+    "insight_ttft_ms": 226.63444999999996,
+    "resource_contention_detected": false,
+    "run_number": 3,
+    "scenario": "chimera_homo",
+    "sequential_estimated_s": 48.500803399999995,
+    "throughput_delta": -1.4185484724501976,
+    "ttft_delta_ms": 149.27805000000006
+  }
+}

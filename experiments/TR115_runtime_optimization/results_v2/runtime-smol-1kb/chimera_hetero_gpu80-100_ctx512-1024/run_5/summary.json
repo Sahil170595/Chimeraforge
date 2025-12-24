@@ -1,0 +1,51 @@
+{
+  "agent_a": {
+    "base_url": "http://localhost:11434",
+    "id": "chimera_a",
+    "label": "Chimera Agent A",
+    "model": "gemma3:latest",
+    "options": {
+      "num_ctx": 512,
+      "num_gpu": 80,
+      "temperature": 1.0
+    },
+    "prompt": "You are DataCollector-9000, a systems analyst tasked with scanning benchmark artifacts.\nProduce a concise data inventory with bullet points that highlight:\n1. Directory coverage (reports/, csv_data/, artifacts/).\n2. File counts per type (md, csv, json) and the latest modified timestamp you observe.\n3. Any gaps or missing telemetry that could impact model evaluation.\nKeep the response under 250 words but include concrete metrics so a second agent can reason over them."
+  },
+  "agent_b": {
+    "base_url": "http://localhost:11435",
+    "id": "chimera_b",
+    "label": "Chimera Agent B",
+    "model": "gemma3:latest",
+    "options": {
+      "num_ctx": 1024,
+      "num_gpu": 100,
+      "temperature": 1.0
+    },
+    "prompt": "You are InsightAgent, a Chimera-optimised LLM operations specialist.\nGiven the repository context described previously, produce:\n1. Executive summary of model performance.\n2. Three optimisation recommendations that balance throughput, TTFT, and quality.\n3. A risk/mitigation table with at least two rows.\nAim for 300-400 words, with numbered sections and bolded metric callouts."
+  },
+  "aggregate": {
+    "average_concurrency_speedup": 1.975595639654414,
+    "average_efficiency": 98.7797819827207,
+    "average_throughput_delta": -2.180799552147789,
+    "average_ttft_delta_ms": 186.71230000000014
+  },
+  "generated_at": "2025-11-15T22:22:34.312744Z",
+  "runs": [
+    {
+      "collector_throughput": 43.046625832921094,
+      "collector_ttft_ms": 1062.52185,
+      "concurrency_speedup": 1.975595639654414,
+      "concurrent_wall_time_s": 56.0403379,
+      "efficiency_percent": 98.7797819827207,
+      "insight_throughput": 40.865826280773305,
+      "insight_ttft_ms": 875.80955,
+      "resource_contention_detected": false,
+      "run_number": 1,
+      "scenario": "chimera_hetero",
+      "sequential_estimated_s": 110.7130472,
+      "throughput_delta": -2.180799552147789,
+      "ttft_delta_ms": 186.71230000000014
+    }
+  ],
+  "scenario": "chimera_hetero"
+}

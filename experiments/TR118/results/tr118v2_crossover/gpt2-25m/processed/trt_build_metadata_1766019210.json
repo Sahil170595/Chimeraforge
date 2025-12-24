@@ -1,0 +1,134 @@
+[
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\onnx\\gpt2-25m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\tensorrt\\gpt2-25m_fp32.plan",
+    "precision": "fp32",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "int8_calibration_config": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1766019219.318992,
+    "build_time_s": null,
+    "file_size_mb": 174.54455947875977,
+    "built": false,
+    "reused": true,
+    "error": null,
+    "engine_sha256": "b6870b6efb0df3e26fcf8f669972d72b3c408f5722e23bf6415620a6ebf52ca0",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\tensorrt\\gpt2-25m_fp32.plan",
+      "exists": true,
+      "file_size_bytes": 183023236,
+      "file_size_mb": 174.54455947875977,
+      "deserialize_error": null,
+      "num_layers": 244,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 68,
+        "Float": 213
+      },
+      "has_int8_tensors": false
+    }
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\onnx\\gpt2-25m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\tensorrt\\gpt2-25m_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "int8_calibration_config": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1766019220.2994013,
+    "build_time_s": null,
+    "file_size_mb": 332.3042411804199,
+    "built": false,
+    "reused": true,
+    "error": null,
+    "engine_sha256": "394e87205dba18409ed4d771d986fe5913a8b39eb2e24a3c4a10fff3b302a104",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\tensorrt\\gpt2-25m_fp16.plan",
+      "exists": true,
+      "file_size_bytes": 348446252,
+      "file_size_mb": 332.3042411804199,
+      "deserialize_error": null,
+      "num_layers": 236,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 67,
+        "Float": 174,
+        "Half": 30,
+        "Bool": 2
+      },
+      "has_int8_tensors": false
+    }
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\onnx\\gpt2-25m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\tensorrt\\gpt2-25m_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "int8_calibration_config": {
+      "batch_size": 8,
+      "cache_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tensorrt\\calib\\gpt2_wikitext2_test_512x8x128.calib",
+      "dataset_config": "wikitext-2-raw-v1",
+      "dataset_name": "wikitext",
+      "samples": 512,
+      "seed": 42,
+      "seq_len": 128,
+      "split": "test",
+      "text_field": "text"
+    },
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1766019220.8564398,
+    "build_time_s": null,
+    "file_size_mb": 174.86082077026367,
+    "built": false,
+    "reused": true,
+    "error": null,
+    "engine_sha256": "d0796a8a33e4937a982460e41caaab4a59f1bcfb48d3a8db753dae3cb94f087f",
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-25m\\tensorrt\\gpt2-25m_int8.plan",
+      "exists": true,
+      "file_size_bytes": 183354860,
+      "file_size_mb": 174.86082077026367,
+      "deserialize_error": null,
+      "num_layers": 279,
+      "num_profiles": 6,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 69,
+        "Float": 256
+      },
+      "has_int8_tensors": false
+    }
+  }
+]

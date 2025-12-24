@@ -1,0 +1,8 @@
+model,config_path,n_layer,n_embd,n_head,n_inner,vocab_size,n_positions
+models/gpt2-100m,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-100m\config.json,8,768,2,3072.0,50257,1024
+models/gpt2-25m,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-25m\config.json,3,384,2,1536.0,50257,1024
+models/gpt2-45m,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-45m\config.json,6,512,8,,50257,1024
+models/gpt2-50m,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-50m\config.json,8,512,2,2048.0,50257,1024
+models/gpt2-5m,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-5m\config.json,12,80,2,320.0,50257,1024
+models/gpt2-75m,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\gpt2-75m\config.json,5,768,2,3072.0,50257,1024
+models/tiny-gpt2,C:\Users\sahil\OneDrive\Documents\GitHub\Banterhearts\models\tiny-gpt2\config.json,2,2,2,,50257,1024

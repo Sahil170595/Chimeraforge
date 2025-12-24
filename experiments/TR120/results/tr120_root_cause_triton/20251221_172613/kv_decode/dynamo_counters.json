@@ -1,0 +1,16 @@
+{
+  "mode": "kv_decode",
+  "backend_labels": [
+    "transformers-gpu",
+    "transformers-gpu-compile"
+  ],
+  "compile_meta": {
+    "enabled": true,
+    "backend": "inductor",
+    "mode": "reduce-overhead",
+    "dynamic": false,
+    "fullgraph": false,
+    "compile_wrapper_ms": 6842.315428999996
+  },
+  "dynamo_counters": {}
+}

@@ -1,0 +1,315 @@
+{
+  "comparisons": {
+    "by_quantization": {
+      "fp32": {
+        "backend_a": "transformers-gpu",
+        "backend_b": "transformers-gpu-compile",
+        "mann_whitney": {
+          "p_value": 2.0196033985523688e-30,
+          "u_statistic": 15668.0
+        },
+        "max_delta_ms": {
+          "delta": -7.294677999993837,
+          "pct": -4.887843104121362
+        },
+        "mean_delta_ms": {
+          "delta": 5.963024674074589,
+          "pct": 6.339961729955579
+        },
+        "median_delta_ms": {
+          "delta": 7.005844000005368,
+          "pct": 7.6988180375383655
+        },
+        "n_a": 270,
+        "n_b": 270,
+        "p95_delta_ms": {
+          "delta": 2.5946519000072215,
+          "pct": 2.356960064551573
+        },
+        "p99_delta_ms": {
+          "delta": -0.9253132899866046,
+          "pct": -0.7108331781097438
+        },
+        "std_delta_ms": {
+          "delta": -2.2558629065813234,
+          "pct": -24.200143724855185
+        }
+      }
+    },
+    "by_scenario_quantization": {
+      "fp32": {
+        "single_long": {
+          "backend_a": "transformers-gpu",
+          "backend_b": "transformers-gpu-compile",
+          "mann_whitney": {
+            "p_value": 3.948215121772337e-09,
+            "u_statistic": 678.0
+          },
+          "max_delta_ms": {
+            "delta": -11.52147999999896,
+            "pct": -9.116398711546159
+          },
+          "mean_delta_ms": {
+            "delta": 5.018990216666907,
+            "pct": 5.381178155969913
+          },
+          "median_delta_ms": {
+            "delta": 6.928577999985919,
+            "pct": 7.664114995480431
+          },
+          "n_a": 60,
+          "n_b": 60,
+          "p95_delta_ms": {
+            "delta": -0.3102696999732615,
+            "pct": -0.2844655457138168
+          },
+          "p99_delta_ms": {
+            "delta": -9.134937079996618,
+            "pct": -7.521044131192226
+          },
+          "std_delta_ms": {
+            "delta": -3.3966962088141273,
+            "pct": -41.630325050444526
+          }
+        },
+        "single_medium": {
+          "backend_a": "transformers-gpu",
+          "backend_b": "transformers-gpu-compile",
+          "mann_whitney": {
+            "p_value": 1.9157423498985954e-16,
+            "u_statistic": 232.0
+          },
+          "max_delta_ms": {
+            "delta": 31.81193099999291,
+            "pct": 28.884583068218195
+          },
+          "mean_delta_ms": {
+            "delta": 9.974887333334038,
+            "pct": 11.05260317067188
+          },
+          "median_delta_ms": {
+            "delta": 9.327559499993754,
+            "pct": 10.498657322863217
+          },
+          "n_a": 60,
+          "n_b": 60,
+          "p95_delta_ms": {
+            "delta": 12.088988949993507,
+            "pct": 12.279279626338703
+          },
+          "p99_delta_ms": {
+            "delta": 20.068710830008385,
+            "pct": 18.727830298840946
+          },
+          "std_delta_ms": {
+            "delta": 2.5338218491196667,
+            "pct": 52.52349021188205
+          }
+        },
+        "single_micro": {
+          "backend_a": "transformers-gpu",
+          "backend_b": "transformers-gpu-compile",
+          "mann_whitney": {
+            "p_value": 2.0509525015600042e-05,
+            "u_statistic": 988.0
+          },
+          "max_delta_ms": {
+            "delta": -6.559336000009381,
+            "pct": -4.794130524856279
+          },
+          "mean_delta_ms": {
+            "delta": 6.041877333336274,
+            "pct": 6.25650662199254
+          },
+          "median_delta_ms": {
+            "delta": 6.602839999999333,
+            "pct": 7.06650823092153
+          },
+          "n_a": 60,
+          "n_b": 60,
+          "p95_delta_ms": {
+            "delta": 9.492540149976492,
+            "pct": 8.611526429319019
+          },
+          "p99_delta_ms": {
+            "delta": 1.6245976600120855,
+            "pct": 1.2715019746387615
+          },
+          "std_delta_ms": {
+            "delta": -0.8972634329857794,
+            "pct": -9.31795023954152
+          }
+        },
+        "single_short": {
+          "backend_a": "transformers-gpu",
+          "backend_b": "transformers-gpu-compile",
+          "mann_whitney": {
+            "p_value": 0.0021186308618380088,
+            "u_statistic": 1214.0
+          },
+          "max_delta_ms": {
+            "delta": -18.237540999990642,
+            "pct": -12.220174627723141
+          },
+          "mean_delta_ms": {
+            "delta": 2.8352589833318262,
+            "pct": 2.919187492006947
+          },
+          "median_delta_ms": {
+            "delta": 4.204053499989868,
+            "pct": 4.4774731277968165
+          },
+          "n_a": 60,
+          "n_b": 60,
+          "p95_delta_ms": {
+            "delta": -6.668129050011373,
+            "pct": -5.6882825415053375
+          },
+          "p99_delta_ms": {
+            "delta": -11.96370579000525,
+            "pct": -8.568491825743788
+          },
+          "std_delta_ms": {
+            "delta": -4.701688160200672,
+            "pct": -40.543135452603565
+          }
+        },
+        "stress_single": {
+          "backend_a": "transformers-gpu",
+          "backend_b": "transformers-gpu-compile",
+          "mann_whitney": {
+            "p_value": 2.8789720800670094e-06,
+            "u_statistic": 133.0
+          },
+          "max_delta_ms": {
+            "delta": -11.97642699997914,
+            "pct": -9.289145918367664
+          },
+          "mean_delta_ms": {
+            "delta": 5.925194333333181,
+            "pct": 6.435864247636289
+          },
+          "median_delta_ms": {
+            "delta": 7.711532999991277,
+            "pct": 8.689981805533984
+          },
+          "n_a": 30,
+          "n_b": 30,
+          "p95_delta_ms": {
+            "delta": -5.723579650003757,
+            "pct": -5.074329229171292
+          },
+          "p99_delta_ms": {
+            "delta": -11.269190949985557,
+            "pct": -8.951491779973567
+          },
+          "std_delta_ms": {
+            "delta": -4.122914101185953,
+            "pct": -42.74047656863178
+          }
+        }
+      }
+    },
+    "overall": {
+      "backend_a": "transformers-gpu",
+      "backend_b": "transformers-gpu-compile",
+      "mann_whitney": {
+        "p_value": 2.0196033985523688e-30,
+        "u_statistic": 15668.0
+      },
+      "max_delta_ms": {
+        "delta": -7.294677999993837,
+        "pct": -4.887843104121362
+      },
+      "mean_delta_ms": {
+        "delta": 5.963024674074589,
+        "pct": 6.339961729955579
+      },
+      "median_delta_ms": {
+        "delta": 7.005844000005368,
+        "pct": 7.6988180375383655
+      },
+      "n_a": 270,
+      "n_b": 270,
+      "p95_delta_ms": {
+        "delta": 2.5946519000072215,
+        "pct": 2.356960064551573
+      },
+      "p99_delta_ms": {
+        "delta": -0.9253132899866046,
+        "pct": -0.7108331781097438
+      },
+      "std_delta_ms": {
+        "delta": -2.2558629065813234,
+        "pct": -24.200143724855185
+      }
+    }
+  },
+  "metadata": {
+    "backends": [
+      "transformers-gpu",
+      "transformers-gpu-compile"
+    ],
+    "generated_at_unix": 1766337851,
+    "metrics_csv": "scripts/tr120/results/tr120_root_cause_triton/20251221_172056/kv_decode/metrics.csv",
+    "model_filter": "models/tiny-gpt2",
+    "quantization_filter": null,
+    "row_count": 540
+  },
+  "summaries": {
+    "by_quantization": [
+      {
+        "backend": "transformers-gpu",
+        "max_ms": 149.24124699999197,
+        "mean_ms": 94.0545846814815,
+        "median_ms": 90.99895549999815,
+        "min_ms": 84.52172299999461,
+        "n": 270,
+        "p90": 106.25569339999858,
+        "p95": 110.08467810000298,
+        "p99": 130.1730586699975,
+        "quantization": "fp32",
+        "std_ms": 9.321692185920366
+      },
+      {
+        "backend": "transformers-gpu-compile",
+        "max_ms": 141.94656899999814,
+        "mean_ms": 100.01760935555609,
+        "median_ms": 98.00479950000351,
+        "min_ms": 91.94359800000028,
+        "n": 270,
+        "p90": 108.71898460001434,
+        "p95": 112.6793300000102,
+        "p99": 129.24774538001088,
+        "quantization": "fp32",
+        "std_ms": 7.0658292793390425
+      }
+    ],
+    "overall": [
+      {
+        "backend": "transformers-gpu",
+        "max_ms": 149.24124699999197,
+        "mean_ms": 94.0545846814815,
+        "median_ms": 90.99895549999815,
+        "min_ms": 84.52172299999461,
+        "n": 270,
+        "p90": 106.25569339999858,
+        "p95": 110.08467810000298,
+        "p99": 130.1730586699975,
+        "std_ms": 9.321692185920366
+      },
+      {
+        "backend": "transformers-gpu-compile",
+        "max_ms": 141.94656899999814,
+        "mean_ms": 100.01760935555609,
+        "median_ms": 98.00479950000351,
+        "min_ms": 91.94359800000028,
+        "n": 270,
+        "p90": 108.71898460001434,
+        "p95": 112.6793300000102,
+        "p99": 129.24774538001088,
+        "std_ms": 7.0658292793390425
+      }
+    ]
+  }
+}

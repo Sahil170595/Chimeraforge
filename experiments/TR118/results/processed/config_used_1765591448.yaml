@@ -1,0 +1,60 @@
+# TR118 Smoke Test Configuration
+# Purpose: fast end-to-end validation that all backends initialize and run.
+
+model:
+  name: "models/tiny-gpt2"
+  description: "Tiny GPT-2 (124M) for fast local smoke tests"
+
+onnx:
+  opset_version: 17
+  dynamic_axes: true
+  trt_friendly_inputs: true
+  optimize_for_inference: true
+
+tensorrt:
+  precisions: [fp16]
+  workspace_gb: 2
+  dynamic_shapes:
+    enabled: true
+    profiles:
+      - name: "smoke"
+        min_shape: [1, 8]
+        opt_shape: [1, 32]
+        max_shape: [1, 64]
+
+benchmark:
+  prompt_config_path: "scripts/tr117/configs/matrix_tier3.yaml"
+  modes: [prefill, generate]
+  backends:
+    - transformers-gpu-compile
+    - onnxruntime-gpu
+    - tensorrt-fp16
+  scenarios:
+    - single_short
+  repetitions: 1
+  warmup_runs: 1
+  timeout_s: 30
+  max_seq_len: 64
+  max_new_tokens: 8
+  stop_on_eos: true
+  enable_resource_monitoring: false
+
+accuracy:
+  perplexity_dataset: "wikitext-2-raw-v1"
+  perplexity_samples: 32
+  perplexity_batch_size: 4
+  perplexity_max_length: 64
+  perplexity_thresholds:
+    fp16: 0.01
+
+baseline:
+  backend: "transformers-gpu-compile"
+
+output:
+  onnx_dir: "artifacts/onnx"
+  tensorrt_dir: "artifacts/tensorrt"
+  results_dir: "scripts/tr118/results"
+
+seed: 42
+torch_deterministic: true
+

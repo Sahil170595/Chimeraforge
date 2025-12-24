@@ -1,0 +1,134 @@
+{
+  "argv": [
+    "scripts/tr121/run_scaling.py",
+    "--config",
+    "scripts/tr121/configs/scaling.yaml",
+    "--out-dir",
+    "scripts/tr121/results/tr121_gemma_family/20251223_230240",
+    "--repetitions",
+    "5",
+    "--warmup-repetitions",
+    "1",
+    "--gen-tokens",
+    "64",
+    "--models",
+    "gemma3:270m,gemma3:1b-it-qat,gemma3:latest",
+    "--backends",
+    "ollama",
+    "--scenarios",
+    "short,medium",
+    "--ollama-timeout-s",
+    "600",
+    "--seed",
+    "42"
+  ],
+  "config_path": "scripts\\tr121\\configs\\scaling.yaml",
+  "config_sha256": "5291e18bc612158e476a7c57d18b20e8950e75405581f418d0d4232cbc5c1ccd",
+  "cuda_available": true,
+  "gen_tokens": 64,
+  "git_head": "326c5b676047ee1be98782ee5a238ba7921eac81",
+  "measured_params": {
+    "hf_params_millions": [],
+    "ollama_params_millions": [
+      {
+        "family": "gemma3",
+        "model": "gemma3:270m",
+        "parameter_size_raw": "268.10M",
+        "params_millions_measured": 268.1,
+        "quantization_level": "Q8_0"
+      },
+      {
+        "family": "gemma3",
+        "model": "gemma3:1b-it-qat",
+        "parameter_size_raw": "999.89M",
+        "params_millions_measured": 999.89,
+        "quantization_level": "Q4_0"
+      }
+    ]
+  },
+  "modes": [
+    "prefill",
+    "kv_decode",
+    "e2e_kv"
+  ],
+  "nvml": {
+    "memory_total_mb": 12282.0,
+    "name": "NVIDIA GeForce RTX 4080 Laptop GPU"
+  },
+  "ollama_timeout_s": 600.0,
+  "platform": {
+    "machine": "AMD64",
+    "os": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python": "3.13.1"
+  },
+  "records_expected": 72,
+  "repetitions": 5,
+  "resolved": {
+    "backends": [
+      {
+        "device": null,
+        "dtype": null,
+        "kind": "ollama",
+        "name": "ollama",
+        "options": {
+          "temperature": 0,
+          "top_p": 1
+        },
+        "url": "http://localhost:11434"
+      }
+    ],
+    "filters": {
+      "backends_allowlist": [
+        "ollama"
+      ],
+      "models_allowlist": [
+        "gemma3:1b-it-qat",
+        "gemma3:270m",
+        "gemma3:latest"
+      ],
+      "scenarios_allowlist": [
+        "medium",
+        "short"
+      ]
+    },
+    "models": [
+      {
+        "kind": "ollama",
+        "name": "gemma3:270m",
+        "params_millions": 268.1
+      },
+      {
+        "kind": "ollama",
+        "name": "gemma3:1b-it-qat",
+        "params_millions": 999.9
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "short",
+        "prompt": "Summarize RLHF in one sentence."
+      },
+      {
+        "name": "medium",
+        "prompt": "Explain how backpressure works in an inference service and when to enable queueing."
+      }
+    ]
+  },
+  "results": {
+    "hf_load_ms_csv": "scripts\\tr121\\results\\tr121_gemma_family\\20251223_230240\\hf_load_ms.csv",
+    "metrics_csv": "scripts\\tr121\\results\\tr121_gemma_family\\20251223_230240\\metrics.csv",
+    "resolved_model_params_csv": "scripts\\tr121\\results\\tr121_gemma_family\\20251223_230240\\resolved_model_params.csv",
+    "runs_jsonl": "scripts\\tr121\\results\\tr121_gemma_family\\20251223_230240\\runs.jsonl"
+  },
+  "run_id": "20251223_230240",
+  "run_name": "tr121_scaling_v0",
+  "seed": 42,
+  "task_count": 4,
+  "torch": {
+    "cuda": "12.8",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0"
+  },
+  "warmup_repetitions": 1
+}

@@ -1,0 +1,8 @@
+model,kind,device,dtype,params_millions_measured
+models/gpt2-5m,hf,cuda,fp16,5.03672
+models/gpt2-45m,hf,cuda,fp16,45.1712
+models/gpt2-50m,hf,cuda,fp16,51.475968
+models/gpt2-25m,hf,cuda,fp16,25.016064
+models/gpt2-100m,hf,cuda,fp16,96.08832
+models/tiny-gpt2,hf,cuda,fp16,0.102714
+models/gpt2-75m,hf,cuda,fp16,74.824704

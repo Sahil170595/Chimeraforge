@@ -1,0 +1,133 @@
+[
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\onnx\\gpt2-100m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\tensorrt\\gpt2-100m_fp32.plan",
+    "precision": "fp32",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "int8_calibration_config": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1766112282.7984314,
+    "build_time_s": null,
+    "file_size_mb": 520.480037689209,
+    "built": false,
+    "reused": true,
+    "error": null,
+    "engine_sha256": null,
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\tensorrt\\gpt2-100m_fp32.plan",
+      "exists": true,
+      "file_size_bytes": 545762876,
+      "file_size_mb": 520.480037689209,
+      "deserialize_error": null,
+      "num_layers": 609,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 168,
+        "Float": 528
+      },
+      "has_int8_tensors": false
+    }
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\onnx\\gpt2-100m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\tensorrt\\gpt2-100m_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "int8_calibration_config": null,
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1766112285.3089495,
+    "build_time_s": null,
+    "file_size_mb": 850.6318321228027,
+    "built": false,
+    "reused": true,
+    "error": null,
+    "engine_sha256": null,
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\tensorrt\\gpt2-100m_fp16.plan",
+      "exists": true,
+      "file_size_bytes": 891952124,
+      "file_size_mb": 850.6318321228027,
+      "deserialize_error": null,
+      "num_layers": 594,
+      "num_profiles": 5,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 168,
+        "Float": 322,
+        "Half": 190
+      },
+      "has_int8_tensors": false
+    }
+  },
+  {
+    "onnx_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\onnx\\gpt2-100m.onnx",
+    "output_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\tensorrt\\gpt2-100m_int8.plan",
+    "precision": "int8",
+    "workspace_gb": 6,
+    "builder_settings": {},
+    "int8_calibration_config": {
+      "batch_size": 8,
+      "cache_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tensorrt\\calib\\gpt2_wikitext2_test_512x8x128.calib",
+      "dataset_config": "wikitext-2-raw-v1",
+      "dataset_name": "wikitext",
+      "samples": 512,
+      "seed": 42,
+      "seq_len": 128,
+      "split": "test",
+      "text_field": "text"
+    },
+    "dynamic_shapes": true,
+    "profiles": 5,
+    "timestamp": 1766112286.505434,
+    "build_time_s": null,
+    "file_size_mb": 522.5654640197754,
+    "built": false,
+    "reused": true,
+    "error": null,
+    "engine_sha256": null,
+    "engine_inspect": {
+      "engine_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\artifacts\\tr118v2_crossover\\gpt2-100m\\tensorrt\\gpt2-100m_int8.plan",
+      "exists": true,
+      "file_size_bytes": 547949604,
+      "file_size_mb": 522.5654640197754,
+      "deserialize_error": null,
+      "num_layers": 694,
+      "num_profiles": 6,
+      "io_names": [
+        "input_ids",
+        "attention_mask",
+        "logits"
+      ],
+      "engine_inspector": {
+        "layer_entry_type": "dict",
+        "has_int8_in_json": false
+      },
+      "layer_output_dtype_counts": {
+        "Int64": 169,
+        "Float": 631
+      },
+      "has_int8_tensors": false
+    }
+  }
+]

@@ -1,0 +1,10 @@
+# "Static shapes" variant implemented as a fixed TensorRT profile (min=opt=max).
+# This avoids relying on static-axis ONNX export, which can be flaky on some Windows+torch builds.
+tensorrt:
+  dynamic_shapes:
+    enabled: true
+    profiles:
+      - name: "fixed_128"
+        min_shape: [1, 128]
+        opt_shape: [1, 128]
+        max_shape: [1, 128]

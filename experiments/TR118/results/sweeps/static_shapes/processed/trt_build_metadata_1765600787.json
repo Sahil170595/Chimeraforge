@@ -1,0 +1,16 @@
+[
+  {
+    "onnx_path": "artifacts\\onnx\\tiny-gpt2.onnx",
+    "output_path": "artifacts\\tr118\\sweeps\\static_shapes\\tensorrt\\tiny-gpt2_fp16.plan",
+    "precision": "fp16",
+    "workspace_gb": 4,
+    "builder_settings": {},
+    "build_time_s": 14.588326299999608,
+    "file_size_mb": 1.7733573913574219,
+    "dynamic_shapes": true,
+    "profiles": 1,
+    "timestamp": 1765600812.9942887,
+    "built": true,
+    "reused": false
+  }
+]

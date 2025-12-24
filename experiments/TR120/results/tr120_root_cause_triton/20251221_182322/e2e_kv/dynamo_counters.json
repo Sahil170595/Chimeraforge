@@ -1,0 +1,54 @@
+{
+  "mode": "e2e_kv",
+  "backend_labels": [
+    "transformers-gpu",
+    "transformers-gpu-compile"
+  ],
+  "compile_meta": {
+    "enabled": true,
+    "backend": "inductor",
+    "mode": "reduce-overhead",
+    "dynamic": false,
+    "fullgraph": false,
+    "disable_cudagraphs": true,
+    "compile_wrapper_ms": 6266.81523499974,
+    "dynamo_counters_after_compile": {
+      "frames": {
+        "total": 1,
+        "ok": 1
+      },
+      "inline_call": {},
+      "stats": {
+        "calls_captured": 110,
+        "unique_graphs": 1
+      },
+      "inductor": {
+        "pattern_matcher_count": 54,
+        "pattern_matcher_nodes": 63,
+        "benchmarking.InductorBenchmarker.benchmark_gpu": 12,
+        "fxgraph_cache_miss": 1,
+        "async_compile_cache_miss": 30,
+        "extern_calls": 13,
+        "async_compile_cache_hit": 15,
+        "triton_bundler_save_kernel": 112
+      },
+      "aot_autograd": {
+        "total": 1,
+        "autograd_cache_miss": 1,
+        "autograd_cache_saved": 1,
+        "ok": 1
+      },
+      "graph_break": {},
+      "aten_mm_info": {
+        "aten.addmm_8_6_2": 2,
+        "aten.bmm_8_8_1": 2,
+        "aten.bmm_8_1_8": 2,
+        "aten.mm_8_2_2": 2,
+        "aten.mm_8_8_2": 2,
+        "aten.mm_8_2_8": 2,
+        "aten.mm_8_50257_2": 1
+      }
+    }
+  },
+  "dynamo_counters": {}
+}

@@ -1,0 +1,43 @@
+{
+  "tr": "TR119",
+  "started_at": 1766277996.7995176,
+  "run_id": 1766277996,
+  "config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\configs\\matrix.yaml",
+  "prompt_config_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr117\\configs\\matrix_tier3.yaml",
+  "git_sha": "fa75edf8367dce1e12e6762d23f3319ffd8e97b5",
+  "platform": {
+    "python": "3.13.1 (tags/v3.13.1:0671451, Dec  3 2024, 19:06:28) [MSC v.1942 64 bit (AMD64)]",
+    "os": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "cuda_device": {
+      "index": 0,
+      "name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "capability": "8.9",
+      "total_memory_mb": 12281.5
+    },
+    "onnxruntime_providers": [
+      "TensorrtExecutionProvider",
+      "CUDAExecutionProvider",
+      "CPUExecutionProvider"
+    ]
+  },
+  "package_versions": {
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.0",
+    "onnx": "1.19.0",
+    "onnxruntime": "1.23.2",
+    "tensorrt": "10.12.0.36",
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "scipy": "1.15.2"
+  },
+  "config_snapshot_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\processed\\config_used_1766277996.yaml",
+  "latency_summary_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\processed\\latency_summary_cost.csv",
+  "cost_energy_summary_path": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\processed\\cost_energy_summary.json",
+  "statistical_analysis_error": "Command '['C:\\\\Users\\\\sahil\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python313\\\\python.exe', 'scripts/tr119/statistical_analysis.py', '--cost-summary', 'C:\\\\Users\\\\sahil\\\\OneDrive\\\\Documents\\\\GitHub\\\\Banterhearts\\\\scripts\\\\tr119\\\\results\\\\tr119_matrix\\\\processed\\\\cost_energy_summary.json']' returned non-zero exit status 1.",
+  "cost_energy_validation": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\processed\\cost_energy_validation.json",
+  "cost_energy_analysis": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\processed\\cost_energy_analysis.json",
+  "plots_dir": "C:\\Users\\sahil\\OneDrive\\Documents\\GitHub\\Banterhearts\\scripts\\tr119\\results\\tr119_matrix\\plots",
+  "ended_at": 1766278169.541643,
+  "duration_s": 172.74212527275085
+}

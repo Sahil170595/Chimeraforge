@@ -1,0 +1,4 @@
+model,kind,params_millions_config,params_millions_measured,parameter_size_raw,quantization_level,family
+gemma3:270m,ollama,268.1,268.1,268.10M,Q8_0,gemma3
+gemma3:1b-it-qat,ollama,999.9,999.89,999.89M,Q4_0,gemma3
+gemma3:latest,ollama,4300.0,4300.0,4.3B,Q4_K_M,gemma3
