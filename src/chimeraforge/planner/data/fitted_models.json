@@ -1,0 +1,138 @@
+{
+  "vram": {
+    "overhead_factor": 1.058047797687617,
+    "act_coeff": 0.00454768594328633,
+    "fitted": true
+  },
+  "throughput": {
+    "lookup": {
+      "gpt2|transformers-gpu|FP16": 195.26071428571433,
+      "gpt2|transformers-cpu|FP16": 46.464285714285715,
+      "llama3.2-1b|transformers-gpu|FP16": 70.27499999999999,
+      "llama3.2-1b|transformers-cpu|FP16": 8.95,
+      "qwen2.5-1.5b|transformers-gpu|FP16": 35.24240235363466,
+      "qwen2.5-1.5b|transformers-cpu|FP16": 6.6,
+      "phi-2|transformers-gpu|FP16": 47.542857142857144,
+      "llama3.2-3b|transformers-gpu|FP16": 37.33571428571429,
+      "gpt2|transformers-gpu-compile|FP16": 398.51785714285705,
+      "llama3.2-1b|transformers-gpu-compile|FP16": 133.9607142857143,
+      "qwen2.5-1.5b|transformers-gpu-compile|FP16": 93.92142857142858,
+      "phi-2|transformers-gpu-compile|FP16": 62.07142857142858,
+      "qwen2.5-0.5b|transformers-gpu|FP16": 43.07983167813006,
+      "qwen2.5-3b|transformers-gpu|FP16": 19.526204341693635,
+      "qwen2.5-1.5b|ollama|FP16": 139.605718775086,
+      "llama3.2-1b|ollama|FP16": 146.33095063781678,
+      "llama3.2-3b|ollama|FP16": 95.85597625783407,
+      "llama3.2-1b|vllm|FP16": 137.41755319148936,
+      "qwen2.5-1.5b|vllm|FP16": 97.34034090909091,
+      "llama3.2-3b|vllm|FP16": 57.16010416666668,
+      "llama3.2-1b|tgi|FP16": 117.91333333333333,
+      "qwen2.5-1.5b|tgi|FP16": 75.97784090909092,
+      "llama3.2-3b|tgi|FP16": 48.311704545454546
+    },
+    "quant_multipliers": {
+      "FP16": 1.0,
+      "Q8_0": 1.3,
+      "Q6_K": 1.5,
+      "Q5_K_M": 1.7,
+      "Q4_K_M": 1.9,
+      "Q3_K_S": 2.1,
+      "Q2_K": 2.3
+    },
+    "size_power_a": 72.11010249423731,
+    "size_power_b": 0.08877472521007239,
+    "fitted": true
+  },
+  "scaling": {
+    "serial_fractions": {
+      "llama3.2-1b|ollama": 0.532912,
+      "llama3.2-3b|ollama": 0.387044,
+      "qwen2.5-1.5b|ollama": 0.455408,
+      "llama3.2-1b|tgi": 0.827404,
+      "llama3.2-3b|tgi": 0.914566,
+      "qwen2.5-1.5b|tgi": 0.896028,
+      "llama3.2-1b|vllm": 0.81253,
+      "llama3.2-3b|vllm": 0.916795,
+      "qwen2.5-1.5b|vllm": 0.874776
+    },
+    "defaults": {
+      "ollama": 0.45,
+      "vllm": 0.15,
+      "tgi": 0.2
+    },
+    "fitted": true
+  },
+  "quality": {
+    "lookup": {
+      "gpt2|FP16": 0.289554,
+      "llama3.2-1b|FP16": 0.5436810000000001,
+      "llama3.2-3b|FP16": 0.53759,
+      "phi-2|FP16": 0.533659,
+      "qwen2.5-1.5b|FP16": 0.58395,
+      "llama3.1-8b|Q2_K": 0.590476,
+      "llama3.1-8b|Q3_K_S": 0.638642,
+      "llama3.1-8b|Q4_K_M": 0.637721,
+      "llama3.1-8b|Q5_K_M": 0.623202,
+      "llama3.1-8b|Q6_K": 0.633095,
+      "llama3.1-8b|Q8_0": 0.63515,
+      "llama3.2-1b|Q2_K": 0.388785,
+      "llama3.2-1b|Q3_K_S": 0.504459,
+      "llama3.2-1b|Q4_K_M": 0.539531,
+      "llama3.2-1b|Q5_K_M": 0.531245,
+      "llama3.2-1b|Q6_K": 0.530331,
+      "llama3.2-1b|Q8_0": 0.530388,
+      "llama3.2-3b|Q2_K": 0.581932,
+      "llama3.2-3b|Q3_K_S": 0.58237,
+      "llama3.2-3b|Q4_K_M": 0.624113,
+      "llama3.2-3b|Q5_K_M": 0.624655,
+      "llama3.2-3b|Q6_K": 0.626057,
+      "llama3.2-3b|Q8_0": 0.627724,
+      "phi-2|Q2_K": 0.491509,
+      "phi-2|Q3_K_S": 0.525831,
+      "phi-2|Q4_K_M": 0.522323,
+      "phi-2|Q5_K_M": 0.533554,
+      "phi-2|Q6_K": 0.526196,
+      "phi-2|Q8_0": 0.540225,
+      "qwen2.5-1.5b|Q2_K": 0.320699,
+      "qwen2.5-1.5b|Q3_K_S": 0.472194,
+      "qwen2.5-1.5b|Q4_K_M": 0.583503,
+      "qwen2.5-1.5b|Q5_K_M": 0.526329,
+      "qwen2.5-1.5b|Q6_K": 0.585826,
+      "qwen2.5-1.5b|Q8_0": 0.568868
+    },
+    "fp16_baselines": {
+      "gpt2": 0.289554,
+      "llama3.2-1b": 0.5436810000000001,
+      "llama3.2-3b": 0.53759,
+      "phi-2": 0.533659,
+      "qwen2.5-1.5b": 0.58395
+    },
+    "quant_deltas": {
+      "Q2_K": -0.10398875000000002,
+      "Q3_K_S": -0.02850649999999999,
+      "Q4_K_M": 0.017647499999999983,
+      "Q5_K_M": 0.004225749999999973,
+      "Q6_K": 0.017382499999999967,
+      "Q8_0": 0.017081249999999965
+    },
+    "fitted": true
+  },
+  "cost": {
+    "hw_cost_per_hour": 0.035
+  },
+  "latency": {
+    "service_times": {
+      "qwen2.5-1.5b|ollama": 936.46,
+      "llama3.2-1b|ollama": 722.14,
+      "llama3.2-3b|ollama": 1023.48,
+      "llama3.2-1b|vllm": 848.56,
+      "qwen2.5-1.5b|vllm": 1238.07,
+      "llama3.2-3b|vllm": 2104.12,
+      "llama3.2-1b|tgi": 1028.245,
+      "qwen2.5-1.5b|tgi": 1690.295,
+      "llama3.2-3b|tgi": 2701.84
+    },
+    "safety_factor": 0.7,
+    "fitted": true
+  }
+}
