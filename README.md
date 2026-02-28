@@ -1,26 +1,21 @@
 # Chimeraforge
 
-**Benchmarking hub for answering one question:** *How do we ship the fastest, most reliable LLM agents?*
+**70,000+ measurements. 26 technical reports. One consumer GPU. A shipped CLI tool.**
 
-
-This repository contains everything behind Technical Reports TR108 through TR123 — source code, benchmark harnesses, datasets, logs, and publish-ready technical reports. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
+This repository contains everything behind Technical Reports TR108 through TR133 — source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge plan` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
 
 ---
 
 ## What This Repository Is About
 
-Chimeraforge is the benchmark-only breakout from the Banterhearts program. It
-contains every asset required to measure agent performance (Python and Rust),
-run the TR-series test plans, and publish the technical reports that feed the
-production decision process. Production APIs, orchestration services, and UX
-assets stayed behind in the Banterhearts monolith so this repository can stay
-lean, reproducible, and laser-focused on measurement.
+Chimeraforge is the research and benchmarking breakout from the Banterhearts program. It contains every asset required to measure LLM inference performance, run the TR-series test plans, publish the technical reports, and ship the predictive capacity planner. Production APIs and orchestration services remain in Banterhearts; this repo stays focused on measurement, analysis, and deployment tooling.
 
-When building AI agents that use Large Language Models (LLMs), you face a fundamental question: **Which programming language should you use?** Python offers rapid development and a rich ecosystem. Rust offers performance and memory efficiency. But what are the *real-world* differences when running production workloads?
+The research program spans two completed phases:
 
-**Chimeraforge answers this question with data, not opinions.**
+- **Phase 1 (TR108-TR122):** Language comparison (Python vs Rust), multi-agent concurrency, backend benchmarking, cost/energy economics, scaling laws. 8,000+ runs.
+- **Phase 2 (TR123-TR133):** KV-cache economics, quality baselines, quantization decision matrix, compile paradox resolution, context scaling, production workloads, N-agent scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning. ~62,000+ measurements.
 
-Through **2000+ benchmark runs** across Technical Reports TR108–TR123 — including single-agent performance, multi-agent concurrency, optimization strategies, runtime choices, backend comparisons, cost analysis, and scaling studies — we've systematically compared Python and Rust implementations of LLM agents. We've tested inference backends (ONNX Runtime, TensorRT), quantified cost/energy economics, and root-caused performance anomalies. Every finding is reproducible, every claim is defensible, and every number comes from real benchmarks on real hardware.
+Through **70,000+ measurements** across 26 Technical Reports, we've answered the fundamental deployment questions: which backend, which quantization level, which serving stack, how many agents, what context budget, and how to plan capacity — all validated on a single consumer GPU (RTX 4080 Laptop, 12 GB VRAM).
 
 ---
 
@@ -66,7 +61,7 @@ Through **2000+ benchmark runs** across Technical Reports TR108–TR123 — incl
 
 ## Quick Takeaways: What We Discovered
 
-All findings below are verified across 2000+ benchmark runs documented in Technical Reports TR108 through TR123. Every number is reproducible and traceable to raw data.
+All findings below are verified across 70,000+ measurements documented in Technical Reports TR108 through TR133. Every number is reproducible and traceable to raw data.
 
 ### Single-Agent Performance: Rust vs Python
 
@@ -145,6 +140,33 @@ Rust supports multiple async runtimes (Tokio, async-std, smol). **Which one shou
 3. **Qwen Issues:** Throughput imbalance (+12 tok/s delta) hurts efficiency in both languages.
 4. **Python Ceiling:** Python never exceeds 86% efficiency, regardless of model.
 
+### Phase 2: Deployment Decisions (TR123-TR133)
+
+Phase 2 produces a complete, artifact-backed deployment framework from ~62,000 measurements:
+
+| Decision | Recommendation | Evidence |
+|----------|---------------|----------|
+| **Single-agent backend** | Ollama Q4_K_M | Highest throughput/dollar; quality within -4.1pp (TR123-TR125) |
+| **Multi-agent backend (N>=4)** | vLLM FP16 | 2.25x advantage from continuous batching (TR130-TR132) |
+| **Compile policy** | Prefill only, Linux, Inductor+Triton | 24-60% speedup; decode crashes 100% (TR126) |
+| **Quantization** | Q4_K_M default; Q8_0 quality-critical; never Q2_K | Universal sweet spot across 5 models (TR125) |
+| **Context budget** | Ollama for >4K tokens on 12 GB | VRAM spillover = 25-105x cliffs (TR127) |
+| **Capacity planning** | `chimeraforge plan` | Validated R²>=0.859; beats M/D/1 by 20.4x (TR133) |
+
+### `chimeraforge plan` — Predictive Capacity Planner
+
+The CLI tool that operationalizes the entire research program:
+
+```bash
+pip install -e ".[all]"
+chimeraforge plan --model llama3.2-1b --quantization Q4_K_M --backend ollama --agents 4
+```
+
+- Searches (model, quantization, backend, N-agents) space in <1 second
+- 4-gate pipeline: VRAM feasibility → quality gate → latency gate → budget gate
+- Validated: VRAM R²=0.968, throughput R²=0.859, quality RMSE=0.062, latency MAPE=1.05%
+- No ML needed — empirical lookup tables with first-principles interpolation
+
 ### Backend & Infrastructure Studies (TR117-TR121)
 
 **Inference Backend Performance (TR117):**
@@ -177,9 +199,9 @@ Rust supports multiple async runtimes (Tokio, async-std, smol). **Which one shou
 
 ---
 
-## Research Journey: Technical Reports TR108-TR123
+## Research Journey: Technical Reports TR108-TR133
 
-Our research progressed systematically, with each report building on previous findings and answering specific questions. We've conducted **2000+ benchmark runs** across **16 technical reports** (TR108-TR123, with TR122 and TR123 planned), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, and scaling studies.
+Our research progressed systematically, with each report building on previous findings and answering specific questions. We've conducted **70,000+ measurements** across **26 technical reports** (TR108-TR133), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, scaling studies, quantization, compilation, context scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning.
 
 ### TR108: Single-Inference Optimization
 **Question:** What's the best configuration for a single LLM request?  
@@ -376,7 +398,7 @@ Our research progressed systematically, with each report building on previous fi
 - Full reproducibility: code, data, and methodology all available
 - Statistical rigor: confidence intervals, variance measures, multiple runs
 - Process isolation: cold-start testing to avoid warm-cache bias
-- Comprehensive coverage: 2000+ benchmark runs across Technical Reports TR108–TR123 (including TR117 with 3,017 inference runs)
+- Comprehensive coverage: 70,000+ measurements across 26 Technical Reports (TR108-TR133)
 
 ---
 
@@ -399,8 +421,20 @@ Our research progressed systematically, with each report building on previous fi
 | **TR119** | What are the cost/energy implications? | onnxruntime-gpu: $0.1279/1M tokens (on-demand), best cost efficiency. | Backend choice significantly impacts operational costs and energy consumption. |
 | **TR120** | Why does GPU-compile win mean but lose median? | TR117 compile label misattributed; shape stability is critical, not compilation. | Understanding true cause enables better optimization. Shape stability matters more than compilation. |
 | **TR121v1** | How does performance scale with model size? | Scaling pipeline established from 5M to 20B parameters. | Understanding scaling behavior essential for choosing appropriate model sizes. |
+| **TR122** | What are the physics of inference on consumer GPUs? | RTX 4080 idles at 20.71W, V2 poller achieves 100ms grid. | Foundational power/thermal characterization for all subsequent work. |
+| **TR123** | What does KV-cached inference actually cost? | Best cost $0.013/1M tokens (GPT-2/compile, chat blend). | Phase-split economics across 5 models, 3 backends, 5 workloads. |
+| **TR124** | Does backend choice affect output quality? | No — 0/7 ANOVA metrics significant across 5 models. | Enables pure cost-driven backend selection. |
+| **TR125** | Which quantization level should we deploy? | Q4_K_M universal sweet spot (-4.1pp max); Q2_K unacceptable. | 26,000 samples, 34 model-quant variants, real MMLU+ARC benchmarks. |
+| **TR126** | Does torch.compile actually help? | Yes on Linux (24-60% prefill speedup); crashes decode. | Resolves Phase 1 compile paradox; 916 real Triton kernels generated. |
+| **TR127** | What happens at long context lengths? | VRAM spillover causes 25-105x cliffs; sub-linear below capacity. | Two-regime discovery reshapes all context-length planning. |
+| **TR128** | How does production load behave? | NUM_PARALLEL is a no-op (0/30 significant); M/D/1 deviates 20.4x. | Refutes two common assumptions about GPU inference scaling. |
+| **TR129** | How do N agents scale on one GPU? | Amdahl s=0.39-0.54; throughput plateaus at N=2. | Per-agent efficiency degrades monotonically; fairness excellent. |
+| **TR130** | Which serving stack scales best? | vLLM 2.25x advantage at N=8 via continuous batching. | First head-to-head: Ollama vs vLLM vs TGI at scale. |
+| **TR131** | What's the real scaling bottleneck? | GPU memory bandwidth (+74% stress at N=8), not serving stack. | Overturns TR130; PyTorch Direct degrades worse than Ollama. |
+| **TR132** | How does continuous batching work at kernel level? | 77-80% kernel reduction, 79-83% bandwidth-per-token reduction. | Proves the mechanism; vLLM and TGI use identical amortization. |
+| **TR133** | Can we automate capacity planning? | Yes — 4/4 validation targets met; `chimeraforge plan` shipped. | Empirical lookup tables outperform theoretical queueing models. |
 
-**Full report links:** See `docs/technical_reports.md` for complete index, or browse `outputs/publish_ready/reports/` for all technical reports.
+**Full report links:** See `outputs/publish_ready/reports/` for all 26 technical reports plus conclusive syntheses.
 
 ---
 
@@ -471,7 +505,8 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`data/csv/`** | CSV exports of benchmark data | When you want to analyze data in Excel, Python, or other tools |
 | **`data/research/`** | Research data from experiments | When you want to access experiment-specific datasets |
 | **`outputs/reports/`** | Intermediate technical reports | When you want to see work-in-progress analysis |
-| **`outputs/publish_ready/reports/`** | Final technical reports (TR108-TR123) | **Start here** for comprehensive findings and analysis |
+| **`src/chimeraforge/`** | ChimeraForge CLI (`chimeraforge plan`) | The predictive capacity planner tool |
+| **`outputs/publish_ready/reports/`** | All 26 technical reports + conclusive syntheses | **Start here** for comprehensive findings and analysis |
 | **`outputs/publish_ready/notebooks/`** | Jupyter notebooks for analysis | When you want to reproduce analysis or create visualizations |
 | **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
@@ -546,7 +581,7 @@ All reports include:
 ### For Understanding the Research
 
 - **`docs/technical_reports.md`** – Complete index of all technical reports
-- **`outputs/publish_ready/reports/`** – All technical reports (TR108-TR123) with full analysis
+- **`outputs/publish_ready/reports/`** – All technical reports (TR108-TR133) with full analysis
 - **`outputs/publish_ready/notebooks/`** – Jupyter notebooks for data analysis
 - **`resources/patches/`** – Narrative changelog of major updates and discoveries
 
@@ -563,11 +598,13 @@ All reports include:
 
 ### Total Research Investment
 
-- **2000+ benchmark runs** across all published studies (TR108–TR123, including TR117 with 3,017 inference runs)
-- **Up to 30 configurations per major report** (see "Research Journey" above for exact counts)
-- **16+ comprehensive technical reports** documenting findings (TR108-TR123, with TR122 and TR123 planned)
-- **Multiple hardware/software combinations** validated
-- **Statistical analysis** with confidence intervals on all key metrics
+- **70,000+ measurements** across Phase 1 (8,000+ runs) and Phase 2 (~62,000 measurements)
+- **26 technical reports** (TR108-TR133) plus 2 dissertation-style conclusive syntheses
+- **4 serving stacks** benchmarked (Ollama, vLLM, TGI, PyTorch Direct)
+- **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
+- **GPU kernel profiling** with Nsight Systems (~2 GB traces)
+- **1 PyTorch upstream contribution** (pytorch/pytorch#175557, PR #175562)
+- **1 shipped CLI tool** (`chimeraforge plan`) with 4/4 validation targets met
 
 ### Methodology Highlights
 
@@ -580,12 +617,14 @@ All reports include:
 
 ### Hardware and Software
 
-- **GPU:** NVIDIA RTX 4080 (12GB VRAM, 9,728 CUDA cores)
-- **CPU:** Intel Core i9-13980HX (24 cores, 32 threads)
-- **Model:** gemma3:latest (4.3B parameters, Q4_K_M quantization)
+- **GPU:** NVIDIA RTX 4080 Laptop GPU (12 GB GDDR6 VRAM, 256-bit, 432 GB/s, AD104)
+- **CPU:** Intel Core i9-13900HX (24 cores, 32 threads)
+- **RAM:** 64 GB DDR5-4800
+- **OS:** Windows 11 + WSL2/Ubuntu 22.04 for Docker/Linux workloads
+- **Models tested:** GPT-2 (124M) through LLaMA-3.1-8B (8B), 7 quantization levels
+- **Serving stacks:** Ollama 0.6.x, vLLM 0.7.x, TGI, PyTorch Direct
 - **Python:** 3.11+ with asyncio
 - **Rust:** 1.70+ with Tokio/async-std/smol runtimes
-- **Ollama:** Latest version with dual-instance support
 
 ---
 
@@ -610,10 +649,10 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-This research was conducted as part of the Banterhearts program, focusing specifically on benchmarking and performance optimization. Production APIs and orchestration services remain in the main Banterhearts repository.
+This research was conducted as part of the Banterhearts LLM Performance Research Program. Phase 1 (TR108-TR122) established the measurement methodology and cross-language comparison. Phase 2 (TR123-TR133) produced the deployment framework and capacity planner. Production APIs and orchestration services remain in the main Banterhearts repository.
 
 ---
 
-**Last Updated:** latest report: November 26, 2025
-**Repository:** https://github.com/Sahil170595/Chimeraforge  
-**Status:** ✅ Active Research & Development
+**Last Updated:** February 28, 2026 (Phase 2 complete, TR133 shipped)
+**Repository:** https://github.com/sahilpmehra/Chimeraforge
+**Status:** ✅ Phase 1 + Phase 2 Complete | Phase 3 (Safety Pivot) Planned
