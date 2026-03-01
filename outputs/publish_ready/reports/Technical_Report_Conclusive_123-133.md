@@ -639,7 +639,7 @@ All Phase 2 measurements are conducted on a single hardware baseline to eliminat
 
 **GPU:** NVIDIA GeForce RTX 4080 Laptop GPU (AD104). 7,424 CUDA cores, 12 GB GDDR6 VRAM, 256-bit memory bus, 432 GB/s memory bandwidth, 175W TDP (configurable via Dynamic Boost). Ada Lovelace architecture (sm_89), CUDA Compute Capability 8.9.
 
-**CPU:** Intel Core i9-13900HX. 24 cores (8P + 16E), 32 threads, up to 5.4 GHz boost. Used for CPU-backend measurements in TR123 and as the host processor for GPU inference.
+**CPU:** Intel Core i9-13980HX. 24 cores (8P + 16E), 32 threads, up to 5.4 GHz boost. Used for CPU-backend measurements in TR123 and as the host processor for GPU inference.
 
 **Memory:** 64 GB DDR5-4800. Sufficient to absorb VRAM spillover without system-level OOM, which is important for TR127's context scaling tests where CUDA Unified Memory migrates pages to system RAM.
 

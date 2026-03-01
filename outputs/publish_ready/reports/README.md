@@ -18,9 +18,9 @@ Single-agent and multi-agent performance analysis, Rust vs Python cross-language
 KV-cache economics, quality baselines, quantization decision matrix, Linux/Triton compile validation, long-context characterization, production workload analysis, N-agent scaling laws, serving stack comparison, GPU kernel profiling (host + in-container), and a predictive capacity planner shipped as the `chimeraforge plan` CLI.
 
 ### Conclusive Reports
-**6 synthesis documents spanning both phases.**
+**9 synthesis documents spanning both phases.**
 
-Two dissertation-style conclusive reports (Phase 1 + Phase 2), two extended appendices volumes, and two executive whitepapers — providing audit-ready decision guidance with full artifact provenance.
+Three dissertation-style conclusive reports (TR108-TR116, TR117-TR122, TR123-TR133), three extended appendices volumes, and three executive whitepapers — providing audit-ready decision guidance with full artifact provenance.
 
 ---
 
@@ -39,13 +39,13 @@ Two dissertation-style conclusive reports (Phase 1 + Phase 2), two extended appe
 | **TR114_v2** | Rust Multi-Agent (Dual Ollama) | Complete | 98.281% mean efficiency, 0.74% contention |
 | **TR115_v2** | Rust Runtime Optimization | Complete | Tokio-default recommended (98.72% mean, 1.21pp sigma) |
 | **TR116** | Cross-Model Multi-Agent Benchmarks | Complete | Rust + Gemma 3 is king (99.2%); Qwen shows imbalance |
-| **TR117** | Root Cause Analysis (Inference) | Complete | Python ceiling caused by event loop lag (16ms spikes) |
+| **TR117** | Cross-Backend Inference Benchmark | Complete | GPU-compile best mean; ONNX/TRT failures documented |
 | **TR117_multi** | Multi-Agent Root Cause Analysis | Complete | Python event loop saturation (5.33ms mean lag) |
 | **TR118_v2.2** | ONNX Runtime + TensorRT Deep Dive | Complete | TensorRT-fp16 best prefill (2.48ms, -87% vs baseline) |
 | **TR119** | Cost & Energy Analysis | Complete | onnxruntime-gpu best cost ($0.1279/1M tok on-demand) |
 | **TR120** | The "Compile Paradox" Root-Cause Audit | Complete | TR117 compile label misattributed; shape stability critical |
 | **TR121v1** | Model Scaling Study | Complete | Scaling pipeline from 5M to 20B parameters established |
-| **TR122** | Resource Profiling Deep Dive | Complete | Full GPU/CPU/memory instrumentation and bottleneck identification |
+| **TR122** | Resource Profiling Deep Dive | Complete | Baseline power (20.71W), poller scheduling, thermal equilibrium |
 
 ### Phase 2: Deployment Framework (TR123-TR133)
 
@@ -67,9 +67,12 @@ Two dissertation-style conclusive reports (Phase 1 + Phase 2), two extended appe
 
 | Report | Scope | Size |
 |--------|-------|------|
-| **Conclusive 117-122** | Phase 1 Synthesis | 207KB |
-| **Conclusive 117-122 Extended Appendices** | Phase 1 Deep-Dive Appendices | Supplemental |
-| **Conclusive 117-122 Whitepaper** | Phase 1 Executive Guidance | 15KB |
+| **Conclusive 108-116** | Phase 1 Synthesis (Python→Rust Migration) | 2,826 lines |
+| **Conclusive 108-116 Extended Appendices** | Phase 1 Deep-Dive Appendices (108-116) | 1,171 lines |
+| **Conclusive 108-116 Whitepaper** | Phase 1 Executive Guidance (108-116) | 214 lines |
+| **Conclusive 117-122** | Phase 1 Synthesis (Benchmarking→Decision-Grade) | 208KB |
+| **Conclusive 117-122 Extended Appendices** | Phase 1 Deep-Dive Appendices | 89KB |
+| **Conclusive 117-122 Whitepaper** | Phase 1 Executive Guidance | 8KB |
 | **Conclusive 123-133** | Phase 2 Synthesis | 433KB, 3,327 lines, 60 appendices |
 | **Conclusive 123-133 Extended Appendices** | Phase 2 Deep-Dive Appendices | 62KB |
 | **Conclusive 123-133 Whitepaper** | Phase 2 Executive Guidance | 15KB |
@@ -83,8 +86,6 @@ Two dissertation-style conclusive reports (Phase 1 + Phase 2), two extended appe
 | TR114 | TR114_v2 | Incorrect statistics (97.5% -> 98.281%) |
 | TR115 | TR115_v2 | Incomplete data analysis (30 -> 150 runs) |
 | TR118 | TR118_v2.2 | Multiple revisions; v2.2 is latest |
-| TR118_v2 | TR118_v2.2 | Superseded by v2.2 |
-| TR118_v2.1 | TR118_v2.2 | Superseded by v2.2 |
 | TR119v1 | TR119 | Early draft superseded |
 | TR121 | TR121v1 | Early draft superseded |
 
@@ -159,9 +160,9 @@ Six shippable decisions backed by ~62,000 measurements:
 
 - **VRAM spillover, not quadratic attention, is the practical long-context bottleneck.** 25-105x latency cliffs when KV-cache pushes VRAM past capacity. Below spillover, Ollama prefill scaling is sub-linear (b = 0.083-0.158). GQA models sustain 3-11x longer contexts than MHA models (TR127).
 
-- **NUM_PARALLEL is a no-op.** 0/30 pairwise comparisons significant (mean absolute change 4.0%). M/D/1 queueing theory deviates up to 20.4x from observed latency. Streaming adds zero overhead (TR128).
+- **NUM_PARALLEL is a no-op.** 0/30 pairwise comparisons significant (mean absolute change 4.0%). M/D/1 queueing theory deviates up to 20.4x from observed latency (TR128).
 
-- **Multi-agent throughput plateaus at N=2.** Amdahl's Law with serial fractions s = 0.39-0.54 (R-squared > 0.97). Per-agent throughput at N=8 is 17-20% of solo throughput. Fairness remains excellent (Jain's index >= 0.997) (TR129).
+- **Multi-agent throughput plateaus at N=2.** Amdahl's Law with serial fractions s = 0.39-0.54 (R-squared > 0.97). Per-agent throughput at N=8 is 17-20% of solo throughput (TR129).
 
 - **Consumer hardware is 95.4% cheaper than cloud.** TCO at 1B tokens/month: $153/yr consumer versus $2,880/yr AWS on-demand. Break-even for an RTX 4080 occurs at 0.3-2.7 months at 10M requests/month (TR123).
 
@@ -169,173 +170,181 @@ Six shippable decisions backed by ~62,000 measurements:
 
 ## Report Details
 
-### TR108: Single-Agent LLM Performance Analysis
+### Phase 1
+
+#### TR108: Single-Agent LLM Performance Analysis
 **File:** `Technical_Report_108.md`
 - Models: gemma3:latest, llama3.1:8b-instruct variants
-- Hardware: NVIDIA RTX 4080 (12GB VRAM), i9-13900HX
+- Hardware: NVIDIA RTX 4080 (12GB VRAM), i9-13980HX
 - Test Matrix: 150+ benchmark runs across parameter sweeps
 
-### TR109: Agent Workflow Optimization
+#### TR109: Agent Workflow Optimization
 **File:** `Technical_Report_109.md`
 - Optimal Config: GPU=60, CTX=512, TEMP=0.8 for agent workflows
 - Methodology: Process isolation, forced cold starts, statistical validation
 
-### TR110: Concurrent Multi-Agent Performance (Python)
+#### TR110: Concurrent Multi-Agent Performance (Python)
 **File:** `Technical_Report_110.md`
 - Test Matrix: 30 configurations x 5 runs = 150 benchmark runs
 - Key Finding: 99.25% parallel efficiency with homogeneous Chimera agents
 
-### TR111_v2: Rust Single-Agent Performance
+#### TR111_v2: Rust Single-Agent Performance
 **File:** `Technical_Report_111_v2.md`
 - Test Matrix: 19 configurations x 3 runs = 57 benchmark runs
 - Baseline: 114.54 tok/s (15.2% faster than Python)
 - Supersedes: TR111 (micro-benchmark)
 
-### TR112_v2: Rust vs Python Comparison
+#### TR112_v2: Rust vs Python Comparison
 **File:** `Technical_Report_112_v2.md`
 - Test Matrix: 37 configurations (19 Rust + 18 Python), 111 total runs
 - Rust: +15.2% throughput, -58% TTFT, -67% memory, -83% startup
 - Supersedes: TR112
 
-### TR113: Rust Multi-Agent (Single Ollama)
+#### TR113: Rust Multi-Agent (Single Ollama)
 **File:** `Technical_Report_113.md`
 - 82.2% peak efficiency, 63% contention rate
 - Critical Discovery: Server-level serialization bottleneck; dual Ollama required
 
-### TR114_v2: Rust Multi-Agent (Dual Ollama)
+#### TR114_v2: Rust Multi-Agent (Dual Ollama)
 **File:** `Technical_Report_114_v2.md`
 - Test Matrix: 27 configurations x 5 runs = 135 benchmark runs
 - Peak single run: 99.992%; Mean: 98.281% (+2.48pp vs Python)
 - Supersedes: TR114
 
-### TR115_v2: Rust Runtime Optimization
+#### TR115_v2: Rust Runtime Optimization
 **File:** `Technical_Report_115_v2.md`
 - Test Matrix: 5 runtimes x 6 configs x 5 runs = 150 benchmark runs
-- Recommendation: Standard Tokio (`#[tokio::main]`) — no custom config needed
+- Recommendation: Standard Tokio — no custom config needed
 - Supersedes: TR115
 
-### TR116: Cross-Model Multi-Agent Benchmarks
+#### TR116: Cross-Model Multi-Agent Benchmarks
 **File:** `Technical_Report_116.md`
 - Test Matrix: 3 models x 2 runtimes x 2 scenarios x 5 runs = 60 runs
 - Rust dominates across all models (+12-17pp efficiency vs Python)
 - Gemma 3 is the scaling king (99.2% efficiency in Rust)
 
-### TR117: Root Cause Analysis of Efficiency Anomalies
+#### TR117: Cross-Backend Inference Benchmark
 **File:** `Technical_Report_117.md`
-- Python ceiling: Event loop lag (16ms spikes) prevents >86% efficiency
-- Rust advantage: Multi-threaded runtime avoids this bottleneck entirely
+- Test Matrix: 3,017 runs, 2,471 successful (82%)
+- GPU-compile wins on mean latency (389ms); plain GPU wins on median (323ms)
 
-### TR117_multi_agent: Multi-Agent Root Cause Analysis
+#### TR117_multi_agent: Multi-Agent Root Cause Analysis
 **File:** `Technical_Report_117_multi_agent.md`
 - Python event loop saturation: Mean lag 5.33ms, p99 12.13ms, max 15.22ms
 - For >100 tok/s multi-agent systems, Rust is mandatory
 
-### TR118_v2.2: ONNX Runtime + TensorRT Deep Dive
+#### TR118_v2.2: ONNX Runtime + TensorRT Deep Dive
 **File:** `Technical_Report_118_v2.2.md`
 - Test Matrix: 360 run-level records across prefill and generate modes
 - Best prefill: TensorRT-fp16 (2.48ms, -87% vs baseline)
-- Supersedes: TR118, TR118_v2, TR118_v2.1
+- Supersedes: TR118, TR118_v2.1
 
-### TR119: Cost & Energy Analysis
+#### TR119: Cost & Energy Analysis
 **File:** `Technical_Report_119.md`
 - Test Matrix: 5 backends x 5 scenarios x 7 reps x 2 modes = 350 runs
 - Best cost: onnxruntime-gpu at $0.1279/1M tokens (on-demand)
-- Lowest carbon: onnxruntime-gpu at ~1.0 gCO2e/1M tokens
+- Lowest carbon: ~1.0 gCO2e/1M tokens
 
-### TR120: The "Compile Paradox" Root-Cause Audit
+#### TR120: The "Compile Paradox" Root-Cause Audit
 **File:** `Technical_Report_120.md`
 - TR117's "compile paradox" is real but misattributed (label-only, no actual torch.compile)
 - Shape stability fix: Padding/bucketing collapses compiled tail
 
-### TR121v1: Model Scaling Study
+#### TR121v1: Model Scaling Study
 **File:** `Technical_Report_121v1.md`
 - Scaling pipeline from 5M to 20B parameters (HF + Ollama)
-- Pipeline established; full matrix ready for sweep
+- Three distinct regimes identified (small GPU, CPU, large-model serving)
 
-### TR122: Resource Profiling Deep Dive
+#### TR122: Resource Profiling Deep Dive
 **File:** `Technical_Report_122.md`
-- Full GPU/CPU/memory/thermal instrumentation
-- Per-layer profiling, KV cache analysis, bottleneck identification
+- Baseline power: RTX 4080 Laptop GPU idles at 20.71W (sigma=9.97W)
+- V2 strict poller scheduling achieves 100ms grid adherence
+- Thermal equilibrium: Small models reach equilibrium at 48C
 
-### TR123: KV-Cache Production Economics
+### Phase 2
+
+#### TR123: KV-Cache Production Economics
 **File:** `Technical_Report_123.md`
 - 5 models (124M-3.2B), 5 backends, 5 cost blends
 - Best cost: $0.013/1M tokens (GPT-2/compile)
 - Consumer vs cloud: 95.4% savings ($153/yr vs $2,880/yr at 1B tokens/month)
 
-### TR124: Quality & Accuracy Baseline
+#### TR124: Quality & Accuracy Baseline
 **File:** `Technical_Report_124.md`
 - 5 models x 2 backends, temp=0, 7 quality metrics
 - Backend choice does not affect quality: 0/7 ANOVA significant
-- Cheapest backend is the best backend for a given quality level
 
-### TR125: Quantization Decision Matrix
+#### TR125: Quantization Decision Matrix
 **File:** `Technical_Report_125.md`
 - 5 models x 7 quantization levels (Q2_K through FP16)
 - Q4_K_M: universal sweet spot (-4.1pp max accuracy loss)
 - Q2_K: universally unacceptable (>11pp loss all models; qwen2.5-1.5b -40.6pp)
-- 4-tier classification: Recommended / Acceptable / Conditional / Unacceptable
 
-### TR126: Docker/Linux + Triton Validation
+#### TR126: Docker/Linux + Triton Validation
 **File:** `Technical_Report_126.md`
 - Compile paradox resolved: 24-60% prefill speedup on Linux with Inductor+Triton
-- Decode compile crashes in all tested modes (100% crash rate)
-- Windows torch.compile is a no-op (aot_eager fallback)
+- Decode compile crashes 100% of the time in all tested modes
 - PyTorch bug discovered and reported upstream (pytorch/pytorch#175557, PR #175562)
 
-### TR127: Long-Context Performance Characterization
+#### TR127: Long-Context Performance Characterization
 **File:** `Technical_Report_127.md`
 - VRAM spillover causes 25-105x latency cliffs (not quadratic attention)
 - Ollama prefill scaling is sub-linear below spillover (b = 0.083-0.158)
 - GQA models sustain 3-11x longer contexts than MHA models
-- VRAM budget: alert at 85%, hard-stop at 90%
 
-### TR128: Production Workload Characterization
+#### TR128: Production Workload Characterization
 **File:** `Technical_Report_128.md`
 - NUM_PARALLEL is a no-op: 0/30 pairwise comparisons significant
 - M/D/1 queueing theory deviates up to 20.4x from reality
 - Streaming adds zero overhead (0/9 tests significant)
 
-### TR129: N-Agent Scaling Laws
+#### TR129: N-Agent Scaling Laws
 **File:** `Technical_Report_129.md`
 - Amdahl's Law fit: serial fractions s = 0.39-0.54 (R-squared > 0.97)
 - Per-agent throughput at N=8: 17-20% of solo throughput
 - Fairness: Jain's index >= 0.997
 
-### TR130: Serving Stack Comparison
+#### TR130: Serving Stack Comparison
 **File:** `Technical_Report_130.md`
 - vLLM 2.25x throughput advantage at N=8 via continuous batching
 - TGI provides equivalent amortization but lower absolute throughput
 - vLLM/TGI deliver 6-8x faster TTFT (22-35ms vs 163-194ms)
 
-### TR131: GPU Kernel Profiling
+#### TR131: GPU Kernel Profiling
 **File:** `Technical_Report_131.md`
 - Overturns TR130: GPU memory bandwidth, not serving stack, is the bottleneck
 - PyTorch Direct degrades 86.4% at N=8 (worse than Ollama's 82.1%)
 - Memory bandwidth stress increases +74% at N=8 (Holm-surviving test)
 
-### TR132: In-Container GPU Profiling
+#### TR132: In-Container GPU Profiling
 **File:** `Technical_Report_132.md`
 - Continuous batching mechanism quantified: 77-80% kernel count reduction
 - Bandwidth-per-token reduction: 79-83% at N=8
 - Amortization ratio: 4.7-5.8x (59-72% of theoretical 8:1 maximum)
 
-### TR133: Predictive Capacity Planner
+#### TR133: Predictive Capacity Planner
 **File:** `Technical_Report_133.md`
 - 19,676 empirical records feeding lookup tables
 - 4-gate pipeline: VRAM feasibility, quality gate, latency gate, budget gate
-- 4/4 validation targets met: VRAM R-squared=0.968, throughput R-squared=0.859, quality RMSE=0.062, latency MAPE=1.05%
+- 4/4 validation targets met: VRAM R-squared=0.968, throughput R-squared=0.859
 - `chimeraforge plan` CLI shipped
 
 ---
 
 ## Conclusive Report Details
 
-### Phase 1 Synthesis: Technical_Report_Conclusive_117-122
-**File:** `Technical_Report_Conclusive_117-122.md` (207KB)
+### Phase 1a Synthesis: Technical_Report_Conclusive_108-116
+**File:** `Technical_Report_Conclusive_108-116.md` (2,826 lines)
+- Covers TR108 through TR116: Python-to-Rust migration, multi-agent architecture, runtime selection, cross-model validation
+- Six shippable decisions: Rust for production, dual Ollama mandatory, Tokio-default runtime, Gemma 3 for scaling, Python ceiling at ~86%, config transfer failure
+- Extended Appendices: `Technical_Report_Conclusive_108-116_Extended_Appendices.md` (1,171 lines)
+- Executive Whitepaper: `Technical_Report_Conclusive_108-116_Whitepaper.md` (214 lines)
+
+### Phase 1b Synthesis: Technical_Report_Conclusive_117-122
+**File:** `Technical_Report_Conclusive_117-122.md` (208KB)
 - Covers TR117 through TR122
-- Extended Appendices: `Technical_Report_Conclusive_117-122_Extended_Appendices.md`
-- Executive Whitepaper: `Technical_Report_Conclusive_117-122_Whitepaper.md`
+- Extended Appendices: `Technical_Report_Conclusive_117-122_Extended_Appendices.md` (89KB)
+- Executive Whitepaper: `Technical_Report_Conclusive_117-122_Whitepaper.md` (8KB)
 
 ### Phase 2 Synthesis: Technical_Report_Conclusive_123-133
 **File:** `Technical_Report_Conclusive_123-133.md` (433KB, 3,327 lines, 60 appendices)
@@ -406,6 +415,9 @@ outputs/publish_ready/reports/
 │   └── Technical_Report_133.md
 │
 ├── Conclusive Reports
+│   ├── Technical_Report_Conclusive_108-116.md
+│   ├── Technical_Report_Conclusive_108-116_Extended_Appendices.md
+│   ├── Technical_Report_Conclusive_108-116_Whitepaper.md
 │   ├── Technical_Report_Conclusive_117-122.md
 │   ├── Technical_Report_Conclusive_117-122_Extended_Appendices.md
 │   ├── Technical_Report_Conclusive_117-122_Whitepaper.md
@@ -418,11 +430,13 @@ outputs/publish_ready/reports/
 │   ├── Technical_Report_112.md
 │   ├── Technical_Report_114.md
 │   ├── Technical_Report_115.md
-│   ├── Technical_Report_118.md
-│   ├── Technical_Report_118_v2.md
-│   ├── Technical_Report_118_v2.1.md
+│   ├── Technical_Report_118.md (+ v2.1)
 │   ├── Technical_Report_119v1.md
 │   └── Technical_Report_121.md
+│
+├── Legacy (moved to legacy/)
+│   ├── Technical_Report_118.md
+│   └── Technical_Report_118_v2.1.md
 │
 └── Model Benchmarks
     └── gemma3/
@@ -435,7 +449,7 @@ outputs/publish_ready/reports/
 
 All measurements on a single fixed baseline:
 - **GPU:** NVIDIA RTX 4080 Laptop GPU (12 GB GDDR6, 256-bit, 432 GB/s, AD104)
-- **CPU:** Intel Core i9-13900HX (24 cores, 32 threads)
+- **CPU:** Intel Core i9-13980HX (24 cores, 32 threads)
 - **RAM:** 64 GB DDR5-4800
 - **OS:** Windows 11 + WSL2/Ubuntu 22.04 for Docker/Linux workloads
 
@@ -494,12 +508,13 @@ All measurements on a single fixed baseline:
 4. **Compilation:** TR126 (what works, what crashes)
 
 ### For Decision Makers
-1. **Executive Whitepaper:** `Technical_Report_Conclusive_123-133_Whitepaper.md` (15KB, 6 decisions)
-2. **Decision Matrix:** See Phase 2 Deployment Decisions table above
-3. **Cost Analysis:** TR123 ($/token) + TR119 (energy/carbon)
+1. **Rust vs Python Decision:** `Technical_Report_Conclusive_108-116_Whitepaper.md` (language, architecture, runtime, model)
+2. **Phase 2 Whitepaper:** `Technical_Report_Conclusive_123-133_Whitepaper.md` (15KB, 6 decisions)
+3. **Decision Matrix:** See Phase 2 Deployment Decisions table above
+4. **Cost Analysis:** TR123 ($/token) + TR119 (energy/carbon)
 
 ---
 
 **Last Updated:** 2026-02-28
-**Total Reports:** 41 files (26 production-ready TRs + 6 conclusive/whitepaper documents + 9 historical/superseded)
+**Total Reports:** 41 files (26 production-ready TRs + 9 conclusive/whitepaper documents + 6 historical/superseded)
 **Total Measurements:** 70,000+ across all reports
