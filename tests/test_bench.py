@@ -635,7 +635,7 @@ class TestCLI:
         from typer.testing import CliRunner
         from chimeraforge.cli import app
 
-        runner = CliRunner()
+        runner = CliRunner(env={"NO_COLOR": "1"})
         result = runner.invoke(app, ["bench", "--help"])
         assert result.exit_code == 0
         assert "--model" in result.output
