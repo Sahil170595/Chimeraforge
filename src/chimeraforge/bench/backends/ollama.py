@@ -20,15 +20,26 @@ class OllamaBackend(Backend):
 
     def __init__(self, base_url: str = "http://localhost:11434") -> None:
         self.base_url = base_url.rstrip("/")
+        self._client: httpx.AsyncClient | None = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(timeout=300)
+        return self._client
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client."""
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
 
     async def health_check(self) -> tuple[bool, str]:
         """GET / -- Ollama returns 'Ollama is running'."""
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{self.base_url}/", timeout=10)
-                if resp.status_code == 200:
-                    return True, "Ollama is running"
-                return False, f"Ollama returned status {resp.status_code}"
+            client = await self._get_client()
+            resp = await client.get(f"{self.base_url}/", timeout=10)
+            if resp.status_code == 200:
+                return True, "Ollama is running"
+            return False, f"Ollama returned status {resp.status_code}"
         except httpx.ConnectError:
             return False, f"Ollama not running at {self.base_url}"
         except httpx.TimeoutException:
@@ -37,15 +48,15 @@ class OllamaBackend(Backend):
     async def check_model(self, model: str) -> tuple[bool, str]:
         """POST /api/show to verify model availability."""
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"{self.base_url}/api/show",
-                    json={"name": model},
-                    timeout=30,
-                )
-                if resp.status_code == 200:
-                    return True, ""
-                return False, f"Model not found. Run: ollama pull {model}"
+            client = await self._get_client()
+            resp = await client.post(
+                f"{self.base_url}/api/show",
+                json={"name": model},
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                return True, ""
+            return False, f"Model not found. Run: ollama pull {model}"
         except httpx.ConnectError:
             return False, f"Ollama not running at {self.base_url}"
 
@@ -64,17 +75,17 @@ class OllamaBackend(Backend):
         if options:
             payload["options"] = options
 
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{self.base_url}/api/generate",
-                json=payload,
-                timeout=300,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        client = await self._get_client()
+        resp = await client.post(
+            f"{self.base_url}/api/generate",
+            json=payload,
+            timeout=300,
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
         eval_count = data.get("eval_count", 0)
-        eval_duration_ns = data.get("eval_duration", 1)
+        eval_duration_ns = data.get("eval_duration", 0)
         prompt_eval_duration_ns = data.get("prompt_eval_duration", 0)
         total_duration_ns = data.get("total_duration", 0)
 
@@ -97,10 +108,10 @@ class OllamaBackend(Backend):
     async def get_version(self) -> str | None:
         """GET /api/version."""
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"{self.base_url}/api/version", timeout=10)
-                if resp.status_code == 200:
-                    return resp.json().get("version")
+            client = await self._get_client()
+            resp = await client.get(f"{self.base_url}/api/version", timeout=10)
+            if resp.status_code == 200:
+                return resp.json().get("version")
         except Exception:
             pass
         return None

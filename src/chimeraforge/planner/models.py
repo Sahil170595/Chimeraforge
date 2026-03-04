@@ -50,10 +50,15 @@ class VRAMModel:
         arch = MODEL_ARCH.get(model, {"n_layers": 32, "n_kv_heads": 8, "d_head": 128})
 
         kv_bytes = (
-            2 * arch["n_layers"] * batch_size * context_length
-            * arch["n_kv_heads"] * arch["d_head"] * 2
+            2
+            * arch["n_layers"]
+            * batch_size
+            * context_length
+            * arch["n_kv_heads"]
+            * arch["d_head"]
+            * 2
         )
-        kv_gb = kv_bytes / (1024 ** 3)
+        kv_gb = kv_bytes / (1024**3)
 
         act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024) ** 2
 
@@ -145,9 +150,13 @@ class ScalingModel:
     """Predict efficiency eta(N) for multi-agent concurrency."""
 
     serial_fractions: dict[str, float] = field(default_factory=dict)
-    defaults: dict[str, float] = field(default_factory=lambda: {
-        "ollama": 0.45, "vllm": 0.15, "tgi": 0.20,
-    })
+    defaults: dict[str, float] = field(
+        default_factory=lambda: {
+            "ollama": 0.45,
+            "vllm": 0.15,
+            "tgi": 0.20,
+        }
+    )
     fitted: bool = False
 
     def predict_eta(self, model: str, backend: str, n_agents: int) -> float:
@@ -199,7 +208,14 @@ class QualityModel:
         if key in self.lookup:
             return self.lookup[key]
         fp16 = self.fp16_baselines.get(model)
+        if fp16 is None:
+            # Infer FP16 baseline from lookup if available
+            fp16_key = f"{model}|FP16"
+            if fp16_key in self.lookup:
+                fp16 = self.lookup[fp16_key]
         if fp16 is not None:
+            if quant == "FP16":
+                return fp16
             delta = self.quant_deltas.get(quant, 0.0)
             return max(0.0, min(1.0, fp16 + delta))
         return 0.5
@@ -207,6 +223,10 @@ class QualityModel:
     def quality_tier(self, model: str, quant: str) -> str:
         """Classify quality drop into a tier."""
         fp16 = self.fp16_baselines.get(model)
+        if fp16 is None:
+            fp16_key = f"{model}|FP16"
+            if fp16_key in self.lookup:
+                fp16 = self.lookup[fp16_key]
         predicted = self.predict(model, quant)
         if fp16 is None or fp16 <= 0:
             return "unknown"
@@ -307,7 +327,7 @@ class LatencyModel:
             service_ms = 5000.0
 
         service_s = service_ms / 1000.0
-        mu = 1.0 / service_s if service_s > 0 else 0.001
+        mu = 1.0 / service_s if service_s > 0 else 1e6
 
         eta = 1.0
         if scaling_model and n_agents > 1:

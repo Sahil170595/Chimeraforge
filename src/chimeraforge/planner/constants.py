@@ -34,7 +34,7 @@ MODEL_PARAMS_B: dict[str, float] = {
 }
 
 # Architecture metadata for KV-cache formula
-MODEL_ARCH: dict[str, dict] = {
+MODEL_ARCH: dict[str, dict[str, int]] = {
     "qwen2.5-0.5b": {"n_layers": 24, "n_kv_heads": 2, "d_head": 64},
     "llama3.2-1b": {"n_layers": 16, "n_kv_heads": 8, "d_head": 64},
     "qwen2.5-1.5b": {"n_layers": 28, "n_kv_heads": 2, "d_head": 128},

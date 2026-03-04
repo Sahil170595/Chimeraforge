@@ -42,7 +42,9 @@ from chimeraforge.bench.prompts import (
     PROMPT_MEDIUM,
     PROMPT_SHORT,
 )
-from chimeraforge.bench.runner import run_benchmark, save_results
+from chimeraforge.bench.backends.tgi import TGIBackend
+from chimeraforge.bench.backends.vllm import VLLMBackend
+from chimeraforge.bench.runner import run_benchmark, run_quant_sweep, run_context_sweep, save_results
 
 
 # -- Metrics: StatSummary and aggregation ------------------------------------
@@ -649,3 +651,338 @@ class TestCLI:
         result = runner.invoke(app, ["bench"])
         # Typer shows error for missing required option
         assert result.exit_code != 0
+
+    def test_bench_invalid_context(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["bench", "--model", "test", "--context", "abc"])
+        assert result.exit_code == 1
+
+    def test_bench_negative_runs(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["bench", "--model", "test", "--runs", "0"])
+        assert result.exit_code == 1
+
+    def test_bench_negative_rate(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["bench", "--model", "test", "--rate", "-1"])
+        assert result.exit_code == 1
+
+
+# -- Runner sweeps (mocked) -------------------------------------------------
+
+
+class TestRunnerSweeps:
+    def _mock_backend(self) -> AsyncMock:
+        backend = AsyncMock(spec=Backend)
+        backend.name = "mock"
+        backend.health_check = AsyncMock(return_value=(True, "OK"))
+        backend.check_model = AsyncMock(return_value=(True, ""))
+        backend.get_version = AsyncMock(return_value="1.0.0")
+        backend.generate = AsyncMock(return_value=RunMetrics(
+            tokens_generated=50,
+            throughput_tps=25.0,
+            ttft_ms=100.0,
+            total_duration_ms=2000.0,
+            prompt_eval_duration_ms=100.0,
+            eval_duration_ms=1900.0,
+        ))
+        return backend
+
+    @pytest.mark.asyncio
+    async def test_run_quant_sweep(self):
+        mock_be = self._mock_backend()
+        with patch("chimeraforge.bench.runner.get_backend", return_value=mock_be):
+            results = await run_quant_sweep(
+                model="test-model",
+                backend_name="mock",
+                quants=["FP16", "Q4_K_M"],
+                runs=2,
+            )
+        assert len(results) == 2
+        assert results[0].quant == "FP16"
+        assert results[1].quant == "Q4_K_M"
+
+    @pytest.mark.asyncio
+    async def test_run_context_sweep(self):
+        mock_be = self._mock_backend()
+        with patch("chimeraforge.bench.runner.get_backend", return_value=mock_be):
+            results = await run_context_sweep(
+                model="test-model",
+                backend_name="mock",
+                context_lengths=[512, 2048],
+                runs=2,
+            )
+        assert len(results) == 2
+        assert results[0].context_length == 512
+        assert results[1].context_length == 2048
+
+
+# -- Server mode (mocked) ---------------------------------------------------
+
+
+class TestServerMode:
+    @pytest.mark.asyncio
+    async def test_run_server_workload(self):
+        backend = AsyncMock(spec=Backend)
+        backend.name = "mock"
+        backend.health_check = AsyncMock(return_value=(True, "OK"))
+        backend.check_model = AsyncMock(return_value=(True, ""))
+        backend.get_version = AsyncMock(return_value="1.0.0")
+        backend.generate = AsyncMock(return_value=RunMetrics(
+            tokens_generated=50,
+            throughput_tps=25.0,
+            ttft_ms=100.0,
+            total_duration_ms=2000.0,
+            prompt_eval_duration_ms=100.0,
+            eval_duration_ms=1900.0,
+        ))
+
+        with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
+            result = await run_benchmark(
+                model="test-model",
+                backend_name="mock",
+                workload="server",
+                runs=4,
+                rate=10.0,  # High rate so sleeps are short
+            )
+
+        assert result.workload == "server"
+        assert len(result.individual_runs) == 4
+
+
+# -- Error resilience --------------------------------------------------------
+
+
+class TestErrorResilience:
+    @pytest.mark.asyncio
+    async def test_partial_failures_in_single(self):
+        """Single mode should continue after individual request failures."""
+        call_count = 0
+
+        async def flaky_generate(model, prompt, options=None):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 2:
+                raise RuntimeError("Transient error")
+            return RunMetrics(
+                tokens_generated=50,
+                throughput_tps=25.0,
+                ttft_ms=100.0,
+                total_duration_ms=2000.0,
+                prompt_eval_duration_ms=100.0,
+                eval_duration_ms=1900.0,
+            )
+
+        backend = AsyncMock(spec=Backend)
+        backend.name = "mock"
+        backend.health_check = AsyncMock(return_value=(True, "OK"))
+        backend.check_model = AsyncMock(return_value=(True, ""))
+        backend.get_version = AsyncMock(return_value="1.0.0")
+        backend.generate = flaky_generate
+
+        with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
+            result = await run_benchmark(
+                model="test-model",
+                backend_name="mock",
+                workload="single",
+                runs=3,
+            )
+
+        # 2 of 3 succeeded, 1 failed
+        assert len(result.individual_runs) == 2
+        assert len(result.warnings) >= 1
+
+    @pytest.mark.asyncio
+    async def test_all_failures_raises(self):
+        """If all runs fail, should raise RuntimeError."""
+        backend = AsyncMock(spec=Backend)
+        backend.name = "mock"
+        backend.health_check = AsyncMock(return_value=(True, "OK"))
+        backend.check_model = AsyncMock(return_value=(True, ""))
+        backend.get_version = AsyncMock(return_value="1.0.0")
+        backend.generate = AsyncMock(side_effect=RuntimeError("Always fails"))
+
+        with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
+            with pytest.raises(RuntimeError, match="All.*failed"):
+                await run_benchmark(
+                    model="test-model",
+                    backend_name="mock",
+                    runs=3,
+                )
+
+
+# -- CV warning ---------------------------------------------------------------
+
+
+class TestCVWarning:
+    @pytest.mark.asyncio
+    async def test_high_variance_warning(self):
+        """High variance should produce a CV warning."""
+        call_count = 0
+
+        async def variable_generate(model, prompt, options=None):
+            nonlocal call_count
+            call_count += 1
+            tps = 10.0 if call_count % 2 == 0 else 50.0
+            return RunMetrics(
+                tokens_generated=50,
+                throughput_tps=tps,
+                ttft_ms=100.0,
+                total_duration_ms=2000.0,
+                prompt_eval_duration_ms=100.0,
+                eval_duration_ms=1900.0,
+            )
+
+        backend = AsyncMock(spec=Backend)
+        backend.name = "mock"
+        backend.health_check = AsyncMock(return_value=(True, "OK"))
+        backend.check_model = AsyncMock(return_value=(True, ""))
+        backend.get_version = AsyncMock(return_value="1.0.0")
+        backend.generate = variable_generate
+
+        with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
+            result = await run_benchmark(
+                model="test-model",
+                backend_name="mock",
+                runs=4,
+            )
+
+        cv_warnings = [w for w in result.warnings if "CV" in w]
+        assert len(cv_warnings) >= 1
+
+    @pytest.mark.asyncio
+    async def test_stable_no_warning(self):
+        """Low variance should not produce a CV warning."""
+        backend = AsyncMock(spec=Backend)
+        backend.name = "mock"
+        backend.health_check = AsyncMock(return_value=(True, "OK"))
+        backend.check_model = AsyncMock(return_value=(True, ""))
+        backend.get_version = AsyncMock(return_value="1.0.0")
+        backend.generate = AsyncMock(return_value=RunMetrics(
+            tokens_generated=50,
+            throughput_tps=25.0,
+            ttft_ms=100.0,
+            total_duration_ms=2000.0,
+            prompt_eval_duration_ms=100.0,
+            eval_duration_ms=1900.0,
+        ))
+
+        with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
+            result = await run_benchmark(
+                model="test-model",
+                backend_name="mock",
+                runs=5,
+            )
+
+        cv_warnings = [w for w in result.warnings if "CV" in w]
+        assert len(cv_warnings) == 0
+
+
+# -- VLLMBackend basic -------------------------------------------------------
+
+
+class TestVLLMBackend:
+    def test_name(self):
+        b = VLLMBackend()
+        assert b.name == "vllm"
+
+    def test_default_url(self):
+        b = VLLMBackend()
+        assert b.base_url == "http://localhost:8000"
+
+    def test_custom_url(self):
+        b = VLLMBackend(base_url="http://gpu-server:9000/")
+        assert b.base_url == "http://gpu-server:9000"
+
+
+# -- TGIBackend basic --------------------------------------------------------
+
+
+class TestTGIBackend:
+    def test_name(self):
+        b = TGIBackend()
+        assert b.name == "tgi"
+
+    def test_default_url(self):
+        b = TGIBackend()
+        assert b.base_url == "http://localhost:8080"
+
+    @pytest.mark.asyncio
+    async def test_check_model_exact_match(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"model_id": "meta-llama/Llama-3.2-3B"}
+
+        b = TGIBackend()
+        with patch("chimeraforge.bench.backends.tgi.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(return_value=mock_response)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+            # Bypass client caching for this test
+            b._client = mock_client
+
+            ok, _ = await b.check_model("meta-llama/Llama-3.2-3B")
+            assert ok is True
+
+    @pytest.mark.asyncio
+    async def test_check_model_rejects_substring(self):
+        """Single char should not match via loose substring."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"model_id": "meta-llama/Llama-3.2-3B"}
+
+        b = TGIBackend()
+        with patch("chimeraforge.bench.backends.tgi.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.get = AsyncMock(return_value=mock_response)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+            b._client = mock_client
+
+            ok, _ = await b.check_model("a")
+            assert ok is False
+
+
+# -- Ollama eval_duration=0 edge case ----------------------------------------
+
+
+class TestOllamaEdgeCases:
+    @pytest.mark.asyncio
+    async def test_missing_eval_duration_returns_zero_throughput(self):
+        """eval_duration=0 should produce 0 throughput, not billions."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "response": "test",
+            "eval_count": 50,
+            # eval_duration missing -> defaults to 0
+            "prompt_eval_duration": 100_000_000,
+            "total_duration": 2_000_000_000,
+        }
+        mock_response.raise_for_status = MagicMock()
+
+        b = OllamaBackend()
+        with patch("chimeraforge.bench.backends.ollama.httpx.AsyncClient") as mock_cls:
+            mock_client = AsyncMock()
+            mock_client.post = AsyncMock(return_value=mock_response)
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_cls.return_value = mock_client
+            b._client = mock_client
+
+            metrics = await b.generate("test", "hello")
+
+        assert metrics.throughput_tps == 0.0
+        assert metrics.tokens_generated == 50

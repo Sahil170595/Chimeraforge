@@ -16,7 +16,7 @@ class GPUSpec:
     name: str
     vram_gb: float
     bandwidth_gbps: float  # Memory bandwidth in GB/s
-    cost_per_hour: float   # $/hr (cloud rental or amortised consumer)
+    cost_per_hour: float  # $/hr (cloud rental or amortised consumer)
 
 
 # Reference GPU — all TR measurements collected on this card

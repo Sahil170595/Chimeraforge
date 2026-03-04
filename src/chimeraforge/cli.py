@@ -26,7 +26,9 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: bool = typer.Option(
-        False, "--version", "-V",
+        False,
+        "--version",
+        "-V",
         help="Show version and exit.",
         callback=version_callback,
         is_eager=True,
@@ -38,55 +40,75 @@ def main(
 @app.command()
 def plan(
     model_size: str = typer.Option(
-        "3b", "--model-size", "-m",
+        "3b",
+        "--model-size",
+        "-m",
         help="Target model size class (e.g., 1b, 3b, 8b).",
     ),
     request_rate: float = typer.Option(
-        1.0, "--request-rate", "-r",
+        1.0,
+        "--request-rate",
+        "-r",
         help="Requests per second.",
     ),
     latency_slo: float = typer.Option(
-        5000.0, "--latency-slo", "-l",
+        5000.0,
+        "--latency-slo",
+        "-l",
         help="Max p95 latency in milliseconds.",
     ),
     quality_target: float = typer.Option(
-        0.5, "--quality-target", "-q",
+        0.5,
+        "--quality-target",
+        "-q",
         help="Min composite quality score (0.0-1.0).",
     ),
     budget: float = typer.Option(
-        100.0, "--budget", "-b",
+        100.0,
+        "--budget",
+        "-b",
         help="Max monthly cost in USD.",
     ),
     hardware: str = typer.Option(
-        "RTX 4080 12GB", "--hardware", "-hw",
+        "RTX 4080 12GB",
+        "--hardware",
+        "-hw",
         help="GPU name from hardware DB.",
     ),
     context_length: int = typer.Option(
-        2048, "--context-length",
+        2048,
+        "--context-length",
         help="Context window length in tokens.",
     ),
     avg_tokens: int = typer.Option(
-        128, "--avg-tokens",
+        128,
+        "--avg-tokens",
         help="Average output tokens per request.",
     ),
     models_path: str = typer.Option(
-        None, "--models-path",
+        None,
+        "--models-path",
         help="Path to fitted_models.json (default: bundled data).",
     ),
     output_json: bool = typer.Option(
-        False, "--json",
+        False,
+        "--json",
         help="Output as JSON instead of Rich tables.",
     ),
     list_hardware: bool = typer.Option(
-        False, "--list-hardware",
+        False,
+        "--list-hardware",
         help="List available GPUs in hardware DB.",
     ),
     list_models: bool = typer.Option(
-        False, "--list-models",
+        False,
+        "--list-models",
         help="List available model sizes.",
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", "-v",
+        False,
+        "--verbose",
+        "-v",
         help="Enable debug logging.",
     ),
 ) -> None:
@@ -120,6 +142,23 @@ def plan(
         print_models_table()
         raise typer.Exit()
 
+    # Validate inputs
+    if request_rate <= 0:
+        console.print("[red]Error:[/] --request-rate must be positive.")
+        raise typer.Exit(code=1)
+    if avg_tokens <= 0:
+        console.print("[red]Error:[/] --avg-tokens must be positive.")
+        raise typer.Exit(code=1)
+    if context_length <= 0:
+        console.print("[red]Error:[/] --context-length must be positive.")
+        raise typer.Exit(code=1)
+    if budget <= 0:
+        console.print("[red]Error:[/] --budget must be positive.")
+        raise typer.Exit(code=1)
+    if not 0.0 <= quality_target <= 1.0:
+        console.print("[red]Error:[/] --quality-target must be between 0.0 and 1.0.")
+        raise typer.Exit(code=1)
+
     # Load models
     if models_path:
         planner_models = load_models(models_path)
@@ -151,7 +190,8 @@ def plan(
         console.print(format_json(candidates))
     else:
         format_recommendation(
-            candidates, hardware,
+            candidates,
+            hardware,
             request_rate=request_rate,
             latency_slo=latency_slo,
             quality_target=quality_target,
@@ -162,51 +202,70 @@ def plan(
 @app.command()
 def bench(
     model: str = typer.Option(
-        ..., "--model", "-m",
+        ...,
+        "--model",
+        "-m",
         help="Model name (e.g., llama3.2-3b, gemma3:latest).",
     ),
     backend: str = typer.Option(
-        "ollama", "--backend", "-B",
+        "ollama",
+        "--backend",
+        "-B",
         help="Serving backend: ollama, vllm, tgi.",
     ),
     quant: str = typer.Option(
-        None, "--quant", "-q",
+        None,
+        "--quant",
+        "-q",
         help="Quantization level (e.g., Q4_K_M).",
     ),
     all_quants: bool = typer.Option(
-        False, "--all-quants",
+        False,
+        "--all-quants",
         help="Sweep all 7 quantization levels.",
     ),
     workload: str = typer.Option(
-        "single", "--workload", "-w",
+        "single",
+        "--workload",
+        "-w",
         help="Workload profile: single, batch, server.",
     ),
     rate: float = typer.Option(
-        None, "--rate",
+        None,
+        "--rate",
         help="Request rate for server workload (req/s).",
     ),
     runs: int = typer.Option(
-        5, "--runs", "-n",
+        5,
+        "--runs",
+        "-n",
         help="Number of benchmark runs per config.",
     ),
     context: str = typer.Option(
-        None, "--context",
+        None,
+        "--context",
         help="Context lengths to sweep (comma-separated, e.g., 512,1024,2048).",
     ),
     base_url: str = typer.Option(
-        None, "--base-url",
+        None,
+        "--base-url",
         help="Backend URL override.",
     ),
     output_dir: str = typer.Option(
-        None, "--output-dir", "-o",
+        None,
+        "--output-dir",
+        "-o",
         help="Results directory override.",
     ),
     output_json: bool = typer.Option(
-        False, "--json",
+        False,
+        "--json",
         help="Output as JSON instead of Rich tables.",
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", "-v",
+        False,
+        "--verbose",
+        "-v",
         help="Enable debug logging.",
     ),
 ) -> None:
@@ -232,12 +291,35 @@ def bench(
         format="%(asctime)s %(name)s %(levelname)s  %(message)s",
     )
 
+    # Validate inputs
+    if runs <= 0:
+        console.print("[red]Error:[/] --runs must be positive.")
+        raise typer.Exit(code=1)
+    if rate is not None and rate <= 0:
+        console.print("[red]Error:[/] --rate must be positive.")
+        raise typer.Exit(code=1)
+
+    # Validate context lengths early
+    ctx_lengths: list[int] | None = None
+    if context:
+        try:
+            ctx_lengths = [int(c.strip()) for c in context.split(",")]
+            if any(c <= 0 for c in ctx_lengths):
+                raise ValueError("non-positive")
+        except ValueError:
+            console.print(
+                "[red]Error:[/] --context must be comma-separated positive integers "
+                "(e.g., 512,1024,2048)."
+            )
+            raise typer.Exit(code=1)
+
     # Determine output directory
     if output_dir:
         out_path = Path(output_dir)
     else:
         try:
             from platformdirs import user_data_dir
+
             out_path = Path(user_data_dir("chimeraforge")) / "results"
         except ImportError:
             out_path = Path.home() / ".chimeraforge" / "results"
@@ -254,7 +336,7 @@ def bench(
         ) as progress:
             try:
                 if all_quants:
-                    task = progress.add_task("Running quant sweep...", total=None)
+                    progress.add_task("Running quant sweep...", total=None)
                     results = await _run_quant_sweep(
                         model=model,
                         backend_name=backend,
@@ -263,9 +345,8 @@ def bench(
                         rate=rate,
                         base_url=base_url,
                     )
-                elif context:
-                    ctx_lengths = [int(c.strip()) for c in context.split(",")]
-                    task = progress.add_task("Running context sweep...", total=None)
+                elif ctx_lengths:
+                    progress.add_task("Running context sweep...", total=None)
                     results = await _run_context_sweep(
                         model=model,
                         backend_name=backend,
@@ -276,8 +357,9 @@ def bench(
                         base_url=base_url,
                     )
                 else:
-                    task = progress.add_task(
-                        f"Benchmarking {model} on {backend}...", total=None,
+                    progress.add_task(
+                        f"Benchmarking {model} on {backend}...",
+                        total=None,
                     )
                     result = await _run_benchmark(
                         model=model,
@@ -289,7 +371,7 @@ def bench(
                         base_url=base_url,
                     )
                     results = [result]
-            except RuntimeError as exc:
+            except (RuntimeError, Exception) as exc:
                 progress.stop()
                 console.print(Panel(str(exc), title="ERROR", border_style="red"))
                 raise typer.Exit(code=1)

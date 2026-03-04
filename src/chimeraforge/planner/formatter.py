@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 
 from chimeraforge.planner.constants import MODEL_PARAMS_B, QUANT_BPW
 from chimeraforge.planner.engine import Candidate
@@ -75,8 +75,10 @@ def format_recommendation(
     cost_table.add_column("Key", style="dim")
     cost_table.add_column("Value")
     tier_color = {
-        "negligible": "green", "acceptable": "yellow",
-        "concerning": "red", "unacceptable": "bold red",
+        "negligible": "green",
+        "acceptable": "yellow",
+        "concerning": "red",
+        "unacceptable": "bold red",
     }.get(best.quality_tier, "white")
     cost_table.add_row("Quality score", str(best.quality))
     cost_table.add_row("Quality tier", f"[{tier_color}]{best.quality_tier}[/]")
@@ -85,7 +87,6 @@ def format_recommendation(
     cost_table.add_row("Cost per 1M tok", f"${best.cost_per_1m_tok}")
 
     # Assemble main panel
-    output = Text()
     console.print()
     console.print(Panel(constraints, title="Constraints", border_style="dim"))
     console.print(Panel(rec, title="Recommendation", border_style="green"))
@@ -112,9 +113,14 @@ def format_recommendation(
 
         for i, alt in enumerate(alts, 1):
             alt_table.add_row(
-                str(i), alt.model, alt.quant, alt.backend,
-                str(alt.n_agents), f"${alt.monthly_cost}",
-                str(alt.quality), f"{alt.p95_latency_ms}",
+                str(i),
+                alt.model,
+                alt.quant,
+                alt.backend,
+                str(alt.n_agents),
+                f"${alt.monthly_cost}",
+                str(alt.quality),
+                f"{alt.p95_latency_ms}",
             )
         console.print(alt_table)
 
@@ -123,29 +129,7 @@ def format_recommendation(
 
 def format_json(candidates: list[Candidate]) -> str:
     """Format candidates as JSON for programmatic consumption."""
-    return json.dumps(
-        [
-            {
-                "model": c.model,
-                "quant": c.quant,
-                "backend": c.backend,
-                "n_agents": c.n_agents,
-                "vram_gb": c.vram_gb,
-                "quality": c.quality,
-                "quality_tier": c.quality_tier,
-                "throughput_tps": c.throughput_tps,
-                "total_throughput_tps": c.total_throughput_tps,
-                "eta": c.eta,
-                "p95_latency_ms": c.p95_latency_ms,
-                "utilisation": c.utilisation,
-                "monthly_cost": c.monthly_cost,
-                "cost_per_1m_tok": c.cost_per_1m_tok,
-                "warnings": c.warnings,
-            }
-            for c in candidates
-        ],
-        indent=2,
-    )
+    return json.dumps([asdict(c) for c in candidates], indent=2)
 
 
 def print_hardware_table() -> None:
@@ -158,8 +142,10 @@ def print_hardware_table() -> None:
 
     for name, spec in sorted(GPU_DB.items()):
         table.add_row(
-            name, f"{spec.vram_gb:.0f} GB",
-            f"{spec.bandwidth_gbps:.0f}", f"${spec.cost_per_hour:.3f}",
+            name,
+            f"{spec.vram_gb:.0f} GB",
+            f"{spec.bandwidth_gbps:.0f}",
+            f"${spec.cost_per_hour:.3f}",
         )
     console.print(table)
 

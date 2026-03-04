@@ -149,16 +149,18 @@ def collect_environment(
         import pynvml  # type: ignore[import-untyped]
 
         pynvml.nvmlInit()
-        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-        gpu_name = pynvml.nvmlDeviceGetName(handle)
-        if isinstance(gpu_name, bytes):
-            gpu_name = gpu_name.decode()
-        gpu_driver = pynvml.nvmlSystemGetDriverVersion()
-        if isinstance(gpu_driver, bytes):
-            gpu_driver = gpu_driver.decode()
-        cuda_version = pynvml.nvmlSystemGetCudaDriverVersion_v2()
-        cuda_version = f"{cuda_version // 1000}.{(cuda_version % 1000) // 10}"
-        pynvml.nvmlShutdown()
+        try:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+            gpu_name = pynvml.nvmlDeviceGetName(handle)
+            if isinstance(gpu_name, bytes):
+                gpu_name = gpu_name.decode()
+            gpu_driver = pynvml.nvmlSystemGetDriverVersion()
+            if isinstance(gpu_driver, bytes):
+                gpu_driver = gpu_driver.decode()
+            cuda_version = pynvml.nvmlSystemGetCudaDriverVersion_v2()
+            cuda_version = f"{cuda_version // 1000}.{(cuda_version % 1000) // 10}"
+        finally:
+            pynvml.nvmlShutdown()
     except Exception:
         pass
 

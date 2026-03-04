@@ -1,6 +1,6 @@
 """ChimeraForge Capacity Planner — predict-only models and search engine."""
 
-from chimeraforge.planner.engine import Candidate, enumerate_candidates
+from chimeraforge.planner.engine import Candidate, enumerate_candidates, find_models_for_size
 from chimeraforge.planner.models import (
     CostModel,
     LatencyModel,
@@ -9,6 +9,7 @@ from chimeraforge.planner.models import (
     ScalingModel,
     ThroughputModel,
     VRAMModel,
+    load_bundled_models,
     load_models,
 )
 
@@ -22,5 +23,7 @@ __all__ = [
     "ThroughputModel",
     "VRAMModel",
     "enumerate_candidates",
+    "find_models_for_size",
+    "load_bundled_models",
     "load_models",
 ]

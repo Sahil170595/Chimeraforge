@@ -1,4 +1,4 @@
-"""Benchmark runner — orchestrates backend calls and collects metrics.
+"""Benchmark runner -- orchestrates backend calls and collects metrics.
 
 Supports three workload profiles (single/batch/server) and two sweep
 modes (quantization sweep, context-length sweep). Results are persisted
@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import random
+import statistics
 from pathlib import Path
 from typing import Callable
 
@@ -37,15 +38,20 @@ async def _run_single(
     options: dict | None,
     total: int,
     on_progress: Callable[[int, int], None] | None = None,
-) -> list[RunMetrics]:
-    """Sequential execution — one request at a time."""
+) -> tuple[list[RunMetrics], list[str]]:
+    """Sequential execution -- one request at a time."""
     results: list[RunMetrics] = []
+    warnings: list[str] = []
     for i in range(total):
-        metrics = await backend.generate(model, prompt, options)
-        results.append(metrics)
+        try:
+            metrics = await backend.generate(model, prompt, options)
+            results.append(metrics)
+        except Exception as exc:
+            warnings.append(f"Run {i + 1}/{total} failed: {exc}")
+            logger.warning("Run %d/%d failed: %s", i + 1, total, exc)
         if on_progress:
             on_progress(i + 1, total)
-    return results
+    return results, warnings
 
 
 async def _run_batch(
@@ -56,19 +62,26 @@ async def _run_batch(
     total: int,
     concurrency: int,
     on_progress: Callable[[int, int], None] | None = None,
-) -> list[RunMetrics]:
-    """Concurrent batch execution — fires `concurrency` requests at a time."""
+) -> tuple[list[RunMetrics], list[str]]:
+    """Concurrent batch execution -- fires `concurrency` requests at a time."""
     results: list[RunMetrics] = []
+    warnings: list[str] = []
     completed = 0
     for batch_start in range(0, total, concurrency):
         batch_size = min(concurrency, total - batch_start)
         coros = [backend.generate(model, prompt, options) for _ in range(batch_size)]
-        batch_results = await asyncio.gather(*coros)
-        results.extend(batch_results)
+        batch_results = await asyncio.gather(*coros, return_exceptions=True)
+        for j, r in enumerate(batch_results):
+            idx = batch_start + j + 1
+            if isinstance(r, Exception):
+                warnings.append(f"Run {idx}/{total} failed: {r}")
+                logger.warning("Run %d/%d failed: %s", idx, total, r)
+            else:
+                results.append(r)
         completed += batch_size
         if on_progress:
             on_progress(completed, total)
-    return results
+    return results, warnings
 
 
 async def _run_server(
@@ -80,32 +93,40 @@ async def _run_server(
     concurrency: int,
     arrival_rate: float,
     on_progress: Callable[[int, int], None] | None = None,
-) -> list[RunMetrics]:
-    """Poisson-arrival server simulation — requests arrive at `arrival_rate` req/s."""
+) -> tuple[list[RunMetrics], list[str]]:
+    """Poisson-arrival server simulation -- requests arrive at `arrival_rate` req/s."""
     sem = asyncio.Semaphore(concurrency)
     results: list[RunMetrics] = []
+    warnings: list[str] = []
     lock = asyncio.Lock()
     completed = 0
 
-    async def _one_request() -> None:
+    async def _one_request(idx: int) -> None:
         nonlocal completed
-        async with sem:
-            metrics = await backend.generate(model, prompt, options)
-        async with lock:
-            results.append(metrics)
-            completed += 1
-            if on_progress:
-                on_progress(completed, total)
+        try:
+            async with sem:
+                metrics = await backend.generate(model, prompt, options)
+            async with lock:
+                results.append(metrics)
+        except Exception as exc:
+            async with lock:
+                warnings.append(f"Run {idx}/{total} failed: {exc}")
+                logger.warning("Run %d/%d failed: %s", idx, total, exc)
+        finally:
+            async with lock:
+                completed += 1
+                if on_progress:
+                    on_progress(completed, total)
 
     tasks: list[asyncio.Task] = []
-    for _ in range(total):
-        tasks.append(asyncio.create_task(_one_request()))
+    for i in range(total):
+        tasks.append(asyncio.create_task(_one_request(i + 1)))
         # Poisson inter-arrival: exponential distribution
         delay = random.expovariate(arrival_rate)
         await asyncio.sleep(delay)
 
     await asyncio.gather(*tasks)
-    return results
+    return results, warnings
 
 
 async def run_benchmark(
@@ -186,7 +207,7 @@ async def run_benchmark(
     )
 
     if profile.name == "single":
-        run_results = await _run_single(
+        run_results, run_warnings = await _run_single(
             backend,
             model,
             effective_prompt,
@@ -195,7 +216,7 @@ async def run_benchmark(
             on_progress,
         )
     elif profile.name == "batch":
-        run_results = await _run_batch(
+        run_results, run_warnings = await _run_batch(
             backend,
             model,
             effective_prompt,
@@ -205,8 +226,10 @@ async def run_benchmark(
             on_progress,
         )
     elif profile.name == "server":
-        arr_rate = profile.arrival_rate or 1.0
-        run_results = await _run_server(
+        arr_rate = (
+            profile.arrival_rate if profile.arrival_rate and profile.arrival_rate > 0 else 1.0
+        )
+        run_results, run_warnings = await _run_server(
             backend,
             model,
             effective_prompt,
@@ -219,16 +242,27 @@ async def run_benchmark(
     else:
         raise ValueError(f"Unknown workload profile: {profile.name}")
 
-    # Check for anomalies
-    throughputs = [r.throughput_tps for r in run_results]
-    if throughputs and max(throughputs) > 0:
-        cv = (
-            (max(throughputs) - min(throughputs)) / (sum(throughputs) / len(throughputs))
-            if len(throughputs) > 1
-            else 0.0
+    warnings.extend(run_warnings)
+
+    if not run_results:
+        raise RuntimeError(
+            f"All {profile.total_requests} benchmark runs failed. "
+            f"Errors: {'; '.join(run_warnings[:3])}"
         )
-        if cv > 0.5:
-            warnings.append(f"High throughput variance (CV={cv:.2f}). Results may be noisy.")
+
+    # Check for anomalies using real CV (stddev / mean)
+    throughputs = [r.throughput_tps for r in run_results]
+    if len(throughputs) > 1:
+        mean_tps = statistics.mean(throughputs)
+        if mean_tps > 0:
+            cv = statistics.stdev(throughputs) / mean_tps
+            if cv > 0.3:
+                warnings.append(f"High throughput variance (CV={cv:.2f}). Results may be noisy.")
+
+    # Warn about unmeasurable TTFT
+    ttfts = [r.ttft_ms for r in run_results]
+    if any(t < 0 for t in ttfts):
+        warnings.append(f"TTFT not measurable with {backend_name} non-streaming API.")
 
     # Aggregate
     agg = aggregate_runs(run_results)
@@ -254,11 +288,7 @@ async def run_quant_sweep(
     quants: list[str] | None = None,
     **kwargs: object,
 ) -> list[BenchmarkResult]:
-    """Run benchmarks across quantization levels.
-
-    For Ollama, constructs model tags like "model:tag-q4_0" from the
-    base model name and quant level.
-    """
+    """Run benchmarks across quantization levels."""
     from chimeraforge.planner.constants import QUANT_LEVELS
 
     levels = quants or QUANT_LEVELS
