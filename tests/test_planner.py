@@ -675,14 +675,21 @@ class TestPlannerExtended:
 
 
 class TestCLIPlan:
+    @staticmethod
+    def _strip_ansi(text: str) -> str:
+        import re
+
+        return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
     def test_plan_help(self):
         from typer.testing import CliRunner
         from chimeraforge.cli import app
 
-        runner = CliRunner(env={"NO_COLOR": "1"})
+        runner = CliRunner()
         result = runner.invoke(app, ["plan", "--help"])
+        output = self._strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--model-size" in result.output
+        assert "--model-size" in output
 
     def test_plan_negative_request_rate(self):
         from typer.testing import CliRunner

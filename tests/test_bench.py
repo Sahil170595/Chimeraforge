@@ -631,17 +631,24 @@ class TestSaveResults:
 
 
 class TestCLI:
+    @staticmethod
+    def _strip_ansi(text: str) -> str:
+        import re
+
+        return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
     def test_bench_help(self):
         from typer.testing import CliRunner
         from chimeraforge.cli import app
 
-        runner = CliRunner(env={"NO_COLOR": "1"})
+        runner = CliRunner()
         result = runner.invoke(app, ["bench", "--help"])
+        output = self._strip_ansi(result.output)
         assert result.exit_code == 0
-        assert "--model" in result.output
-        assert "--backend" in result.output
-        assert "--workload" in result.output
-        assert "--runs" in result.output
+        assert "--model" in output
+        assert "--backend" in output
+        assert "--workload" in output
+        assert "--runs" in output
 
     def test_bench_requires_model(self):
         from typer.testing import CliRunner
