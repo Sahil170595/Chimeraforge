@@ -167,6 +167,32 @@ chimeraforge plan --model llama3.2-1b --quantization Q4_K_M --backend ollama --a
 - Validated: VRAM R²=0.968, throughput R²=0.859, quality RMSE=0.062, latency MAPE=1.05%
 - No ML needed — empirical lookup tables with first-principles interpolation
 
+### `chimeraforge bench` — Live Inference Benchmarking
+
+Run real LLM inference benchmarks against a live backend (requires Ollama, vLLM, or TGI):
+
+```bash
+# Single-model benchmark (5 runs, single workload)
+chimeraforge bench --model llama3.2-3b --runs 5
+
+# Sweep all 7 quantization levels
+chimeraforge bench --model llama3.2-3b --all-quants --json
+
+# Context-length sweep
+chimeraforge bench --model llama3.2-3b --context 512,1024,2048,4096
+
+# Server workload with Poisson arrivals
+chimeraforge bench --model llama3.2-3b --workload server --rate 2.0
+
+# Use vLLM or TGI backend
+chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhost:8000
+```
+
+- Three workload profiles: single (sequential), batch (concurrent), server (Poisson arrivals)
+- Measures throughput (tok/s), TTFT, latency with p50/p90/p95/p99 percentiles
+- CV-based stability detection with automatic warnings
+- JSON output for programmatic consumption
+
 ### Backend & Infrastructure Studies (TR117-TR121)
 
 **Inference Backend Performance (TR117):**

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by 70,000+ real measurements on consumer GPUs. Ships both research artifacts (26+ technical reports, TR108-TR133) and a production CLI tool (`chimeraforge plan`).
+ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by 70,000+ real measurements on consumer GPUs. Ships both research artifacts (26+ technical reports, TR108-TR133) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
 **Version:** 0.2.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
@@ -15,7 +15,10 @@ pip install -e ".[all]"
 # Run capacity planner
 chimeraforge plan --model-size 3b --request-rate 1.0 --hardware "RTX 4080 12GB"
 
-# Run tests (68 total: 63 planner + 5 monitoring)
+# Run benchmarks (requires live Ollama)
+chimeraforge bench --model llama3.2-3b --runs 5
+
+# Run tests (158 total: 80 planner + 73 bench + 5 monitoring)
 pytest tests/ -v
 
 # Lint
@@ -203,13 +206,13 @@ Results sorted by (cost asc, quality desc). Output: Rich panels + alternatives t
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 68 total tests
+pytest tests/ -v                    # 158 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**test_planner.py** (63 tests, 11 test classes):
+**test_planner.py** (80 tests, 17 test classes):
 - TestConstants (4) — quant ordering, BPW coverage, model registry consistency
-- TestHardwareDB (7) — GPU lookup, bandwidth ratio, case-insensitive matching
+- TestHardwareDB (8) — GPU lookup, bandwidth ratio, case-insensitive matching
 - TestVRAMModel (6) — quant/size/context scaling, defaults for unknown models
 - TestThroughputModel (5) — lookup, quant multipliers, bandwidth scaling, 0.1 floor
 - TestScalingModel (3) — Amdahl's law, eta monotonically decreasing
@@ -217,22 +220,51 @@ pytest tests/ --cov=src             # With coverage
 - TestCostModel (5) — formula validation, zero-throughput -> inf
 - TestLatencyModel (3) — M/D/1 queueing, saturation flag at 70%
 - TestSerialization (3) — round-trip JSON, all 6 models, fitted=True
-- TestPlanner (10) — 4-gate filtering, candidate fields, find_models_for_size
+- TestPlanner (8) — 4-gate filtering, candidate fields, find_models_for_size
 - TestSpotChecks (10) — real TR133 data validation
+- TestFindModelsEdgeCases (6) — 0b, negative, empty, non-numeric, large, decimal
+- TestQualityTiers (4) — FP16 negligible, Q2 tier, bounded values, 8b FP16
+- TestScalingEdgeCases (2) — n=0, n=-1
+- TestVRAMBatchSize (1) — batch_size=4 > batch_size=1
+- TestLatencyEdgeCases (2) — saturated returns inf, zero service time
+- TestSerializationExtended (2) — all 6 models round-trip, empty JSON defaults
+- TestPlannerExtended (2) — empty target_models, N-search latency retry
+- TestCLIPlan (5) — help, negative rate, zero tokens, invalid quality, JSON output
+- TestFormatter (2) — format_json all fields, empty list
+
+**test_bench.py** (73 tests, 18 test classes):
+- TestStatSummary (5) — summarize, single value, empty, percentiles, two values
+- TestAggregateRuns (4) — count, tokens, throughput stats, single run
+- TestPrompts (4) — non-empty, default, short vs long, medium between
+- TestProfiles (8) — exist, single, server rate, get, overrides, unknown, concurrency
+- TestEnvironment (3) — fields, no version, ISO format
+- TestResultSerialization (4) — to_dict, JSON round-trip, warnings, all fields
+- TestBackendRegistry (4) — all backends, get ollama, with URL, unknown raises
+- TestOllamaBackend (8) — name, health check, model check, generate, version
+- TestRunner (7) — single, batch, health fail, model fail, aggregation, progress, fields
+- TestSaveResults (3) — creates file, valid JSON, creates directory
+- TestCLI (5) — help, requires model, invalid context, negative runs, negative rate
+- TestRunnerSweeps (2) — quant sweep, context sweep
+- TestServerMode (1) — server workload
+- TestErrorResilience (2) — partial failures, all failures
+- TestCVWarning (2) — high variance, stable
+- TestVLLMBackend (3) — name, default URL, custom URL
+- TestTGIBackend (4) — name, URL, exact match, rejects substring
+- TestOllamaEdgeCases (1) — missing eval_duration returns 0 throughput
 
 **test_monitoring.py** (5 tests):
 - SLO evaluation, log parsing (text+JSON), thread-safe aggregation, model recommender, monitor lifecycle
 
-**Pattern:** No mocks for planner (uses real fitted_models.json); monkeypatch for monitoring (avoids psutil). Session-scoped `bundled_models` fixture.
+**Pattern:** No mocks for planner (uses real fitted_models.json); monkeypatch for monitoring (avoids psutil). Session-scoped `bundled_models` fixture. Async tests use pytest-asyncio strict mode.
 
 ## Dependencies
 
 **Python core:** typer >=0.9, rich >=13.0
 **Optional groups:**
-- bench: psutil, pyyaml, httpx
+- bench: psutil, pyyaml, httpx, platformdirs, structlog
 - eval: evaluate
 - refit: numpy, scipy
-- dev: pytest, pytest-cov, ruff
+- dev: pytest, pytest-cov, pytest-asyncio, ruff
 
 **Rust (demo_agent):** anyhow, serde/serde_json, clap, reqwest (json+stream), tokio (full), tracing, bytes, futures-util, chrono, csv, walkdir, criterion (dev)
 **Rust (demo_multiagent):** Above + async-std, smol, hyper/hyper-util (feature-gated), once_cell

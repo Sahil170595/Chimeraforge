@@ -71,7 +71,7 @@ cd src/rust/demo_agent
 cargo build --release
 
 # Multi-agent
-cd ../Demo_rust_multiagent
+cd ../demo_multiagent
 cargo build --release
 ```
 

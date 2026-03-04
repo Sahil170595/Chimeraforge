@@ -92,8 +92,7 @@ Security updates will be:
 ## Security Contact
 
 For security concerns, contact:
-- **Email**: [security contact]
-- **GitHub**: Open a private security advisory
+- **GitHub**: Open a [private security advisory](https://github.com/Sahil170595/Chimeraforge/security/advisories/new)
 
 ---
 
