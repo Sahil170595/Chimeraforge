@@ -34,7 +34,7 @@ Homepage = "https://github.com/sahilpmehra/Chimeraforge"
 Repository = "https://github.com/sahilpmehra/Chimeraforge"
 
 [project.optional-dependencies]
-bench = ["psutil>=5.9", "pyyaml>=6.0,<7.0", "httpx>=0.25", "platformdirs>=4.0,<5.0"]
+bench = ["psutil>=5.9", "pyyaml>=6.0,<7.0", "httpx>=0.25", "platformdirs>=4.0,<5.0", "structlog>=23.0"]
 eval = ["evaluate>=0.4"]
 refit = ["numpy>=1.24,<3.0", "scipy>=1.11,<2.0"]
 dev = ["pytest>=7.4,<9.0", "pytest-cov>=4.1,<6.0", "ruff>=0.3,<1.0"]
