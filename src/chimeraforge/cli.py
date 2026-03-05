@@ -437,3 +437,172 @@ def bench(
         console.print(f"\n[green]Results saved to:[/] {saved_path}")
 
     asyncio.run(_run())
+
+
+@app.command()
+def refit(
+    bench_dir: str = typer.Option(
+        None,
+        "--bench-dir",
+        "-d",
+        help="Directory containing bench result JSON files.",
+    ),
+    bench_files: str = typer.Option(
+        None,
+        "--bench-files",
+        "-f",
+        help="Comma-separated paths to bench JSON files.",
+    ),
+    base_models: str = typer.Option(
+        None,
+        "--base-models",
+        help="Path to base fitted_models.json (default: bundled).",
+    ),
+    output: str = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output path for updated fitted_models.json.",
+    ),
+    output_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Output summary as JSON.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable debug logging.",
+    ),
+) -> None:
+    """Re-fit planner coefficients from benchmark results."""
+    import json as json_mod
+    import logging
+    from pathlib import Path
+
+    from rich.panel import Panel
+
+    from chimeraforge.refit.fitter import refit_from_bench, save_fitted_models
+
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.WARNING,
+        format="%(asctime)s %(name)s %(levelname)s  %(message)s",
+    )
+
+    # Collect bench paths
+    paths: list[Path] = []
+    if bench_dir:
+        d = Path(bench_dir)
+        if not d.is_dir():
+            console.print(f"[red]Error:[/] --bench-dir '{bench_dir}' is not a directory.")
+            raise typer.Exit(code=1)
+        paths.extend(sorted(d.glob("*.json")))
+    if bench_files:
+        for f in bench_files.split(","):
+            p = Path(f.strip())
+            if not p.is_file():
+                console.print(f"[red]Error:[/] bench file '{f.strip()}' not found.")
+                raise typer.Exit(code=1)
+            paths.append(p)
+
+    if not paths:
+        console.print("[red]Error:[/] provide --bench-dir or --bench-files.")
+        raise typer.Exit(code=1)
+
+    base_path = Path(base_models) if base_models else None
+    merged, summary = refit_from_bench(paths, base_path)
+
+    # Determine output path
+    if output:
+        out = Path(output)
+    else:
+        try:
+            from platformdirs import user_data_dir
+
+            out = Path(user_data_dir("chimeraforge")) / "fitted_models.json"
+        except ImportError:
+            out = Path.home() / ".chimeraforge" / "fitted_models.json"
+
+    saved = save_fitted_models(merged, out)
+
+    if output_json:
+        console.print(json_mod.dumps(summary, indent=2))
+    else:
+        lines = [
+            f"Bench results loaded: {summary['bench_results_loaded']}",
+            f"Throughput entries updated: {summary['throughput_entries_updated']}",
+            f"Quant multipliers updated: {summary['quant_multipliers_updated']}",
+            f"Service times updated: {summary['service_times_updated']}",
+            f"Power law re-fit: {summary['power_law_refit']}",
+        ]
+        if summary.get("warnings"):
+            lines.append("")
+            for w in summary["warnings"]:
+                lines.append(f"[yellow]Warning:[/] {w}")
+        console.print(Panel("\n".join(lines), title="Refit Summary", border_style="green"))
+        console.print(f"[green]Saved to:[/] {saved}")
+
+
+@app.command()
+def compare(
+    baseline: str = typer.Option(
+        ...,
+        "--baseline",
+        "-b",
+        help="Path to baseline bench result JSON.",
+    ),
+    candidate: str = typer.Option(
+        ...,
+        "--candidate",
+        "-c",
+        help="Path(s) to candidate bench result JSON (comma-separated).",
+    ),
+    output_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable debug logging.",
+    ),
+) -> None:
+    """Compare benchmark results between runs."""
+    import logging
+    from pathlib import Path
+
+    from chimeraforge.compare.comparator import (
+        compare_results,
+        format_comparison_json,
+        format_comparison_summary,
+        format_comparison_table,
+    )
+
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.WARNING,
+        format="%(asctime)s %(name)s %(levelname)s  %(message)s",
+    )
+
+    baseline_path = Path(baseline)
+    if not baseline_path.is_file():
+        console.print(f"[red]Error:[/] baseline file '{baseline}' not found.")
+        raise typer.Exit(code=1)
+
+    candidate_paths: list[Path] = []
+    for c in candidate.split(","):
+        p = Path(c.strip())
+        if not p.is_file():
+            console.print(f"[red]Error:[/] candidate file '{c.strip()}' not found.")
+            raise typer.Exit(code=1)
+        candidate_paths.append(p)
+
+    rows = compare_results(baseline_path, candidate_paths)
+
+    if output_json:
+        console.print(format_comparison_json(rows))
+    else:
+        format_comparison_table(rows, console)
+        format_comparison_summary(rows, console)
