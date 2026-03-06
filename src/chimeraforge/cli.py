@@ -371,7 +371,7 @@ def bench(
                         base_url=base_url,
                     )
                     results = [result]
-            except (RuntimeError, Exception) as exc:
+            except RuntimeError as exc:
                 progress.stop()
                 console.print(Panel(str(exc), title="ERROR", border_style="red"))
                 raise typer.Exit(code=1)
@@ -469,6 +469,11 @@ def refit(
         "--json",
         help="Output summary as JSON.",
     ),
+    validate: bool = typer.Option(
+        False,
+        "--validate",
+        help="Run validation checks on the refitted model.",
+    ),
     verbose: bool = typer.Option(
         False,
         "--verbose",
@@ -543,6 +548,21 @@ def refit(
         console.print(Panel("\n".join(lines), title="Refit Summary", border_style="green"))
         console.print(f"[green]Saved to:[/] {saved}")
 
+    if validate:
+        from chimeraforge.refit.validator import (
+            format_validation_json,
+            format_validation_table,
+            validate_fitted_models,
+        )
+
+        vresult = validate_fitted_models(merged)
+        if output_json:
+            console.print(format_validation_json(vresult))
+        else:
+            format_validation_table(vresult, console)
+        if not vresult.passed:
+            raise typer.Exit(code=1)
+
 
 @app.command()
 def compare(
@@ -606,3 +626,227 @@ def compare(
     else:
         format_comparison_table(rows, console)
         format_comparison_summary(rows, console)
+
+
+@app.command(name="eval")
+def eval_cmd(
+    predictions: str = typer.Option(
+        None,
+        "--predictions",
+        "-p",
+        help="Path to predictions file (one per line).",
+    ),
+    references: str = typer.Option(
+        None,
+        "--references",
+        "-r",
+        help="Path to references file (one per line).",
+    ),
+    task: str = typer.Option(
+        None,
+        "--task",
+        "-t",
+        help="Built-in task name (general_knowledge, summarization, code).",
+    ),
+    model: str = typer.Option(
+        "unknown",
+        "--model",
+        "-m",
+        help="Model name identifier.",
+    ),
+    quant: str = typer.Option(
+        None,
+        "--quant",
+        "-q",
+        help="Quantization level (e.g., Q4_K_M).",
+    ),
+    list_tasks_flag: bool = typer.Option(
+        False,
+        "--list-tasks",
+        help="List available built-in evaluation tasks.",
+    ),
+    output_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Output as JSON.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable debug logging.",
+    ),
+) -> None:
+    """Evaluate LLM output quality with text-similarity metrics."""
+    import logging
+
+    from chimeraforge.eval.runner import format_eval_json, format_eval_table, run_eval
+    from chimeraforge.eval.tasks import get_task, list_tasks
+
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.WARNING,
+        format="%(asctime)s %(name)s %(levelname)s  %(message)s",
+    )
+
+    if list_tasks_flag:
+        for name in list_tasks():
+            console.print(f"  {name}")
+        raise typer.Exit()
+
+    if task:
+        try:
+            t = get_task(task)
+        except KeyError as exc:
+            console.print(f"[red]Error:[/] {exc}")
+            raise typer.Exit(code=1)
+        refs = t.references
+        task_name = t.name
+        if predictions:
+            from pathlib import Path as _Path
+
+            pred_path = _Path(predictions)
+            if not pred_path.is_file():
+                console.print(f"[red]Error:[/] predictions file '{predictions}' not found.")
+                raise typer.Exit(code=1)
+            preds = pred_path.read_text(encoding="utf-8").strip().splitlines()
+        else:
+            if not output_json:
+                console.print(
+                    "[yellow]Note:[/] No --predictions file; "
+                    "using task prompts as placeholder (scores will be low)."
+                )
+            preds = t.prompts
+    elif predictions and references:
+        from pathlib import Path
+
+        pred_path = Path(predictions)
+        ref_path = Path(references)
+        if not pred_path.is_file():
+            console.print(f"[red]Error:[/] predictions file '{predictions}' not found.")
+            raise typer.Exit(code=1)
+        if not ref_path.is_file():
+            console.print(f"[red]Error:[/] references file '{references}' not found.")
+            raise typer.Exit(code=1)
+        preds = pred_path.read_text(encoding="utf-8").strip().splitlines()
+        refs = ref_path.read_text(encoding="utf-8").strip().splitlines()
+        task_name = f"file:{pred_path.name}"
+    else:
+        console.print("[red]Error:[/] provide --task or both --predictions and --references.")
+        raise typer.Exit(code=1)
+
+    result = run_eval(
+        predictions=preds,
+        references=refs,
+        model=model,
+        quant=quant,
+        task=task_name,
+    )
+
+    if output_json:
+        console.print(format_eval_json([result]))
+    else:
+        format_eval_table([result], console)
+
+
+@app.command()
+def report(
+    results_dir: str = typer.Option(
+        None,
+        "--results-dir",
+        "-d",
+        help="Directory containing bench result JSON files.",
+    ),
+    results_files: str = typer.Option(
+        None,
+        "--results-files",
+        "-f",
+        help="Comma-separated paths to bench result JSON files.",
+    ),
+    fmt: str = typer.Option(
+        "markdown",
+        "--format",
+        help="Output format: markdown or html.",
+    ),
+    output: str = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output file path.",
+    ),
+    title: str = typer.Option(
+        "ChimeraForge Benchmark Report",
+        "--title",
+        help="Report title.",
+    ),
+    output_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Output report metadata as JSON.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable debug logging.",
+    ),
+) -> None:
+    """Generate benchmark reports from result files."""
+    import logging
+    from pathlib import Path
+
+    from chimeraforge.report.generator import (
+        ReportConfig,
+        format_report_rich,
+        generate_report,
+        load_results,
+        save_report,
+    )
+
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.WARNING,
+        format="%(asctime)s %(name)s %(levelname)s  %(message)s",
+    )
+
+    # Collect result paths
+    paths: list[Path] = []
+    if results_dir:
+        d = Path(results_dir)
+        if not d.is_dir():
+            console.print(f"[red]Error:[/] --results-dir '{results_dir}' is not a directory.")
+            raise typer.Exit(code=1)
+        paths.extend(sorted(d.glob("*.json")))
+    if results_files:
+        for f in results_files.split(","):
+            p = Path(f.strip())
+            if not p.is_file():
+                console.print(f"[red]Error:[/] result file '{f.strip()}' not found.")
+                raise typer.Exit(code=1)
+            paths.append(p)
+
+    if not paths:
+        console.print("[red]Error:[/] provide --results-dir or --results-files.")
+        raise typer.Exit(code=1)
+
+    if fmt not in ("markdown", "html"):
+        console.print("[red]Error:[/] --format must be 'markdown' or 'html'.")
+        raise typer.Exit(code=1)
+
+    config = ReportConfig(title=title, format=fmt)
+    rpt = generate_report(paths, config)
+
+    if output:
+        out_path = Path(output)
+        saved = save_report(rpt, out_path)
+        console.print(f"[green]Report saved to:[/] {saved}")
+    elif output_json:
+        import json as json_mod
+
+        meta = {
+            "title": rpt.title,
+            "format": rpt.format,
+            "n_results": rpt.n_results,
+            "timestamp": rpt.timestamp,
+        }
+        console.print(json_mod.dumps(meta, indent=2))
+    else:
+        format_report_rich(load_results(paths), console)

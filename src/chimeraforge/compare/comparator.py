@@ -11,10 +11,10 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
+if TYPE_CHECKING:
+    from rich.console import Console
 
 
 # ---------------------------------------------------------------------------
@@ -194,6 +194,8 @@ def format_comparison_table(rows: list[ComparisonRow], console: Console) -> None
     Base TTFT | Cand TTFT | delta% | Base Dur | Cand Dur | delta%.
     Green for improvements, red for regressions.
     """
+    from rich.table import Table
+
     if not rows:
         console.print("[dim]No matching configurations found.[/dim]")
         return
@@ -258,6 +260,8 @@ def format_comparison_json(rows: list[ComparisonRow]) -> str:
 
 def format_comparison_summary(rows: list[ComparisonRow], console: Console) -> None:
     """Print summary panel with aggregate statistics."""
+    from rich.panel import Panel
+
     if not rows:
         console.print("[dim]No matching configurations to summarise.[/dim]")
         return

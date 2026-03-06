@@ -17,6 +17,16 @@ from chimeraforge.planner.constants import MODEL_PARAMS_B
 
 log = logging.getLogger("chimeraforge.refit")
 
+# Minimum FP16 data points required to fit the throughput power-law curve.
+MIN_POWER_LAW_POINTS = 3
+
+# Run count at which Bayesian blending reaches full confidence in measured
+# values.  Weight = min(1.0, total_runs / CONFIDENCE_RUN_THRESHOLD).
+CONFIDENCE_RUN_THRESHOLD = 50
+
+# Coefficient of variation above which a warning is emitted during refit.
+CV_WARNING_THRESHOLD = 0.3
+
 
 # ---------------------------------------------------------------------------
 # Load
@@ -158,7 +168,7 @@ def fit_power_law(
             if p is not None:
                 points.append((p, tps))
 
-    if len(points) < 3:
+    if len(points) < MIN_POWER_LAW_POINTS:
         return (100.0, 0.5)
 
     try:
@@ -172,9 +182,143 @@ def fit_power_law(
 
         (a, b), _ = curve_fit(_power, xs, ys, p0=[100.0, 0.5], maxfev=5000)
         return (float(a), float(b))
-    except Exception:
+    except (ImportError, RuntimeError, TypeError, ValueError):
         log.warning("scipy curve_fit unavailable or failed; using defaults")
         return (100.0, 0.5)
+
+
+# ---------------------------------------------------------------------------
+# Hardware offsets & Bayesian blending
+# ---------------------------------------------------------------------------
+
+
+def compute_hardware_offsets(
+    results: list[dict],
+    existing_models: dict,
+) -> dict[str, float]:
+    """Compute per-(model|backend) throughput ratios: measured / predicted.
+
+    For each result, looks up the predicted throughput from
+    ``existing_models["throughput"]["lookup"]`` using the key
+    ``{model}|{backend}|{quant_or_FP16}``.  Computes the ratio
+    ``measured_tps / predicted_tps``, groups by ``model|backend``,
+    and returns the median ratio per group.
+
+    Args:
+        results: List of bench result dicts.
+        existing_models: The existing fitted_models dict with throughput lookup.
+
+    Returns:
+        Dict mapping ``'model|backend'`` to median throughput ratio.
+        Only includes entries where a predicted value exists to compare against.
+    """
+    existing_lookup = existing_models.get("throughput", {}).get("lookup", {})
+
+    # Group ratios by model|backend
+    ratios_by_mb: dict[str, list[float]] = defaultdict(list)
+    for r in results:
+        model = r.get("model", "")
+        backend = r.get("backend", "")
+        quant = r.get("quant") or "FP16"
+        agg = r.get("aggregate", {})
+        measured = agg.get("throughput_tps", {}).get("mean")
+        if measured is None or measured <= 0:
+            continue
+
+        lookup_key = f"{model}|{backend}|{quant}"
+        predicted = existing_lookup.get(lookup_key)
+        if predicted is not None and predicted > 0:
+            ratio = measured / predicted
+            mb_key = f"{model}|{backend}"
+            ratios_by_mb[mb_key].append(ratio)
+
+    return {k: statistics.median(v) for k, v in ratios_by_mb.items()}
+
+
+def count_total_runs(results: list[dict]) -> int:
+    """Count total individual runs across all results.
+
+    Sums each result's ``'runs'`` field.  Falls back to counting
+    ``individual_runs`` if the ``'runs'`` field is missing.
+
+    Args:
+        results: List of bench result dicts.
+
+    Returns:
+        Total number of individual benchmark runs.
+    """
+    total = 0
+    for r in results:
+        n = r.get("runs")
+        if n is None:
+            n = len(r.get("individual_runs", []))
+        total += n
+    return total
+
+
+def bayesian_blend_throughput(
+    existing_lookup: dict[str, float],
+    measured_lookup: dict[str, float],
+    n_total_runs: int,
+) -> dict[str, float]:
+    """Blend measured throughputs with existing (global prior) using confidence weighting.
+
+    Confidence weight: ``w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)``.
+
+    For each key in *measured_lookup*:
+      - If the key exists in *existing_lookup*:
+        ``blended[key] = (1 - w) * existing[key] + w * measured[key]``
+      - Otherwise: ``blended[key] = measured[key]`` (new entry, no prior).
+
+    All existing keys NOT in *measured_lookup* are preserved unchanged.
+
+    Args:
+        existing_lookup: The current throughput lookup from fitted_models.
+        measured_lookup: Newly measured throughput entries.
+        n_total_runs: Total number of individual benchmark runs (drives confidence).
+
+    Returns:
+        Blended throughput lookup dict.
+    """
+    w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)
+
+    blended = dict(existing_lookup)  # preserve all existing entries
+    for key, measured_val in measured_lookup.items():
+        existing_val = existing_lookup.get(key)
+        if existing_val is not None:
+            blended[key] = (1 - w) * existing_val + w * measured_val
+        else:
+            blended[key] = measured_val
+    return blended
+
+
+def _bayesian_blend_service_times(
+    existing_st: dict[str, float],
+    measured_st: dict[str, float],
+    n_total_runs: int,
+) -> dict[str, float]:
+    """Blend measured service times with existing using confidence weighting.
+
+    Same formula as :func:`bayesian_blend_throughput` but for service times.
+
+    Args:
+        existing_st: Current service_times from fitted_models.
+        measured_st: Newly measured service times.
+        n_total_runs: Total number of individual benchmark runs.
+
+    Returns:
+        Blended service times dict.
+    """
+    w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)
+
+    blended = dict(existing_st)
+    for key, measured_val in measured_st.items():
+        existing_val = existing_st.get(key)
+        if existing_val is not None:
+            blended[key] = (1 - w) * existing_val + w * measured_val
+        else:
+            blended[key] = measured_val
+    return blended
 
 
 # ---------------------------------------------------------------------------
@@ -228,13 +372,16 @@ def refit_from_bench(
 
     1. Load bench results from *bench_paths*.
     2. Load existing fitted_models (bundled or from *base_models_path*).
-    3. Extract throughput lookup, quant multipliers, service times.
-    4. Fit power law (if enough FP16 data).
-    5. Merge into existing.
+    3. Count total runs and compute confidence weight.
+    4. Extract throughput lookup, quant multipliers, service times.
+    5. Bayesian-blend measured throughputs and service times with existing.
+    6. Compute hardware offsets (measured / predicted ratios).
+    7. Fit power law (if enough FP16 data).
+    8. Merge into existing.
 
     Returns:
         ``(merged_dict, summary_dict)`` where *summary* reports counts of
-        updated entries and any warnings.
+        updated entries, hardware offsets, and any warnings.
     """
     results = load_bench_results(bench_paths)
 
@@ -251,16 +398,48 @@ def refit_from_bench(
             with open(p, encoding="utf-8") as f:
                 existing = json.load(f)
 
+    # Count total runs for confidence weighting
+    n_total_runs = count_total_runs(results)
+
+    # Build warnings list
+    warnings: list[str] = []
+
+    # Minimum data gate
+    if n_total_runs < 5:
+        warnings.append(f"Only {n_total_runs} runs -- results are preliminary (recommend >= 5)")
+
+    # Extract raw measurements
     tp_lookup = extract_throughput_lookup(results)
     existing_qm = existing.get("throughput", {}).get("quant_multipliers", {})
     qm = extract_quant_multipliers(results, existing_qm)
     st = extract_service_times(results)
     pl = fit_power_law(tp_lookup)
 
+    # Bayesian-blend throughput and service times with existing
+    existing_tp_lookup = existing.get("throughput", {}).get("lookup", {})
+    blended_tp = bayesian_blend_throughput(existing_tp_lookup, tp_lookup, n_total_runs)
+
+    existing_st = existing.get("latency", {}).get("service_times", {})
+    blended_st = _bayesian_blend_service_times(existing_st, st, n_total_runs)
+
+    # Compute hardware offsets (measured / predicted ratios)
+    hw_offsets = compute_hardware_offsets(results, existing)
+
+    # Merge: use blended values instead of raw overrides.
+    # We pass only the *new or changed* entries to merge_fitted_models so that
+    # existing entries are preserved via the merge logic, then overlay the
+    # fully-blended lookups.
     merged = merge_fitted_models(existing, tp_lookup, qm, st, pl)
 
-    # Build summary
-    warnings: list[str] = []
+    # Overlay the blended values on top of the merge result
+    merged["throughput"]["lookup"] = blended_tp
+    merged["latency"]["service_times"] = blended_st
+
+    # Store hardware offsets in the merged dict
+    if hw_offsets:
+        merged["throughput"]["hardware_offsets"] = hw_offsets
+
+    # CV warnings
     for r in results:
         runs = r.get("individual_runs", [])
         if len(runs) > 1:
@@ -268,11 +447,11 @@ def refit_from_bench(
             mean_tps = statistics.mean(tps_vals) if tps_vals else 0
             if mean_tps > 0:
                 cv = statistics.stdev(tps_vals) / mean_tps
-                if cv > 0.3:
+                if cv > CV_WARNING_THRESHOLD:
                     model = r.get("model", "?")
                     quant = r.get("quant") or "FP16"
                     warnings.append(
-                        f"High CV ({cv:.2f}) for {model}|{quant} — results may be noisy"
+                        f"High CV ({cv:.2f}) for {model}|{quant} -- results may be noisy"
                     )
 
     summary = {
@@ -281,6 +460,9 @@ def refit_from_bench(
         "quant_multipliers_updated": len(qm),
         "service_times_updated": len(st),
         "power_law_refit": pl != (100.0, 0.5),
+        "total_runs": n_total_runs,
+        "confidence_weight": min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD),
+        "hardware_offsets": hw_offsets,
         "warnings": warnings,
     }
 

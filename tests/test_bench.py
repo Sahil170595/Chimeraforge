@@ -44,7 +44,12 @@ from chimeraforge.bench.prompts import (
 )
 from chimeraforge.bench.backends.tgi import TGIBackend
 from chimeraforge.bench.backends.vllm import VLLMBackend
-from chimeraforge.bench.runner import run_benchmark, run_quant_sweep, run_context_sweep, save_results
+from chimeraforge.bench.runner import (
+    run_benchmark,
+    run_quant_sweep,
+    run_context_sweep,
+    save_results,
+)
 
 
 # -- Metrics: StatSummary and aggregation ------------------------------------
@@ -222,9 +227,15 @@ class TestResultSerialization:
         )
         agg = aggregate_runs([run])
         env = EnvironmentInfo(
-            os="TestOS", platform="TestPlatform", python_version="3.10.0",
-            chimeraforge_version="0.2.0", gpu_name=None, gpu_driver=None,
-            cuda_version=None, backend_name="ollama", backend_version="0.6.1",
+            os="TestOS",
+            platform="TestPlatform",
+            python_version="3.10.0",
+            chimeraforge_version="0.2.0",
+            gpu_name=None,
+            gpu_driver=None,
+            cuda_version=None,
+            backend_name="ollama",
+            backend_version="0.6.1",
         )
         return BenchmarkResult(
             model="test-model",
@@ -263,9 +274,17 @@ class TestResultSerialization:
         r = self._make_result()
         d = result_to_dict(r)
         expected_keys = {
-            "model", "backend", "quant", "workload", "runs",
-            "context_length", "individual_runs", "aggregate",
-            "environment", "timestamp", "warnings",
+            "model",
+            "backend",
+            "quant",
+            "workload",
+            "runs",
+            "context_length",
+            "individual_runs",
+            "aggregate",
+            "environment",
+            "timestamp",
+            "warnings",
         }
         assert expected_keys == set(d.keys())
 
@@ -434,14 +453,16 @@ class TestRunner:
         backend.health_check = AsyncMock(return_value=(True, "OK"))
         backend.check_model = AsyncMock(return_value=(True, ""))
         backend.get_version = AsyncMock(return_value="1.0.0")
-        backend.generate = AsyncMock(return_value=RunMetrics(
-            tokens_generated=50,
-            throughput_tps=25.0,
-            ttft_ms=100.0,
-            total_duration_ms=2000.0,
-            prompt_eval_duration_ms=100.0,
-            eval_duration_ms=1900.0,
-        ))
+        backend.generate = AsyncMock(
+            return_value=RunMetrics(
+                tokens_generated=50,
+                throughput_tps=25.0,
+                ttft_ms=100.0,
+                total_duration_ms=2000.0,
+                prompt_eval_duration_ms=100.0,
+                eval_duration_ms=1900.0,
+            )
+        )
         return backend
 
     @pytest.mark.asyncio
@@ -589,9 +610,15 @@ class TestSaveResults:
         )
         agg = aggregate_runs([run])
         env = EnvironmentInfo(
-            os="TestOS", platform="TestPlatform", python_version="3.10.0",
-            chimeraforge_version="0.2.0", gpu_name=None, gpu_driver=None,
-            cuda_version=None, backend_name="ollama", backend_version="0.6.1",
+            os="TestOS",
+            platform="TestPlatform",
+            python_version="3.10.0",
+            chimeraforge_version="0.2.0",
+            gpu_name=None,
+            gpu_driver=None,
+            cuda_version=None,
+            backend_name="ollama",
+            backend_version="0.6.1",
         )
         return BenchmarkResult(
             model="test-model",
@@ -694,14 +721,16 @@ class TestRunnerSweeps:
         backend.health_check = AsyncMock(return_value=(True, "OK"))
         backend.check_model = AsyncMock(return_value=(True, ""))
         backend.get_version = AsyncMock(return_value="1.0.0")
-        backend.generate = AsyncMock(return_value=RunMetrics(
-            tokens_generated=50,
-            throughput_tps=25.0,
-            ttft_ms=100.0,
-            total_duration_ms=2000.0,
-            prompt_eval_duration_ms=100.0,
-            eval_duration_ms=1900.0,
-        ))
+        backend.generate = AsyncMock(
+            return_value=RunMetrics(
+                tokens_generated=50,
+                throughput_tps=25.0,
+                ttft_ms=100.0,
+                total_duration_ms=2000.0,
+                prompt_eval_duration_ms=100.0,
+                eval_duration_ms=1900.0,
+            )
+        )
         return backend
 
     @pytest.mark.asyncio
@@ -744,14 +773,16 @@ class TestServerMode:
         backend.health_check = AsyncMock(return_value=(True, "OK"))
         backend.check_model = AsyncMock(return_value=(True, ""))
         backend.get_version = AsyncMock(return_value="1.0.0")
-        backend.generate = AsyncMock(return_value=RunMetrics(
-            tokens_generated=50,
-            throughput_tps=25.0,
-            ttft_ms=100.0,
-            total_duration_ms=2000.0,
-            prompt_eval_duration_ms=100.0,
-            eval_duration_ms=1900.0,
-        ))
+        backend.generate = AsyncMock(
+            return_value=RunMetrics(
+                tokens_generated=50,
+                throughput_tps=25.0,
+                ttft_ms=100.0,
+                total_duration_ms=2000.0,
+                prompt_eval_duration_ms=100.0,
+                eval_duration_ms=1900.0,
+            )
+        )
 
         with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
             result = await run_benchmark(
@@ -874,14 +905,16 @@ class TestCVWarning:
         backend.health_check = AsyncMock(return_value=(True, "OK"))
         backend.check_model = AsyncMock(return_value=(True, ""))
         backend.get_version = AsyncMock(return_value="1.0.0")
-        backend.generate = AsyncMock(return_value=RunMetrics(
-            tokens_generated=50,
-            throughput_tps=25.0,
-            ttft_ms=100.0,
-            total_duration_ms=2000.0,
-            prompt_eval_duration_ms=100.0,
-            eval_duration_ms=1900.0,
-        ))
+        backend.generate = AsyncMock(
+            return_value=RunMetrics(
+                tokens_generated=50,
+                throughput_tps=25.0,
+                ttft_ms=100.0,
+                total_duration_ms=2000.0,
+                prompt_eval_duration_ms=100.0,
+                eval_duration_ms=1900.0,
+            )
+        )
 
         with patch("chimeraforge.bench.runner.get_backend", return_value=backend):
             result = await run_benchmark(

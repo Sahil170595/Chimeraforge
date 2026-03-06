@@ -164,7 +164,10 @@ class TestThroughputModel:
     def test_bandwidth_scaling(self, bundled_models):
         base = bundled_models.throughput.predict("llama3.2-3b", "ollama", "FP16")
         scaled = bundled_models.throughput.predict(
-            "llama3.2-3b", "ollama", "FP16", hardware="RTX 4090 24GB",
+            "llama3.2-3b",
+            "ollama",
+            "FP16",
+            hardware="RTX 4090 24GB",
         )
         assert scaled > base
 
@@ -251,23 +254,32 @@ class TestCostModel:
 class TestLatencyModel:
     def test_low_load_near_service_time(self, bundled_models):
         result = bundled_models.latency.predict_p95(
-            "llama3.2-3b", "ollama", request_rate=0.001, n_agents=1,
+            "llama3.2-3b",
+            "ollama",
+            request_rate=0.001,
+            n_agents=1,
         )
         assert result["p95_ms"] == pytest.approx(result["service_ms"], rel=0.1)
         assert result["utilisation"] < 0.1
 
     def test_high_load_increases_latency(self, bundled_models):
         low = bundled_models.latency.predict_p95(
-            "llama3.2-3b", "ollama", request_rate=0.01,
+            "llama3.2-3b",
+            "ollama",
+            request_rate=0.01,
         )
         high = bundled_models.latency.predict_p95(
-            "llama3.2-3b", "ollama", request_rate=0.4,
+            "llama3.2-3b",
+            "ollama",
+            request_rate=0.4,
         )
         assert high["p95_ms"] > low["p95_ms"]
 
     def test_saturated_flag(self, bundled_models):
         result = bundled_models.latency.predict_p95(
-            "llama3.2-3b", "ollama", request_rate=10.0,
+            "llama3.2-3b",
+            "ollama",
+            request_rate=10.0,
         )
         assert result["saturated"]
 
@@ -535,9 +547,7 @@ class TestQualityTiers:
         for model in MODEL_PARAMS_B:
             for quant in QUANT_LEVELS + ["FP16"]:
                 q = bundled_models.quality.predict(model, quant)
-                assert 0.0 <= q <= 1.0, (
-                    f"Quality {q} out of bounds for {model}|{quant}"
-                )
+                assert 0.0 <= q <= 1.0, f"Quality {q} out of bounds for {model}|{quant}"
 
     def test_8b_fp16_returns_value(self, bundled_models):
         """llama3.1-8b FP16 quality should return a value in [0, 1]."""
@@ -574,7 +584,9 @@ class TestVRAMBatchSize:
 class TestLatencyEdgeCases:
     def test_saturated_returns_inf(self, bundled_models):
         result = bundled_models.latency.predict_p95(
-            "llama3.2-3b", "ollama", request_rate=10.0,
+            "llama3.2-3b",
+            "ollama",
+            request_rate=10.0,
         )
         assert result["p95_ms"] == float("inf")
         assert result["saturated"]
@@ -583,7 +595,10 @@ class TestLatencyEdgeCases:
         """mu fallback should be large, not tiny."""
         m = LatencyModel()
         result = m.predict_p95(
-            "test", "ollama", request_rate=1.0, avg_tokens=0,
+            "test",
+            "ollama",
+            request_rate=1.0,
+            avg_tokens=0,
             throughput_model=ThroughputModel(lookup={"test|ollama|FP16": 100}),
         )
         # With zero avg_tokens, service_ms = 0, mu should be very large

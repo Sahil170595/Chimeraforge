@@ -59,8 +59,10 @@ def test_model_recommender_flags_high_util():
 def test_performance_monitor_digest_smoke(monkeypatch):
     # Avoid hitting psutil in environments without permissions by mocking capture_snapshot.
     pm = PerformanceMonitor(interval=0.01)
+
     def fake_capture():
         pm.aggregator.add_point(MetricPoint("cpu_percent", 1.0, "%"))
+
     pm.capture_snapshot = fake_capture  # type: ignore
     pm.start()
     pm.stop()

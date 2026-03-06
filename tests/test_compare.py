@@ -13,49 +13,9 @@ import json
 from pathlib import Path
 
 import pytest
-
 from rich.console import Console
 
-
-# ---------------------------------------------------------------------------
-# Helpers — synthetic bench result dicts
-# ---------------------------------------------------------------------------
-
-
-def _make_result(
-    model: str = "llama3.2-3b",
-    backend: str = "ollama",
-    quant: str | None = None,
-    throughput_mean: float = 95.0,
-    ttft_mean: float = 50.0,
-    duration_mean: float = 1000.0,
-    runs: int = 5,
-    workload: str = "single",
-    context_length: int = 2048,
-) -> dict:
-    return {
-        "model": model,
-        "backend": backend,
-        "quant": quant,
-        "workload": workload,
-        "context_length": context_length,
-        "runs": runs,
-        "aggregate": {
-            "count": runs,
-            "throughput_tps": {"mean": throughput_mean, "p50": throughput_mean, "p95": throughput_mean, "p99": throughput_mean, "min": throughput_mean, "max": throughput_mean, "stddev": 0.5},
-            "ttft_ms": {"mean": ttft_mean, "p50": ttft_mean, "p95": ttft_mean, "p99": ttft_mean, "min": ttft_mean, "max": ttft_mean, "stddev": 1.0},
-            "total_duration_ms": {"mean": duration_mean, "p50": duration_mean, "p95": duration_mean, "p99": duration_mean, "min": duration_mean, "max": duration_mean, "stddev": 10.0},
-            "tokens_generated": 640,
-        },
-        "individual_runs": [],
-        "environment": {},
-        "timestamp": "2026-01-01T00:00:00+00:00",
-        "warnings": [],
-    }
-
-
-def _write_bench_json(path: Path, results: list[dict]) -> None:
-    path.write_text(json.dumps(results, indent=2))
+from helpers import make_result as _make_result, write_bench_json as _write_bench_json
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +27,9 @@ class TestMakeKey:
     def test_standard_result(self):
         from chimeraforge.compare.comparator import make_key
 
-        r = _make_result(model="m", backend="b", quant="Q4_K_M", workload="single", context_length=2048)
+        r = _make_result(
+            model="m", backend="b", quant="Q4_K_M", workload="single", context_length=2048
+        )
         assert make_key(r) == "m|b|Q4_K_M|single|2048"
 
     def test_none_quant_uses_default(self):
@@ -160,14 +122,20 @@ class TestCompareResults:
 
         base = tmp_path / "base.json"
         cand = tmp_path / "cand.json"
-        _write_bench_json(base, [
-            _make_result(model="a", throughput_mean=40.0),
-            _make_result(model="b", throughput_mean=80.0),
-        ])
-        _write_bench_json(cand, [
-            _make_result(model="a", throughput_mean=50.0),
-            _make_result(model="b", throughput_mean=60.0),
-        ])
+        _write_bench_json(
+            base,
+            [
+                _make_result(model="a", throughput_mean=40.0),
+                _make_result(model="b", throughput_mean=80.0),
+            ],
+        )
+        _write_bench_json(
+            cand,
+            [
+                _make_result(model="a", throughput_mean=50.0),
+                _make_result(model="b", throughput_mean=60.0),
+            ],
+        )
 
         rows = compare_results(base, [cand])
         assert len(rows) == 2
@@ -300,11 +268,16 @@ class TestCLICompare:
         from chimeraforge.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "compare",
-            "--baseline", str(tmp_path / "nope.json"),
-            "--candidate", str(tmp_path / "also_nope.json"),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "compare",
+                "--baseline",
+                str(tmp_path / "nope.json"),
+                "--candidate",
+                str(tmp_path / "also_nope.json"),
+            ],
+        )
         assert result.exit_code == 1
 
     def test_compare_valid_files(self, tmp_path: Path):
@@ -318,9 +291,14 @@ class TestCLICompare:
         _write_bench_json(cand, [_make_result(throughput_mean=50.0)])
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "compare",
-            "--baseline", str(base),
-            "--candidate", str(cand),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "compare",
+                "--baseline",
+                str(base),
+                "--candidate",
+                str(cand),
+            ],
+        )
         assert result.exit_code == 0
