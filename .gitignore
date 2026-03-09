@@ -105,3 +105,4 @@ node_modules/
 
 # ── Local demo agent test outputs ───────────────────────────────────
 src/python/banterhearts/demo_agent/demo_agent*/
+local.env
