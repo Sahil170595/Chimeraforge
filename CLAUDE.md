@@ -18,7 +18,7 @@ chimeraforge plan --model-size 3b --request-rate 1.0 --hardware "RTX 4080 12GB"
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (158 total: 80 planner + 73 bench + 5 monitoring)
+# Run tests (292 total: 80 planner + 73 bench + 42 eval + 26 report + 47 refit + 19 compare + 5 monitoring)
 pytest tests/ -v
 
 # Lint

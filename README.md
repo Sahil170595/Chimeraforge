@@ -1,8 +1,17 @@
 # Chimeraforge
 
+[![PyPI version](https://img.shields.io/pypi/v/chimeraforge.svg)](https://pypi.org/project/chimeraforge/)
+[![Python](https://img.shields.io/pypi/pyversions/chimeraforge.svg)](https://pypi.org/project/chimeraforge/)
+[![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **70,000+ measurements. 26 technical reports. One consumer GPU. A shipped CLI tool.**
 
-This repository contains everything behind Technical Reports TR108 through TR133 — source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge plan` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
+```bash
+pip install chimeraforge
+```
+
+This repository contains everything behind Technical Reports TR108 through TR133 -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
 
 ---
 
@@ -153,38 +162,38 @@ Phase 2 produces a complete, artifact-backed deployment framework from ~62,000 m
 | **Context budget** | Ollama for >4K tokens on 12 GB | VRAM spillover = 25-105x cliffs (TR127) |
 | **Capacity planning** | `chimeraforge plan` | Validated R²>=0.859; beats M/D/1 by 20.4x (TR133) |
 
-### `chimeraforge plan` — Predictive Capacity Planner
+### `chimeraforge` CLI — 6 Commands, One Tool
 
-The CLI tool that operationalizes the entire research program:
+Install from PyPI and get all 6 commands:
 
 ```bash
-pip install -e ".[all]"
-chimeraforge plan --model llama3.2-1b --quantization Q4_K_M --backend ollama --agents 4
+pip install chimeraforge            # Core (plan only)
+pip install chimeraforge[bench]     # + live benchmarking
+pip install chimeraforge[eval]      # + quality evaluation (BERTScore, ROUGE)
+pip install chimeraforge[refit]     # + coefficient refitting (numpy, scipy)
+pip install chimeraforge[all]       # Everything including dev tools
 ```
 
-- Searches (model, quantization, backend, N-agents) space in <1 second
-- 4-gate pipeline: VRAM feasibility → quality gate → latency gate → budget gate
-- Validated: VRAM R²=0.968, throughput R²=0.859, quality RMSE=0.062, latency MAPE=1.05%
-- No ML needed — empirical lookup tables with first-principles interpolation
-
-### `chimeraforge bench` — Live Inference Benchmarking
-
-Run real LLM inference benchmarks against a live backend (requires Ollama, vLLM, or TGI):
+#### `chimeraforge plan` — Predictive Capacity Planner
 
 ```bash
-# Single-model benchmark (5 runs, single workload)
+chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
+chimeraforge plan --list-hardware
+chimeraforge plan --model-size 3b --json
+```
+
+- Searches (model x quantization x backend x N-agents) space in <1 second
+- 4-gate pipeline: VRAM feasibility -> quality gate -> latency gate -> budget gate
+- Validated: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05%
+- No ML needed -- empirical lookup tables with first-principles interpolation
+
+#### `chimeraforge bench` — Live Inference Benchmarking
+
+```bash
 chimeraforge bench --model llama3.2-3b --runs 5
-
-# Sweep all 7 quantization levels
 chimeraforge bench --model llama3.2-3b --all-quants --json
-
-# Context-length sweep
 chimeraforge bench --model llama3.2-3b --context 512,1024,2048,4096
-
-# Server workload with Poisson arrivals
 chimeraforge bench --model llama3.2-3b --workload server --rate 2.0
-
-# Use vLLM or TGI backend
 chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhost:8000
 ```
 
@@ -192,6 +201,54 @@ chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhos
 - Measures throughput (tok/s), TTFT, latency with p50/p90/p95/p99 percentiles
 - CV-based stability detection with automatic warnings
 - JSON output for programmatic consumption
+
+#### `chimeraforge eval` — Quality Evaluation
+
+```bash
+chimeraforge eval --task general_knowledge --json
+chimeraforge eval --predictions preds.txt --references refs.txt --model llama3.2-3b
+chimeraforge eval --list-tasks
+```
+
+- Metrics: exact match, ROUGE-L (with LCS fallback), BERTScore, coherence
+- Composite scoring: 0.2*EM + 0.3*ROUGE + 0.3*BERT + 0.2*coherence
+- Quality tiers from TR125: negligible (>=-3pp), acceptable (>=-10pp), concerning, unacceptable
+- 3 built-in tasks: general_knowledge, summarization, code
+
+#### `chimeraforge compare` — Diff Benchmark Runs
+
+```bash
+chimeraforge compare --baseline run1.json --candidate run2.json
+chimeraforge compare --baseline run1.json --candidate run2.json,run3.json --json
+```
+
+- Matches configs by (model, backend, quant, workload, context_length)
+- Computes throughput/TTFT/duration deltas with color-coded Rich output
+- Aggregate summary with improvement/regression counts
+
+#### `chimeraforge refit` — Update Planner Coefficients
+
+```bash
+chimeraforge refit --bench-dir ./results/ --output fitted_models.json --validate
+chimeraforge refit --bench-files run1.json,run2.json --json
+```
+
+- Bayesian blending: confidence weight scales with total run count
+- Hardware offsets: measured/predicted ratios per (model, backend)
+- Power-law refitting for throughput scaling curves
+- 10-check validation suite (`--validate` flag)
+
+#### `chimeraforge report` — Generate Reports
+
+```bash
+chimeraforge report --results-dir ./results/ --format markdown --output report.md
+chimeraforge report --results-files run1.json,run2.json --format html --output report.html
+```
+
+- Markdown (GitHub-compatible) and self-contained HTML output
+- Statistical analysis: RMSE, MAE, MAPE, R-squared
+- Per-config detail tables with percentile breakdowns
+- XSS-safe HTML generation with inline CSS
 
 ### Backend & Infrastructure Studies (TR117-TR121)
 
@@ -468,9 +525,12 @@ Our research progressed systematically, with each report building on previous fi
 
 ### Getting Started (5 Minutes)
 
-1. **Set up the environment** – Follow `docs/installation.md`
-   - Python 3.11+, Rust 1.70+, CUDA 11.8+, Ollama
-   - RTX 4080-class GPU (12GB+ VRAM recommended)
+1. **Install from PyPI:**
+   ```bash
+   pip install chimeraforge[all]
+   ```
+   - Python 3.10+, Rust 1.70+ (optional, for Rust agents), CUDA 11.8+ (optional)
+   - RTX 4080-class GPU (12GB+ VRAM recommended for bench/plan)
    - Windows/macOS/Linux supported
 
 2. **Get a first run working** – Follow `docs/quick_start.md`
@@ -531,7 +591,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`data/csv/`** | CSV exports of benchmark data | When you want to analyze data in Excel, Python, or other tools |
 | **`data/research/`** | Research data from experiments | When you want to access experiment-specific datasets |
 | **`outputs/reports/`** | Intermediate technical reports | When you want to see work-in-progress analysis |
-| **`src/chimeraforge/`** | ChimeraForge CLI (`chimeraforge plan`) | The predictive capacity planner tool |
+| **`src/chimeraforge/`** | ChimeraForge CLI (plan, bench, eval, report, compare, refit) | The full CLI toolchain |
 | **`outputs/publish_ready/reports/`** | All 26 technical reports + conclusive syntheses | **Start here** for comprehensive findings and analysis |
 | **`outputs/publish_ready/notebooks/`** | Jupyter notebooks for analysis | When you want to reproduce analysis or create visualizations |
 | **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
@@ -630,7 +690,7 @@ All reports include:
 - **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
 - **GPU kernel profiling** with Nsight Systems (~2 GB traces)
 - **1 PyTorch upstream contribution** (pytorch/pytorch#175557, PR #175562)
-- **1 shipped CLI tool** (`chimeraforge plan`) with 4/4 validation targets met
+- **1 shipped CLI tool** (`chimeraforge` — 6 commands: plan, bench, eval, report, compare, refit) published to PyPI
 
 ### Methodology Highlights
 
@@ -679,6 +739,7 @@ This research was conducted as part of the Banterhearts LLM Performance Research
 
 ---
 
-**Last Updated:** February 28, 2026 (Phase 2 complete, TR133 shipped)
-**Repository:** https://github.com/sahilpmehra/Chimeraforge
-**Status:** ✅ Phase 1 + Phase 2 Complete | Phase 3 (Safety Pivot) Planned
+**Last Updated:** March 8, 2026 (v0.2.0 published to PyPI)
+**Repository:** https://github.com/Sahil170595/Chimeraforge
+**PyPI:** https://pypi.org/project/chimeraforge/
+**Status:** Phase 1 + Phase 2 Complete | v0.2.0 Live on PyPI
