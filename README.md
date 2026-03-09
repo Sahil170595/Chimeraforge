@@ -597,7 +597,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
 | **`logs/benchmarks/`** | Archived benchmark logs | When you need historical log data |
-| **`resources/prompts/`** | Benchmark and test prompts | When you want to understand what prompts were used |
+| **`resources/`** | Legacy research resources (prompts, patches) | Historical reference only |
 | **`resources/patches/`** | Patch notes and changelogs | When you want to understand what changed and when |
 | **`docs/`** | All documentation | **Start here** for guides, API docs, and explanations |
 

@@ -1,5 +1,0 @@
-banter prompt: Player failed a mission but needs encouragement.
-Give a battle quote for a co-op shooter win.
-Prompt for rare loot find celebration banter.
-Craft a witty remark after a close racing finish.
-Motivate a teammate before a final boss fight.
