@@ -1,0 +1,1451 @@
+latency_ms,tokens,tokens_per_s,status,scenario,prompt_set,backend,model,quantization,error,wall_ms,ollama_eval_ms,ollama_prompt_eval_ms
+441.9754100017599,128,289.60887213044344,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.86364699798287,128,284.530659132308,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+460.8946760017716,128,277.72071725885587,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+460.16545399834285,128,278.16081995686045,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+454.88328100327635,128,281.39086518565205,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+458.2938169987756,128,279.2968075332816,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+494.45121699682204,128,258.8728586359667,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+518.8613380014431,128,246.69404063334548,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+461.36260200000834,128,277.4390456554554,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+494.3707029997313,128,258.91501908046837,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+461.57982499789796,128,277.308480717464,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+464.7486260000733,128,275.4177050541292,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+460.83488699878217,128,277.7567489163169,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.60136700078147,128,280.9473572097084,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+452.0137440013059,128,283.17723011455644,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+453.9576749994012,128,281.9646126704848,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.5477830011223,128,288.58221121956575,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.6307380023645,128,287.2333281447045,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+438.8556910016632,128,291.6676315803203,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+441.65419199998723,128,289.8195065699811,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.88621899997815,128,288.36218499499375,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+447.30171500123106,128,286.1603157493991,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+447.728286999336,128,285.887677229091,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+456.6970220002986,128,280.2733406041704,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+470.366745001229,128,272.12808167309015,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.2306729981501,128,287.49142357613766,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+442.6023489977524,128,289.1986458947826,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+438.1813640029577,128,292.1164853536218,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+452.3615969992534,128,282.95947500647645,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.6048879973241,128,290.50971400203207,ok,single_micro,micro,transformers-gpu,models/gpt2-100m,fp32,,,,
+0.0,0,0.0,error,single_micro,micro,transformers-gpu-compile,models/gpt2-100m,fp32,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 759, in forward
+    transformer_outputs = self.transformer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 658, in forward
+    outputs = block(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 288, in forward
+    attn_output, self_attn_weights = self.attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 207, in forward
+    key_states, value_states = curr_past_key_values.update(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+448.3887210008106,128,285.4665918319756,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+450.56554000257165,128,284.0874160044939,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.57475099968724,128,288.5646662970009,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.65032099813106,128,288.5155131005511,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+446.1753720024717,128,286.882710324251,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+450.8541690011043,128,283.90554818111593,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+484.59256700152764,128,264.1394208582578,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.5728159999999,128,284.7147234987625,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+446.29052500022226,128,286.8086881296354,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+457.05207499850076,128,280.05561510779677,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+482.94491300111986,128,265.0405803108712,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+441.5075889992295,128,289.91574140353765,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+438.06156299979193,128,292.1963733213014,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+441.1971680019633,128,290.1197226166928,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+444.65363600102137,128,287.8645076450156,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.7192830009735,128,288.4706725709713,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.66572900293977,128,287.2107763061935,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.0000370005728,128,290.90906644590433,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.90450500152656,128,290.3122978966995,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.80176200077403,128,290.37996449700046,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+441.7769899991981,128,289.73894724628445,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.2442749997135,128,290.74767638962095,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+437.66880100156413,128,292.45858902230174,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.8355729992909,128,284.54841653930686,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+438.1203689990798,128,292.15715373477383,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+447.09275499917567,128,286.29405994341374,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+495.20823399871006,128,258.47712378775475,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+457.3334970009455,128,279.8832817613081,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.3551739997056,128,290.67445452584957,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+479.12233299939544,128,267.15515262813165,ok,single_short,short,transformers-gpu,models/gpt2-100m,fp32,,,,
+0.0,0,0.0,error,single_short,short,transformers-gpu-compile,models/gpt2-100m,fp32,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 759, in forward
+    transformer_outputs = self.transformer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 658, in forward
+    outputs = block(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 288, in forward
+    attn_output, self_attn_weights = self.attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 207, in forward
+    key_states, value_states = curr_past_key_values.update(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+448.341702001926,128,285.49652960779036,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+446.0137090027274,128,286.9866943915333,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+440.36798600063776,128,290.665997686341,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+444.76880099682603,128,287.78997023425086,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+442.3378449973825,128,289.37157751165836,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+447.57054499859805,128,285.9884356339869,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.9244429995597,128,288.33735564348495,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.5204990016646,128,284.7478597400427,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+448.7239620029868,128,285.25332016735047,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.95450399719994,128,287.0247948001523,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+443.58339899918064,128,288.5590405069159,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.3680109982088,128,287.402769932021,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+456.16418400095426,128,280.60072335651023,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.29692500145757,128,287.44865013289956,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+444.9194400003762,128,287.6925314836586,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.325959001726,128,284.87114406739255,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+450.8649419985886,128,283.8987645227042,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+444.17678900208557,128,288.17354523988644,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.9115819999133,128,284.50034433660045,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+456.6472660008003,128,280.3038790114549,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+448.2427579969226,128,285.55954941023003,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+457.79445600055624,128,279.60146376225333,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.75120599984075,128,287.15570093162177,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+452.1109119996254,128,283.1163694631331,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+446.8826929987699,128,286.42863553534914,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+446.46868799827644,128,286.69423733584233,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+445.9098270017421,128,287.0535526446246,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+446.33323599919095,128,286.7812425248834,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+449.93971700023394,128,284.482554359462,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.1528830015741,128,281.2241881362692,ok,single_medium,medium,transformers-gpu,models/gpt2-100m,fp32,,,,
+0.0,0,0.0,error,single_medium,medium,transformers-gpu-compile,models/gpt2-100m,fp32,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 759, in forward
+    transformer_outputs = self.transformer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 658, in forward
+    outputs = block(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 288, in forward
+    attn_output, self_attn_weights = self.attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 207, in forward
+    key_states, value_states = curr_past_key_values.update(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+455.59847700133105,128,280.9491393440853,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+451.9694030022947,128,283.20501155550596,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+457.3530039997422,128,279.87134419275,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+454.91121699888026,128,281.3735850358578,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.12059400061844,128,281.24413987697085,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+464.00416899996344,128,275.85959039090034,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+457.1609919985349,128,279.98889284151835,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.9418739991088,128,280.73753980370356,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.44787900144,128,281.04203774235884,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+456.5689539995219,128,280.3519575273925,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.8765069996298,128,280.7777940618992,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+452.2418490014388,128,283.0343991442348,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+458.9597419981146,128,278.89156343591856,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+454.6785520033154,128,281.5175676003003,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+456.28376900276635,128,280.52718219574444,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+457.4420620010642,128,279.8168568934577,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+452.68715899874223,128,282.755977181044,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+453.3247469989874,128,282.358289167668,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+453.9318889983406,128,281.98062991883774,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+454.50976899883244,128,281.62210964563184,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+451.1269730028289,128,283.73386576288215,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+451.1633120018814,128,283.7110123871646,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+456.6416929992556,128,280.30729992981315,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+453.8218460002099,128,282.04900475403906,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+526.0024959970906,128,243.34485287443957,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+479.5003499966697,128,266.9445392498442,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+447.1468189985899,128,286.2594444631477,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+496.4360789999773,128,257.8378272945908,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+458.41109700268134,128,279.22535217172396,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+455.06322700020974,128,281.2795945824491,ok,single_long,long,transformers-gpu,models/gpt2-100m,fp32,,,,
+0.0,0,0.0,error,single_long,long,transformers-gpu-compile,models/gpt2-100m,fp32,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 759, in forward
+    transformer_outputs = self.transformer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 658, in forward
+    outputs = block(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 288, in forward
+    attn_output, self_attn_weights = self.attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 207, in forward
+    key_states, value_states = curr_past_key_values.update(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+473.19984400019166,128,270.4988212125196,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+468.06001300137723,128,273.46920575251823,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+470.72979799850145,128,271.918201363593,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+471.2398730007408,128,271.6238742382455,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+470.342905002326,128,272.14187487183847,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+473.07206699770177,128,270.5718830797546,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+468.73881300052744,128,273.07318372173285,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+471.4722240023548,128,271.4900125258719,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+468.2768060010858,128,273.34260070037124,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+472.0592020021286,128,271.15243057887227,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+464.67914899767493,128,275.45888442831864,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+465.41803299987805,128,275.0215739922427,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+468.37357700133,128,273.28612518984295,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+466.2886570004048,128,274.5080715096376,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+464.892983000027,128,275.3321832779579,ok,stress_single,stress,transformers-gpu,models/gpt2-100m,fp32,,,,
+0.0,0,0.0,error,stress_single,stress,transformers-gpu-compile,models/gpt2-100m,fp32,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 759, in forward
+    transformer_outputs = self.transformer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 658, in forward
+    outputs = block(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 288, in forward
+    attn_output, self_attn_weights = self.attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/gpt2/modeling_gpt2.py"", line 207, in forward
+    key_states, value_states = curr_past_key_values.update(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+2062.8305389982415,128,62.050661738874474,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2093.099769001128,128,61.15332001641008,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2096.3434530021914,128,61.05869714081922,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2059.478894003405,128,62.151644463411714,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2086.6334429993003,128,61.34282972864387,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2094.214336000732,128,61.120773456473586,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2087.783530001616,128,61.30903810698273,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2090.6239409996488,128,61.22574102867863,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2203.0640869998024,128,58.10089718012433,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2095.4914600006305,128,61.08352262144819,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2092.7773780022108,128,61.16274064572997,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2100.299843998073,128,60.94367923979022,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2104.255939997529,128,60.829102376277625,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2128.744068002561,128,60.12935135039728,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2113.0020350028644,128,60.57731979412243,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2107.9046380000364,128,60.723809650822446,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2093.2778940004937,128,61.14811624718271,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2082.9230700001062,128,61.45210154112579,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2137.499830998422,128,59.88304567032945,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2099.8744879980222,128,60.956024148868345,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2106.0892940004123,128,60.7761505481424,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2131.913168999745,128,60.03996872914636,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2137.52891400145,128,59.88223090764384,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2189.7186059977685,128,58.454999491441704,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2133.7505569972564,128,59.98826787894523,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2119.7966510007973,128,60.38315040245427,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2136.05026300138,128,59.92368354672809,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2104.88550700029,128,60.81090851464652,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2145.2428879965737,128,59.666903321860325,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2114.9488690025464,128,60.52155769627066,ok,single_micro,micro,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+0.0,0,0.0,error,single_micro,micro,transformers-gpu-compile,models/qwen2.5-0.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+209.9709,10,47.62564717301302,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,445.5971409988706,209.9709,44.203
+31.4843,10,317.61862261508116,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,218.01463699739543,31.4843,9.8062
+33.5052,10,298.4611343910796,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,236.95405599937658,33.5052,8.935
+33.5645,10,297.93382889660205,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,235.87524899994605,33.5645,9.5874
+31.515,10,317.309217832778,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,254.11065599837457,31.515,10.0902
+32.1063,10,311.46535103702394,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,226.51190199758275,32.1063,9.2856
+31.1138,10,321.4007932171576,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,237.97369499880006,31.1138,8.9842
+32.5764,10,306.97069043847694,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,235.31297099907533,32.5764,8.7984
+53.7173,10,186.15976603440603,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,275.8284800002002,53.7173,12.4246
+54.6739,10,182.90262812786355,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,259.5210660001612,54.6739,12.527
+54.5813,10,183.21293190158534,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,236.6482969991921,54.5813,12.6393
+60.0733,10,166.46330399695037,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,281.31009400021867,60.0733,14.0011
+61.4416,10,162.7561782245254,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,264.5487730005698,61.4416,13.632
+65.3862,10,152.9374699860215,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,267.98584199787,65.3862,14.538
+62.7566,10,159.3457899248844,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,258.08174399935524,62.7566,14.5362
+63.9295,10,156.4223089497024,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,285.29735599659034,63.9295,16.9841
+67.6336,10,147.85550377327246,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,270.4354699999385,67.6336,15.5254
+66.9724,10,149.3152403079478,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,277.4195359997975,66.9724,15.74
+67.8986,10,147.2784416762643,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,297.65188499732176,67.8986,15.586
+68.1744,10,146.68262573634675,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,276.59088099971996,68.1744,15.7578
+69.2414,10,144.4222676029081,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,251.74094600151875,69.2414,14.8918
+67.8006,10,147.49132013581,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,246.26736999925924,67.8006,15.3058
+67.2958,10,148.5976836593071,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,261.4769139981945,67.2958,14.399
+64.478,10,155.0916591705698,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,278.43033500175807,64.478,15.5143
+66.4498,10,150.48954248169298,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,268.79604200075846,66.4498,14.8485
+63.9362,10,156.40591714865758,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,269.1149370002677,63.9362,14.8821
+66.2336,10,150.98077108899412,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,257.76770299853524,66.2336,14.9412
+66.3756,10,150.6577718318177,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,273.65191799981403,66.3756,15.4728
+66.7577,10,149.7954543071436,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,268.7463090005622,66.7577,15.6641
+66.2427,10,150.96003031277408,ok,single_micro,micro,ollama,models/qwen2.5-0.5b,fp16,,259.6789090021048,66.2427,15.3793
+2039.3676280000363,128,62.764554189539055,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2140.303252002923,128,59.80460940766967,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2099.1413999981887,128,60.97731196198143,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2063.868998000544,128,62.0194402474213,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2051.3376769995375,128,62.39830791155934,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2103.22293200079,128,60.85897888068098,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2058.4775600000285,128,62.18187775629588,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2111.2734819980687,128,60.62691597815327,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2079.240407998441,128,61.56094288453055,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2081.7995619981957,128,61.48526608255235,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2082.7791209994757,128,61.45634873590238,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2073.5341389990936,128,61.73035572097516,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2102.3331440010224,128,60.88473673415946,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2133.251763996668,128,60.00229422531485,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2125.781775001087,128,60.21314205684849,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2122.8857079986483,128,60.2952855717664,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2221.9920400020783,128,57.60596694121383,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2120.7043809990864,128,60.35730446300952,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2096.0947669991583,128,61.06594129961463,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2100.2646069973707,128,60.94470171689192,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2108.8462590014387,128,60.69669586089665,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2106.252487999882,128,60.7714415670792,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2146.038080998551,128,59.644794346073134,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2096.53279199847,128,61.053182897266794,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2102.47878300288,128,60.88051923985797,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2106.7721859981248,128,60.75645048415972,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2098.6795690005238,128,60.99073050058747,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2138.411609998002,128,59.857512651701136,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2132.751334000204,128,60.01637319805223,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2112.6897809990624,128,60.58627307766431,ok,single_short,short,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+0.0,0,0.0,error,single_short,short,transformers-gpu-compile,models/qwen2.5-0.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+104.1946,31,297.520216978615,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,356.9427279981028,104.1946,13.5979
+448.1813,128,285.59870748734943,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,741.3405589977629,448.1813,14.3709
+105.6897,31,293.31145797556434,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,327.45473900286015,105.6897,12.9118
+451.4143,128,283.5532680289481,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,746.6230450008879,451.4143,12.1761
+105.9859,31,292.4917371084267,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,315.1403090014355,105.9859,12.6621
+451.6289,128,283.41853233927236,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,737.1769579985994,451.6289,13.7376
+104.6961,31,296.09507899530166,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,302.4950130020443,104.6961,11.2728
+442.2667,128,289.41812711651136,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,785.2596770026139,442.2667,13.2888
+105.3186,31,294.3449685050884,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,309.13689699809765,105.3186,12.2802
+446.4902,128,286.6804243407806,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,732.3660469992319,446.4902,12.1654
+103.219,31,300.33230316123974,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,321.6977330012014,103.219,10.7287
+445.3746,128,287.3985180115795,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,744.887265998841,445.3746,13.8473
+111.4928,31,278.04486029591146,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,338.11932500248076,111.4928,12.6782
+448.0175,128,285.7031254359484,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,758.1945359997917,448.0175,12.6112
+106.6606,31,290.6415302370322,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,364.03539499951876,106.6606,12.3244
+431.4511,128,296.6732498769849,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,739.783847999206,431.4511,11.3476
+108.5143,31,285.6766343237711,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,318.7579259974882,108.5143,11.3223
+440.9686,128,290.2701008643246,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,722.2359890001826,440.9686,12.3535
+104.8535,31,295.65059821560556,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,313.43837100212113,104.8535,11.9432
+444.0055,128,288.28471719381855,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,706.2816389989166,444.0055,12.9745
+109.0154,31,284.3634935981522,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,303.80535299991607,109.0154,12.1738
+462.4798,128,276.76884482306036,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,720.3669139998965,462.4798,12.8478
+109.4527,31,283.2273667072626,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,307.56395800199243,109.4527,11.7812
+455.683,128,280.8970270999796,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,741.0210829984862,455.683,12.983
+112.7353,31,274.9804187330854,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,308.83396500212257,112.7353,11.5785
+451.3165,128,283.61471384272454,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,725.5218199970841,451.3165,12.6054
+108.1587,31,286.61587093779787,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,312.92592699901434,108.1587,11.6087
+436.3526,128,293.34075240986306,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,756.4932490022329,436.3526,12.4688
+108.817,31,284.8819577823318,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,317.94805400204496,108.817,12.7992
+451.71,128,283.36764738438376,ok,single_short,short,ollama,models/qwen2.5-0.5b,fp16,,731.1650439987716,451.71,13.5394
+2077.5327519986604,128,61.611543729868735,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2065.95821999872,128,61.956722435596646,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2073.7335049998364,128,61.72442104609295,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2110.3073699996457,128,60.654671361936,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2082.9539709993696,128,61.451189888073976,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2078.0747729986615,128,61.59547368706855,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2087.876738001796,128,61.30630111933834,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2101.133800999378,128,60.91949020053764,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2140.9297159989364,128,59.78710979789287,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2110.3138649996254,128,60.65448468255347,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2112.625884001318,128,60.58810552750008,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2122.94383599874,128,60.293634635785054,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2170.4599619988585,128,58.97367481596849,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2139.4700879973243,128,59.827898841911775,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2105.2305170014733,128,60.800942683613215,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2096.0814819991356,128,61.06632833658744,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2132.1162569984153,128,60.034249811592304,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2099.5940059983695,128,60.96416718390051,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2141.53839500068,128,59.770116799591335,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2103.242545003013,128,60.85841136302072,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2106.828100000712,128,60.75483804300728,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2099.614147999091,128,60.96358234296648,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2122.3998089990346,128,60.30908948317674,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2153.6016940008267,128,59.435317290361894,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2164.0426060002937,128,59.14855818692815,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2144.923177002056,128,59.67579695740185,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2123.814678998315,128,60.26891200336296,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2245.9091460004856,128,56.99251023931327,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2186.8907879979815,128,58.53058630201617,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2178.8190359984583,128,58.747421371478495,ok,single_medium,medium,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+0.0,0,0.0,error,single_medium,medium,transformers-gpu-compile,models/qwen2.5-0.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+438.5408,128,291.877061381746,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,721.7286140003125,438.5408,13.0802
+315.2178,92,291.8616905517392,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,594.9458889990638,315.2178,12.3566
+457.9284,128,279.51968036924546,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,756.7725519984378,457.9284,13.4533
+313.369,92,293.583602717563,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,596.0010509988933,313.369,12.4117
+435.1007,128,294.184771479338,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,763.3181040000636,435.1007,13.2593
+324.1869,92,283.78691427691865,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,584.0284510013589,324.1869,12.7852
+444.3422,128,288.06626964533194,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,725.6807689991547,444.3422,12.7271
+314.5289,92,292.5009434745106,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,574.712419998832,314.5289,12.3416
+448.7801,128,285.21763776958915,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,754.9674700021569,448.7801,12.4198
+312.3206,92,294.56910623250593,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,569.8113960024784,312.3206,11.6312
+441.4134,128,289.9776037610095,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,723.881961999723,441.4134,12.5037
+314.3308,92,292.6852856926524,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,569.6499789992231,314.3308,12.9244
+440.7146,128,290.4373941775471,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,724.4694639994123,440.7146,12.3715
+325.7263,92,282.4457220678834,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,616.3888099981705,325.7263,12.7085
+437.5139,128,292.5621334545028,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,726.4260350020777,437.5139,12.4324
+312.7669,92,294.14877341560117,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,584.2883289988094,312.7669,12.8376
+435.8717,128,293.6643971150226,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,747.8045110001403,435.8717,13.1587
+312.6701,92,294.2398393706338,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,584.0543700032867,312.6701,12.9923
+443.2662,128,288.76553186324605,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,729.1038229996047,443.2662,12.5654
+318.6766,92,288.6939298335679,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,576.5141000010772,318.6766,13.2286
+438.8265,128,291.6870334858993,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,719.7914419994049,438.8265,12.9168
+330.3332,92,278.50667144567973,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,593.7772059987765,330.3332,12.8579
+435.0013,128,294.25199418944266,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,717.3555119989032,435.0013,13.6981
+321.1541,92,286.46683943938433,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,586.3224559980154,321.1541,12.6704
+450.7913,128,283.94514268576165,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,757.1236650001083,450.7913,12.6367
+322.2466,92,285.4956421572796,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,601.720247999765,322.2466,12.8182
+442.9976,128,288.9406172855113,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,731.4971009982401,442.9976,12.0232
+326.5292,92,281.7512185740203,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,600.7995200016012,326.5292,11.6144
+438.4451,128,291.94076977938624,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,738.061898999149,438.4451,12.4282
+319.0684,92,288.3394281602315,ok,single_medium,medium,ollama,models/qwen2.5-0.5b,fp16,,582.9821820007055,319.0684,13.0797
+2112.717400999827,128,60.58548102052125,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2108.2789070023864,128,60.7130297489881,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2228.4111290027795,128,57.440029056613255,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2141.6123199996946,128,59.76805363167609,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2119.0720060003514,128,60.40379922794317,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2128.8755430032325,128,60.12563788460303,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2154.739450001216,128,59.4039339651612,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2107.065224001417,128,60.74800084115191,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2160.39846700005,128,59.24832939626273,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2142.149581999547,128,59.75306350013193,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2139.4830669996736,128,59.82753590076417,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2186.4071689997218,128,58.54353288576154,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2156.5740859987272,128,59.353397980168225,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2186.1574979993748,128,58.5502188735885,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2153.6956279996957,128,59.43272500343214,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2155.111340001895,128,59.39368311239431,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2151.575394997053,128,59.49129196105876,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2246.128470000258,128,56.98694518572453,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2135.4663890015217,128,59.94006773379789,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2141.3347800007614,128,59.77580021371272,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2143.4079899991048,128,59.717982109441266,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2128.0502480003634,128,60.14895565566464,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2127.660039001057,128,60.15998686524018,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2118.1913760010502,128,60.42891187747737,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2131.6245359994355,128,60.04809845181567,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2105.7136449999234,128,60.78699271571879,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2090.596502999688,128,61.226544584925634,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2119.271175000904,128,60.39812248186946,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2099.389440001687,128,60.970107575608814,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2118.8569129990356,128,60.409931040991566,ok,single_long,long,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+0.0,0,0.0,error,single_long,long,transformers-gpu-compile,models/qwen2.5-0.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+439.8405,128,291.0145836956806,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,739.8740579992591,439.8405,13.8537
+451.9825,128,283.1968051860415,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,785.7224789986503,451.9825,13.1501
+440.3025,128,290.7092283146246,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,737.1954439986439,440.3025,14.3076
+433.2853,128,295.4173612628908,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,735.0849060021574,433.2853,13.116
+441.6817,128,289.80145656928966,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,740.8551360022102,441.6817,13.1826
+441.9429,128,289.6301762060212,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,768.0627029985772,441.9429,12.2926
+446.6924,128,286.55065543985074,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,710.9962329996051,446.6924,14.2145
+440.7316,128,290.42619136000235,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,742.0009249981376,440.7316,12.8353
+441.1639,128,290.14160043466836,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,732.7433190002921,441.1639,13.5057
+437.2327,128,292.7502906347123,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,751.6826110004331,437.2327,12.3167
+440.2535,128,290.7415841100639,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,726.9450749990938,440.2535,13.4056
+441.54,128,289.8944602980477,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,754.6143239997036,441.54,13.6134
+445.1198,128,287.5630335923048,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,731.1998900004255,445.1198,13.6026
+444.3489,128,288.061926112566,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,732.2734519984806,444.3489,12.9999
+438.2123,128,292.09586312387853,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,722.177854997426,438.2123,13.4894
+447.286,128,286.17036974106054,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,734.8751509998692,447.286,14.8476
+435.3795,128,293.99638706002463,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,754.3826759974763,435.3795,12.9091
+446.7636,128,286.5049883204451,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,746.497776999604,446.7636,13.0437
+448.1957,128,285.5895315372281,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,752.7814649984066,448.1957,13.5843
+447.9273,128,285.7606580353553,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,742.3267610029143,447.9273,12.8285
+443.2089,128,288.8028647439165,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,747.3527370020747,443.2089,14.2663
+441.8076,128,289.71887310222826,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,742.5832340013585,441.8076,12.761
+451.8051,128,283.3080016139703,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,738.9500529970974,451.8051,14.0614
+444.3831,128,288.03975668741674,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,734.4172279990744,444.3831,13.3436
+443.5105,128,288.6064704217826,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,753.5601790004876,443.5105,13.7556
+442.0808,128,289.53983072777646,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,731.0468860014225,442.0808,13.0355
+447.362,128,286.12175374752434,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,759.3359359998431,447.362,13.6822
+442.8446,128,289.04044443581336,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,719.9275399980252,442.8446,13.2666
+445.7287,128,287.17020016884715,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,732.7137909996964,445.7287,13.4925
+439.8291,128,291.0221265486981,ok,single_long,long,ollama,models/qwen2.5-0.5b,fp16,,751.7818970009102,439.8291,14.0737
+2071.1987250033417,128,61.7999607931361,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2049.894455998583,128,62.44223922135847,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2042.091243998584,128,62.68084267839344,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2032.3985460017866,128,62.97977345624783,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2028.7241890000587,128,63.09384030319574,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2022.6081360015087,128,63.28462628111594,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2150.066804999369,128,59.53303390498025,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2083.680480998737,128,61.42976390441965,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2045.6322630016075,128,62.57234123408984,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2033.634591000009,128,62.9414942912915,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2024.8156460002065,128,63.21563163187201,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2094.4152409974777,128,61.11491049837817,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2137.169981000625,128,59.89228799670408,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+2039.9402969997027,128,62.74693440208003,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+1991.8444499999168,128,64.2620461653044,ok,stress_single,stress,transformers-gpu,models/qwen2.5-0.5b,fp16,,,,
+0.0,0,0.0,error,stress_single,stress,transformers-gpu-compile,models/qwen2.5-0.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+452.0976,128,283.12470581573535,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,754.6351219971257,452.0976,15.9539
+180.4737,51,282.5896515669596,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,417.98826000012923,180.4737,3.6564
+182.8365,51,278.9377394557432,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,456.53593400129466,182.8365,4.441
+180.5734,51,282.43362532909055,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,408.5992439977417,180.5734,4.452
+182.2031,51,279.9074219922712,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,416.68230399955064,182.2031,4.2006
+183.4997,51,277.9296096941848,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,422.5471909994667,183.4997,4.725
+182.5849,51,279.3221126171989,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,408.4579659975134,182.5849,4.0091
+185.0197,51,275.6463230672193,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,405.2912199986167,185.0197,5.0065
+174.0074,51,293.09098348690924,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,427.2921999981918,174.0074,4.3694
+179.5465,51,284.0489789553124,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,412.43524399760645,179.5465,4.2935
+173.4481,51,294.0360834163072,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,387.1293180018256,173.4481,3.7427
+175.4708,51,290.6466489011277,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,390.1879530021688,175.4708,4.0553
+173.5919,51,293.7925099039759,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,408.8175680008135,173.5919,3.7285
+168.2191,51,303.1760364905055,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,405.71753500262275,168.2191,4.0157
+176.1822,51,289.4730568695362,ok,stress_single,stress,ollama,models/qwen2.5-0.5b,fp16,,398.6257279975689,176.1822,3.5999
+2389.4577479986765,128,53.56863920578139,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2382.5327459999244,128,53.7243402907689,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2427.2968350014708,128,52.733558646082294,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2486.2601940003515,128,51.48294627765814,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2426.4474310002697,128,52.752018595034535,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2367.2194210012094,128,54.071878113378574,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2419.3955560003815,128,52.90577627231941,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2383.3630939989234,128,53.70562308457807,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2385.9803519990237,128,53.64671167252444,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2494.231619002676,128,51.318409655628166,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2417.6924179992056,128,52.94304562775117,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2404.7198180014675,128,53.22865434958622,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2423.5021409986075,128,52.8161282940965,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2405.627354000899,128,53.20857355031231,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2421.572063001804,128,52.85822460361967,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2406.5378820014303,128,53.18844176828293,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2396.9564260005427,128,53.40105419170061,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2400.8860629983246,128,53.31365031131397,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2400.449403001403,128,53.32334846964704,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2405.028045999643,128,53.22183257401357,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2399.3072519988345,128,53.348732178158805,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2394.4234649970895,128,53.45754494606725,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2515.1145300005737,128,50.89231463346952,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2435.998885997833,128,52.545180022760434,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2419.867284002976,128,52.895462840532616,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2398.511959003372,128,53.36642142621898,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2443.19591400199,128,52.390395410548216,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2450.717892999819,128,52.22959377152981,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2408.7154799999553,128,53.140356784688564,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2407.9273419993115,128,53.15775013947103,ok,single_micro,micro,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+0.0,0,0.0,error,single_micro,micro,transformers-gpu-compile,models/qwen2.5-1.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+196.5953,10,50.865915919658306,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,517.5166789995274,196.5953,117.4435
+32.3511,10,309.1085001746463,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,219.74924900132464,32.3511,9.0122
+32.1309,10,311.2268875132661,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,224.15922899745055,32.1309,10.4478
+31.1496,10,321.0314097131263,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,233.14283099898603,31.1496,9.205
+30.4213,10,328.71705022467813,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,228.4908239998913,30.4213,10.7072
+40.5006,10,246.90992232213844,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,255.1534599988372,40.5006,12.6479
+54.8707,10,182.2466270705495,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,265.27814700239105,54.8707,17.6161
+56.0198,10,178.50831313214258,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,260.78884700109484,56.0198,18.6223
+58.9247,10,169.70811900612136,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,267.8527659991232,58.9247,16.3414
+60.0298,10,166.58392998144254,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,253.67858400204568,60.0298,16.5165
+56.7483,10,176.21673248361625,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,279.46626500124694,56.7483,17.1869
+56.9652,10,175.54577180454032,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,262.4196500000835,56.9652,15.9936
+61.1049,10,163.65299673184964,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,271.5857719995256,61.1049,17.5182
+60.6467,10,164.88943339044002,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,263.75482799994643,60.6467,17.6418
+60.8111,10,164.44366242347203,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,272.47662900117575,60.8111,18.7402
+63.2632,10,158.0697783229429,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,263.42834000024595,63.2632,17.5082
+62.8189,10,159.18776037148058,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,262.4644050010829,62.8189,17.2541
+61.7518,10,161.93859936066642,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,279.43024200067157,61.7518,16.7815
+63.091,10,158.5012125342759,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,263.5568660007266,63.091,15.6102
+67.7598,10,147.58012863084014,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,275.0977960022283,67.7598,17.2247
+66.5109,10,150.35129580264285,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,262.45301499875495,66.5109,17.0236
+67.2688,10,148.65732702233427,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,282.43578799811075,67.2688,17.2246
+64.6562,10,154.66420853684565,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,275.3776090030442,64.6562,19.0737
+65.0244,10,153.78842403774584,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,268.22977399933734,65.0244,16.7543
+63.22,10,158.17779183802594,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,274.0730609984894,63.22,16.9453
+63.5606,10,157.3301699480496,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,270.70561399887083,63.5606,17.3018
+61.9725,10,161.3618943886401,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,271.98174400109565,61.9725,16.759
+62.7017,10,159.4853090107605,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,262.1810529999493,62.7017,16.5798
+60.9643,10,164.03042436311088,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,251.3314059979166,60.9643,15.1221
+61.9124,10,161.5185326364347,ok,single_micro,micro,ollama,models/qwen2.5-1.5b,fp16,,264.2068209970603,61.9124,15.6266
+2341.8530900016776,128,54.65757034311162,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2386.1900720003177,128,53.64199671348853,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2489.7658650006633,128,51.410456621376284,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2361.978139000712,128,54.19186481300512,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2358.797062999656,128,54.264948014317014,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2367.7312549989438,128,54.06018936049273,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2396.463822999067,128,53.41203099816201,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2543.519918999664,128,50.323962098296,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2536.706258997583,128,50.45913358946853,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2432.149455002218,128,52.628344749432046,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2535.060948001046,128,50.49188269060392,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2426.403666002443,128,52.75297008221349,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2429.866361999302,128,52.677794137897024,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2491.876310999942,128,51.36691553869144,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2478.855517001648,128,51.636732807576095,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2477.3975200005225,128,51.66712203698864,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2558.40168800205,128,50.03123653344675,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2441.5813560008246,128,52.425039896953066,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2441.186921001645,128,52.43351047755092,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2409.725317000266,128,53.11808740065865,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2425.574439999764,128,52.77100462850048,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2424.205327999516,128,52.80080796853424,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2402.4060439987807,128,53.279919237526265,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2562.0868539990624,128,49.95927433147309,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2473.4029289975297,128,51.750565384782824,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2410.840548000124,128,53.093515498642354,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2445.975210001052,128,52.33086561001775,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2407.290512997861,128,53.17181258717225,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2421.3013740009046,128,52.86413388040814,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2421.9765160014504,128,52.849397652839734,ok,single_short,short,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+0.0,0,0.0,error,single_short,short,transformers-gpu-compile,models/qwen2.5-1.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+87.2373,26,298.0376513257517,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,318.28789199789753,87.2373,10.8979
+434.1554,128,294.8253090943934,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,734.3348670001433,434.1554,10.7465
+136.1882,26,190.91228168079175,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,345.90995499820565,136.1882,9.5161
+771.9116,128,165.8220967271382,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1086.9844959997863,771.9116,16.75
+152.6911,26,170.27842487217657,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,354.39985299672117,152.6911,16.6754
+770.4173,128,166.1437249656777,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1092.3758130011265,770.4173,17.3795
+153.4375,26,169.45010183299388,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,380.355695997423,153.4375,16.8206
+772.8215,128,165.6268620891111,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1092.4768459990446,772.8215,18.6868
+157.0086,26,165.5960246763553,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,379.15652499941643,157.0086,16.8424
+785.4202,128,162.97008913190672,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1091.5988060005475,785.4202,18.4539
+154.5488,26,168.23165239717164,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,381.774987999961,154.5488,16.0035
+779.6971,128,164.16631535502697,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1079.6415000004345,779.6971,17.9994
+157.8994,26,164.66180365473204,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,368.7573290008004,157.8994,15.8844
+783.4657,128,163.3766481417119,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1085.9901949988853,783.4657,18.7184
+160.6249,26,161.86780505388643,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,378.1664840025769,160.6249,16.0343
+772.9809,128,165.5927074006615,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1072.8754449992266,772.9809,16.6806
+158.2674,26,164.27893552304516,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,374.9802689999342,158.2674,16.4331
+776.5585,128,164.82982286588842,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1103.830955002195,776.5585,17.6272
+159.7428,26,162.7616393352314,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,388.8460579983075,159.7428,16.9678
+773.4193,128,165.49884390006818,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1073.0586069985293,773.4193,17.7607
+151.2267,26,171.927311777616,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,377.45968799936236,151.2267,16.0213
+770.8359,128,166.05350114077459,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1079.2691380011092,770.8359,17.4586
+153.1547,26,169.76299127614104,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,362.66878099922906,153.1547,16.5683
+769.4397,128,166.3548163683262,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1094.5220239991613,769.4397,17.9275
+151.7966,26,171.2818337169607,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,375.9566109984007,151.7966,16.8673
+766.9129,128,166.90291687621894,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1072.8768500011938,766.9129,17.637
+154.9026,26,167.84740862968084,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,388.2142340007704,154.9026,17.0655
+767.0913,128,166.86410079217427,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1126.2016149994452,767.0913,17.2362
+155.293,26,167.4254473801137,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,397.64959199965233,155.293,16.0383
+766.918,128,166.90180697284455,ok,single_short,short,ollama,models/qwen2.5-1.5b,fp16,,1082.729952999216,766.918,16.8382
+2387.2668859985424,128,53.617800653428134,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2377.449070001603,128,53.83921852000543,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2397.5563169988163,128,53.38769274885116,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2388.1504940000013,128,53.59796223964432,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2416.052035998291,128,52.97899138464191,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2400.108210000326,128,53.330928775074945,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2413.9519649979775,128,53.02508163210582,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2384.5941389990912,128,53.67789759549048,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2416.7220320014167,128,52.964303840105416,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2419.484576999821,128,52.903829690338824,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2401.1308700028167,128,53.308214724610096,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2431.2531230025343,128,52.647747282653704,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2631.731781999406,128,48.63717529099966,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2538.3738599994103,128,50.425984137746255,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2406.760038000357,128,53.18353220886453,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2453.304925998964,128,52.17451717620448,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2414.4938369972806,128,53.01318149529166,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2451.644943001156,128,52.2098439928704,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2439.643663001334,128,52.46667861425712,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2422.7253870012646,128,52.83306176043021,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2449.372105002112,128,52.25829090590122,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2659.8983960029727,128,48.12213887280262,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2599.5501520010293,128,49.239288536699604,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2466.3672909991874,128,51.898190698168065,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2550.6405510022887,128,50.183472520148584,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2468.715766000969,128,51.848820250111274,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2435.6262350011093,128,52.55321943924689,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2422.845414999756,128,52.830444405390544,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2450.4132740003115,128,52.2360866055216,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2445.401488999778,128,52.343143069056836,ok,single_medium,medium,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+0.0,0,0.0,error,single_medium,medium,transformers-gpu-compile,models/qwen2.5-1.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+768.148,128,166.63455479933555,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1079.0789679995214,768.148,17.9813
+144.7523,25,172.7088274245038,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,358.13992000112194,144.7523,18.0074
+770.6622,128,166.09092803565557,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1078.951217001304,770.6622,17.5324
+147.8346,25,169.10790843280262,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,372.1858509998128,147.8346,17.0202
+778.8343,128,164.34818035107082,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1082.3689179997018,778.8343,18.6486
+146.6355,25,170.4907747441786,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,382.36927799880505,146.6355,17.2264
+768.708,128,166.51316234512976,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1087.8199230028258,768.708,17.4257
+144.974,25,172.4447142246196,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,370.24294499860844,144.974,17.8513
+789.5886,128,162.10973664006798,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1086.0404329978337,789.5886,17.3669
+146.4567,25,170.69891647155777,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,357.3897240021324,146.4567,17.4766
+780.6922,128,163.9570627194687,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1083.4176130010746,780.6922,17.7632
+147.1135,25,169.93681749125676,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,375.16155900084414,147.1135,17.8597
+775.345,128,165.08779962468319,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1084.6671969993622,775.345,18.1146
+148.9162,25,167.87965312034555,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,369.6063569987018,148.9162,17.0147
+773.0843,128,165.5705593814284,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1085.849513001449,773.0843,18.3931
+156.9482,25,159.28822375790227,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,380.184862002352,156.9482,18.8028
+778.4903,128,164.4208026740988,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1093.0087939996156,778.4903,17.76
+146.357,25,170.81519845309757,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,367.8748149977764,146.357,17.5495
+776.3113,128,164.88230945498282,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1078.3669160009595,776.3113,19.5687
+152.9262,25,163.4775466859178,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,381.04139500137535,152.9262,17.8499
+765.7964,128,167.1462545397184,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1080.377808000776,765.7964,17.9903
+147.521,25,169.46739786199933,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,360.6786399977864,147.521,16.6568
+771.3274,128,165.94768965811406,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1085.1576120003301,771.3274,17.8577
+145.5519,25,171.7600388589912,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,377.5098939986492,145.5519,17.7022
+761.2822,128,168.1373871607664,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1078.9203940003063,761.2822,17.7939
+148.8378,25,167.9680833766691,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,364.4294750010886,148.8378,16.9712
+770.7221,128,166.07801956113624,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1068.798271997366,770.7221,16.2272
+146.1701,25,171.03361084106805,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,365.1500029991439,146.1701,17.1835
+789.5261,128,162.1225694755373,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,1088.0333120003343,789.5261,17.6331
+146.0693,25,171.15163829771214,ok,single_medium,medium,ollama,models/qwen2.5-1.5b,fp16,,366.46857199957594,146.0693,18.2607
+2531.0568720015,128,50.57175973243961,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2478.017171000829,128,51.654202197599375,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2417.904860001727,128,52.93839394487531,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2421.869293997588,128,52.85173742333573,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2418.684760999895,128,52.92132404517414,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2423.5168359991803,128,52.81580804336665,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2409.5055039979343,128,53.122933227426955,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2423.4925970013137,128,52.81633629018699,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2440.687161000824,128,52.44424686837478,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2412.0812820001447,128,53.06620508818837,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2416.105748001428,128,52.977813618414665,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2593.273552000028,128,49.35846428591449,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2454.324964997795,128,52.152832988892726,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2434.7758580006484,128,52.571574331737075,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2449.5775989998947,128,52.25390698064001,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2408.1855910008017,128,53.15204960877012,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2442.8596300022036,128,52.39760747116057,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2419.967647998419,128,52.89326909220053,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2434.615844998916,128,52.57502955258101,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2416.6195529978722,128,52.96654984075298,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2438.877163000143,128,52.48316805039209,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2480.504369003029,128,51.602408606700465,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2430.672874001175,128,52.66031532630586,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2444.9798309979087,128,52.35217009858004,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2574.379604000569,128,49.72071710057399,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2451.8977369989443,128,52.204461086810454,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2444.2802570010826,128,52.36715373917259,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2526.6755070006184,128,50.65945335891075,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2461.3762049993966,128,52.003427895343364,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2460.8865509981115,128,52.01377525838583,ok,single_long,long,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+0.0,0,0.0,error,single_long,long,transformers-gpu-compile,models/qwen2.5-1.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+587.5896,98,166.78307444515696,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,880.4930840015004,587.5896,18.6261
+767.8831,128,166.69203945235935,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1089.9480279986165,767.8831,18.6499
+588.1159,98,166.6338216667837,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,874.776753000333,588.1159,18.1137
+764.2156,128,167.49200094842345,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1080.7388980028918,764.2156,18.5664
+586.8084,98,167.00510762967946,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,898.5391249989334,586.8084,20.181
+792.2369,128,161.5678340657952,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1093.8208030020178,792.2369,19.2745
+585.6827,98,167.32609653657175,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,892.2638709991588,585.6827,19.8149
+770.3164,128,166.16548732442928,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1109.6811620009248,770.3164,19.2055
+602.9449,98,162.53558160953017,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,932.246901000326,602.9449,20.0571
+763.9356,128,167.55339062612083,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1083.50894799878,763.9356,18.5253
+589.3901,98,166.27357670242512,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,875.6396710014087,589.3901,19.1903
+767.2283,128,166.83430473041727,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1085.6866300018737,767.2283,18.3206
+595.5771,98,164.54628628266602,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,862.344066001242,595.5771,18.9232
+774.553,128,165.2566060682742,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1078.7636829991243,774.553,19.0061
+593.6633,98,165.07673625774072,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,876.6086899995571,593.6633,20.0665
+786.4045,128,162.76610828142515,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1105.2984679990914,786.4045,18.7772
+587.8783,98,166.70116927261986,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,869.8531379995984,587.8783,18.814
+766.2644,128,167.0441690883721,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1087.0301830000244,766.2644,17.5688
+595.1174,98,164.6733904940437,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,869.0264640026726,595.1174,18.5327
+770.5876,128,166.10700717218913,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1091.3226720003877,770.5876,19.2157
+600.4627,98,163.20747317027352,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,879.5996689987078,600.4627,19.2546
+785.2538,128,163.004623473328,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1089.3468870017387,785.2538,18.2912
+582.3198,98,168.29240565064077,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,865.1166569979978,582.3198,19.5227
+768.1472,128,166.6347283437341,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1066.5101170015987,768.1472,19.7734
+595.6598,98,164.5234410648494,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,875.919452002563,595.6598,18.9037
+765.0673,128,167.30554292413228,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1078.90358199802,765.0673,19.1907
+587.3235,98,166.85863923374427,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,869.3713300017407,587.3235,19.646
+777.2567,128,164.68175829169436,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1084.7950570023386,777.2567,19.0106
+609.6619,98,160.74483250470468,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,916.5101219987264,609.6619,20.993
+779.0923,128,164.29375569492856,ok,single_long,long,ollama,models/qwen2.5-1.5b,fp16,,1088.14498799984,779.0923,18.9634
+2471.7881250035134,128,51.784373711164285,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2424.761968999519,128,52.78868673976031,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2436.6692639996472,128,52.53072375932368,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2435.5099690001225,128,52.55572821676821,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2455.12338700064,128,52.13587255033005,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2466.8509339971934,128,51.888015702916256,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2421.403255997575,128,52.86190959021664,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2538.403520000429,128,50.42539493483619,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2467.2844919987256,128,51.87889779840845,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2428.1578000009176,128,52.714860623947764,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2437.4317070032703,128,52.51429183932753,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2438.8376440001593,128,52.48401848925686,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2555.1162770025257,128,50.095567529380766,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2527.8797450009733,128,50.635320075303156,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+2456.6168729979836,128,52.104176848623744,ok,stress_single,stress,transformers-gpu,models/qwen2.5-1.5b,fp16,,,,
+0.0,0,0.0,error,stress_single,stress,transformers-gpu-compile,models/qwen2.5-1.5b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+71.0296,13,183.0222892991091,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,283.00497100281063,71.0296,24.6209
+74.8496,13,173.68162288108422,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,274.0162450027128,74.8496,7.0462
+78.8873,13,164.79205144554322,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,277.1083190018544,78.8873,8.5358
+77.8888,13,166.90461272994318,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,274.18728500197176,77.8888,7.0489
+76.9425,13,168.9573382720863,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,279.53945999979624,76.9425,6.9277
+77.3018,13,168.17202186753735,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,308.17484900035197,77.3018,8.0468
+82.3985,13,157.76986231545476,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,274.4526750029763,82.3985,6.9785
+81.5661,13,159.37993847934374,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,282.217934000073,81.5661,7.6249
+83.5296,13,155.6334520936291,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,282.15383399947314,83.5296,7.3486
+81.7961,13,158.93178281116093,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,304.99748900183477,81.7961,7.0566
+81.0427,13,160.4092657327557,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,276.86694099975284,81.0427,7.133
+86.9681,13,149.48009672512103,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,292.2266799978388,86.9681,7.2269
+85.4444,13,152.14572283262567,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,287.2131879994413,85.4444,7.0265
+83.6252,13,155.455532542822,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,264.7786570014432,83.6252,6.7995
+81.5359,13,159.43897105446806,ok,stress_single,stress,ollama,models/qwen2.5-1.5b,fp16,,280.15080299883266,81.5359,7.8826
+3526.092387000972,128,36.30080722554951,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3361.0160619973612,128,38.08372160052489,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3431.449211002473,128,37.302023759986156,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3190.6730059999973,128,40.11692823404296,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3155.7965530009824,128,40.560282594351435,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3145.366839002236,128,40.694776333498766,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3242.049640000914,128,39.48119683940555,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3160.236169998825,128,40.50330200481427,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3148.817516001145,128,40.65018037709412,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3190.252967997367,128,40.12221014572085,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3162.8325969977595,128,40.47005210503421,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3412.3825900023803,128,37.51044808838704,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3409.7316560000763,128,37.53961100568119,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3224.9430820011185,128,39.69062298010369,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3179.5062349992804,128,40.25782324028969,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3213.1297050000285,128,39.83654933095795,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3183.374563999678,128,40.20890329637407,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3164.5429939999303,128,40.44817853405433,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3157.945341998129,128,40.53268379845056,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3187.8706919997057,128,40.152193224533654,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3533.4181590005755,128,36.225545418095855,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3506.547551998665,128,36.50314108161529,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3566.5221070012194,128,35.88930508764577,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3547.3054840003897,128,36.083726247239085,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3440.9154239983764,128,37.19940313187436,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3230.0231119988894,128,39.62819941582016,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3152.7008570010366,128,40.600109495246635,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3153.6338740006613,128,40.58809776723408,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3179.5921699995233,128,40.25673519004143,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3175.874931002909,128,40.30385414440074,ok,single_micro,micro,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+0.0,0,0.0,error,single_micro,micro,transformers-gpu-compile,models/qwen2.5-3b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+187.165,29,154.94349905163892,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,710.0188239965064,187.165,275.2371
+323.6973,57,176.0904400500097,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,596.4201290007622,323.6973,12.0607
+256.9097,29,112.88012869891641,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,476.69203499754076,256.9097,11.9045
+530.6757,57,107.41023189869067,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,827.9941550026706,530.6757,25.8571
+269.3638,29,107.66108883227811,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,514.2022660002112,269.3638,24.4987
+544.2238,57,104.73632354924572,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,797.1634950008593,544.2238,25.8209
+272.8166,29,106.2985170257235,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,522.5808169998345,272.8166,26.4009
+538.612,57,105.82757160999013,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,810.3984520021186,538.612,25.9364
+268.4169,29,108.04088714235206,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,539.9527290028345,268.4169,27.0809
+538.2159,57,105.90545541296716,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,828.8524149975274,538.2159,25.5665
+267.4962,29,108.41275502231436,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,517.8512700003921,267.4962,25.9087
+538.9315,57,105.76483282198201,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,813.9744399995834,538.9315,26.0765
+277.7467,29,104.41168157893507,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,529.9307899986161,277.7467,25.5318
+531.0578,57,107.33294944542759,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,808.8292530010222,531.0578,25.606
+268.7486,29,107.90753886717921,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,527.2606729995459,268.7486,24.5377
+561.4371,57,101.52517530458888,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,846.2774089966842,561.4371,27.0365
+296.6536,29,97.75711469538885,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,542.3372379991633,296.6536,25.5864
+542.0264,57,105.1609294307436,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,799.8458530018979,542.0264,24.614
+266.3111,29,108.895198134813,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,490.33084899929236,266.3111,26.8426
+536.249,57,106.29390451077765,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,823.8489680006751,536.249,25.5842
+269.1182,29,107.75934143435859,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,494.1698990005534,269.1182,26.3618
+567.5877,57,100.42500921003044,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,841.8052470005932,567.5877,25.421
+269.5325,29,107.59370391325722,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,493.59040800118237,269.5325,26.8886
+531.1888,57,107.30647935348034,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,789.280045999476,531.1888,25.1122
+267.1885,29,108.53760547328946,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,518.7828999987687,267.1885,24.7271
+535.4835,57,106.44585687514181,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,818.9980019997165,535.4835,25.3793
+271.2739,29,106.90302310690413,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,519.974391998403,271.2739,24.7654
+534.6536,57,106.61108426091212,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,823.8057269991259,534.6536,27.4555
+268.7509,29,107.90661538249732,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,500.1399169996148,268.7509,24.5555
+527.6423,57,108.02773014976245,ok,single_micro,micro,ollama,models/qwen2.5-3b,fp16,,798.9141389989527,527.6423,24.51
+3504.5079400006216,128,36.52438578865862,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3273.0648110009497,128,39.10707773637265,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3258.1098889968416,128,39.28658159513787,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3227.0848549997027,128,39.66428084520008,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3225.0534019985935,128,39.6892652756315,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3338.9935930026695,128,38.33490434610057,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3371.0841669999354,128,37.969980474831154,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3353.145618999406,128,38.17311102587778,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3279.4769640022423,128,39.03061415128528,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3337.3132400010945,128,38.354206151759975,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3272.658125999442,128,39.111937474651405,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3249.010958999861,128,39.39660457144228,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3228.3611689999816,128,39.64859980014235,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3277.5514550012304,128,39.053544012157076,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3227.2598190029385,128,39.66213046941649,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3549.1722930019023,128,36.0647467727573,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3312.579855999502,128,38.64057790732978,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3295.2900689997477,128,38.843317984098775,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3408.8244319973455,128,37.549601791899995,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3346.9834569987142,128,38.24339189138967,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3267.3459079996974,128,39.17552766194961,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3249.569163999695,128,39.38983709534364,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3318.9024109997263,128,38.56696707193737,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3319.7681950005062,128,38.556908941041435,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3413.489528997161,128,37.498284061707594,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3396.3896029999887,128,37.68707803337379,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3266.0177670004487,128,39.19145856868892,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3380.6786560016917,128,37.86222028904245,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3405.9148710002773,128,37.581679181079444,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3301.1507789997268,128,38.77435735873444,ok,single_short,short,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+0.0,0,0.0,error,single_short,short,transformers-gpu-compile,models/qwen2.5-3b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+152.3992,27,177.16628433745058,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,372.39307700292557,152.3992,13.0236
+790.9169,128,161.83748254715508,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1113.9399740022782,790.9169,14.4642
+248.9947,27,108.43604301617665,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,527.48846400209,248.9947,26.1104
+1217.5939,128,105.12536240531428,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1578.0556560021068,1217.5939,24.7837
+250.6381,27,107.72504260126452,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,479.5510910007579,250.6381,24.6022
+1220.4191,128,104.88200323970676,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1555.8078350004507,1220.4191,25.3108
+247.1903,27,109.22758700482989,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,475.3048169986869,247.1903,23.0786
+1221.7956,128,104.76384102218081,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1594.0396119985962,1221.7956,25.6249
+250.698,27,107.69930354450373,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,505.46007900265977,250.698,25.3824
+1205.5284,128,106.17750689241332,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1573.9312580008118,1205.5284,25.7203
+244.5941,27,110.3869635449097,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,472.31189100057236,244.5941,24.6202
+1222.6576,128,104.68998025285248,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1588.0875699986063,1222.6576,25.8706
+243.8883,27,110.70641765103124,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,482.2096549978596,243.8883,24.0615
+1184.2113,128,108.08881827086097,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1532.7189859999635,1184.2113,25.6875
+243.4996,27,110.8831390277438,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,497.3857040022267,243.4996,24.0339
+1189.4706,128,107.61089849551556,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1540.522551000322,1189.4706,25.0681
+246.953,27,109.3325450591813,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,501.1251030009589,246.953,24.0493
+1188.1256,128,107.73271782040553,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1530.9797000008984,1188.1256,25.6861
+245.5111,27,109.97466102347308,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,487.83047599863494,245.5111,25.1074
+1182.2259,128,108.2703398732848,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1540.1054980029585,1182.2259,25.8393
+243.0821,27,111.07358378095302,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,478.37985700243735,243.0821,23.768
+1190.7702,128,107.4934525570089,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1521.4977409996209,1190.7702,25.1834
+244.435,27,110.45881318141836,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,501.0991580020345,244.435,24.375
+1185.861,128,107.93845147112519,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1532.0575719997578,1185.861,24.9901
+246.621,27,109.47972800369799,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,463.40957500069635,246.621,24.651
+1200.1054,128,106.65729860060625,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1521.617107999191,1200.1054,25.5765
+245.4331,27,110.00961158050809,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,460.3959570013103,245.4331,24.9612
+1192.0766,128,107.37565018892242,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1512.6565789978486,1192.0766,25.5254
+244.3741,27,110.48634041005164,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,471.30618400115054,244.3741,23.6809
+1184.8947,128,108.02647695191817,ok,single_short,short,ollama,models/qwen2.5-3b,fp16,,1532.2164589997556,1184.8947,24.8536
+3327.9375639976934,128,38.46226004499906,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3178.8001179993444,128,40.266765838853665,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3153.640335000091,128,40.588014612641715,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3476.3301300008607,128,36.82043856978805,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3384.750470002473,128,37.81667249459204,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3166.0957579988462,128,40.428341333839924,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3152.422541003034,128,40.60369393224587,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3198.9421759972174,128,40.01322717254122,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3176.3155049993657,128,40.29826375828668,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3158.679336000205,128,40.52326506877547,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3164.575247999892,128,40.44776627792305,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3192.7795330011577,128,40.09045995095133,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3354.5435209998686,128,38.157203565463895,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3529.119366001396,128,36.26967147473622,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3377.2156209997775,128,37.901044636915245,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3178.562070002954,128,40.269781486406856,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3167.422111000633,128,40.411412029817214,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3215.7179750029172,128,39.804485652969575,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3333.6746389977634,128,38.39606856129246,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3700.414806000481,128,34.59071663869658,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3455.4948279983364,128,37.042451623099815,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3319.696335998742,128,38.557743553821396,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3576.354564000212,128,35.79063476771997,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3330.632062999939,128,38.43114387264647,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3319.3728680016648,128,38.561500949141276,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3260.736657997768,128,39.2549332943058,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3516.3906250018044,128,36.40096156835087,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3377.709174001211,128,37.89550651229457,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3357.88187900107,128,38.11926822097699,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3399.217032998422,128,37.6557303512604,ok,single_medium,medium,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+0.0,0,0.0,error,single_medium,medium,transformers-gpu-compile,models/qwen2.5-3b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+1211.0099,128,105.69690635889928,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1611.6701690007176,1211.0099,25.3159
+537.3851,57,106.0691857664085,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,824.1835529988748,537.3851,25.4938
+1203.3499,128,106.36972671041067,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1547.7612770009728,1203.3499,25.732
+532.0262,57,107.13758081838827,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,825.1177909987746,532.0262,25.4728
+1215.1374,128,105.33788195474848,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1561.973478001164,1215.1374,24.997
+533.7188,57,106.79781188146268,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,800.5060180003056,533.7188,26.5897
+1213.8108,128,105.45300799762202,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1565.7915029987635,1213.8108,25.2463
+533.1445,57,106.91285383230999,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,809.2941880022408,533.1445,26.1585
+1207.2803,128,106.02343134398865,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1554.263838002953,1207.2803,25.8883
+537.1633,57,106.11298277451196,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,804.5241069994518,537.1633,25.1788
+1205.3113,128,106.19663152581413,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1578.8171450003574,1205.3113,25.5812
+532.6632,57,107.00945738320199,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,800.5781300016679,532.6632,25.5891
+1211.568,128,105.6482178466252,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1575.4465260033612,1211.568,25.197
+527.9813,57,107.9583689801135,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,809.7475819995452,527.9813,25.8611
+1208.3562,128,105.92902986718653,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1567.161496001063,1208.3562,25.9963
+535.2626,57,106.48978650852871,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,811.3766859969473,535.2626,24.7546
+1210.4564,128,105.74523791191488,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1566.2393390011857,1210.4564,25.9334
+531.1578,57,107.31274208907412,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,828.6543219983287,531.1578,25.5645
+1205.0799,128,106.21702345213791,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1545.8460430018022,1205.0799,25.0349
+535.8182,57,106.37936523992653,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,818.3530530004646,535.8182,26.9796
+1206.681,128,106.07608804646794,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1567.460663998645,1206.681,24.6685
+539.4705,57,105.6591602321165,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,804.9718879992724,539.4705,25.4994
+1210.9514,128,105.702012483738,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1558.2141040031274,1210.9514,24.1462
+538.2364,57,105.90142175445585,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,803.7217130004137,538.2364,24.9013
+1218.7851,128,105.02261637428944,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1546.8213579988515,1218.7851,24.4684
+534.37,57,106.6676647266875,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,788.448110997706,534.37,24.6989
+1215.7931,128,105.28107126122033,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1561.2268689983466,1215.7931,25.8697
+534.1926,57,106.70308798736635,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,835.0503779984138,534.1926,25.5116
+1204.724,128,106.24840212363995,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,1566.4207199988596,1204.724,25.8275
+528.5107,57,107.85022895468342,ok,single_medium,medium,ollama,models/qwen2.5-3b,fp16,,818.0449399987992,528.5107,24.4861
+3419.1575380027643,128,37.43612237146837,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3276.543326999672,128,39.06556002029416,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3314.9057749978965,128,38.61346556677956,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3358.839614000317,128,38.108398944227744,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3245.160099999339,128,39.443354428037644,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3330.2224929975637,128,38.43587035675386,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3251.3841460022377,128,39.36784896899473,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3322.354717998678,128,38.52689157679849,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3265.9288920003746,128,39.19252507717652,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3490.4610800003866,128,36.671372940788046,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3361.829609002598,128,38.074505518432744,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3292.353988999821,128,38.877957967965926,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3324.6806700008165,128,38.49993810081272,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3293.0419740005163,128,38.86983555344744,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3366.658474998985,128,38.01989448901216,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3351.3479180001013,128,38.193587515193975,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3292.2034229995916,128,38.8797360168518,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3357.1213760005776,128,38.12790354112534,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3499.020212999312,128,36.581669212559405,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3518.9067390019773,128,36.37493389105931,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3313.9229799999157,128,38.62491698585079,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3309.8771500008297,128,38.672130172555775,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3292.104117001145,128,38.88090882028306,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3340.4346180032007,128,38.318367110119965,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3383.216807000281,128,37.83381536032591,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3491.696643999603,128,36.658396490418184,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3489.710689998901,128,36.67925835996459,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3554.3121679984324,128,36.012593703068475,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3542.3951400007354,128,36.13374424400702,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3484.587487000681,128,36.73318591583836,ok,single_long,long,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+0.0,0,0.0,error,single_long,long,transformers-gpu-compile,models/qwen2.5-3b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+1094.8805,116,105.94763538121285,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1444.0865940014191,1094.8805,30.0426
+1218.3771,128,105.05778547544928,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1583.926662002341,1218.3771,27.6959
+1094.6589,116,105.96908315457902,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1437.0810839973274,1094.6589,29.8395
+1216.2451,128,105.24194506518464,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1596.1958579973725,1216.2451,27.512
+1101.6812,116,105.29361851686313,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1415.945377000753,1101.6812,27.9374
+1212.1828,128,105.59463473660902,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1571.2284819965134,1212.1828,27.3221
+1085.2748,116,106.8853713363657,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1447.509503999754,1085.2748,28.5516
+1212.437,128,105.57249572555111,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1573.720417000004,1212.437,26.3092
+1092.0857,116,106.2187701935846,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1441.6673390005599,1092.0857,28.4333
+1202.1714,128,106.47400196011984,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1548.3083149993035,1202.1714,26.5623
+1089.3906,116,106.48155032731144,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1452.7016400024877,1089.3906,29.2581
+1211.3676,128,105.66569553288366,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1577.8895170005853,1211.3676,27.0033
+1089.5385,116,106.4670959309836,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1463.4839110003668,1089.5385,28.7898
+1201.7367,128,106.51251642726731,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1549.8096970004553,1201.7367,26.1914
+1107.2243,116,104.76648679043622,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1421.141932001774,1107.2243,28.0165
+1206.5273,128,106.08960112216276,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1548.1236080013332,1206.5273,27.6408
+1107.2053,116,104.76828461713467,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1424.5127600006526,1107.2053,29.0795
+1216.4542,128,105.22385470821673,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1547.4545319993922,1216.4542,27.4775
+1097.8369,116,105.66232561503443,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1414.0637919990695,1097.8369,27.6855
+1212.3746,128,105.57792946173565,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1582.9594770002586,1212.3746,27.9405
+1094.8963,116,105.94610649428625,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1449.4157109984371,1094.8963,28.3606
+1211.3603,128,105.66633230426984,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1589.0559189974738,1211.3603,28.6416
+1092.5236,116,106.17619610230845,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1449.2676920017402,1092.5236,28.2141
+1208.3573,128,105.92893343715474,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1563.9345099989441,1208.3573,27.1369
+1093.995,116,106.03339137747432,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1442.7483789986582,1093.995,29.0371
+1208.6594,128,105.90245688735801,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1557.7414079998562,1208.6594,26.9706
+1096.2503,116,105.81525040403639,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1414.3533050009864,1096.2503,28.9847
+1210.1012,128,105.77627722375617,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1546.3026670004183,1210.1012,26.242
+1087.1817,116,106.69789603706536,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1437.0202600002813,1087.1817,29.2872
+1205.8937,128,106.14534266162929,ok,single_long,long,ollama,models/qwen2.5-3b,fp16,,1581.750330999057,1205.8937,26.322
+3526.547675999609,128,36.296120670966985,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3421.5667200005555,128,37.40976297547669,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3450.6673920004687,128,37.09427350104412,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3571.3397090003127,128,35.84089177442873,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3465.8359290006047,128,36.931927137390375,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3277.2838229975605,128,39.05673323188868,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3311.4189289990463,128,38.65412463493134,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3312.604755999928,128,38.64028745601511,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3392.10887399895,128,37.73463787708591,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3520.791792001546,128,36.3554585337274,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3351.7496269996627,128,38.18900999314197,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3416.3104639992525,128,37.46732076866302,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3487.6426349983376,128,36.70100792883013,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3509.460768000281,128,36.47283969295814,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+3453.6418310017325,128,37.06232616567349,ok,stress_single,stress,transformers-gpu,models/qwen2.5-3b,fp16,,,,
+0.0,0,0.0,error,stress_single,stress,transformers-gpu-compile,models/qwen2.5-3b,fp16,"Error: accessing tensor output of CUDAGraphs that has been overwritten by a subsequent run. Stack trace: File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 841, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 476, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/generic.py"", line 915, in wrapper
+    output = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/utils/output_capturing.py"", line 253, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 411, in forward
+    hidden_states = decoder_layer(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/modeling_layers.py"", line 93, in __call__
+    return super().__call__(*args, **kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 298, in forward
+    hidden_states, _ = self.self_attn(
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2/modeling_qwen2.py"", line 228, in forward
+    key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 792, in update
+    keys, values = self.layers[layer_idx].update(key_states, value_states, cache_kwargs)
+  File ""/usr/local/lib/python3.12/dist-packages/transformers/cache_utils.py"", line 120, in update
+    self.keys = torch.cat([self.keys, key_states], dim=-2). To prevent overwriting, clone the tensor outside of torch.compile() or call torch.compiler.cudagraph_mark_step_begin() before each model invocation.",,,
+448.9861,49,109.13478167809649,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,751.2612319987966,448.9861,34.1871
+539.6502,59,109.33008085608046,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,783.3802449968061,539.6502,9.6115
+541.4358,59,108.96952140955585,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,787.4207969980489,541.4358,9.2972
+542.5562,59,108.74449504032945,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,798.4382480026397,542.5562,9.5238
+542.8935,59,108.67693203178892,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,798.0329900019569,542.8935,10.1947
+540.1241,59,109.23415563201124,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,809.292997000739,540.1241,9.7955
+540.3209,59,109.19436949412838,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,800.415352001437,540.3209,9.4523
+544.0857,59,108.4387992553379,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,807.4367180015543,544.0857,10.2689
+541.7768,59,108.90093484992344,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,821.1663490001229,541.7768,10.1965
+542.3682,59,108.78218892626818,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,796.9800049977493,542.3682,9.7259
+543.6199,59,108.53171489858998,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,794.6562090000953,543.6199,9.6388
+541.7467,59,108.9069854970967,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,789.7339470000588,541.7467,10.1169
+546.5225,59,107.95529918713319,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,798.8078230009705,546.5225,9.8315
+541.4215,59,108.97239950759251,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,791.64515100274,541.4215,9.9324
+538.1721,59,109.63035802116087,ok,stress_single,stress,ollama,models/qwen2.5-3b,fp16,,802.7225930018176,538.1721,9.3913
+81.797,18,220.05697030453442,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,317.107044000295,81.797,7.9218
+39.1313,9,229.99491455688923,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,269.47136600210797,39.1313,8.4944
+81.6156,18,220.54607207445636,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,336.65771200321615,81.6156,9.6008
+39.3667,9,228.61962013580003,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,257.15485399996396,39.3667,9.3534
+81.9248,18,219.71368865105558,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,317.779827000777,81.9248,8.9746
+50.1436,9,179.4845204572468,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,264.24514099926455,50.1436,10.0293
+102.9011,18,174.92524375346815,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,341.0144000008586,102.9011,9.3625
+50.5626,9,177.9971757781443,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,282.12035300020943,50.5626,10.8188
+105.6387,18,170.39210062221514,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,338.89921299851267,105.6387,10.3449
+48.9094,9,184.01370697657302,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,269.5638240002154,48.9094,10.7522
+103.5324,18,173.85861817170277,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,342.51184000095236,103.5324,9.6974
+47.5793,9,189.1578900908588,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,285.98084000259405,47.5793,10.5035
+103.2989,18,174.251613521538,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,335.1487139989331,103.2989,9.5444
+50.098,9,179.64789013533476,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,282.4386569991475,50.098,9.5148
+109.7416,18,164.0216654395416,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,361.7204189977201,109.7416,10.7117
+38.279,9,235.1158598709475,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,259.29976900079055,38.279,8.8321
+81.6131,18,220.5528279161066,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,314.95321599868475,81.6131,9.7365
+37.8435,9,237.8215545602283,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,268.3314200003224,37.8435,9.1165
+80.0278,18,224.92183966071792,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,322.42580500314943,80.0278,9.1101
+37.6314,9,239.16197643457323,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,246.54570699931355,37.6314,8.8199
+79.689,18,225.87810111809662,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,315.1961260009557,79.689,8.2973
+48.9664,9,183.79950333289767,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,274.34323799752747,48.9664,9.7991
+103.1228,18,174.54917826125745,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,350.3033199995116,103.1228,10.089
+48.0356,9,187.36104056158348,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,265.52833299865597,48.0356,10.4763
+103.3466,18,174.1711870540492,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,340.4113159995177,103.3466,9.6685
+49.1451,9,183.13117686198626,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,269.3706159989233,49.1451,10.8405
+103.2097,18,174.4022121951716,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,358.9549200005422,103.2097,10.6706
+49.9401,9,180.2158986465786,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,284.35010300017893,49.9401,10.3652
+111.8696,18,160.9016211732231,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,361.96606299927225,111.8696,10.8014
+40.0375,9,224.7892600686856,ok,single_micro,micro,ollama,llama3.2:1b,fp32,,264.0991699990991,40.0375,9.4952
+168.2851,37,219.86497913362504,ok,single_short,short,ollama,llama3.2:1b,fp32,,432.91530500209774,168.2851,10.9493
+601.3534,128,212.85320744839893,ok,single_short,short,ollama,llama3.2:1b,fp32,,909.0341449991683,601.3534,11.6986
+171.4662,37,215.78596831328858,ok,single_short,short,ollama,llama3.2:1b,fp32,,436.6235069974209,171.4662,10.9106
+592.6983,128,215.9614765218662,ok,single_short,short,ollama,llama3.2:1b,fp32,,916.2703579968365,592.6983,11.5651
+173.0559,37,213.80374780634463,ok,single_short,short,ollama,llama3.2:1b,fp32,,411.3657380003133,173.0559,10.845
+598.7546,128,213.7770632576351,ok,single_short,short,ollama,llama3.2:1b,fp32,,933.7695670001267,598.7546,11.6368
+165.9346,37,222.9794147814862,ok,single_short,short,ollama,llama3.2:1b,fp32,,408.9762420007901,165.9346,11.1881
+605.8914,128,211.2589813950157,ok,single_short,short,ollama,llama3.2:1b,fp32,,903.7332289990445,605.8914,11.3873
+175.5738,37,210.73759296660435,ok,single_short,short,ollama,llama3.2:1b,fp32,,435.6875619996572,175.5738,11.1646
+607.9806,128,210.5330334553438,ok,single_short,short,ollama,llama3.2:1b,fp32,,960.3714889999537,607.9806,11.4575
+171.9282,37,215.20611511084277,ok,single_short,short,ollama,llama3.2:1b,fp32,,426.3628280023113,171.9282,12.3531
+598.3675,128,213.91536137908562,ok,single_short,short,ollama,llama3.2:1b,fp32,,902.7570789985475,598.3675,11.7417
+169.9532,37,217.70699227787415,ok,single_short,short,ollama,llama3.2:1b,fp32,,422.48816099890973,169.9532,11.1139
+603.8587,128,211.9701181749969,ok,single_short,short,ollama,llama3.2:1b,fp32,,921.4636649994645,603.8587,10.4709
+169.0109,37,218.92079149924652,ok,single_short,short,ollama,llama3.2:1b,fp32,,414.05434099942795,169.0109,10.4817
+592.9648,128,215.86441556058642,ok,single_short,short,ollama,llama3.2:1b,fp32,,916.5135220027878,592.9648,11.5488
+171.1632,37,216.16796133748377,ok,single_short,short,ollama,llama3.2:1b,fp32,,428.15358599909814,171.1632,11.0416
+598.4539,128,213.88447798568947,ok,single_short,short,ollama,llama3.2:1b,fp32,,926.1213320023671,598.4539,10.7245
+171.5006,37,215.74268544833077,ok,single_short,short,ollama,llama3.2:1b,fp32,,431.6057180003554,171.5006,10.7793
+599.0317,128,213.67817429361415,ok,single_short,short,ollama,llama3.2:1b,fp32,,921.6935280019243,599.0317,11.1893
+165.8943,37,223.03358222675524,ok,single_short,short,ollama,llama3.2:1b,fp32,,430.5446079997637,165.8943,11.1323
+589.1079,128,217.27768376557162,ok,single_short,short,ollama,llama3.2:1b,fp32,,933.7792619990068,589.1079,10.7827
+177.8402,37,208.05194775984282,ok,single_short,short,ollama,llama3.2:1b,fp32,,429.4492970002466,177.8402,10.6093
+602.4702,128,212.45864110789216,ok,single_short,short,ollama,llama3.2:1b,fp32,,933.4841969975969,602.4702,10.672
+173.9225,37,212.73843234774108,ok,single_short,short,ollama,llama3.2:1b,fp32,,409.79285499997786,173.9225,11.441
+598.1146,128,214.00581092653485,ok,single_short,short,ollama,llama3.2:1b,fp32,,954.7320140009106,598.1146,11.7796
+172.369,37,214.6557675684143,ok,single_short,short,ollama,llama3.2:1b,fp32,,416.88470499866526,172.369,11.3265
+602.0093,128,212.62130003639476,ok,single_short,short,ollama,llama3.2:1b,fp32,,930.181227002322,602.0093,11.7194
+170.6852,37,216.77333477067722,ok,single_short,short,ollama,llama3.2:1b,fp32,,416.96261700053583,170.6852,11.3735
+617.3562,128,207.335732596514,ok,single_short,short,ollama,llama3.2:1b,fp32,,926.9177280002623,617.3562,11.1294
+593.3388,128,215.72834946913974,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,925.6689559988445,593.3388,11.4254
+394.1285,83,210.5912158090572,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,657.0576199992502,394.1285,10.917
+599.9669,128,213.34510287150843,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,898.7320449996332,599.9669,11.5531
+392.1014,83,211.6799378936163,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,655.5247120013519,392.1014,11.6284
+603.6563,128,212.04118966372087,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,901.6340649977792,603.6563,10.8984
+389.5044,83,213.09130269131748,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,652.8790699994715,389.5044,10.7806
+604.7055,128,211.67328559108523,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,917.3713800009864,604.7055,12.4085
+386.9245,83,214.51213350408153,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,669.935958001588,386.9245,10.9501
+587.0279,128,218.04755787586924,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,913.9566300000297,587.0279,12.0654
+385.1257,83,215.51405164599504,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,678.3311099970888,385.1257,11.0543
+589.5597,128,217.11117635754275,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,909.4713270023931,589.5597,11.5543
+383.3486,83,216.51311626023937,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,671.0042750019056,383.3486,12.0543
+592.2298,128,216.13231890728906,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,913.4957970018149,592.2298,10.7043
+383.3698,83,216.50114328254338,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,681.664997999178,383.3698,11.003
+598.9886,128,213.69354942648326,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,913.6554610013263,598.9886,11.5211
+387.949,83,213.9456474949027,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,674.1466679995938,387.949,11.3248
+613.2644,128,208.71911038697175,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,923.4718490006344,613.2644,11.1093
+379.5354,83,218.6884280096139,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,664.0951039989886,379.5354,10.9513
+600.8635,128,213.02675233226847,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,934.871537003346,600.8635,11.7079
+387.5329,83,214.17536420778728,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,686.990769001568,387.5329,10.8667
+599.134,128,213.6416895051858,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,914.2127090017311,599.134,11.4681
+393.2696,83,211.05114659256648,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,680.2642069997091,393.2696,11.8761
+599.4698,128,213.52201562113723,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,907.308963000105,599.4698,11.8889
+380.8711,83,217.921496275249,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,671.4541789988289,380.8711,11.4693
+596.2955,128,214.65867174915795,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,914.4795030006208,596.2955,11.596
+383.6688,83,216.33242004562268,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,671.0665030004748,383.6688,10.1767
+607.965,128,210.5384356007336,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,932.4423250000109,607.965,11.5263
+380.9078,83,217.9004998059898,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,672.8301020011713,380.9078,11.1701
+593.7762,128,215.569435083454,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,907.8128190012649,593.7762,11.1636
+386.3826,83,214.81298588497515,ok,single_medium,medium,ollama,llama3.2:1b,fp32,,707.6647879985103,386.3826,11.4882
+605.6301,128,211.35012939416322,ok,single_long,long,ollama,llama3.2:1b,fp32,,947.8686279981048,605.6301,12.9818
+594.7353,128,215.2217969910311,ok,single_long,long,ollama,llama3.2:1b,fp32,,921.9240660022479,594.7353,12.6791
+603.357,128,212.14637436874025,ok,single_long,long,ollama,llama3.2:1b,fp32,,915.1620469965565,603.357,11.2199
+601.1581,128,212.92235769592057,ok,single_long,long,ollama,llama3.2:1b,fp32,,904.9592900009884,601.1581,11.8572
+591.6596,128,216.34061206815542,ok,single_long,long,ollama,llama3.2:1b,fp32,,919.2476559983334,591.6596,12.1738
+598.9513,128,213.70685730208785,ok,single_long,long,ollama,llama3.2:1b,fp32,,925.5883990008442,598.9513,11.4699
+601.5804,128,212.77288954227896,ok,single_long,long,ollama,llama3.2:1b,fp32,,895.8208410003863,601.5804,12.266
+597.2591,128,214.31234785706906,ok,single_long,long,ollama,llama3.2:1b,fp32,,968.3896759997879,597.2591,11.6968
+595.7817,128,214.84379261732948,ok,single_long,long,ollama,llama3.2:1b,fp32,,932.1075219995691,595.7817,11.8343
+601.6386,128,212.75230678350758,ok,single_long,long,ollama,llama3.2:1b,fp32,,913.0708140000934,601.6386,12.155
+595.2734,128,215.0272463039672,ok,single_long,long,ollama,llama3.2:1b,fp32,,913.622233998467,595.2734,11.9508
+591.1284,128,216.5350201411402,ok,single_long,long,ollama,llama3.2:1b,fp32,,920.0893950001046,591.1284,11.6923
+597.9936,128,214.0491135691084,ok,single_long,long,ollama,llama3.2:1b,fp32,,916.1346559994854,597.9936,11.8742
+593.173,128,215.78864850557935,ok,single_long,long,ollama,llama3.2:1b,fp32,,927.5867119977192,593.173,12.0174
+597.5487,128,214.20848208689935,ok,single_long,long,ollama,llama3.2:1b,fp32,,912.471354000445,597.5487,11.2024
+603.4793,128,212.10338117645463,ok,single_long,long,ollama,llama3.2:1b,fp32,,919.1875500000606,603.4793,11.4544
+594.7938,128,215.20062919283959,ok,single_long,long,ollama,llama3.2:1b,fp32,,897.22624299975,594.7938,11.9916
+594.3469,128,215.36244237161833,ok,single_long,long,ollama,llama3.2:1b,fp32,,918.3422730020538,594.3469,11.8555
+590.87,128,216.62971550425644,ok,single_long,long,ollama,llama3.2:1b,fp32,,917.9155990022991,590.87,12.388
+595.8256,128,214.82796308181457,ok,single_long,long,ollama,llama3.2:1b,fp32,,962.1231300006912,595.8256,11.6577
+588.6936,128,217.43059547445398,ok,single_long,long,ollama,llama3.2:1b,fp32,,911.2911029988027,588.6936,11.7205
+594.2524,128,215.39669002598896,ok,single_long,long,ollama,llama3.2:1b,fp32,,929.1872220019286,594.2524,11.8875
+600.2599,128,213.2409644555633,ok,single_long,long,ollama,llama3.2:1b,fp32,,933.7196950000362,600.2599,11.8519
+585.5382,128,218.60230468311033,ok,single_long,long,ollama,llama3.2:1b,fp32,,907.8519999966375,585.5382,11.7364
+588.5372,128,217.48837626576537,ok,single_long,long,ollama,llama3.2:1b,fp32,,914.1634400002658,588.5372,12.048
+599.9625,128,213.3466675000521,ok,single_long,long,ollama,llama3.2:1b,fp32,,932.502678999299,599.9625,11.7867
+594.3394,128,215.36516004155203,ok,single_long,long,ollama,llama3.2:1b,fp32,,916.315228001622,594.3394,11.6611
+593.9557,128,215.50428760932846,ok,single_long,long,ollama,llama3.2:1b,fp32,,918.4404280022136,593.9557,11.2393
+599.5024,128,213.51040462890558,ok,single_long,long,ollama,llama3.2:1b,fp32,,936.7525449997629,599.5024,11.9421
+599.8643,128,213.3815931369812,ok,single_long,long,ollama,llama3.2:1b,fp32,,932.3105280018353,599.8643,11.0677
+582.0678,125,214.751614846243,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,895.4393189997063,582.0678,13.7249
+579.9903,124,213.79667901342486,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,898.728887001198,579.9903,5.5252
+576.943,124,214.92591122519903,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,877.1957760000078,576.943,5.2748
+584.4526,124,212.1643397599737,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,894.8909149985411,584.4526,4.7497
+578.6661,124,214.28592412792108,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,877.7416209995863,578.6661,5.8126
+583.8895,124,212.36894994686497,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,892.7637540000433,583.8895,5.284
+580.083,124,213.76251329551116,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,867.8548459974991,580.083,5.4279
+585.6639,124,211.7255306328425,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,875.7910629974504,585.6639,5.2063
+582.792,124,212.76887809029637,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,892.6479229994584,582.792,5.2481
+568.1393,124,218.25633255787795,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,906.9104629998037,568.1393,5.0046
+579.57,124,213.9517228289939,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,901.4479399993434,579.57,5.2431
+580.8874,124,213.46649970372917,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,888.1289750024735,580.8874,4.9803
+578.9338,124,214.1868379424383,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,909.1035579986055,578.9338,5.2522
+585.8239,124,211.6677042367169,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,886.7584959989472,585.8239,5.4591
+571.9437,124,216.80455611277822,ok,stress_single,stress,ollama,llama3.2:1b,fp32,,907.326581000234,571.9437,5.4168

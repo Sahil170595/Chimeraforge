@@ -1,0 +1,22 @@
+# TR126: PyTorch 2.10 (NGC 26.01) + Bug #1 + Bug #2 + Bug #3 fixes
+# For testing whether disabling dealloc + pool check enables compiled decode
+#
+# Bug #1 (PR #175562): assertion len(tensor_weakrefs) == len(stack_traces)
+# Bug #2 (#154824): dealloc_current_path_weakrefs frees storages still needed
+# Bug #3 (secondary): check_memory_pool rejects untracked-but-alive storages
+#
+# Build:  docker build -t tr126-pt210-bug2fix -f research/tr126/Dockerfile.pt210-bug2fix .
+# Run:    docker run --rm --gpus all --ipc=host -v "${PWD}:/workspace" -w /workspace tr126-pt210-bug2fix bash
+
+FROM tr126-pt210
+
+# Apply Bug #2 fix: skip _free_And_Remove_DeleterFn
+RUN CGFILE=$(python -c "import torch._inductor.cudagraph_trees as m; print(m.__file__)") && \
+    sed -i 's|                torch._C._free_And_Remove_DeleterFn(_storage_deref)|                # Bug 2: skip free\n                pass  # storages kept alive|' "$CGFILE"
+
+# Apply Bug #3 fix: make check_memory_pool non-fatal
+RUN CGFILE=$(python -c "import torch._inductor.cudagraph_trees as m; print(m.__file__)") && \
+    sed -i 's|        raise RuntimeError(msg)|        import logging as _logging; _logging.getLogger("torch._inductor.cudagraph_trees").warning("pool check: %%s", msg); return|' "$CGFILE"
+
+WORKDIR /workspace
+CMD ["bash"]

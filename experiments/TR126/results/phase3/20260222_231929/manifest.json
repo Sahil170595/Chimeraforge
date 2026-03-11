@@ -1,0 +1,52 @@
+{
+  "run_id": "20260222_231929",
+  "platform": "linux-docker",
+  "backends": [
+    "transformers-gpu",
+    "transformers-gpu-compile",
+    "ollama"
+  ],
+  "models": [
+    "models/gpt2-100m",
+    "models/qwen2.5-0.5b",
+    "models/qwen2.5-1.5b",
+    "models/qwen2.5-3b",
+    "llama3.2:1b"
+  ],
+  "scenarios": [
+    "single_micro",
+    "single_short",
+    "single_medium",
+    "single_long",
+    "stress_single"
+  ],
+  "modes": [
+    "prefill",
+    "kv_decode",
+    "e2e_kv"
+  ],
+  "repetitions": 15,
+  "max_new_tokens": 128,
+  "environment": {
+    "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "platform_system": "Linux",
+    "python_version": "3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]",
+    "python_executable": "/usr/bin/python",
+    "torch_version": "2.8.0a0+34c6371d24.nv25.08",
+    "cuda_available": true,
+    "cuda_version": "13.0",
+    "cudnn_version": "91200",
+    "gpu_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+    "gpu_memory_gb": 12.88,
+    "gpu_compute_capability": [
+      8,
+      9
+    ],
+    "triton_available": true,
+    "triton_version": "3.3.1",
+    "inductor_available": true,
+    "in_docker": true,
+    "triton_cache_dir": "/tmp/triton_cache",
+    "cuda_visible_devices": "0"
+  }
+}

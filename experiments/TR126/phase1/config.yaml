@@ -1,0 +1,21 @@
+# TR126 Phase 1: Environment Validation Configuration
+# Verifies Docker/Linux environment has GPU, CUDA, and Triton working.
+
+model_path: models/tiny-gpt2
+device: cuda
+dtype: fp32
+seed: 42
+
+# Fixed prompts for deterministic output comparison
+reference_prompts:
+  - "Hello"
+  - "Summarize RLHF in one sentence."
+  - "What is the capital of France?"
+
+max_new_tokens: 32
+
+# Tolerance for cross-platform logit comparison
+tolerance_fp32: 1.0e-4
+tolerance_fp16: 1.0e-2
+
+output_dir: research/tr126/results/phase1

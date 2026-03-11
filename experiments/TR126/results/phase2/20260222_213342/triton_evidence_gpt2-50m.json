@@ -1,0 +1,6 @@
+{
+  "triton_available": true,
+  "triton_version": "3.3.1",
+  "cached_kernels": 1114,
+  "inductor_backend": false
+}
