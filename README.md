@@ -598,8 +598,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
 | **`logs/benchmarks/`** | Archived benchmark logs | When you need historical log data |
-| **`resources/`** | Legacy research resources (prompts, patches) | Historical reference only |
-| **`resources/patches/`** | Patch notes and changelogs | When you want to understand what changed and when |
+| **`resources/`** | Legacy research resources | Historical reference only |
 | **`docs/`** | All documentation | **Start here** for guides, API docs, and explanations |
 
 **Rule of thumb:** 
@@ -670,7 +669,6 @@ All reports include:
 - **`docs/technical_reports.md`** – Complete index of all technical reports
 - **`outputs/publish_ready/reports/`** – All technical reports (TR108-TR137) with full analysis
 - **`outputs/publish_ready/notebooks/`** – Jupyter notebooks for data analysis
-- **`resources/patches/`** – Narrative changelog of major updates and discoveries
 
 ### For Getting Help
 
