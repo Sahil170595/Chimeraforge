@@ -39,8 +39,9 @@ and published artifacts organized.
 - **Logs** – move any root-level `.log` output to `logs/benchmarks/` with the
   same filename. New jobs should log to a scenario-specific subfolder under
   `logs/`.
-- **Reports** – in-progress results go to `outputs/reports/`; anything final
-  enough for stakeholders moves to `outputs/publish_ready/`.
+- **Reports** – exploratory, legacy, and scratch artifacts go under
+  `outputs/reports/` in a named subdirectory; anything canonical or
+  stakeholder-facing goes to `outputs/publish_ready/`.
 
 ## Contribution Checklist
 1. **Pick the right bucket** – if a change introduces new data, ask “is this
@@ -61,3 +62,4 @@ and published artifacts organized.
 
 Following this layout keeps the repository predictable, auditable, and ready for
 the next TR without a round of archaeology.
+

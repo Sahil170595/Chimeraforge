@@ -97,34 +97,18 @@ Comprehensive documentation for Chimeraforge, a benchmarking and research reposi
 
 ## Technical Reports
 
-All technical reports are available in `outputs/publish_ready/reports/`:
+The canonical technical report archive is `outputs/publish_ready/reports/`.
 
-- **TR108**: Single-Inference Optimization
-- **TR109**: Python Agent Workflows
-- **TR110**: Python Multi-Agent Concurrent
-- **TR111**: Rust Single-Agent
-- **TR112**: Rust vs Python Single-Agent
-- **TR113**: Rust Multi-Agent (Single Ollama)
-- **TR114**: Rust Multi-Agent (Dual Ollama)
-- **TR115**: Rust Runtime Optimization ✅ Complete
-- **TR116**: Cross-Model Benchmarks (Qwen 2.5 vs Gemma 3) ✅ Complete
-- **TR117**: Cross-Backend Inference Benchmark & Multi-Agent Root Cause ✅ Complete
-- **TR117_multi_agent**: Multi-Agent Root Cause Analysis ✅ Complete
-- **TR118**: ONNX Runtime + TensorRT Deep Dive ✅ Complete
-- **TR119**: Cost & Energy Analysis ✅ Complete
-- **TR120**: The "Compile Paradox" Root-Cause Audit ✅ Complete
-- **TR121**: Model Scaling Study ✅ Complete
-- **TR118_v2.2**: ONNX Runtime + TensorRT Deep Dive ✅ Complete
-- **TR119**: Cost & Energy Analysis ✅ Complete
-- **TR120**: The "Compile Paradox" Root-Cause Audit ✅ Complete
-- **TR121v1**: Model Scaling Study ✅ Complete (Pipeline)
-- **TR122**: Resource Profiling Deep Dive 🔬 Planned
-- **TR123**: Multi-Hardware Generalization 🔬 Planned
+Current coverage:
 
-See [Technical Reports](technical_reports.md) for detailed summaries.
+- Phase 1: `TR108-TR122`
+- Phase 2: `TR123-TR133`
+- Phase 3: `TR134-TR137`
+- Conclusive synthesis sets: `108-116`, `117-122`, `123-133`, `134-137`
+
+See [Technical Reports](technical_reports.md) for the current linked index.
 
 ## Repository Structure
-
 ```
 Chimeraforge/
 ├── src/              # Source code (Python & Rust)
@@ -157,3 +141,4 @@ See [Architecture](ARCHITECTURE.md) for detailed structure documentation.
 ---
 
 **Last Updated**: January 2025
+

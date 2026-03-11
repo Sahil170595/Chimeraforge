@@ -5,13 +5,13 @@
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**70,000+ measurements. 26 technical reports. One consumer GPU. A shipped CLI tool.**
+**~146,000+ data points. 30 technical reports. One consumer GPU. A shipped CLI tool.**
 
 ```bash
 pip install chimeraforge
 ```
 
-This repository contains everything behind Technical Reports TR108 through TR133 -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
+This repository contains everything behind Technical Reports TR108 through TR137 -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
 
 ---
 
@@ -19,12 +19,13 @@ This repository contains everything behind Technical Reports TR108 through TR133
 
 Chimeraforge is the research and benchmarking breakout from the Banterhearts program. It contains every asset required to measure LLM inference performance, run the TR-series test plans, publish the technical reports, and ship the predictive capacity planner. Production APIs and orchestration services remain in Banterhearts; this repo stays focused on measurement, analysis, and deployment tooling.
 
-The research program spans two completed phases:
+The research program spans three completed phases:
 
 - **Phase 1 (TR108-TR122):** Language comparison (Python vs Rust), multi-agent concurrency, backend benchmarking, cost/energy economics, scaling laws. 8,000+ runs.
-- **Phase 2 (TR123-TR133):** KV-cache economics, quality baselines, quantization decision matrix, compile paradox resolution, context scaling, production workloads, N-agent scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning. ~62,000+ measurements.
+- **Phase 2 (TR123-TR133):** KV-cache economics, quality baselines, quantization decision matrix, compile paradox resolution, context scaling, production workloads, N-agent scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning. ~70,000+ measurements.
+- **Phase 3 (TR134-TR137):** Automation and evaluation infrastructure, validation workflows, and the synthesis layer built on top of the deployment framework.
 
-Through **70,000+ measurements** across 26 Technical Reports, we've answered the fundamental deployment questions: which backend, which quantization level, which serving stack, how many agents, what context budget, and how to plan capacity — all validated on a single consumer GPU (RTX 4080 Laptop, 12 GB VRAM).
+Through **~146,000+ data points** across 30 technical reports, we've answered the core deployment questions: which backend, which quantization level, which serving stack, how many agents, what context budget, how to plan capacity, and how to operationalize evaluation on a single consumer GPU (RTX 4080 Laptop, 12 GB VRAM).
 
 ---
 
@@ -70,7 +71,7 @@ Through **70,000+ measurements** across 26 Technical Reports, we've answered the
 
 ## Quick Takeaways: What We Discovered
 
-All findings below are verified across 70,000+ measurements documented in Technical Reports TR108 through TR133. Every number is reproducible and traceable to raw data.
+All findings below are verified against the TR108-TR137 corpus, spanning roughly 146,000 data points across Phase 1, Phase 2, and Phase 3. Every number is reproducible and traceable to raw data.
 
 ### Single-Agent Performance: Rust vs Python
 
@@ -151,7 +152,7 @@ Rust supports multiple async runtimes (Tokio, async-std, smol). **Which one shou
 
 ### Phase 2: Deployment Decisions (TR123-TR133)
 
-Phase 2 produces a complete, artifact-backed deployment framework from ~62,000 measurements:
+Phase 2 produces a complete, artifact-backed deployment framework from ~70,000 measurements:
 
 | Decision | Recommendation | Evidence |
 |----------|---------------|----------|
@@ -282,9 +283,9 @@ chimeraforge report --results-files run1.json,run2.json --format html --output r
 
 ---
 
-## Research Journey: Technical Reports TR108-TR133
+## Research Journey: Technical Reports TR108-TR137
 
-Our research progressed systematically, with each report building on previous findings and answering specific questions. We've conducted **70,000+ measurements** across **26 technical reports** (TR108-TR133), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, scaling studies, quantization, compilation, context scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning.
+Our research progressed systematically, with each report building on previous findings and answering specific questions. We've collected **~146,000+ data points** across **30 technical reports** (TR108-TR137), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, scaling studies, quantization, compilation, context scaling, serving stack comparison, GPU kernel profiling, predictive capacity planning, and evaluation automation.
 
 ### TR108: Single-Inference Optimization
 **Question:** What's the best configuration for a single LLM request?  
@@ -481,7 +482,7 @@ Our research progressed systematically, with each report building on previous fi
 - Full reproducibility: code, data, and methodology all available
 - Statistical rigor: confidence intervals, variance measures, multiple runs
 - Process isolation: cold-start testing to avoid warm-cache bias
-- Comprehensive coverage: 70,000+ measurements across 26 Technical Reports (TR108-TR133)
+- Comprehensive coverage: ~146,000+ data points across 30 technical reports (TR108-TR137)
 
 ---
 
@@ -517,7 +518,7 @@ Our research progressed systematically, with each report building on previous fi
 | **TR132** | How does continuous batching work at kernel level? | 77-80% kernel reduction, 79-83% bandwidth-per-token reduction. | Proves the mechanism; vLLM and TGI use identical amortization. |
 | **TR133** | Can we automate capacity planning? | Yes — 4/4 validation targets met; `chimeraforge plan` shipped. | Empirical lookup tables outperform theoretical queueing models. |
 
-**Full report links:** See `outputs/publish_ready/reports/` for all 26 technical reports plus conclusive syntheses.
+**Full report links:** See `outputs/publish_ready/reports/` for all 30 technical reports plus conclusive syntheses.
 
 ---
 
@@ -590,9 +591,9 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`data/baselines/`** | Canonical baseline measurements | When you need reference points for regression testing |
 | **`data/csv/`** | CSV exports of benchmark data | When you want to analyze data in Excel, Python, or other tools |
 | **`data/research/`** | Research data from experiments | When you want to access experiment-specific datasets |
-| **`outputs/reports/`** | Intermediate technical reports | When you want to see work-in-progress analysis |
+| **`outputs/reports/`** | Exploratory, legacy, and scratch report outputs | When you want working notes or historical report artifacts that are not canonical |
 | **`src/chimeraforge/`** | ChimeraForge CLI (plan, bench, eval, report, compare, refit) | The full CLI toolchain |
-| **`outputs/publish_ready/reports/`** | All 26 technical reports + conclusive syntheses | **Start here** for comprehensive findings and analysis |
+| **`outputs/publish_ready/reports/`** | Canonical TR archive (TR108-TR137) + conclusive syntheses | **Start here** for comprehensive findings and analysis |
 | **`outputs/publish_ready/notebooks/`** | Jupyter notebooks for analysis | When you want to reproduce analysis or create visualizations |
 | **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
@@ -667,7 +668,7 @@ All reports include:
 ### For Understanding the Research
 
 - **`docs/technical_reports.md`** – Complete index of all technical reports
-- **`outputs/publish_ready/reports/`** – All technical reports (TR108-TR133) with full analysis
+- **`outputs/publish_ready/reports/`** – All technical reports (TR108-TR137) with full analysis
 - **`outputs/publish_ready/notebooks/`** – Jupyter notebooks for data analysis
 - **`resources/patches/`** – Narrative changelog of major updates and discoveries
 
@@ -684,8 +685,8 @@ All reports include:
 
 ### Total Research Investment
 
-- **70,000+ measurements** across Phase 1 (8,000+ runs) and Phase 2 (~62,000 measurements)
-- **26 technical reports** (TR108-TR133) plus 2 dissertation-style conclusive syntheses
+- **~146,000+ data points** across Phase 1, Phase 2, and Phase 3
+- **30 technical reports** (TR108-TR137) plus 4 conclusive synthesis families
 - **4 serving stacks** benchmarked (Ollama, vLLM, TGI, PyTorch Direct)
 - **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
 - **GPU kernel profiling** with Nsight Systems (~2 GB traces)
@@ -735,11 +736,12 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-This research was conducted as part of the Banterhearts LLM Performance Research Program. Phase 1 (TR108-TR122) established the measurement methodology and cross-language comparison. Phase 2 (TR123-TR133) produced the deployment framework and capacity planner. Production APIs and orchestration services remain in the main Banterhearts repository.
+This research was conducted as part of the Banterhearts LLM Performance Research Program. Phase 1 (TR108-TR122) established the measurement methodology and cross-language comparison. Phase 2 (TR123-TR133) produced the deployment framework and capacity planner. Phase 3 (TR134-TR137) extended the program into automation and evaluation infrastructure. Production APIs and orchestration services remain in the main Banterhearts repository.
 
 ---
 
 **Last Updated:** March 8, 2026 (v0.2.0 published to PyPI)
 **Repository:** https://github.com/Sahil170595/Chimeraforge
 **PyPI:** https://pypi.org/project/chimeraforge/
-**Status:** Phase 1 + Phase 2 Complete | v0.2.0 Live on PyPI
+**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.2.0 Live on PyPI
+
