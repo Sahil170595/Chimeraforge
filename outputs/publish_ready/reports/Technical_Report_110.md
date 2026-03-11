@@ -6,7 +6,7 @@
 **Date:** October 10, 2025  
 **Test Duration:** 3 hours 15 minutes (150 benchmark runs)  
 **Framework:** Banterhearts Chimera Multi-Agent System  
-**Related:** [TR108](../../reports/Technical_Report_108.md), [TR109](../../reports/Technical_Report_109.md)
+**Related:** [TR108](Technical_Report_108.md), [TR109](Technical_Report_109.md)
 
 ---
 
@@ -38,7 +38,7 @@ This report presents a comprehensive empirical analysis of concurrent multi-agen
 
 ### 1.1 Background
 
-Following [TR108's](../../reports/Technical_Report_108.md) single-agent LLM performance analysis and [TR109's](../../reports/Technical_Report_109.md) agent workflow optimization, this study extends Chimera's capabilities to **concurrent multi-agent execution**. The core question: *Can multiple Chimera-optimized agents run in parallel without sacrificing individual performance?*
+Following [TR108's](Technical_Report_108.md) single-agent LLM performance analysis and [TR109's](Technical_Report_109.md) agent workflow optimization, this study extends Chimera's capabilities to **concurrent multi-agent execution**. The core question: *Can multiple Chimera-optimized agents run in parallel without sacrificing individual performance?*
 
 ### 1.2 Research Questions
 

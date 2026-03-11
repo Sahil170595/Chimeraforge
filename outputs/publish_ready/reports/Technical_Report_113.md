@@ -6,7 +6,7 @@
 **Date:** November 12, 2025  
 **Test Duration:** 45 minutes (19 benchmark configurations)  
 **Framework:** Demo_rust_multiagent (Rust async/tokio implementation)  
-**Related:** [TR110](Technical_Report_110.md) (Python Multi-Agent), [TR111](Technical_Report_111.md) (Rust Single-Agent), [TR112](Technical_Report_112.md) (Rust vs Python Single-Agent)
+**Related:** [TR110](Technical_Report_110.md) (Python Multi-Agent), [TR111_v2](Technical_Report_111_v2.md) (Rust Single-Agent), [TR112_v2](Technical_Report_112_v2.md) (Rust vs Python Single-Agent)
 
 ---
 
@@ -40,7 +40,7 @@ This report presents a comprehensive empirical analysis of Rust-based concurrent
 
 ### 1.1 Background
 
-Building on [TR111's](Technical_Report_111.md) single-agent Rust performance evaluation and [TR112's](Technical_Report_112.md) cross-language comparison, this study extends our benchmarking framework to **concurrent multi-agent execution in Rust**. The core question: *Can Rust's async runtime deliver superior multi-agent coordination compared to Python's asyncio, or do LLM inference workloads negate Rust's concurrency advantages?*
+Building on [TR111_v2's](Technical_Report_111_v2.md) single-agent Rust performance evaluation and [TR112_v2's](Technical_Report_112_v2.md) cross-language comparison, this study extends our benchmarking framework to **concurrent multi-agent execution in Rust**. The core question: *Can Rust's async runtime deliver superior multi-agent coordination compared to Python's asyncio, or do LLM inference workloads negate Rust's concurrency advantages?*
 
 This report directly compares against [TR110's](Technical_Report_110.md) Python multi-agent results using identical test scenarios, hardware, and evaluation metrics.
 

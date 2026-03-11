@@ -5,7 +5,7 @@
 **Model:** gemma3:latest (4.3B parameters, Q4_K_M quantization, 3.3GB)  
 **Hardware:** NVIDIA RTX 4080 (12GB VRAM, 9,728 CUDA cores), Intel Core i9-13980HX  
 **Framework:** Ollama v0.1.17  
-**Related:** [TR108](../../reports/Technical_Report_108.md), [Ollama Benchmark](Ollama_Benchmark_Report.md)
+**Related:** [TR108](../reports/Technical_Report_108.md), [Ollama Benchmark](Ollama_Benchmark_Report.md)
 
 ---
 

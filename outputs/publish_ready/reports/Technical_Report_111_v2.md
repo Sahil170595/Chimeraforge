@@ -8,7 +8,7 @@
 **Total Benchmark Runs:** 57 (3 runs × 19 configurations)  
 **Model:** gemma3:latest  
 **Language:** Rust 1.90.0 (x86_64-pc-windows-msvc)  
-**Related Work:** [Technical Report 109](Technical_Report_109.md), [Technical Report 110](Technical_Report_110.md), [Technical Report 115](Technical_Report_115.md)
+**Related Work:** [Technical Report 109](Technical_Report_109.md), [Technical Report 110](Technical_Report_110.md), [Technical Report 115_v2](Technical_Report_115_v2.md)
 
 ---
 
@@ -1349,7 +1349,7 @@ Special thanks to the Ollama team for providing a robust local LLM inference ser
 **Related Documentation:**
 - [Technical Report 109: Python Agent Workflow Analysis](Technical_Report_109.md)
 - [Technical Report 110: Multi-Agent Orchestration](Technical_Report_110.md)
-- [Technical Report 115: Rust Async Runtime Analysis](Technical_Report_115.md)
+- [Technical Report 115_v2: Rust Async Runtime Analysis](Technical_Report_115_v2.md)
 - [Technical Report 108: Single-Inference Optimization](Technical_Report_108.md)
 
 ---

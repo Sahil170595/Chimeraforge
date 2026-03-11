@@ -266,10 +266,10 @@ if throughput_drop > 0.20:  # 20% drop
 - [TR108: Single-Inference Optimization](../outputs/publish_ready/reports/Technical_Report_108.md)
 - [TR109: Python Agent Workflows](../outputs/publish_ready/reports/Technical_Report_109.md)
 - [TR110: Python Multi-Agent](../outputs/publish_ready/reports/Technical_Report_110.md)
-- [TR111: Rust Single-Agent](../outputs/publish_ready/reports/Technical_Report_111.md)
-- [TR112: Rust vs Python Single-Agent](../outputs/publish_ready/reports/Technical_Report_112.md)
+- [TR111_v2: Rust Single-Agent](../outputs/publish_ready/reports/Technical_Report_111_v2.md)
+- [TR112_v2: Rust vs Python Single-Agent](../outputs/publish_ready/reports/Technical_Report_112_v2.md)
 - [TR113: Rust Multi-Agent (Single Ollama)](../outputs/publish_ready/reports/Technical_Report_113.md)
-- [TR114: Rust Multi-Agent (Dual Ollama)](../outputs/publish_ready/reports/Technical_Report_114.md)
+- [TR114_v2: Rust Multi-Agent (Dual Ollama)](../outputs/publish_ready/reports/Technical_Report_114_v2.md)
 
 ---
 

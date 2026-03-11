@@ -311,7 +311,7 @@ docker-compose up -d
 
 - [Multi-Agent Architecture](multi_agent.md)
 - [TR110: Python Multi-Agent](../outputs/publish_ready/reports/Technical_Report_110.md)
-- [TR114: Rust Multi-Agent](../outputs/publish_ready/reports/Technical_Report_114.md)
+- [TR114_v2: Rust Multi-Agent](../outputs/publish_ready/reports/Technical_Report_114_v2.md)
 - [Ollama Documentation](https://ollama.ai/docs)
 
 ---

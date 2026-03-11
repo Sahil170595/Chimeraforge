@@ -6,7 +6,7 @@
 **Date:** November 13, 2025  
 **Test Duration:** 6 hours 15 minutes (150 benchmark runs)  
 **Framework:** Demo_rust_multiagent (Rust async/tokio + Dual Ollama)  
-**Related:** [TR110](Technical_Report_110.md) (Python Multi-Agent), [TR111](Technical_Report_111.md) (Rust Single-Agent), [TR112](Technical_Report_112.md) (Rust vs Python Single-Agent), [TR113](Technical_Report_113.md) (Rust Multi-Agent Single Ollama)
+**Related:** [TR110](../Technical_Report_110.md) (Python Multi-Agent), [TR111](Technical_Report_111.md) (Rust Single-Agent), [TR112](Technical_Report_112.md) (Rust vs Python Single-Agent), [TR113](../Technical_Report_113.md) (Rust Multi-Agent Single Ollama)
 
 ---
 

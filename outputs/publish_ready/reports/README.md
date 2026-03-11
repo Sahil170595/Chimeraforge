@@ -68,17 +68,21 @@ The current corpus spans:
 | 123-133 | `Technical_Report_Conclusive_123-133.md` | `Technical_Report_Conclusive_123-133_Extended_Appendices.md` | `Technical_Report_Conclusive_123-133_Whitepaper.md` |
 | 134-137 | `Technical_Report_Conclusive_134-137.md` | `Technical_Report_Conclusive_134-137_Extended_Appendices.md` | `Technical_Report_Conclusive_134-137_Whitepaper.md` |
 
-## Historical Drafts Kept for Provenance
+## Historical Drafts
 
-These remain in the directory for traceability, but they are superseded:
+Superseded drafts are retained under `historical/`:
 
-- `Technical_Report_111.md` -> `Technical_Report_111_v2.md`
-- `Technical_Report_112.md` -> `Technical_Report_112_v2.md`
-- `Technical_Report_114.md` -> `Technical_Report_114_v2.md`
-- `Technical_Report_115.md` -> `Technical_Report_115_v2.md`
-- `Technical_Report_118.md` and `Technical_Report_118_v2.1.md` -> `Technical_Report_118_v2.2.md`
-- `Technical_Report_119v1.md` -> `Technical_Report_119.md`
-- `Technical_Report_121.md` -> `Technical_Report_121v1.md`
+- `historical/Technical_Report_111.md` -> `Technical_Report_111_v2.md`
+- `historical/Technical_Report_112.md` -> `Technical_Report_112_v2.md`
+- `historical/Technical_Report_114.md` -> `Technical_Report_114_v2.md`
+- `historical/Technical_Report_115.md` -> `Technical_Report_115_v2.md`
+- `historical/Technical_Report_118.md`, `historical/Technical_Report_118_v2.md`, and `historical/Technical_Report_118_v2.1.md` -> `Technical_Report_118_v2.2.md`
+- `historical/Technical_Report_119v1.md` -> `Technical_Report_119.md`
+- `historical/Technical_Report_121.md` -> `Technical_Report_121v1.md`
+
+## Supporting Files
+
+- `supporting/TR116_data.md`
 
 ## Related Paths
 
@@ -86,6 +90,8 @@ These remain in the directory for traceability, but they are superseded:
   Overview of the whole outputs tree.
 - `../../reports/README.md`
   Exploratory and legacy report outputs.
+- `../docs/README.md`
+  Publish-ready benchmark writeups and supporting notes.
 - `../../../docs/technical_reports.md`
   Cross-linked index used by the docs site.
 

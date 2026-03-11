@@ -64,15 +64,18 @@ The canonical technical report archive lives in
 
 ## Historical Drafts
 
-The report directory also retains superseded drafts for provenance:
+Superseded drafts live under `outputs/publish_ready/reports/historical/`:
 
-- `Technical_Report_111.md`
-- `Technical_Report_112.md`
-- `Technical_Report_114.md`
-- `Technical_Report_115.md`
-- `Technical_Report_118.md`
-- `Technical_Report_118_v2.1.md`
-- `Technical_Report_119v1.md`
-- `Technical_Report_121.md`
+- [Technical_Report_111.md](../outputs/publish_ready/reports/historical/Technical_Report_111.md)
+- [Technical_Report_112.md](../outputs/publish_ready/reports/historical/Technical_Report_112.md)
+- [Technical_Report_114.md](../outputs/publish_ready/reports/historical/Technical_Report_114.md)
+- [Technical_Report_115.md](../outputs/publish_ready/reports/historical/Technical_Report_115.md)
+- [Technical_Report_118.md](../outputs/publish_ready/reports/historical/Technical_Report_118.md)
+- [Technical_Report_118_v2.md](../outputs/publish_ready/reports/historical/Technical_Report_118_v2.md)
+- [Technical_Report_118_v2.1.md](../outputs/publish_ready/reports/historical/Technical_Report_118_v2.1.md)
+- [Technical_Report_119v1.md](../outputs/publish_ready/reports/historical/Technical_Report_119v1.md)
+- [Technical_Report_121.md](../outputs/publish_ready/reports/historical/Technical_Report_121.md)
 
-The current source of truth remains the newer linked versions above.
+## Supporting Appendices
+
+- [TR116_data.md](../outputs/publish_ready/reports/supporting/TR116_data.md)

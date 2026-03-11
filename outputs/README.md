@@ -7,7 +7,8 @@ This directory stores generated artifacts, report outputs, and raw run material.
 - `publish_ready/reports/`
   Publication-ready technical reports, conclusive syntheses, and whitepapers.
 - `publish_ready/docs/`
-  Curated benchmark writeups and long-form supporting documentation.
+  Curated benchmark writeups, reproduction notes, and long-form supporting
+  documentation that complement the TR archive.
 - `publish_ready/notebooks/`
   Notebook exports and supporting analysis notebooks.
 

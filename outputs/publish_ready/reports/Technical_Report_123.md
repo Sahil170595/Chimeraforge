@@ -8,7 +8,7 @@
 **Test Duration:** ~1.5 hours (benchmark) + ~10 min (Docker compile runs)
 **Status:** Frontier Report (artifact-backed)
 **Run ID:** `20260216_181539`
-**Related Work:** [TR119](Technical_Report_119.md), [TR121](Technical_Report_121.md)
+**Related Work:** [TR119](Technical_Report_119.md), [TR121v1](Technical_Report_121v1.md)
 **Depends On:** TR119 (uncached baseline), TR121 (scaling methodology)
 
 ---

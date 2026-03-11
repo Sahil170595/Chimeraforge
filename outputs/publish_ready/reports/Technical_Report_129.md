@@ -8,7 +8,7 @@
 **Test Duration:** ~90 minutes
 **Status:** Complete --- All 4 phases delivered
 **Run ID:** `20260225_213619`
-**Related Work:** [TR114v2](Technical_Report_114.md) (2-Agent Efficiency), [TR128](Technical_Report_128.md) (Production Workload Characterization)
+**Related Work:** [TR114_v2](Technical_Report_114_v2.md) (2-Agent Efficiency), [TR128](Technical_Report_128.md) (Production Workload Characterization)
 **Depends On:** TR128 (baseline throughput cross-validation)
 
 ---

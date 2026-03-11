@@ -5,7 +5,7 @@
 **Test Environment:** NVIDIA GeForce RTX 4080 Laptop (12GB VRAM), Intel i9-13980HX  
 **Model:** gemma3:latest (4.3B parameters, Q4_K_M quantization)  
 **Configurations Tested:** 18 parameter combinations  
-**Related Work:** [TR108](Technical_Report_108.md), [TR109](Technical_Report_109.md), [TR110](Technical_Report_110.md)
+**Related Work:** [TR108](../Technical_Report_108.md), [TR109](../Technical_Report_109.md), [TR110](../Technical_Report_110.md)
 
 ---
 

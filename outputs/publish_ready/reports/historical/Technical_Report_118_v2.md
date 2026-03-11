@@ -27,7 +27,7 @@
 **Author:** Research Team  
 **Report Type:** Definitive Multi-Scale ONNX/TensorRT Performance Analysis (INVALID - See v2.1)  
 **Test Duration:** 678 seconds (360 comprehensive benchmark runs across 2 models)  
-**Related Work:** [TR118](Technical_Report_118.md) (Single-Model Deep Dive), [TR117](Technical_Report_117.md) (Cross-Backend Baseline), [TR115_v2](Technical_Report_115_v2.md) (Runtime Analysis)
+**Related Work:** [TR118](Technical_Report_118.md) (Single-Model Deep Dive), [TR117](../Technical_Report_117.md) (Cross-Backend Baseline), [TR115_v2](../Technical_Report_115_v2.md) (Runtime Analysis)
 
 ---
 

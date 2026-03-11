@@ -5,7 +5,7 @@
 **Model:** llama3.1:8b-instruct (q4_0, q5_K_M, q8_0)  
 **Hardware:** NVIDIA RTX 4080 (12GB VRAM, 9,728 CUDA cores), Intel Core i9-13980HX  
 **Framework:** Ollama v0.1.17  
-**Related:** [TR108](../../reports/Technical_Report_108.md), [Gemma3 Benchmark](Gemma3_Benchmark_Report.md)
+**Related:** [TR108](../reports/Technical_Report_108.md), [Gemma3 Benchmark](Gemma3_Benchmark_Report.md)
 
 ---
 
@@ -349,7 +349,7 @@ param_df = pd.read_csv('csv_data/ollama_param_tuning.csv')
 
 **Summary Documents:**
 - Short summary: `reports/ollama_benchmark_summary.md`
-- Full report: `docs/Ollama_Benchmark_Report.md`
+- Full report: `outputs/publish_ready/docs/Ollama_Benchmark_Report.md`
 
 **Raw Data:**
 - Quantization sweep: `csv_data/ollama_quant_bench.csv`

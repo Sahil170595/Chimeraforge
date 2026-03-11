@@ -107,3 +107,4 @@ node_modules/
 src/python/banterhearts/demo_agent/demo_agent*/
 local.env
 .claude/
+experiments/TR118/models/

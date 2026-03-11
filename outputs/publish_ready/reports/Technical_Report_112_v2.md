@@ -1441,7 +1441,7 @@ Special thanks to the Ollama team for robust local LLM inference, and the Rust c
 **Related Documentation:**
 - [Technical Report 109: Python Agent Workflow Analysis](Technical_Report_109.md)
 - [Technical Report 111 v2: Rust Agent Comprehensive Optimization](Technical_Report_111_v2.md)
-- [Technical Report 115: Rust Async Runtime Analysis](Technical_Report_115.md)
+- [Technical Report 115_v2: Rust Async Runtime Analysis](Technical_Report_115_v2.md)
 - [Technical Report 108: Single-Inference Optimization](Technical_Report_108.md)
 
 ---

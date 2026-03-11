@@ -44,5 +44,5 @@ Gemma3 is the superior choice for real-time gaming banter generation due to sign
 - `gemma3_baseline.json` - Raw performance data
 - `gemma3_param_tuning_summary.csv` - Configuration rankings
 
-**Full documentation:** `docs/Gemma3_Benchmark_Report.md`
+**Full documentation:** `../../publish_ready/docs/Gemma3_Benchmark_Report.md`
 

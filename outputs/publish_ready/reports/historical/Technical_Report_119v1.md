@@ -6,7 +6,7 @@
 **Author:** Research Team  
 **Report Type:** Definitive cost/energy analysis (artifact-backed, manually authored)  
 **Test Duration:** ~3 minutes wall-clock benchmark runtime (350 benchmark runs; 0 degraded)  
-**Related Work:** [TR117](Technical_Report_117.md) (latency/throughput baseline), [TR118_v2.2](Technical_Report_118_v2.2.md) (measurement rigor + pipeline validation), [TR115_v2](Technical_Report_115_v2.md) (definitive "production-grade" reporting standard)
+**Related Work:** [TR117](../Technical_Report_117.md) (latency/throughput baseline), [TR118_v2.2](../Technical_Report_118_v2.2.md) (measurement rigor + pipeline validation), [TR115_v2](../Technical_Report_115_v2.md) (definitive "production-grade" reporting standard)
 
 ---
 

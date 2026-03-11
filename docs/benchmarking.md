@@ -228,7 +228,7 @@ python run_tr115_sweep.py
 cd ../../..
 ```
 
-**Note**: This is a comprehensive study comparing async runtime performance. See [TR115](../outputs/publish_ready/reports/Technical_Report_115.md) for detailed analysis.
+**Note**: This is a comprehensive study comparing async runtime performance. See [TR115_v2](../outputs/publish_ready/reports/Technical_Report_115_v2.md) for detailed analysis.
 
 ## Analyzing Results
 

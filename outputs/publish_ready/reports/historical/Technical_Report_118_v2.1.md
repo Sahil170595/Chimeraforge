@@ -7,7 +7,7 @@
 **Author:** Research Team  
 **Report Type:** Definitive Multi-Scale ONNX/TensorRT Analysis  
 **Test Duration:** 720 total benchmark runs (360 prefill + 360 generate)  
-**Related Work:** [TR118](Technical_Report_118.md) (Pipeline Validation), [TR117](Technical_Report_117.md) (Cross-Backend Baseline), [TR115_v2](Technical_Report_115_v2.md) (Runtime Analysis)
+**Related Work:** [TR118](Technical_Report_118.md) (Pipeline Validation), [TR117](../Technical_Report_117.md) (Cross-Backend Baseline), [TR115_v2](../Technical_Report_115_v2.md) (Runtime Analysis)
 
 **v2.1 Corrections from v2:**
 

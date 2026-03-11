@@ -7,7 +7,7 @@
 **Framework:** Demo_rust_multiagent (Rust async/tokio + Dual Ollama)  
 **Total Configurations:** 27 (7 baseline-vs-chimera, 7 chimera-hetero, 13 chimera-homo)  
 **Total Runs:** 135 (27 configs × 5 runs each)  
-**Related Work:** [TR110](Technical_Report_110.md) (Python Multi-Agent), [TR111_v2](Technical_Report_111_v2.md) (Rust Single-Agent), [TR112_v2](Technical_Report_112_v2.md) (Rust vs Python Comparison), [TR115](Technical_Report_115.md) (Rust Runtime Optimization)
+**Related Work:** [TR110](Technical_Report_110.md) (Python Multi-Agent), [TR111_v2](Technical_Report_111_v2.md) (Rust Single-Agent), [TR112_v2](Technical_Report_112_v2.md) (Rust vs Python Comparison), [TR115_v2](Technical_Report_115_v2.md) (Rust Runtime Optimization)
 
 ---
 
@@ -1254,7 +1254,7 @@ Special thanks to the Ollama team for robust local LLM inference, and the Rust/T
 - [Technical Report 110: Python Multi-Agent Orchestration](Technical_Report_110.md)
 - [Technical Report 111 v2: Rust Agent Comprehensive Optimization](Technical_Report_111_v2.md)
 - [Technical Report 112 v2: Rust vs Python Single-Agent Comparison](Technical_Report_112_v2.md)
-- [Technical Report 115: Rust Async Runtime Analysis](Technical_Report_115.md)
+- [Technical Report 115_v2: Rust Async Runtime Analysis](Technical_Report_115_v2.md)
 
 ---
 

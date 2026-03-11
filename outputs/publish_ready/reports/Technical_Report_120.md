@@ -6,7 +6,7 @@
 **Author:** Research Team  
 **Report Type:** Artifact-backed root-cause audit + controlled reproduction  
 **Primary Data Sources:** TR117 Tier-3 `results/tr117_tier3/metrics.csv` + TR120 controlled runner artifacts  
-**Related Work:** [TR117](Technical_Report_117.md) (baseline benchmark + paradox discovery), [TR118_v2.2](Technical_Report_118_v2.2.md) (measurement rigor), [TR119v1](Technical_Report_119v1.md) (token economics)
+**Related Work:** [TR117](Technical_Report_117.md) (baseline benchmark + paradox discovery), [TR118_v2.2](Technical_Report_118_v2.2.md) (measurement rigor), [TR119](Technical_Report_119.md) (token economics)
 
 ---
 

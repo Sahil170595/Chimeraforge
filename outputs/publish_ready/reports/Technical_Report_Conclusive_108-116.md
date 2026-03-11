@@ -1788,13 +1788,13 @@ This synthesis is decision-grade within the measured stack. It is not a universa
 
 ### 13.2 Superseded reports (retained for provenance)
 
-[10] Technical Report 111 (v1): Rust Agent Performance Analysis. November 2025. `PublishReady/reports/Technical_Report_111.md`. Superseded by [4].
+[10] Technical Report 111 (v1): Rust Agent Performance Analysis. November 2025. `PublishReady/reports/historical/Technical_Report_111.md`. Superseded by [4].
 
-[11] Technical Report 112 (v1): Rust vs Python Agent Comparison. November 2025. `PublishReady/reports/Technical_Report_112.md`. Superseded by [5].
+[11] Technical Report 112 (v1): Rust vs Python Agent Comparison. November 2025. `PublishReady/reports/historical/Technical_Report_112.md`. Superseded by [5].
 
-[12] Technical Report 114 (v1): Rust Concurrent Multi-Agent Performance with Dual Ollama Architecture. November 2025. `PublishReady/reports/Technical_Report_114.md`. Superseded by [7].
+[12] Technical Report 114 (v1): Rust Concurrent Multi-Agent Performance with Dual Ollama Architecture. November 2025. `PublishReady/reports/historical/Technical_Report_114.md`. Superseded by [7].
 
-[13] Technical Report 115 (v1): Rust Async Runtime Optimization Analysis. November 2025. `PublishReady/reports/Technical_Report_115.md`. Superseded by [8].
+[13] Technical Report 115 (v1): Rust Async Runtime Optimization Analysis. November 2025. `PublishReady/reports/historical/Technical_Report_115.md`. Superseded by [8].
 
 ### 13.3 Continuation reports
 
