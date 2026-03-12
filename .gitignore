@@ -125,8 +125,14 @@ experiments/research/**/.ruff_cache/
 experiments/research/**/.ipynb_checkpoints/
 experiments/research/**/Demo_*_out*/
 experiments/research/**/Demo_*_results*/
+experiments/research/**/Demo_*_parity_test/
 experiments/research/**/legacy_*_reports/
 experiments/research/tr110/rust_multiagent/runs/
+experiments/research/tr108/data/
+experiments/research/tr110/data/
+experiments/research/tr111/data/
+experiments/research/tr112/data/
+experiments/research/tr114/data/
 
 local.env
 .claude/
