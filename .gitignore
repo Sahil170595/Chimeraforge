@@ -80,6 +80,7 @@ $RECYCLE.BIN/
 
 # Notebook HTML/PNG exports (regenerable from .ipynb)
 outputs/publish_ready/notebooks/exports/
+outputs/reports/notebook_validations/
 
 # GPU profiler reports
 *.ncu-rep
@@ -119,3 +120,4 @@ src/python/banterhearts/demo_multiagent/comprehensive_test_results/
 local.env
 .claude/
 experiments/TR118/models/
+PRODUCT_SPEC.md
