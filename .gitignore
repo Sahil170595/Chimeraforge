@@ -81,6 +81,7 @@ $RECYCLE.BIN/
 # Notebook HTML/PNG exports (regenerable from .ipynb)
 outputs/publish_ready/notebooks/exports/
 outputs/reports/notebook_validations/
+outputs/publish_ready/notebooks/*.ipynb
 
 # GPU profiler reports
 *.ncu-rep
@@ -116,6 +117,7 @@ src/python/banterhearts/demo_agent/demo_agent_tuned_256/
 src/python/banterhearts/demo_agent/demo_agent_tuned_512/
 src/python/banterhearts/demo_multiagent/results/
 src/python/banterhearts/demo_multiagent/comprehensive_test_results/
+src/rust/demo_agent/runs/
 experiments/research/**/results/
 experiments/research/**/results_*/
 experiments/research/**/target/
@@ -138,3 +140,10 @@ local.env
 .claude/
 experiments/TR118/models/
 PRODUCT_SPEC.md
+experiments/TR118/results/**/*.jsonl
+experiments/TR116/all_metrics_extracted.json
+experiments/TR116/results/**/metrics.json
+experiments/tr121/results/**/*.jsonl
+experiments/TR126/results/**/*.csv
+experiments/TR117_multiagent/results/**/*.csv
+data/research/
