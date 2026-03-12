@@ -26,13 +26,7 @@
 
 ### Llama3 Has:
 1. Quantization comparison (q4_0, q5_K_M, q8_0)
-2. Visual assets (6 PNG files):
-   - quant_tokens_per_sec.png
-   - quant_ttft.png
-   - param_ttft_vs_tokens.png
-   - param_heatmap_temp_0.2.png
-   - param_heatmap_temp_0.4.png
-   - param_heatmap_temp_0.8.png
+2. Visual assets existed in the original benchmark workflow but are omitted from this public mirror
 3. Baseline system metrics (CPU, GPU, memory)
 4. Baseline ML metrics
 

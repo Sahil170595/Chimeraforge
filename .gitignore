@@ -156,3 +156,7 @@ experiments/TR119/results/
 experiments/TR120/results/
 experiments/tr121/results/
 experiments/TR126/results/enhance_v2_results.json
+experiments/TR118/results/**/*.png
+outputs/artifacts/**/*.png
+outputs/reports/compilation/figures/*.png
+outputs/reports/llama3/artifacts/*.png

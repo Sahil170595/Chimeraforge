@@ -45,14 +45,14 @@ This report establishes Ollama's performance baseline for Chimera Heart gaming w
 4. Executed non-streaming REST sweep per quantization
 5. Captured load, prompt-eval, eval timings, tokens/s per call
 6. Performed cartesian parameter sweep: num_gpu (40/60/80/999) × num_ctx (1024/2048/4096) × temp (0.2/0.4/0.8)
-7. Generated visualizations for stakeholder analysis
+7. Generated visual summaries during the original private benchmark run
 
 **Data Sources:**
 - Baseline metrics: `baseline_system_metrics.json`
 - Quantization sweep: `csv_data/ollama_quant_bench.csv`
 - Parameter sweep: `csv_data/ollama_param_tuning.csv`
 - Summary: `csv_data/ollama_param_tuning_summary.csv`
-- Visualizations: `artifacts/ollama/*.png`
+- Visualization exports were generated during the original benchmark run but are omitted from this public mirror
 
 ---
 
@@ -163,13 +163,9 @@ This report establishes Ollama's performance baseline for Chimera Heart gaming w
 
 ### 4.3 Visual Analysis
 
-**Available Visualizations:**
-- `artifacts/ollama/quant_tokens_per_sec.png` - Throughput per quantization
-- `artifacts/ollama/quant_ttft.png` - TTFT comparison
-- `artifacts/ollama/param_ttft_vs_tokens.png` - TTFT vs throughput scatter (temperature-coded)
-- `artifacts/ollama/param_heatmap_temp_0.2.png` - Tokens/s heatmap (temp=0.2)
-- `artifacts/ollama/param_heatmap_temp_0.4.png` - Tokens/s heatmap (temp=0.4)
-- `artifacts/ollama/param_heatmap_temp_0.8.png` - Tokens/s heatmap (temp=0.8)
+**Visualization Status:**
+- The original benchmark generated quantization and parameter-sweep plots.
+- Those PNG exports are intentionally omitted from this public mirror to keep the repo source-focused.
 
 ---
 
@@ -296,7 +292,7 @@ quant_df = pd.read_csv('csv_data/ollama_quant_bench.csv')
 param_df = pd.read_csv('csv_data/ollama_param_tuning.csv')
 
 # Generate charts (throughput, TTFT, heatmaps)
-# Save to artifacts/ollama/
+# Save to a local artifacts directory if you regenerate plots
 "
 ```
 
@@ -357,7 +353,7 @@ param_df = pd.read_csv('csv_data/ollama_param_tuning.csv')
 - Summary: `csv_data/ollama_param_tuning_summary.csv`
 
 **Visualizations:**
-- Charts: `artifacts/ollama/*.png`
+- Charts can be regenerated locally if needed
 
 ---
 

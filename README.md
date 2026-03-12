@@ -594,8 +594,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`outputs/reports/`** | Exploratory, legacy, and scratch report outputs | When you want working notes or historical report artifacts that are not canonical |
 | **`src/chimeraforge/`** | ChimeraForge CLI (plan, bench, eval, report, compare, refit) | The full CLI toolchain |
 | **`outputs/publish_ready/reports/`** | Canonical TR archive (TR108-TR137) + conclusive syntheses | **Start here** for comprehensive findings and analysis |
-| **`outputs/publish_ready/notebooks/`** | Jupyter notebooks for analysis | When you want to reproduce analysis or create visualizations |
-| **`outputs/artifacts/`** | Generated visualizations, profiles | When you want to see charts, graphs, or performance profiles |
+| **`outputs/publish_ready/docs/`** | Publish-ready benchmark narratives and supporting writeups | When you want public-facing benchmark context beyond the TR archive |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
 | **`logs/benchmarks/`** | Archived benchmark logs | When you need historical log data |
 | **`resources/`** | Legacy research resources | Historical reference only |
