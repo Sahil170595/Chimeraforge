@@ -117,11 +117,16 @@ src/python/banterhearts/demo_agent/demo_agent_tuned_512/
 src/python/banterhearts/demo_multiagent/results/
 src/python/banterhearts/demo_multiagent/comprehensive_test_results/
 experiments/research/**/results/
+experiments/research/**/results_*/
 experiments/research/**/target/
 experiments/research/**/__pycache__/
 experiments/research/**/.pytest_cache/
 experiments/research/**/.ruff_cache/
 experiments/research/**/.ipynb_checkpoints/
+experiments/research/**/Demo_*_out*/
+experiments/research/**/Demo_*_results*/
+experiments/research/**/legacy_*_reports/
+experiments/research/tr110/rust_multiagent/runs/
 
 local.env
 .claude/
