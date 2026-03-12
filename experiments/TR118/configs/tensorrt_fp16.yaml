@@ -1,7 +1,0 @@
-# TR118 variant: TensorRT FP16 only
-tensorrt:
-  precisions: [fp16]
-benchmark:
-  backends:
-    - tensorrt-fp16
-

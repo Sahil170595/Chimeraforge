@@ -584,7 +584,8 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`src/python/banterhearts/`** | Python agent source code | When you want to understand or modify Python implementations |
 | **`src/rust/demo_agent/`** | Rust single-agent implementation | When you want to understand or modify Rust single-agent code |
 | **`src/rust/demo_multiagent/`** | Rust multi-agent implementation | When you want to understand or modify Rust multi-agent code |
-| **`experiments/TR111/`** through **`TR115/`** | Research experiment code and scripts | When you want to reproduce specific technical report results |
+| **`experiments/research/tr108/`** through **`tr139/`** | Canonical mirrored research code, configs, and task definitions | When you want the public reproduction scaffold for specific technical reports |
+| **`experiments/TR116/`** and **`experiments/TR117/`** | Legacy experiment folders with still-unique source/docs | When you need older non-mirrored experiment material not yet folded into `experiments/research/` |
 | **`scripts/`** | Python automation scripts | When you want to automate benchmarks or analysis |
 | **`scripts/windows/`** | PowerShell wrappers for Windows | When running on Windows and need platform-specific helpers |
 | **`benchmarks/`** | Replayable benchmark artifacts | When you want to inspect raw benchmark data |
