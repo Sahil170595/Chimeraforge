@@ -6,4 +6,4 @@
   - `scripts/analyze_tr115_results.py`
   - `scripts/compare_to_tr114.py`
 - Artifacts: `artifacts/` (runtime comparison stats)
-- Report: `PublishReady/reports/Technical_Report_115_v2.md`
+- Report: `outputs/publish_ready/reports/historical/Technical_Report_115_v2.md`

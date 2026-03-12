@@ -5,4 +5,4 @@
   - `scripts/generate_summary.py`
   - `scripts/run_benchmark.py` (Automated Runner)
 - Artifacts: `artifacts/` (CSV, Markdown, sweep summary)
-- Reports: `PublishReady/reports/Technical_Report_112_v2.md`
+- Reports: `outputs/publish_ready/reports/historical/Technical_Report_112_v2.md`

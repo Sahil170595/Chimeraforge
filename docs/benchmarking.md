@@ -46,7 +46,7 @@ python src/python/banterhearts/demo_agent/run_demo.py \
   --chimera-temperature 0.8
 ```
 
-**Output**: `src/python/banterhearts/demo_agent/demo_agent_*/` with reports and metrics.
+**Output**: the directory passed via `--output-dir` (default: `demo_agent/` in the current working directory), with `reports/` and `data/` subdirectories.
 
 ### Python Multi-Agent Benchmark
 
@@ -63,7 +63,7 @@ python -m banterhearts.demo_multiagent.run_multiagent_demo \
   --chimera-temperature 1.0
 ```
 
-**Output**: `src/python/banterhearts/demo_multiagent/comprehensive_test_results/` with per-run metrics.
+**Output**: the directory passed via `--output-dir` (default: `experiments/TR116/results/multi/python/`), with per-run metrics and summaries.
 
 ### Rust Single-Agent Benchmark
 
@@ -222,7 +222,7 @@ python run_rust_multiagent_dual_ollama_sweep.py
 ### Rust Runtime Optimization Sweep (TR115)
 
 ```bash
-# Full TR115 methodology (5 runtimes  30 configs  5 runs = 750 benchmarks)
+# Full TR115 methodology (5 runtimes x 30 configs x 5 runs = 750 benchmarks)
 cd experiments/TR115_runtime_optimization/scripts
 python run_tr115_sweep.py
 cd ../../..
@@ -234,7 +234,7 @@ cd ../../..
 
 ### Python Results
 
-**Location**: `src/python/banterhearts/demo_agent/demo_agent_*/` or `src/python/banterhearts/demo_multiagent/comprehensive_test_results/`
+**Location**: the run directory specified via `--output-dir`, or the experiment result roots under `experiments/`
 
 **Files**:
 - `comparison_report.md`: Side-by-side baseline vs Chimera comparison
@@ -277,7 +277,7 @@ cd ../../..
 2. **Process Isolation**: Separate processes to avoid warm-cache bias
 3. **Cold Starts**: Force model unloads between runs (Python) or natural eviction (Rust)
 4. **Outlier Detection**: Identify and exclude anomalous runs
-5. **Confidence Intervals**: Calculate mean  stddev for all metrics
+5. **Confidence Intervals**: Calculate mean and stddev for all metrics
 
 ### Fair Comparison
 

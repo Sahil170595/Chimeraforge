@@ -6,4 +6,4 @@
   - `scripts/validate_data.py`
   - `scripts/run_benchmark.py` (Automated Runner)
 - Artifacts: `artifacts/` (CSV + Markdown summaries)
-- Reports: see `PublishReady/reports/Technical_Report_111_v2.md`
+- Reports: see `outputs/publish_ready/reports/historical/Technical_Report_111_v2.md`

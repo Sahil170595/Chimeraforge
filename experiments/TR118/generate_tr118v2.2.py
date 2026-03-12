@@ -105,7 +105,7 @@ def _backend_success_table(raw_roots: list[Path]) -> dict[str, Any]:
 
 def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
-    v21_path = repo_root / "PublishReady/reports/Technical_Report_118_v2.1.md"
+    v21_path = repo_root / "outputs/publish_ready/reports/historical/Technical_Report_118_v2.1.md"
     out_path = repo_root / "reports/generated/Technical_Report_118_v2.2.md"
 
     audit_dir = repo_root / "scripts/tr118/results/tr118v2_audit"

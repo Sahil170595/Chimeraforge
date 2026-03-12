@@ -1,6 +1,6 @@
 # Demo_rust_multiagent
 
-Rust rewrite of the Chimera multi-agent benchmark (see `banterhearts/demo_multiagent`). It launches two asynchronous agents in parallel, captures throughput/TTFT deltas, and reports concurrency speedup/efficiency for three scenarios:
+Rust rewrite of the Chimera multi-agent benchmark (see `banterhearts/demo_multiagent`). It launches two asynchronous agents in parallel, captures throughput and TTFT deltas, and reports concurrency speedup and efficiency for three scenarios:
 
 1. `baseline_vs_chimera` - Ollama defaults vs Chimera overrides
 2. `chimera_hetero` - Two Chimera agents with distinct overrides
@@ -30,7 +30,7 @@ cargo build --release
   --chimera-repeat-penalty 1.1
 ```
 
-Each run creates `run_<n>` folders with agent-specific reports (`collector_report.md`, `insight_report.md`), a combined concurrency summary, and raw `metrics.json`. The root output directory contains `summary.json` + `summary.md` with aggregated statistics.
+Each run creates `run_<n>` folders with agent-specific reports (`collector_report.md`, `insight_report.md`), a combined concurrency summary, and raw `metrics.json`. The root output directory contains `summary.json` and `summary.md` with aggregated statistics.
 
 ## Runtime Variants (TR115)
 
@@ -43,7 +43,7 @@ cargo build --release --features runtime-tokio-default
 # Tokio LocalSet (single-threaded)
 cargo build --release --features runtime-tokio-localset
 
-# Async-std runtime (⚠️ 50% efficiency - not recommended)
+# Async-std runtime (50% efficiency - not recommended)
 cargo build --release --features runtime-async-std
 
 # Smol runtime
@@ -53,10 +53,10 @@ cargo build --release --features runtime-smol
 cargo build --release --features runtime-smol-1kb
 ```
 
-**Performance**: All successful runtimes (tokio/smol) achieve 98-99% peak efficiency. Tokio-default recommended (98.72% mean, 1.21pp σ). See [TR115_v2](../PublishReady/reports/Technical_Report_115_v2.md) for detailed analysis.
+**Performance**: All successful runtimes (tokio/smol) achieve 98-99% peak efficiency. Tokio-default is recommended (98.72% mean, 1.21pp sigma). See `outputs/publish_ready/reports/historical/Technical_Report_115_v2.md` for detailed analysis.
 
 ## Notes
 
-- Use two separate Ollama instances (ports 11434 / 11435) for contention-free comparisons, mirroring TR110's methodology.
-- The agent prompts are tuned for quick synthetic workloads so we can run large sweep matrices (GPU layers × context windows × temperature) without hand-editing inputs.
-- **Dual Ollama mandatory** for production - single Ollama reduces efficiency to 82% (see TR113).
+- Use two separate Ollama instances (ports 11434 and 11435) for contention-free comparisons, mirroring TR110's methodology.
+- The agent prompts are tuned for quick synthetic workloads so the repo can run large sweep matrices (GPU layers x context windows x temperature) without hand-editing inputs.
+- Dual Ollama is mandatory for production. A single Ollama instance reduces efficiency to 82% (see TR113).

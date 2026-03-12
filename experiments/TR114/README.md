@@ -6,4 +6,4 @@
   - `scripts/validate_data.py`
   - `scripts/run_benchmark.py` (Automated Runner)
 - Artifacts: `artifacts/` (config stats, scenario stats, validation report)
-- Report: `PublishReady/reports/Technical_Report_114_v2.md`
+- Report: `outputs/publish_ready/reports/historical/Technical_Report_114_v2.md`

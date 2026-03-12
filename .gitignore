@@ -1,4 +1,4 @@
-# ── Python ────────────────────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,13 +10,13 @@ build/
 *.whl
 .Python
 
-# ── Virtual environments ─────────────────────────────────────────────
+# Virtual environments
 .venv*/
 venv*/
 env/
 ENV/
 
-# ── ML/AI model binaries (never track these) ─────────────────────────
+# ML/AI model binaries (never track these)
 *.safetensors
 *.pth
 *.pt
@@ -34,18 +34,18 @@ ENV/
 *.model
 *.weights
 
-# ── Large/compressed files ───────────────────────────────────────────
+# Large/compressed files
 *.zip
 *.tar.gz
 *.tar.bz2
 *.rar
 *.7z
 
-# ── Rust ─────────────────────────────────────────────────────────────
+# Rust
 target/
 Cargo.lock
 
-# ── Testing & coverage ──────────────────────────────────────────────
+# Testing & coverage
 .pytest_cache/
 .coverage
 .coverage.*
@@ -55,13 +55,13 @@ htmlcov/
 coverage.xml
 *.cover
 
-# ── Type checking & linting ──────────────────────────────────────────
+# Type checking & linting
 .mypy_cache/
 .dmypy.json
 .ruff_cache/
 .pyre/
 
-# ── IDE & editor ─────────────────────────────────────────────────────
+# IDE & editor
 .vscode/
 .idea/
 .fleet/
@@ -70,21 +70,21 @@ coverage.xml
 *.swo
 *~
 
-# ── OS files ─────────────────────────────────────────────────────────
+# OS files
 .DS_Store
 Thumbs.db
 $RECYCLE.BIN/
 
-# ── Jupyter ──────────────────────────────────────────────────────────
+# Jupyter
 .ipynb_checkpoints/
 
-# ── Notebook HTML/PNG exports (regenerable from .ipynb) ──────────────
+# Notebook HTML/PNG exports (regenerable from .ipynb)
 outputs/publish_ready/notebooks/exports/
 
-# ── GPU profiler reports ─────────────────────────────────────────────
+# GPU profiler reports
 *.ncu-rep
 
-# ── Logs & temp files ────────────────────────────────────────────────
+# Logs & temp files
 logs/
 *.log
 *.tmp
@@ -92,7 +92,7 @@ logs/
 tmp/
 temp/
 
-# ── Secrets & config ────────────────────────────────────────────────
+# Secrets & config
 .env
 .env.*
 secrets.json
@@ -100,11 +100,22 @@ secrets.json
 config/secrets.yaml
 config/production.yaml
 
-# ── Node (if any JS tooling) ────────────────────────────────────────
+# Node (if any JS tooling)
 node_modules/
 
-# ── Local demo agent test outputs ───────────────────────────────────
-src/python/banterhearts/demo_agent/demo_agent*/
+# Local demo agent and multi-agent outputs
+demo_agent/
+src/python/banterhearts/demo_agent/demo_agent_best/
+src/python/banterhearts/demo_agent/demo_agent_results/
+src/python/banterhearts/demo_agent/demo_agent_sweep/
+src/python/banterhearts/demo_agent/demo_agent_tuned/
+src/python/banterhearts/demo_agent/demo_agent_tuned_40/
+src/python/banterhearts/demo_agent/demo_agent_tuned_60/
+src/python/banterhearts/demo_agent/demo_agent_tuned_256/
+src/python/banterhearts/demo_agent/demo_agent_tuned_512/
+src/python/banterhearts/demo_multiagent/results/
+src/python/banterhearts/demo_multiagent/comprehensive_test_results/
+
 local.env
 .claude/
 experiments/TR118/models/

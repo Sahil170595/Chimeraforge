@@ -17,7 +17,7 @@ This repository contains everything behind Technical Reports TR108 through TR137
 
 ## What This Repository Is About
 
-Chimeraforge is the research and benchmarking breakout from the Banterhearts program. It contains every asset required to measure LLM inference performance, run the TR-series test plans, publish the technical reports, and ship the predictive capacity planner. Production APIs and orchestration services remain in Banterhearts; this repo stays focused on measurement, analysis, and deployment tooling.
+Chimeraforge is the research and benchmarking breakout from the Banterhearts program. It contains every asset required to measure LLM inference performance, run the TR-series test plans, publish the technical reports, and ship the predictive capacity planner. This repo stays focused on measurement, analysis, and deployment tooling.
 
 The research program spans three completed phases:
 

@@ -11,8 +11,8 @@ This directory contains all research experiments and technical report implementa
 - **TR119**: Cost & energy analysis experiments
 - **TR120**: "Compile Paradox" root-cause audit experiments
 - **TR121**: Model scaling study (5M to 20B parameters)
-- **TR122**: Resource profiling deep dive (planned)
-- **TR123**: Multi-hardware generalization (planned)
+- **TR122**: Resource profiling deep dive (archived planning note)
+- **TR123**: Multi-hardware generalization (archived planning note)
 - **tr117**: TR117 tier-3 infrastructure and scripts
 - **compilation**: Compilation benchmark experiments
 - **ollama**: Ollama-specific benchmark experiments

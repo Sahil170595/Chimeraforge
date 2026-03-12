@@ -116,7 +116,7 @@ cd ../../..
 
 ### Single-Agent Output
 
-**Location**: `src/python/banterhearts/demo_agent/demo_agent_*/` or `src/rust/demo_agent/rust_results/`
+**Location**: the directory passed via `--output-dir` (Python defaults to `demo_agent/` in the working directory) or `src/rust/demo_agent/rust_results/`
 
 **Key Files**:
 - `comparison_report.md`: Human-readable comparison
@@ -129,7 +129,7 @@ cd ../../..
 
 ### Multi-Agent Output
 
-**Location**: `src/python/banterhearts/demo_multiagent/comprehensive_test_results/` or `src/rust/demo_multiagent/Demo_rust_multiagent_results_tr110_dual/`
+**Location**: the directory passed via `--output-dir` (Python defaults to `experiments/TR116/results/multi/python/`) or `src/rust/demo_multiagent/Demo_rust_multiagent_results_tr110_dual/`
 
 **Key Metrics**:
 - **Speedup**: Concurrent vs sequential time (higher is better, ideal = 2.0x)

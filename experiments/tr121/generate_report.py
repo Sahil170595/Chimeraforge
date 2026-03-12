@@ -3,7 +3,7 @@
 TR121: Generate a first-pass Markdown report from a completed run directory.
 
 This intentionally produces a narrative scaffold + key tables and links to artifacts.
-For publish-ready quality, edit the output into PublishReady/reports/Technical_Report_121.md.
+For publish-ready quality, edit the output into outputs/publish_ready/reports/historical/Technical_Report_121v1.md.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ def main() -> int:
         summary_agg = None
     fits = pd.read_csv(run_dir / "analysis" / "scaling_fits.csv")
 
-    # Keep the report compact; publish-ready narrative is in PublishReady/*
+    # Keep the report compact; the publish-ready narrative lives under outputs/publish_ready/reports/
     def _cell(v) -> str:
         if v is None:
             return ""
@@ -63,7 +63,7 @@ def main() -> int:
     lines += [
         "# Technical Report 121 (Generated): Model Scaling Study",
         "",
-        "**Status:** Generated draft (edit into `PublishReady/reports/Technical_Report_121.md`).",
+        "**Status:** Generated draft (edit into `outputs/publish_ready/reports/historical/Technical_Report_121v1.md`).",
         "",
         "## Run Metadata",
         "",
