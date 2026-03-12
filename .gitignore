@@ -120,6 +120,7 @@ src/python/banterhearts/demo_multiagent/comprehensive_test_results/
 src/rust/demo_agent/runs/
 src/rust/demo_agent/Demo_rust_agent_parity_test/
 src/rust/demo_multiagent/runs/
+src/rust/demo_multiagent/Demo_rust_multiagent_parity_test/
 experiments/research/**/results/
 experiments/research/**/results_*/
 experiments/research/**/target/
@@ -148,6 +149,7 @@ experiments/TR116/results/**/metrics.json
 experiments/tr121/results/**/*.jsonl
 experiments/TR126/results/**/*.csv
 experiments/TR117_multiagent/results/**/*.csv
+experiments/TR117_multiagent/results/
 data/research/
 experiments/TR115_runtime_optimization/results_v2/
 experiments/TR119/results/
