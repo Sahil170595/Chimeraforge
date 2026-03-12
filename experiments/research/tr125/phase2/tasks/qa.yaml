@@ -1,0 +1,220 @@
+name: qa
+description: >
+  Answer factual questions concisely. Tests knowledge retrieval,
+  factual accuracy, and concise response generation.
+task_type: qa
+metric_group: text_quality
+output_type: generate
+num_fewshot: 0
+
+prompt_template: |
+  Answer the following question concisely.
+
+  Question: {{ question }}
+
+  Answer:
+
+filters:
+  - type: strip_whitespace
+  - type: truncate_at_newline
+
+samples:
+  - id: qa_001
+    question: "What is the capital of France?"
+    reference: "Paris"
+
+  - id: qa_002
+    question: "What programming language was created by Guido van Rossum?"
+    reference: "Python"
+
+  - id: qa_003
+    question: "What is the chemical formula for water?"
+    reference: "H2O"
+
+  - id: qa_004
+    question: "In what year did the first Moon landing occur?"
+    reference: "1969"
+
+  - id: qa_005
+    question: "What is the largest planet in our solar system?"
+    reference: "Jupiter"
+
+  - id: qa_006
+    question: "Who wrote the theory of general relativity?"
+    reference: "Albert Einstein"
+
+  - id: qa_007
+    question: "What data structure uses FIFO ordering?"
+    reference: "A queue"
+
+  - id: qa_008
+    question: "What is the time complexity of binary search?"
+    reference: "O(log n)"
+
+  - id: qa_009
+    question: "What does CPU stand for?"
+    reference: "Central Processing Unit"
+
+  - id: qa_010
+    question: "What is the boiling point of water in Celsius?"
+    reference: "100 degrees Celsius"
+
+  - id: qa_011
+    question: "What is the speed of light in a vacuum in meters per second?"
+    reference: "Approximately 3 x 10^8 meters per second"
+
+  - id: qa_012
+    question: "What is the powerhouse of the cell?"
+    reference: "The mitochondria"
+
+  - id: qa_013
+    question: "Who painted the Mona Lisa?"
+    reference: "Leonardo da Vinci"
+
+  - id: qa_014
+    question: "What is the chemical symbol for gold?"
+    reference: "Au"
+
+  - id: qa_015
+    question: "What sorting algorithm has an average time complexity of O(n log n) and uses a pivot element?"
+    reference: "Quicksort"
+
+  - id: qa_016
+    question: "What is the longest river in the world?"
+    reference: "The Nile River"
+
+  - id: qa_017
+    question: "What does DNA stand for?"
+    reference: "Deoxyribonucleic acid"
+
+  - id: qa_018
+    question: "What is the smallest prime number?"
+    reference: "2"
+
+  - id: qa_019
+    question: "Who composed the Four Seasons?"
+    reference: "Antonio Vivaldi"
+
+  - id: qa_020
+    question: "What is the most abundant gas in Earth's atmosphere?"
+    reference: "Nitrogen"
+
+  - id: qa_021
+    question: "What protocol is used to send email from a client to a server?"
+    reference: "SMTP (Simple Mail Transfer Protocol)"
+
+  - id: qa_022
+    question: "What is the largest organ in the human body?"
+    reference: "The skin"
+
+  - id: qa_023
+    question: "In what year did World War II end?"
+    reference: "1945"
+
+  - id: qa_024
+    question: "What is the derivative of x squared?"
+    reference: "2x"
+
+  - id: qa_025
+    question: "What is the capital of Japan?"
+    reference: "Tokyo"
+
+  - id: qa_026
+    question: "What is the SI unit of electric current?"
+    reference: "Ampere"
+
+  - id: qa_027
+    question: "Who wrote Romeo and Juliet?"
+    reference: "William Shakespeare"
+
+  - id: qa_028
+    question: "What is the process by which plants convert sunlight into energy?"
+    reference: "Photosynthesis"
+
+  - id: qa_029
+    question: "What does HTTP stand for?"
+    reference: "HyperText Transfer Protocol"
+
+  - id: qa_030
+    question: "What is the hardest natural substance on Earth?"
+    reference: "Diamond"
+
+  - id: qa_031
+    question: "What layer of the OSI model does a router operate at?"
+    reference: "Layer 3 (Network layer)"
+
+  - id: qa_032
+    question: "What is the value of pi to two decimal places?"
+    reference: "3.14"
+
+  - id: qa_033
+    question: "What is the largest desert in the world?"
+    reference: "The Antarctic Desert"
+
+  - id: qa_034
+    question: "What is the main greenhouse gas responsible for climate change?"
+    reference: "Carbon dioxide (CO2)"
+
+  - id: qa_035
+    question: "Who discovered penicillin?"
+    reference: "Alexander Fleming"
+
+  - id: qa_036
+    question: "What is the fundamental theorem of calculus used to compute?"
+    reference: "Definite integrals using antiderivatives"
+
+  - id: qa_037
+    question: "What is the closest star to Earth?"
+    reference: "The Sun"
+
+  - id: qa_038
+    question: "What type of bond involves the sharing of electron pairs between atoms?"
+    reference: "Covalent bond"
+
+  - id: qa_039
+    question: "What economic term describes a general increase in prices over time?"
+    reference: "Inflation"
+
+  - id: qa_040
+    question: "What is the Big O notation for accessing an element by index in an array?"
+    reference: "O(1)"
+
+  - id: qa_041
+    question: "What organ in the human body produces insulin?"
+    reference: "The pancreas"
+
+  - id: qa_042
+    question: "What is the tallest mountain in the world?"
+    reference: "Mount Everest"
+
+  - id: qa_043
+    question: "What physicist is known for the uncertainty principle?"
+    reference: "Werner Heisenberg"
+
+  - id: qa_044
+    question: "What is the binary representation of the decimal number 10?"
+    reference: "1010"
+
+  - id: qa_045
+    question: "What is the largest mammal on Earth?"
+    reference: "The blue whale"
+
+  - id: qa_046
+    question: "What engineering principle states that pressure applied to a confined fluid is transmitted equally in all directions?"
+    reference: "Pascal's law"
+
+  - id: qa_047
+    question: "Who wrote the novel 1984?"
+    reference: "George Orwell"
+
+  - id: qa_048
+    question: "What is the pH value of a neutral solution?"
+    reference: "7"
+
+  - id: qa_049
+    question: "What planet is known as the Red Planet?"
+    reference: "Mars"
+
+  - id: qa_050
+    question: "What type of machine learning involves training with labeled data?"
+    reference: "Supervised learning"

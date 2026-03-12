@@ -1,0 +1,19 @@
+# TR126: Docker/Linux + Triton Validation
+# Install with: pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128
+
+# Core
+numpy>=2.2.0
+pandas>=2.2.3
+scipy>=1.14.1
+pyyaml>=6.0.2
+matplotlib>=3.10.0
+
+# ML (PyTorch cu128 wheels include triton on Linux)
+torch>=2.5.1
+transformers>=4.46.3
+tokenizers>=0.20.3
+safetensors>=0.4.5
+
+# Monitoring
+psutil>=6.1.0
+pynvml>=11.5.3

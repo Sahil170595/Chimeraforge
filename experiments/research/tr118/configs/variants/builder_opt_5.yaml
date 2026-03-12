@@ -1,0 +1,4 @@
+tensorrt:
+  builder:
+    builder_optimization_level: 5
+

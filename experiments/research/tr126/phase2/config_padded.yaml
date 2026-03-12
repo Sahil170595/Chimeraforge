@@ -1,0 +1,51 @@
+# TR126 Phase 2: Padded Shapes Ablation
+#
+# Tests whether fixed-length padding eliminates recompilation overhead.
+# Same 2×3 factorial as baseline — NO fallback_backend.
+
+tier3_config: research/tr117/configs/matrix_tier3.yaml
+
+models:
+  # --- Row 1: GPT-2 (MHA) — FP32 ---
+  - path: models/gpt2-25m
+    dtype: fp32
+  - path: models/gpt2-50m
+    dtype: fp32
+  - path: models/gpt2-100m
+    dtype: fp32
+  # --- Row 2: Qwen2.5 (GQA) — FP16 ---
+  - path: models/qwen2.5-0.5b
+    dtype: fp16
+  - path: models/qwen2.5-1.5b
+    dtype: fp16
+  - path: models/qwen2.5-3b
+    dtype: fp16
+
+scenarios:
+  - single_micro
+  - single_short
+  - single_medium
+  - single_long
+  - stress_single
+
+device: cuda
+
+repetitions: 30
+warmup_repetitions: 3
+max_new_tokens: 64
+
+tokenization:
+  pad_to_max_length: true
+  pad_scope: per_scenario
+  pad_to_multiple_of: 8
+
+torch_compile:
+  enabled: true
+  backend: inductor
+  mode: reduce-overhead
+  dynamic: false
+  fullgraph: false
+  disable_cudagraphs: true
+
+modes:
+  - prefill

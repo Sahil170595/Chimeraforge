@@ -1,0 +1,36 @@
+# TR119 Smoke Test Configuration
+# Purpose: fast end-to-end validation that cost/energy telemetry works.
+
+model:
+  name: "gpt2"
+  description: "GPT-2 base (~124M params) for smoke test"
+
+benchmark:
+  backends:
+    - transformers-gpu-compile
+    - transformers-gpu
+  scenarios:
+    - single_short
+  repetitions: 1
+  warmup_runs: 1
+
+telemetry:
+  sample_interval_s: 0.25
+  enable_gpu: true
+  enable_cpu: true
+
+cloud_pricing:
+  on_demand_usd_per_hour: 1.0
+  spot_usd_per_hour: 0.3
+  reserved_usd_per_hour: 0.7
+  on_prem_usd_per_hour: 0.0  # CapEx only
+
+energy:
+  usd_per_kwh: 0.20
+  carbon_intensity_gco2e_per_kwh: 500.0  # US grid average
+
+output:
+  results_dir: "scripts/tr119/results/tr119_smoke"
+
+seed: 42
+

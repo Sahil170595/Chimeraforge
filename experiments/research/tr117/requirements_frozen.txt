@@ -1,0 +1,57 @@
+# TR117 Frozen Dependencies for Reproducibility
+# Generated for Python 3.13, CUDA 12.8, TensorRT 10.12
+
+# Core
+numpy==2.2.0
+pandas==2.2.3
+scipy==1.14.1
+pyyaml==6.0.2
+
+# ML/Inference
+torch==2.5.1+cu128
+transformers==4.46.3
+tokenizers==0.20.3
+safetensors==0.4.5
+
+# ONNX/TensorRT
+onnx==1.17.0
+onnxruntime-gpu==1.20.1
+tensorrt==10.7.0
+pycuda==2024.1.2
+
+# Metrics
+rouge-score==0.1.2
+nltk==3.9.1
+sentence-transformers==3.3.1
+scikit-learn==1.6.0
+
+# Monitoring
+psutil==6.1.0
+pynvml==11.5.3
+
+# API/Web
+fastapi==0.115.5
+uvicorn==0.32.1
+httpx==0.27.2
+requests==2.32.3
+
+# Database
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg2-binary==2.9.10
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+pytest-cov==6.0.0
+pytest-benchmark==5.1.0
+
+# Visualization
+matplotlib==3.10.0
+seaborn==0.13.2
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.10.3
+tqdm==4.67.1
+

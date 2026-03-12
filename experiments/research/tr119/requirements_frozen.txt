@@ -1,0 +1,36 @@
+# TR119 Frozen Dependencies for Reproducibility
+# Generated for Python 3.13, CUDA 12.8+
+# Install via: pip install -r scripts/tr119/requirements_frozen.txt
+
+# Core
+numpy>=2.1.0
+pandas>=2.2.2
+scipy>=1.13.1
+pyyaml>=6.0.2
+
+# ML/Inference
+torch>=2.5.1
+transformers>=4.48.0
+tokenizers>=0.20.0
+safetensors>=0.4.0
+
+# ONNX/TensorRT (optional)
+onnx>=1.15.0
+onnxruntime>=1.16.3
+onnxruntime-gpu>=1.16.3; platform_system!="Darwin"
+# tensorrt>=10.0.0  # Install separately based on CUDA version
+# pycuda>=2024.1  # Install separately
+
+# Statistical Analysis
+scipy>=1.13.1  # For hypothesis testing, ANOVA
+
+# Monitoring/Telemetry
+psutil>=6.0.0
+pynvml>=11.5.0; platform_system!="Darwin"
+
+# Visualization
+matplotlib>=3.10.0
+
+# Note: For exact reproducibility, pin versions based on your environment:
+# pip freeze > scripts/tr119/requirements_frozen.txt
+

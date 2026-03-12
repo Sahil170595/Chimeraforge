@@ -1,0 +1,25 @@
+
+CHIMERA HEART PERFORMANCE REPORT
+Generated: 2025-09-30 19:46:27
+Duration: 1 minutes
+Sample Count: 6
+
+SYSTEM METRICS:
+- CPU Usage: 13.9% avg,
+  15.4% peak
+- Memory Usage: 72.1% avg,
+  73.5% peak
+- Memory Used: 11.3 GB avg,
+  11.5 GB peak
+
+GPU METRICS:
+- Temperature: 54.7°C avg,
+  63.0°C peak
+- Power Draw: 64.4W avg,
+  142.6W peak
+- GPU Utilization: 33.0% avg,
+  93.0% peak
+- Memory Utilization: 32.3% avg,
+  97.0% peak
+- Memory Used: 4478.2 MB avg,
+  5490.0 MB peak

@@ -1,0 +1,172 @@
+{
+  "timestamp": "2026-02-20T20:28:29",
+  "ollama_url": "http://localhost:11434",
+  "mode": "setup",
+  "total": 18,
+  "available": 18,
+  "missing": 0,
+  "tags": [
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q2_K",
+      "tag": "llama3.2:1b-instruct-q2_K",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 20s",
+      "elapsed_s": 19.749441099997057
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q3_K_S",
+      "tag": "llama3.2:1b-instruct-q3_K_S",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 14s",
+      "elapsed_s": 14.028001499998936
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q4_K_M",
+      "tag": "llama3.2:1b-instruct-q4_K_M",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 23s",
+      "elapsed_s": 22.93131490000087
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q5_K_M",
+      "tag": "llama3.2:1b-instruct-q5_K_M",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 25s",
+      "elapsed_s": 25.462788799999544
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q6_K",
+      "tag": "llama3.2:1b-instruct-q6_K",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 33s",
+      "elapsed_s": 32.58798349999779
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q8_0",
+      "tag": "llama3.2:1b-instruct-q8_0",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 0s",
+      "elapsed_s": 0.3667935999983456
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q2_K",
+      "tag": "phi:2.7b-chat-v2-q2_K",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 34s",
+      "elapsed_s": 34.47461689999909
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q3_K_S",
+      "tag": "phi:2.7b-chat-v2-q3_K_S",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 40s",
+      "elapsed_s": 40.454392100000405
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q4_K_M",
+      "tag": "phi:2.7b-chat-v2-q4_K_M",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 63s",
+      "elapsed_s": 62.98904870000115
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q5_K_M",
+      "tag": "phi:2.7b-chat-v2-q5_K_M",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 59s",
+      "elapsed_s": 58.96229929999754
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q6_K",
+      "tag": "phi:2.7b-chat-v2-q6_K",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 62s",
+      "elapsed_s": 61.63498949999848
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q8_0",
+      "tag": "phi:2.7b-chat-v2-q8_0",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 78s",
+      "elapsed_s": 78.39124090000041
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q2_K",
+      "tag": "qwen2.5:1.5b-instruct-q2_K",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 21s",
+      "elapsed_s": 20.65509490000113
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q3_K_S",
+      "tag": "qwen2.5:1.5b-instruct-q3_K_S",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 20s",
+      "elapsed_s": 20.042459700001928
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q4_K_M",
+      "tag": "qwen2.5:1.5b-instruct-q4_K_M",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 0s",
+      "elapsed_s": 0.3590806000029261
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q5_K_M",
+      "tag": "qwen2.5:1.5b-instruct-q5_K_M",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 40s",
+      "elapsed_s": 40.17758999999933
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q6_K",
+      "tag": "qwen2.5:1.5b-instruct-q6_K",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 40s",
+      "elapsed_s": 40.29397489999974
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q8_0",
+      "tag": "qwen2.5:1.5b-instruct-q8_0",
+      "available": true,
+      "action": "pulled",
+      "message": "pulled in 79s",
+      "elapsed_s": 78.87324670000089
+    }
+  ]
+}

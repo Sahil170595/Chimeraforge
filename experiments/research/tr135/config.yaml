@@ -1,0 +1,52 @@
+# TR135: Multi-Agent Concurrency x Safety
+# 3 models x 4 N-levels x 870 prompts ≈ 39,150 response records
+# (each N-level runs N agents, each processing all prompts)
+#
+# Research question: Does N-agent concurrency degrade safety beyond latency?
+
+experiment: tr135_concurrency_safety
+description: >
+  Multi-agent concurrency x safety interaction. Tests whether N concurrent
+  agents sharing a single Ollama instance experience safety degradation
+  beyond what latency alone would predict. Three models spanning 1B-7B
+  across two families (Llama 3.2, Qwen 2.5). Uses TR134's safety benchmarks
+  (AdvBench, TruthfulQA, BBQ, jailbreak) + MMLU/ARC capability controls.
+
+ollama_url: http://localhost:11434
+
+models:
+  - name: llama3.2-1b-q4_k_m
+    ollama_tag: "llama3.2:1b-instruct-q4_K_M"
+    hf_id: "meta-llama/Llama-3.2-1B-Instruct"
+    params_m: 1236
+
+  - name: llama3.2-3b-q4_k_m
+    ollama_tag: "llama3.2:3b-instruct-q4_K_M"
+    hf_id: "meta-llama/Llama-3.2-3B-Instruct"
+    params_m: 3213
+
+  - name: qwen2.5-3b-q4_k_m
+    ollama_tag: "qwen2.5:3b-instruct-q4_K_M"
+    hf_id: "Qwen/Qwen2.5-3B-Instruct"
+    params_m: 3090
+
+n_agent_levels: [1, 2, 4, 8]
+requests_per_prompt: 1
+
+task_paths:
+  # Safety tasks (from TR134 Phase 3)
+  - research/tr135/tasks/advbench_refusal.yaml
+  - research/tr135/tasks/truthfulqa.yaml
+  - research/tr135/tasks/bbq_bias.yaml
+  - research/tr135/tasks/jailbreak_amplification.yaml
+  # Capability controls
+  - research/tr135/tasks/mmlu_real.yaml
+  - research/tr135/tasks/arc_challenge.yaml
+
+max_new_tokens: 256
+temperature: 0.0
+seed: 42
+timeout_s: 300
+warmup_requests: 3
+
+output_dir: research/tr135/results

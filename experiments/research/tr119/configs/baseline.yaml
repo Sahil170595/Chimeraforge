@@ -1,0 +1,35 @@
+benchmark:
+  backends:
+    - transformers-gpu-compile
+    - transformers-gpu
+    - transformers-cpu
+  scenarios:
+    - single_short
+    - single_medium
+  repetitions: 7  # Frontier lab: 7 repetitions for statistical rigor
+  mode: prefill
+  seed: 42  # Seed for reproducibility
+
+output:
+  results_dir: scripts/tr119/results/tr119_baseline
+
+telemetry:
+  sample_interval_s: 0.25
+  enable_gpu: true
+  enable_cpu: true
+  require_cpu_power: true
+
+cloud_pricing:
+  on_demand_usd_per_hour: 1.0
+
+energy:
+  usd_per_kwh: 0.2
+
+analysis:
+  tokens_per_month: 1000000000.0
+  months: 12
+  upfront_cost_usd: 0.0
+  prompt_tokens: 256
+  generate_tokens: 128
+
+

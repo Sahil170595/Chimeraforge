@@ -1,0 +1,695 @@
+name: summarization
+description: >
+  Summarize a passage in 2-3 sentences. Tests factual compression,
+  information retention, and coherence.
+task_type: summarization
+metric_group: text_quality
+output_type: generate
+num_fewshot: 0
+
+prompt_template: |
+  Summarize the following passage in 2-3 sentences.
+
+  Passage: {{ passage }}
+
+  Summary:
+
+filters:
+  - type: strip_whitespace
+
+samples:
+  - id: summ_001
+    passage: >
+      The transformer architecture, introduced by Vaswani et al. in 2017,
+      replaced recurrence with self-attention mechanisms. This enabled
+      parallel processing of entire sequences, dramatically reducing
+      training time. The key innovation was scaled dot-product attention,
+      which computes relevance scores between all token pairs.
+    reference: >
+      The transformer architecture replaced recurrence with self-attention,
+      enabling parallel sequence processing and faster training. Its key
+      innovation was scaled dot-product attention for computing token relevance.
+
+  - id: summ_002
+    passage: >
+      Quantum computing leverages quantum mechanical phenomena such as
+      superposition and entanglement to process information. Unlike classical
+      bits which are either 0 or 1, quantum bits (qubits) can exist in
+      multiple states simultaneously. This parallelism enables quantum
+      computers to solve certain problems exponentially faster.
+    reference: >
+      Quantum computing uses superposition and entanglement to process
+      information with qubits that exist in multiple states simultaneously,
+      enabling exponential speedups for certain problems.
+
+  - id: summ_003
+    passage: >
+      The Great Barrier Reef, located off the coast of Queensland, Australia,
+      is the world's largest coral reef system. Spanning over 2,300 kilometers,
+      it comprises approximately 2,900 individual reefs and 900 islands. Rising
+      ocean temperatures and acidification pose significant threats to the
+      reef's biodiversity.
+    reference: >
+      The Great Barrier Reef is the world's largest coral reef system, spanning
+      over 2,300 km off Queensland, Australia. It faces threats from rising
+      temperatures and ocean acidification.
+
+  - id: summ_004
+    passage: >
+      CRISPR-Cas9 is a revolutionary gene editing tool that allows scientists
+      to precisely modify DNA sequences. The system uses a guide RNA to direct
+      the Cas9 enzyme to a specific location in the genome, where it makes a
+      cut. This technology has applications in treating genetic diseases,
+      improving crop yields, and developing new antibiotics.
+    reference: >
+      CRISPR-Cas9 enables precise DNA editing using guide RNA to direct enzyme
+      cuts at specific genome locations. It has broad applications in medicine,
+      agriculture, and drug development.
+
+  - id: summ_005
+    passage: >
+      The global semiconductor shortage that began in 2020 disrupted
+      manufacturing across automotive, consumer electronics, and computing
+      industries. Supply chain bottlenecks, increased demand for electronic
+      devices during the pandemic, and geopolitical tensions between major
+      chip-producing nations all contributed to the crisis.
+    reference: >
+      A global semiconductor shortage starting in 2020 disrupted multiple
+      industries, caused by supply chain issues, pandemic-driven demand
+      increases, and geopolitical tensions.
+
+  - id: summ_006
+    passage: >
+      Photosynthesis converts light energy into chemical energy stored in
+      glucose. In the light-dependent reactions, chlorophyll absorbs photons
+      and splits water molecules, producing oxygen and ATP. The Calvin cycle
+      then uses this ATP to fix carbon dioxide into sugar molecules.
+    reference: >
+      Photosynthesis converts light to chemical energy through light-dependent
+      reactions that produce oxygen and ATP, followed by the Calvin cycle
+      which fixes CO2 into sugars.
+
+  - id: summ_007
+    passage: >
+      Machine learning models require large datasets for training, but data
+      collection raises privacy concerns. Federated learning addresses this by
+      training models across decentralized devices while keeping data local.
+      Only model updates are shared with a central server, preserving
+      individual data privacy while enabling collective model improvement.
+    reference: >
+      Federated learning trains ML models across decentralized devices without
+      sharing raw data, only exchanging model updates to preserve privacy while
+      improving models collectively.
+
+  - id: summ_008
+    passage: >
+      The James Webb Space Telescope, launched in December 2021, is the most
+      powerful space telescope ever built. Its 6.5-meter primary mirror and
+      infrared instruments allow it to observe the earliest galaxies formed
+      after the Big Bang. Early observations have already challenged existing
+      models of galaxy formation.
+    reference: >
+      The James Webb Space Telescope, launched in 2021, uses a 6.5-meter
+      mirror and infrared instruments to observe the earliest galaxies,
+      already challenging existing formation models.
+
+  - id: summ_009
+    passage: >
+      Reinforcement learning from human feedback (RLHF) is a technique used to
+      align language models with human preferences. The process involves
+      training a reward model on human comparisons of model outputs, then
+      using this reward model to fine-tune the language model via proximal
+      policy optimization (PPO).
+    reference: >
+      RLHF aligns language models with human preferences by training a reward
+      model on human comparisons, then fine-tuning the language model using
+      proximal policy optimization.
+
+  - id: summ_010
+    passage: >
+      Electric vehicles are becoming increasingly popular as battery technology
+      improves and charging infrastructure expands. Lithium-ion batteries now
+      offer ranges exceeding 400 kilometers on a single charge. However,
+      challenges remain in battery recycling, charging speed, and the
+      environmental impact of lithium mining.
+    reference: >
+      Electric vehicles are growing in popularity with improved lithium-ion
+      batteries offering 400+ km range. Challenges remain in recycling,
+      charging speed, and mining environmental impact.
+
+  - id: summ_011
+    passage: >
+      General relativity, proposed by Albert Einstein in 1915, describes
+      gravity as the curvature of spacetime caused by mass and energy.
+      Massive objects like stars and planets bend the fabric of spacetime,
+      and other objects follow curved paths through this warped geometry.
+      The theory has been confirmed by observations including gravitational
+      lensing and the detection of gravitational waves.
+    reference: >
+      Einstein's general relativity describes gravity as spacetime curvature
+      caused by mass and energy. It has been confirmed through observations
+      of gravitational lensing and gravitational waves.
+
+  - id: summ_012
+    passage: >
+      Mitochondria are membrane-bound organelles found in eukaryotic cells
+      that generate most of the cell's supply of adenosine triphosphate
+      (ATP). They have their own DNA, separate from the nuclear genome,
+      which supports the endosymbiotic theory that mitochondria originated
+      as independent prokaryotic organisms. This maternal inheritance of
+      mitochondrial DNA is widely used in population genetics studies.
+    reference: >
+      Mitochondria generate ATP in eukaryotic cells and possess their own
+      DNA, supporting the endosymbiotic theory of their prokaryotic origin.
+      Their maternally inherited DNA is a key tool in population genetics.
+
+  - id: summ_013
+    passage: >
+      The Haber-Bosch process synthesizes ammonia from nitrogen and hydrogen
+      gases under high temperature and pressure using an iron catalyst. Developed
+      in the early 20th century, it enabled mass production of synthetic
+      fertilizers. This process is estimated to support food production for
+      nearly half the world's population, though it consumes about 1-2 percent
+      of global energy supply.
+    reference: >
+      The Haber-Bosch process produces ammonia from nitrogen and hydrogen
+      using an iron catalyst, enabling synthetic fertilizer production that
+      feeds nearly half the global population at significant energy cost.
+
+  - id: summ_014
+    passage: >
+      Distributed version control systems like Git track changes to source
+      code across multiple repositories without requiring a central server.
+      Each developer maintains a complete copy of the repository history,
+      enabling offline work and reducing single points of failure. Branching
+      and merging strategies allow teams to collaborate on parallel features
+      while maintaining code stability.
+    reference: >
+      Git and similar distributed version control systems give each developer
+      a full repository copy, enabling offline work and eliminating single
+      points of failure. Branching and merging support parallel collaboration.
+
+  - id: summ_015
+    passage: >
+      Godel's incompleteness theorems, published in 1931, demonstrated
+      fundamental limitations of formal axiomatic systems. The first theorem
+      states that any consistent system capable of expressing arithmetic
+      contains true statements that cannot be proved within the system.
+      The second theorem shows that such a system cannot prove its own
+      consistency.
+    reference: >
+      Godel's incompleteness theorems showed that consistent formal systems
+      capable of arithmetic contain unprovable truths and cannot demonstrate
+      their own consistency.
+
+  - id: summ_016
+    passage: >
+      The Silk Road was an ancient network of trade routes connecting China
+      to the Mediterranean, active from roughly the 2nd century BCE to the
+      15th century CE. It facilitated not only the exchange of goods like
+      silk, spices, and precious metals, but also the spread of religions,
+      technologies, and diseases. The routes played a crucial role in
+      shaping cultural exchange between Eastern and Western civilizations.
+    reference: >
+      The Silk Road was a trade network from the 2nd century BCE to the
+      15th century CE connecting China to the Mediterranean. It enabled
+      exchange of goods, religions, technologies, and diseases between
+      Eastern and Western civilizations.
+
+  - id: summ_017
+    passage: >
+      Plate tectonics describes the movement of large segments of Earth's
+      lithosphere over the asthenosphere. These plates interact at convergent,
+      divergent, and transform boundaries, producing earthquakes, volcanic
+      activity, and mountain formation. The theory unified previously
+      separate observations about continental drift, seafloor spreading,
+      and seismic activity into a single coherent framework.
+    reference: >
+      Plate tectonics explains how lithospheric plates move and interact
+      at boundaries, causing earthquakes, volcanism, and mountain building.
+      The theory unified continental drift, seafloor spreading, and
+      seismology into one framework.
+
+  - id: summ_018
+    passage: >
+      Antibiotic resistance occurs when bacteria evolve mechanisms to survive
+      exposure to antibiotics that previously killed them. Overuse and misuse
+      of antibiotics in human medicine and agriculture accelerate this process.
+      The World Health Organization has identified antimicrobial resistance as
+      one of the top ten global public health threats, with an estimated 1.27
+      million deaths directly attributable to resistant infections in 2019.
+    reference: >
+      Antibiotic resistance arises when bacteria evolve to survive previously
+      effective drugs, accelerated by overuse in medicine and agriculture.
+      The WHO considers it a top global health threat, with 1.27 million
+      deaths attributed to resistant infections in 2019.
+
+  - id: summ_019
+    passage: >
+      Inflation targeting is a monetary policy framework where a central bank
+      sets and publicly announces a target inflation rate, then adjusts interest
+      rates to steer actual inflation toward that goal. Adopted by many central
+      banks since New Zealand pioneered it in 1990, the approach aims to anchor
+      inflation expectations and reduce economic uncertainty. Critics argue it
+      can lead to neglect of employment and financial stability objectives.
+    reference: >
+      Inflation targeting involves central banks setting public inflation rate
+      goals and adjusting interest rates accordingly, pioneered by New Zealand
+      in 1990. Critics contend it may neglect employment and financial
+      stability considerations.
+
+  - id: summ_020
+    passage: >
+      Additive manufacturing, commonly known as 3D printing, builds objects
+      layer by layer from digital models using materials such as plastics,
+      metals, and ceramics. The technology enables rapid prototyping, reduces
+      material waste compared to subtractive methods, and allows creation of
+      complex geometries impossible with traditional machining. Applications
+      range from aerospace components to medical implants and architectural
+      models.
+    reference: >
+      Additive manufacturing builds objects layer by layer from digital
+      models, enabling rapid prototyping and complex geometries with reduced
+      waste. Applications span aerospace, medicine, and architecture.
+
+  - id: summ_021
+    passage: >
+      Neutron stars are the collapsed remnants of massive stars that have
+      undergone supernova explosions. With masses between 1.1 and 2.3 solar
+      masses compressed into a sphere roughly 20 kilometers in diameter,
+      they are among the densest objects in the universe. Some neutron stars
+      emit beams of electromagnetic radiation from their magnetic poles and
+      are observed as pulsars when those beams sweep across Earth.
+    reference: >
+      Neutron stars are ultra-dense remnants of supernovae, compressing over
+      a solar mass into roughly 20 km diameter. Some emit radiation beams
+      observed as pulsars when sweeping across Earth.
+
+  - id: summ_022
+    passage: >
+      Coral bleaching occurs when stressed corals expel the symbiotic algae
+      (zooxanthellae) living in their tissues, causing them to turn white.
+      The primary stressor is elevated sea surface temperatures, often linked
+      to El Nino events and climate change. While corals can recover if
+      conditions improve quickly, prolonged stress leads to widespread
+      mortality and reef ecosystem collapse.
+    reference: >
+      Coral bleaching happens when heat-stressed corals expel symbiotic algae,
+      turning white. Prolonged elevated temperatures from climate change can
+      prevent recovery, leading to reef mortality and ecosystem collapse.
+
+  - id: summ_023
+    passage: >
+      The Sapir-Whorf hypothesis proposes that the structure of a language
+      influences its speakers' cognition and worldview. The strong version
+      claims language determines thought, while the weak version suggests
+      language merely influences perception and categorization. Modern
+      research supports the weak version, showing that language affects
+      color perception, spatial reasoning, and temporal concepts across
+      different cultures.
+    reference: >
+      The Sapir-Whorf hypothesis suggests language structure influences
+      cognition, with modern research supporting the weak version that
+      language affects perception of color, space, and time across cultures.
+
+  - id: summ_024
+    passage: >
+      Cognitive behavioral therapy (CBT) is an evidence-based psychotherapy
+      that addresses dysfunctional emotions, behaviors, and thoughts through
+      structured, goal-oriented procedures. Developed by Aaron Beck in the
+      1960s, it teaches patients to identify and challenge negative thought
+      patterns. Meta-analyses consistently show CBT is effective for
+      depression, anxiety disorders, PTSD, and obsessive-compulsive disorder.
+    reference: >
+      Cognitive behavioral therapy, developed by Aaron Beck, treats
+      psychological disorders by helping patients identify and challenge
+      negative thought patterns. Meta-analyses confirm its effectiveness
+      for depression, anxiety, PTSD, and OCD.
+
+  - id: summ_025
+    passage: >
+      Social stratification refers to the hierarchical arrangement of
+      individuals and groups in society based on wealth, power, and prestige.
+      Max Weber identified three dimensions of stratification: class (economic),
+      status (social honor), and party (political power). These overlapping
+      hierarchies create systems of inequality that persist across generations
+      and influence access to resources, education, and opportunities.
+    reference: >
+      Social stratification hierarchically arranges people by wealth, power,
+      and prestige, with Weber identifying economic, social, and political
+      dimensions. These overlapping hierarchies create persistent inequality
+      affecting access to resources and opportunities.
+
+  - id: summ_026
+    passage: >
+      The principle of stare decisis requires courts to follow precedents
+      established by higher courts within the same jurisdiction. This doctrine
+      promotes legal consistency, predictability, and fairness by ensuring
+      similar cases receive similar treatment. However, courts can distinguish
+      cases on their facts or, in rare circumstances, overrule prior
+      precedents when societal conditions or legal understanding have
+      significantly changed.
+    reference: >
+      Stare decisis requires courts to follow higher court precedents,
+      promoting legal consistency and fairness. Courts can distinguish cases
+      on facts or overrule precedents when conditions significantly change.
+
+  - id: summ_027
+    passage: >
+      The sonata form, dominant in Western classical music from the mid-18th
+      century onward, consists of three main sections: exposition, development,
+      and recapitulation. The exposition introduces two contrasting themes in
+      different keys, the development transforms and explores these themes,
+      and the recapitulation restates them in the home key. This structure
+      provided a flexible framework for composers from Mozart through Brahms.
+    reference: >
+      Sonata form structures Western classical music into exposition,
+      development, and recapitulation sections with contrasting themes.
+      It provided a flexible compositional framework from Mozart through
+      Brahms.
+
+  - id: summ_028
+    passage: >
+      The Renaissance, spanning roughly the 14th to 17th centuries, was a
+      cultural movement originating in Italy that emphasized humanism,
+      classical learning, and artistic innovation. Artists like Leonardo da
+      Vinci and Michelangelo pioneered techniques such as linear perspective
+      and chiaroscuro. The movement profoundly influenced European art,
+      science, literature, and philosophy, marking the transition from the
+      medieval to the modern era.
+    reference: >
+      The Renaissance was a 14th-17th century cultural movement from Italy
+      emphasizing humanism, classical learning, and artistic techniques like
+      perspective. It transformed European art, science, and philosophy,
+      bridging the medieval and modern eras.
+
+  - id: summ_029
+    passage: >
+      Gothic architecture, prevalent in Europe from the 12th to 16th
+      centuries, is characterized by pointed arches, ribbed vaults, and
+      flying buttresses. These structural innovations allowed walls to be
+      thinner and taller, enabling the installation of large stained glass
+      windows that flooded interiors with colored light. Notre-Dame de
+      Paris and Chartres Cathedral are iconic examples of the style.
+    reference: >
+      Gothic architecture features pointed arches, ribbed vaults, and flying
+      buttresses enabling thin, tall walls with large stained glass windows.
+      Notre-Dame and Chartres Cathedral exemplify this 12th-16th century style.
+
+  - id: summ_030
+    passage: >
+      Utilitarianism, developed by Jeremy Bentham and John Stuart Mill,
+      evaluates the morality of actions based on their consequences for
+      overall happiness or well-being. An action is considered right if it
+      produces the greatest good for the greatest number of people. Critics
+      raise concerns about the difficulty of measuring happiness, the
+      potential to justify harming minorities, and the neglect of individual
+      rights in favor of aggregate welfare.
+    reference: >
+      Utilitarianism judges actions by their consequences for overall
+      happiness, seeking the greatest good for the greatest number. Critics
+      question the measurability of happiness and the potential neglect of
+      individual rights.
+
+  - id: summ_031
+    passage: >
+      Superconductivity is a phenomenon where certain materials conduct
+      electricity with zero resistance below a critical temperature. First
+      discovered in mercury at 4.2 Kelvin in 1911 by Heike Kamerlingh Onnes,
+      the phenomenon was explained by BCS theory in 1957. High-temperature
+      superconductors discovered in the 1980s operate at temperatures above
+      77 Kelvin, enabling cooling with liquid nitrogen instead of liquid helium.
+    reference: >
+      Superconductivity allows zero-resistance electrical conduction below a
+      critical temperature, first discovered in 1911 and explained by BCS
+      theory. High-temperature superconductors found in the 1980s operate
+      above 77 K, simplifying cooling requirements.
+
+  - id: summ_032
+    passage: >
+      The human microbiome consists of trillions of microorganisms residing
+      in and on the human body, with the gut harboring the largest community.
+      These microbes play essential roles in digestion, immune system
+      regulation, and vitamin synthesis. Disruptions to the microbiome,
+      known as dysbiosis, have been linked to conditions including
+      inflammatory bowel disease, obesity, and depression.
+    reference: >
+      The human microbiome comprises trillions of microorganisms essential
+      for digestion, immunity, and vitamin synthesis. Dysbiosis has been
+      linked to inflammatory bowel disease, obesity, and depression.
+
+  - id: summ_033
+    passage: >
+      Catalysis is the process of increasing a chemical reaction rate by
+      adding a substance called a catalyst that is not consumed in the
+      reaction. Catalysts work by lowering the activation energy required
+      for the reaction to proceed. Industrial catalysis is essential for
+      processes such as petroleum refining, ammonia synthesis, and the
+      production of polymers, accounting for over 80 percent of all
+      manufactured chemical products.
+    reference: >
+      Catalysis speeds chemical reactions using catalysts that lower
+      activation energy without being consumed. Industrial catalysis
+      underpins petroleum refining, ammonia synthesis, and polymer
+      production, covering over 80 percent of manufactured chemicals.
+
+  - id: summ_034
+    passage: >
+      The MapReduce programming model, introduced by Google in 2004, enables
+      distributed processing of large datasets across clusters of computers.
+      The model divides computation into a map phase that processes key-value
+      pairs in parallel and a reduce phase that aggregates intermediate
+      results. This paradigm influenced the development of open-source
+      frameworks like Apache Hadoop and Apache Spark.
+    reference: >
+      MapReduce enables distributed large-scale data processing through
+      parallel map and reduce phases across computer clusters. Introduced
+      by Google in 2004, it inspired frameworks like Hadoop and Spark.
+
+  - id: summ_035
+    passage: >
+      The Riemann hypothesis, formulated in 1859, conjectures that all
+      non-trivial zeros of the Riemann zeta function have a real part equal
+      to one-half. It remains one of the most important unsolved problems in
+      mathematics, with implications for the distribution of prime numbers.
+      A proof or disproof would have profound consequences for number theory,
+      cryptography, and computational mathematics.
+    reference: >
+      The Riemann hypothesis conjectures that all non-trivial zeros of the
+      zeta function have real part one-half, with major implications for
+      prime distribution. It remains one of mathematics' most important
+      unsolved problems.
+
+  - id: summ_036
+    passage: >
+      The Treaty of Westphalia in 1648 ended the Thirty Years' War and
+      established the principle of state sovereignty in international
+      relations. The treaties recognized the right of each state to govern
+      its own territory without external interference. This framework became
+      the foundation of the modern nation-state system and continues to
+      influence international law and diplomatic norms today.
+    reference: >
+      The 1648 Treaty of Westphalia ended the Thirty Years' War and
+      established state sovereignty as a foundational principle. It created
+      the modern nation-state system that still shapes international law
+      and diplomacy.
+
+  - id: summ_037
+    passage: >
+      Permafrost, ground that remains frozen for at least two consecutive
+      years, covers approximately 25 percent of the Northern Hemisphere's
+      land surface. As global temperatures rise, thawing permafrost releases
+      stored carbon dioxide and methane, creating a positive feedback loop
+      that accelerates warming. This thaw also destabilizes infrastructure,
+      threatens Arctic ecosystems, and may release ancient pathogens
+      preserved in the frozen soil.
+    reference: >
+      Permafrost covers 25 percent of Northern Hemisphere land and releases
+      greenhouse gases when thawing, creating a warming feedback loop. Thaw
+      also destabilizes infrastructure and threatens Arctic ecosystems.
+
+  - id: summ_038
+    passage: >
+      Vaccines work by exposing the immune system to weakened, inactivated,
+      or fragment forms of a pathogen, triggering an adaptive immune response
+      without causing disease. Memory B-cells and T-cells produced during
+      this process provide long-lasting protection against future infections.
+      The development of mRNA vaccine technology during the COVID-19 pandemic
+      demonstrated a new platform capable of rapid design and deployment.
+    reference: >
+      Vaccines train the immune system using pathogen fragments to create
+      memory cells for lasting protection. The COVID-19 pandemic accelerated
+      mRNA vaccine technology, enabling rapid design and deployment.
+
+  - id: summ_039
+    passage: >
+      Behavioral economics integrates insights from psychology into economic
+      models to explain why individuals often deviate from rational decision-
+      making. Daniel Kahneman and Amos Tversky's prospect theory showed
+      that people weigh losses more heavily than equivalent gains and are
+      influenced by framing effects. These findings have informed public
+      policy through nudge-based interventions in retirement savings, organ
+      donation, and health behavior.
+    reference: >
+      Behavioral economics uses psychological insights to explain irrational
+      decision-making, with Kahneman and Tversky's prospect theory showing
+      loss aversion and framing effects. These findings inform nudge-based
+      public policy interventions.
+
+  - id: summ_040
+    passage: >
+      Strain engineering involves deliberately introducing mechanical
+      deformation into semiconductor materials to enhance their electronic
+      properties. Applying tensile or compressive strain to silicon alters
+      its crystal lattice, increasing electron and hole mobility by up to
+      70 percent. This technique is widely used in modern CMOS transistor
+      fabrication to improve performance without reducing feature sizes.
+    reference: >
+      Strain engineering enhances semiconductor performance by deforming
+      crystal lattices to increase carrier mobility by up to 70 percent.
+      It is widely used in CMOS fabrication to boost performance without
+      shrinking feature sizes.
+
+  - id: summ_041
+    passage: >
+      Dark matter is a hypothetical form of matter that does not emit or
+      absorb electromagnetic radiation, making it invisible to telescopes.
+      Its existence is inferred from gravitational effects on visible matter,
+      such as the rotation curves of galaxies and gravitational lensing.
+      Dark matter is estimated to comprise approximately 27 percent of the
+      total mass-energy content of the universe, compared to roughly 5
+      percent for ordinary matter.
+    reference: >
+      Dark matter is invisible matter inferred from gravitational effects
+      like galaxy rotation curves and lensing, comprising about 27 percent
+      of the universe's mass-energy. It cannot be detected through
+      electromagnetic radiation.
+
+  - id: summ_042
+    passage: >
+      Mangrove forests are coastal ecosystems found in tropical and
+      subtropical regions where salt-tolerant trees grow in tidal zones.
+      They serve as critical nursery habitats for commercially important
+      fish species, protect shorelines from storm surges and erosion, and
+      sequester carbon at rates three to five times higher than terrestrial
+      forests. Despite their ecological importance, mangroves are being
+      lost at an alarming rate due to aquaculture expansion and coastal
+      development.
+    reference: >
+      Mangrove forests provide nursery habitats for fish, protect coastlines,
+      and sequester carbon at rates far exceeding terrestrial forests. They
+      are rapidly declining due to aquaculture and coastal development.
+
+  - id: summ_043
+    passage: >
+      Phonemes are the smallest units of sound that distinguish meaning in
+      a language. English uses approximately 44 phonemes, while some languages
+      like Taa use over 100 and Hawaiian uses only 13. The study of phonemes,
+      called phonology, reveals how languages organize sounds into systems
+      and how these systems vary across the world's approximately 7,000
+      languages.
+    reference: >
+      Phonemes are the smallest meaning-distinguishing sound units in
+      language, varying widely from 13 in Hawaiian to over 100 in Taa.
+      Phonology studies how languages organize these sound systems.
+
+  - id: summ_044
+    passage: >
+      The placebo effect is a phenomenon where patients experience real
+      improvements in symptoms after receiving an inert treatment they
+      believe to be active. Neuroimaging studies have shown that placebos
+      can activate endogenous opioid and dopamine pathways in the brain,
+      producing measurable physiological changes. Understanding the placebo
+      effect is critical for designing rigorous clinical trials and may
+      inform new approaches to pain management.
+    reference: >
+      The placebo effect produces real symptom improvements from inert
+      treatments through activation of opioid and dopamine brain pathways.
+      Understanding it is crucial for clinical trial design and may advance
+      pain management approaches.
+
+  - id: summ_045
+    passage: >
+      Urbanization is the process of population concentration in cities and
+      metropolitan areas. As of 2023, approximately 56 percent of the world's
+      population lives in urban areas, a figure projected to reach 68 percent
+      by 2050. Rapid urbanization in developing countries strains housing,
+      transportation, water, and sanitation infrastructure, while also
+      driving economic growth and innovation.
+    reference: >
+      Urbanization concentrates populations in cities, with 56 percent living
+      in urban areas projected to reach 68 percent by 2050. It strains
+      infrastructure in developing countries while driving economic growth.
+
+  - id: summ_046
+    passage: >
+      International humanitarian law, codified primarily in the Geneva
+      Conventions of 1949 and their Additional Protocols, governs the
+      conduct of armed conflict and seeks to limit its effects. The
+      conventions establish protections for wounded soldiers, prisoners of
+      war, and civilians in conflict zones. Nearly every nation in the
+      world has ratified the Geneva Conventions, making them among the
+      most universally accepted international treaties.
+    reference: >
+      The Geneva Conventions codify international humanitarian law governing
+      armed conflict, protecting wounded soldiers, prisoners, and civilians.
+      Nearly universally ratified, they are among the most widely accepted
+      international treaties.
+
+  - id: summ_047
+    passage: >
+      Jazz originated in the early 20th century in New Orleans, blending
+      African American musical traditions including blues, ragtime, and
+      spirituals with European harmonic structures. Characterized by
+      improvisation, syncopation, and swing rhythms, jazz evolved through
+      numerous subgenres including bebop, cool jazz, and fusion. The genre
+      has profoundly influenced popular music worldwide and was recognized
+      by UNESCO as an intangible cultural heritage.
+    reference: >
+      Jazz emerged in early 20th century New Orleans from African American
+      and European musical traditions, featuring improvisation and swing.
+      It evolved through many subgenres and profoundly influenced global
+      popular music.
+
+  - id: summ_048
+    passage: >
+      Impressionism was a 19th-century art movement originating in France
+      that emphasized capturing light, color, and momentary visual
+      impressions over precise detail. Artists like Claude Monet, Pierre-
+      Auguste Renoir, and Edgar Degas used visible brushstrokes, open
+      composition, and ordinary subject matter. Initially rejected by the
+      academic art establishment, the movement fundamentally changed the
+      trajectory of Western painting.
+    reference: >
+      Impressionism was a French art movement emphasizing light, color,
+      and fleeting visual impressions through visible brushstrokes and
+      ordinary subjects. Initially rejected, it fundamentally transformed
+      Western painting.
+
+  - id: summ_049
+    passage: >
+      Suspension bridges use cables hung from towers to support the bridge
+      deck, distributing loads through tension in the cables and compression
+      in the towers. This design allows spans exceeding 2,000 meters,
+      making it suitable for crossing wide waterways. The Akashi Kaikyo
+      Bridge in Japan holds the record for the longest central span at
+      1,991 meters, a feat of structural engineering completed in 1998.
+    reference: >
+      Suspension bridges use cables and towers to distribute loads through
+      tension and compression, enabling spans over 2,000 meters. Japan's
+      Akashi Kaikyo Bridge holds the record at 1,991 meters.
+
+  - id: summ_050
+    passage: >
+      Existentialism is a philosophical tradition that emphasizes individual
+      existence, freedom, and the responsibility of creating meaning in an
+      indifferent universe. Key thinkers include Soren Kierkegaard, Jean-Paul
+      Sartre, and Simone de Beauvoir, each offering distinct perspectives on
+      authenticity and human choice. Sartre's claim that existence precedes
+      essence asserts that humans are not defined by predetermined nature
+      but by their actions and decisions.
+    reference: >
+      Existentialism emphasizes individual freedom and responsibility for
+      creating meaning, with key thinkers including Kierkegaard, Sartre,
+      and de Beauvoir. Sartre's central claim is that existence precedes
+      essence, defining humans by their actions.

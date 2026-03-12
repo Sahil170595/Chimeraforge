@@ -1,0 +1,30 @@
+model_path: models/tiny-gpt2
+tier3_config: scripts/tr117/configs/matrix_tier3.yaml
+
+# Minimal run used for timing-validation and compiler evidence capture.
+scenarios:
+  - single_micro
+  - single_short
+  - single_medium
+  - single_long
+  - stress_single
+
+device: cuda
+dtype: fp32
+
+repetitions: 30
+warmup_repetitions: 3
+
+max_new_tokens: 64
+
+torch_compile:
+  enabled: true
+  backend: inductor
+  fallback_backend: aot_eager
+  mode: reduce-overhead
+  dynamic: false
+  fullgraph: false
+
+modes:
+  - prefill
+

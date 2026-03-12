@@ -1,0 +1,75 @@
+experiment: tr128
+
+models:
+  - name: qwen2.5-1.5b
+    ollama_tag: "qwen2.5:1.5b"
+    params_m: 1500
+    max_context: 131072
+  - name: llama3.2-1b
+    ollama_tag: "llama3.2:1b"
+    params_m: 1200
+    max_context: 131072
+  - name: llama3.2-3b
+    ollama_tag: "llama3.2:3b"
+    params_m: 3200
+    max_context: 131072
+
+ollama_url: http://localhost:11434
+ollama_timeout_s: 120
+max_new_tokens: 128
+seed: 42
+warmup_requests: 3
+gpu_poll_interval_s: 1.0
+
+# Phase 1: Baseline characterization (serial, no concurrency)
+# Establishes per-model service time → predicts theoretical saturation.
+# 3 models × 50 requests = 150 rows, ~5 min
+phase1:
+  requests_per_model: 50
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 2: Concurrency & saturation sweep
+# THE core experiment: OLLAMA_NUM_PARALLEL × arrival rate × model.
+# Tests where reality diverges from M/D/1 queueing predictions.
+# 3 models × 3 parallelism × 5 rates × 30 req = 1350 rows, ~45 min
+phase2:
+  num_parallel_levels: [1, 2, 4]
+  arrival_rates: [0.5, 1.0, 2.0, 5.0, 10.0]
+  requests_per_rate: 30
+  arrival_pattern: poisson
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 3: Thermal stability under sustained load
+# Holds at ~80% saturation for a fixed duration.
+# Detects throttling: does throughput degrade over time at constant load?
+# 3 models × 3 min = 9 min active load
+phase3:
+  duration_s: 180           # 3 minutes sustained per model
+  arrival_rate_rps: 1.0     # overridden per-model to 80% of P2 saturation
+  arrival_pattern: periodic  # constant rate to isolate thermal effects
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 4: Streaming TTFT (honest measurement)
+# TTFT is reliable. Inter-chunk latency reported as ichunk (NOT inter-token).
+# 3 models × 3 rates × 2 modes × 30 req = 540 rows, ~20 min
+phase4:
+  arrival_rates: [0.5, 1.0, 2.0]
+  response_modes: [batch, stream]
+  requests_per_combo: 30
+  arrival_pattern: poisson
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 5: Multi-turn context accumulation
+# Full vs sliding-window. Cross-validates with TR127.
+# 3 models × 2 strategies × 2 turn_counts × 8 convos = 720 turn-rows, ~30 min
+phase5:
+  turn_counts: [5, 10]
+  context_strategies: [full, sliding_window]
+  sliding_window_turns: 3
+  conversations_per_combo: 8
+
+output_dir: research/tr128/results

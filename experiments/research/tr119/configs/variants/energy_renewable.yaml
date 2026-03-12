@@ -1,0 +1,5 @@
+# TR119 variant: Renewable energy scenario
+energy:
+  usd_per_kwh: 0.10  # Lower cost for renewable
+  carbon_intensity_gco2e_per_kwh: 50.0  # Renewable energy carbon intensity
+

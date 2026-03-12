@@ -1,0 +1,82 @@
+# TR124 Phase 1: Backend Quality Comparison
+# 5 HF models × 2 backends (GPU FP16 vs CPU FP32) + standard benchmarks
+# Greedy decoding (temp=0), rep=1 for quality (deterministic)
+# Same models as TR123 for cost data cross-reference
+#
+# Run: python research/tr124/phase1/run.py
+# Analyze: python research/tr124/phase1/analyze.py
+
+experiment: tr124_phase1
+description: >
+  Full-depth backend quality comparison. Tests whether FP16 (GPU) and FP32
+  (CPU) produce equivalent quality, measures quality scaling across model
+  sizes, and anchors results to standard benchmarks (MMLU, HellaSwag, ARC-Easy).
+
+models:
+  - name: gpt2
+    path: gpt2
+    params_m: 124
+  - name: llama-3.2-1b
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+  - name: qwen2.5-1.5b
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+  - name: phi-2
+    path: microsoft/phi-2
+    params_m: 2700
+    trust_remote_code: true
+  - name: llama-3.2-3b
+    path: unsloth/Llama-3.2-3B
+    params_m: 3213
+
+backends:
+  - name: transformers-gpu
+    device: cuda
+  - name: transformers-cpu
+    device: cpu
+
+task_paths:
+  - scripts/eval/tasks/builtin/summarization.yaml
+  - scripts/eval/tasks/builtin/qa.yaml
+  - scripts/eval/tasks/builtin/code_generation.yaml
+  - scripts/eval/tasks/builtin/creative_writing.yaml
+  - scripts/eval/tasks/builtin/classification.yaml
+
+benchmarks:
+  - name: mmlu
+    n_per_subject: 25
+    subjects:
+      - abstract_algebra
+      - college_physics
+      - computer_security
+      - high_school_us_history
+  - name: hellaswag
+    n_samples: 100
+  - name: arc_easy
+    n_samples: 100
+
+repetitions: 1
+seed: 42
+max_new_tokens: 256
+temperature: 0.0
+batch_size: 1
+warmup_runs: 2
+
+backend_skip:
+  phi-2:
+    - transformers-cpu
+  llama-3.2-3b:
+    - transformers-cpu
+
+perplexity:
+  enabled: true
+  dataset: wikitext-2-raw-v1
+  split: test
+  samples: 200
+  batch_size: 4
+  max_length: 128
+
+resource_monitor: true
+monitor_interval_s: 0.1
+output_dir: results/eval/tr124_phase1

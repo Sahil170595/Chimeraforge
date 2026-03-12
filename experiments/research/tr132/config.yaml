@@ -1,0 +1,108 @@
+experiment: tr132
+
+# ── Models (same as TR131 for direct comparison) ─────────────────────
+models:
+  - name: llama3.2-1b
+    ollama_tag: "llama3.2:1b"
+    hf_id: "unsloth/Llama-3.2-1B-Instruct"
+    params_m: 1200
+  - name: llama3.2-3b
+    ollama_tag: "llama3.2:3b"
+    hf_id: "unsloth/Llama-3.2-3B-Instruct"
+    params_m: 3200
+
+# ── Profiling mode ──────────────────────────────────────────────────
+# "in_container" = mount Linux nsys into Docker, CUPTI traces from inside
+# "system_wide"  = host nsys captures system-wide (requires admin on Windows)
+profiling_mode: "in_container"
+
+# ── Tool paths ───────────────────────────────────────────────────────
+nsys_path: "C:/Program Files/NVIDIA Corporation/Nsight Systems 2025.5.1/target-windows-x64/nsys.exe"
+nsys_linux_dir: "C:/Program Files/NVIDIA Corporation/Nsight Systems 2025.5.1/target-linux-x64"
+
+# ── nsys configuration ───────────────────────────────────────────────
+nsys:
+  trace: "cuda"
+  gpuctxsw: false            # Requires admin on Windows
+  gpu_metrics_set: ""        # Requires admin on Windows
+  gpu_metrics_devices: ""
+  gpu_metrics_frequency: 0
+  sample: "none"
+  cpuctxsw: "none"
+
+# ── Backend configurations ───────────────────────────────────────────
+backends:
+  vllm:
+    port: 8000
+    timeout_s: 180
+    docker_image: "vllm/vllm-openai:latest"
+    docker_name: "tr132-vllm"
+    startup_timeout_s: 300
+    extra_args:
+      - "--max-model-len"
+      - "2048"
+      - "--dtype"
+      - "float16"
+      - "--gpu-memory-utilization"
+      - "0.80"
+      - "--disable-log-requests"
+  tgi:
+    port: 8080
+    timeout_s: 180
+    docker_image: "ghcr.io/huggingface/text-generation-inference:latest"
+    docker_name: "tr132-tgi"
+    startup_timeout_s: 300
+    extra_args:
+      - "--max-input-length"
+      - "1024"
+      - "--max-total-tokens"
+      - "2048"
+      - "--max-batch-prefill-tokens"
+      - "2048"
+
+# ── Global settings ──────────────────────────────────────────────────
+max_new_tokens: 128
+seed: 42
+warmup_requests: 3
+prompt_tokens_low: 100
+prompt_tokens_high: 200
+cooldown_between_captures_s: 3
+
+# ── Phase 1: Validation Gate ─────────────────────────────────────────
+phase1:
+  requests: 3
+  backend: vllm           # Use vLLM for validation (primary backend)
+
+# ── Phase 2: vLLM Profiled N=1 and N=8 ──────────────────────────────
+phase2:
+  backend: vllm
+  n1:
+    n_agents: 1
+    requests_per_agent: 5
+    repetitions: 3
+  n8:
+    n_agents: 8
+    requests_per_agent: 3
+    repetitions: 3
+
+# ── Phase 3: TGI Profiled N=1 and N=8 ───────────────────────────────
+phase3:
+  backend: tgi
+  n1:
+    n_agents: 1
+    requests_per_agent: 5
+    repetitions: 3
+  n8:
+    n_agents: 8
+    requests_per_agent: 3
+    repetitions: 3
+
+# ── Phase 4: TR131 Cross-Reference ──────────────────────────────────
+phase4:
+  tr131_results_dir: research/tr131/results
+
+# ── Phase 5: Analysis ───────────────────────────────────────────────
+phase5:
+  alpha: 0.05
+
+output_dir: research/tr132/results

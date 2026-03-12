@@ -1,0 +1,93 @@
+# TR133 — Predictive Capacity Planner configuration
+# All paths relative to repository root.
+
+data_sources:
+  tr123:
+    cost_csv: research/tr123/results/20260216_181539/cost_per_measurement.csv
+    description: "KV-cache cost economics (~350 measurements)"
+  tr124:
+    quality_csv: results/eval/tr124_phase1/20260218_173307/quality_cost_merged.csv
+    description: "FP16 quality baselines (~1,000 records)"
+  tr125:
+    quality_csv: results/eval/tr125_phase2/20260221_120035/quality_cost_merged.csv
+    description: "Quality x 7 quant levels x 4 models (~25,000 records)"
+  tr127:
+    metrics_csv: research/tr127/results/20260224_101128/metrics.csv
+    description: "VRAM + throughput vs context length (1,144 records)"
+  tr128:
+    metrics_csv: research/tr128/results/20260225_145254/metrics.csv
+    description: "Latency under load, queueing (3,172 records)"
+  tr129:
+    metrics_csv: research/tr129/results/20260225_213619/metrics.csv
+    analysis_json: research/tr129/results/20260225_213619/analysis.json
+    description: "Amdahl serial fractions, Ollama scaling (5,310 records)"
+  tr130:
+    metrics_csv: research/tr130/results/20260226_125833/metrics.csv
+    analysis_json: research/tr130/results/20260226_125833/analysis.json
+    description: "3 backends x 3 models x N=1-8 (4,797 records)"
+
+model_registry:
+  qwen2.5-0.5b:
+    params_b: 0.49
+    n_layers: 24
+    n_kv_heads: 2
+    d_head: 64
+  llama3.2-1b:
+    params_b: 1.24
+    n_layers: 16
+    n_kv_heads: 8
+    d_head: 64
+  qwen2.5-1.5b:
+    params_b: 1.54
+    n_layers: 28
+    n_kv_heads: 2
+    d_head: 128
+  phi-2:
+    params_b: 2.78
+    n_layers: 32
+    n_kv_heads: 32
+    d_head: 80
+  qwen2.5-3b:
+    params_b: 3.09
+    n_layers: 36
+    n_kv_heads: 2
+    d_head: 128
+  llama3.2-3b:
+    params_b: 3.21
+    n_layers: 28
+    n_kv_heads: 8
+    d_head: 128
+  llama3.1-8b:
+    params_b: 8.03
+    n_layers: 32
+    n_kv_heads: 8
+    d_head: 128
+
+quant_levels:
+  - FP16
+  - Q8_0
+  - Q6_K
+  - Q5_K_M
+  - Q4_K_M
+  - Q3_K_S
+  - Q2_K
+
+backends:
+  - ollama
+  - vllm
+  - tgi
+
+validation:
+  train_fraction: 0.80
+  random_seed: 42
+  targets:
+    throughput_r2: 0.85
+    vram_r2: 0.95
+    quality_rmse: 0.10   # RMSE more appropriate than R² for lookup-table model
+    latency_mape: 0.25
+
+defaults:
+  context_length: 2048
+  batch_size: 1
+  latency_safety_factor: 0.70  # M/D/1 utilization cap
+  avg_output_tokens: 128

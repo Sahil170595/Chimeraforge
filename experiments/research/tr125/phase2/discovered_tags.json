@@ -1,0 +1,316 @@
+{
+  "timestamp": "2026-02-21T12:00:28",
+  "ollama_url": "http://localhost:11434",
+  "mode": "setup",
+  "total": 34,
+  "available": 34,
+  "missing": 0,
+  "tags": [
+    {
+      "base_model": "llama3.1-8b",
+      "quant_level": "Q2_K",
+      "tag": "llama3.1:8b-instruct-q2_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.1-8b",
+      "quant_level": "Q3_K_S",
+      "tag": "llama3.1:8b-instruct-q3_K_S",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.1-8b",
+      "quant_level": "Q4_K_M",
+      "tag": "llama3.1:8b-instruct-q4_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.1-8b",
+      "quant_level": "Q5_K_M",
+      "tag": "llama3.1:8b-instruct-q5_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.1-8b",
+      "quant_level": "Q6_K",
+      "tag": "llama3.1:8b-instruct-q6_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.1-8b",
+      "quant_level": "Q8_0",
+      "tag": "llama3.1:8b-instruct-q8_0",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "FP16",
+      "tag": "llama3.2:1b-instruct-fp16",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q2_K",
+      "tag": "llama3.2:1b-instruct-q2_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q3_K_S",
+      "tag": "llama3.2:1b-instruct-q3_K_S",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q4_K_M",
+      "tag": "llama3.2:1b-instruct-q4_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q5_K_M",
+      "tag": "llama3.2:1b-instruct-q5_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q6_K",
+      "tag": "llama3.2:1b-instruct-q6_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-1b",
+      "quant_level": "Q8_0",
+      "tag": "llama3.2:1b-instruct-q8_0",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "FP16",
+      "tag": "llama3.2:3b-instruct-fp16",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "Q2_K",
+      "tag": "llama3.2:3b-instruct-q2_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "Q3_K_S",
+      "tag": "llama3.2:3b-instruct-q3_K_S",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "Q4_K_M",
+      "tag": "llama3.2:3b-instruct-q4_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "Q5_K_M",
+      "tag": "llama3.2:3b-instruct-q5_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "Q6_K",
+      "tag": "llama3.2:3b-instruct-q6_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "llama3.2-3b",
+      "quant_level": "Q8_0",
+      "tag": "llama3.2:3b-instruct-q8_0",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "FP16",
+      "tag": "phi:2.7b-chat-v2-fp16",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q2_K",
+      "tag": "phi:2.7b-chat-v2-q2_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q3_K_S",
+      "tag": "phi:2.7b-chat-v2-q3_K_S",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q4_K_M",
+      "tag": "phi:2.7b-chat-v2-q4_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q5_K_M",
+      "tag": "phi:2.7b-chat-v2-q5_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q6_K",
+      "tag": "phi:2.7b-chat-v2-q6_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "phi-2",
+      "quant_level": "Q8_0",
+      "tag": "phi:2.7b-chat-v2-q8_0",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "FP16",
+      "tag": "qwen2.5:1.5b-instruct-fp16",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q2_K",
+      "tag": "qwen2.5:1.5b-instruct-q2_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q3_K_S",
+      "tag": "qwen2.5:1.5b-instruct-q3_K_S",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q4_K_M",
+      "tag": "qwen2.5:1.5b-instruct-q4_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q5_K_M",
+      "tag": "qwen2.5:1.5b-instruct-q5_K_M",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q6_K",
+      "tag": "qwen2.5:1.5b-instruct-q6_K",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    },
+    {
+      "base_model": "qwen2.5-1.5b",
+      "quant_level": "Q8_0",
+      "tag": "qwen2.5:1.5b-instruct-q8_0",
+      "available": true,
+      "action": "already_local",
+      "message": "available",
+      "elapsed_s": 0.0
+    }
+  ]
+}

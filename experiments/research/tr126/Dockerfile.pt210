@@ -1,0 +1,37 @@
+# TR126: PyTorch 2.10 (NGC 26.01) + cudagraph assertion fix
+# For benchmarking compiled decode with the patched cudagraph_trees.py
+#
+# Build:  docker build -t tr126-pt210 -f research/tr126/Dockerfile.pt210 .
+# Run:    docker run --rm --gpus all --ipc=host -v "${PWD}:/workspace" -w /workspace tr126-pt210 bash
+
+FROM nvcr.io/nvidia/pytorch:26.01-py3
+
+# ML libraries
+RUN pip install --no-cache-dir \
+    transformers>=4.46.3 \
+    safetensors>=0.4.5 \
+    tokenizers>=0.20.3 \
+    accelerate
+
+# Monitoring
+RUN pip install --no-cache-dir \
+    psutil>=6.1.0 \
+    pynvml>=11.5.3
+
+# Ollama (for Phase 3 backend comparison)
+RUN apt-get update && apt-get install -y --no-install-recommends zstd \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -fsSL https://ollama.com/install.sh | sh
+
+# Apply cudagraph_trees.py assertion fix (PR #175562)
+RUN CGFILE=$(python -c "import torch._inductor.cudagraph_trees as m; print(m.__file__)") && \
+    sed -i 's|            assert len(node.tensor_weakrefs) == len(node.stack_traces)|            # tensor_weakrefs and stack_traces may differ in length (pytorch/pytorch#175562)\n            if len(node.tensor_weakrefs) != len(node.stack_traces):\n                log.warning(\n                    "tensor_weakrefs length (\%d) != stack_traces length (\%d)",\n                    len(node.tensor_weakrefs),\n                    len(node.stack_traces),\n                )|' "$CGFILE"
+
+# Environment
+ENV PYTHONPATH=/workspace
+ENV CUDA_VISIBLE_DEVICES=0
+ENV TRITON_CACHE_DIR=/tmp/triton_cache
+ENV HF_HUB_OFFLINE=1
+
+WORKDIR /workspace
+CMD ["bash"]

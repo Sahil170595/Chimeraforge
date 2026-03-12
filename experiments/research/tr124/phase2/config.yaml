@@ -1,0 +1,72 @@
+# TR124 Phase 2: Quantization Quality Impact
+# Tests quality at the default Ollama quantization level per model.
+# Actual quant levels vary by model size (Ollama picks automatically):
+#   llama3.2:1b  → Q8_0    (small models get higher precision)
+#   llama3.2:3b  → Q4_K_M  (larger models get more aggressive quant)
+#   qwen2.5:1.5b → Q4_K_M
+#   phi:2.7b     → Q4_0
+# Phase 1 FP16 GPU results serve as the unquantized reference.
+#
+# Setup: python research/tr124/phase2/setup_ollama.py
+# Run:   python research/tr124/phase2/run.py
+# Analyze: python research/tr124/phase2/analyze.py
+
+experiment: tr124_phase2_quant
+description: >
+  Measure quality impact of Ollama default quantization vs Phase 1 FP16.
+  Each model runs at Ollama's default quant level on the same generation
+  tasks as Phase 1. Cross-phase delta = (Ollama quant) - (Phase 1 FP16).
+  Bridges to TR125 quantization decision matrix.
+
+models:
+  - name: llama3.2-1b-q8_0
+    path: llama3.2:1b
+    params_m: 1236
+    ollama_tag: "llama3.2:1b"
+
+  - name: qwen2.5-1.5b-q4_K_M
+    path: qwen2.5:1.5b
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b"
+
+  - name: phi-2-q4_0
+    path: phi:2.7b
+    params_m: 2700
+    ollama_tag: "phi:2.7b"
+
+  - name: llama3.2-3b-q4_K_M
+    path: llama3.2:3b
+    params_m: 3213
+    ollama_tag: "llama3.2:3b"
+
+backends:
+  - name: ollama
+    ollama_url: http://localhost:11434
+    extra:
+      timeout_s: 180
+
+task_paths:
+  - scripts/eval/tasks/builtin/summarization.yaml
+  - scripts/eval/tasks/builtin/qa.yaml
+  - scripts/eval/tasks/builtin/code_generation.yaml
+  - scripts/eval/tasks/builtin/creative_writing.yaml
+  - scripts/eval/tasks/builtin/classification.yaml
+
+# No benchmarks — Ollama cannot do loglikelihood ranking
+benchmarks: []
+
+repetitions: 1
+seed: 42
+max_new_tokens: 256
+temperature: 0.0
+batch_size: 1
+warmup_runs: 2
+
+backend_skip: {}
+
+perplexity:
+  enabled: false
+
+resource_monitor: true
+monitor_interval_s: 0.1
+output_dir: results/eval/tr124_phase2

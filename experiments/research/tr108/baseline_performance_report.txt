@@ -1,0 +1,62 @@
+CHIMERA HEART BASELINE PERFORMANCE REPORT
+==========================================
+Generated: 2025-09-28 18:36:40
+Test Duration: ~16 seconds
+Model: llama3.1:8b-instruct-q4_0
+GPU: RTX 4080 (12GB VRAM) EXECUTIVE SUMMARY
+================ All 5 tests completed successfully Average generation time: 3.20 seconds Average throughput: 13.85 tokens/second Overall throughput: 13.80 tokens/second Performance rating: GOOD (under 5s average) DETAILED METRICS
+================ Generation Times:
+- Average: 3203.54ms
+- Min: 2527.22ms (Level Up)
+- Max: 4369.26ms (PVP Victory)
+- Standard Deviation: ~600ms Token Generation:
+- Total tokens generated: 221
+- Average tokens per response: 44.2
+- Tokens per second: 13.80
+- Generation efficiency: GOOD CONTEXT PERFORMANCE ANALYSIS
+============================
+1. Level Up (Motivational): 2527.22ms - FASTEST
+2. Rare Item Drop (Excited): 2797.72ms
+3. Player Died (Encouraging): 3089.02ms
+4. Boss Defeated (Celebratory): 3234.48ms
+5. PVP Victory (Celebratory): 4369.26ms - SLOWEST TONE PERFORMANCE ANALYSIS
+=========================
+1. Motivational: 2527.22ms - FASTEST
+2. Excited: 2797.72ms
+3. Encouraging: 3089.02ms
+4. Celebratory: 3801.87ms - SLOWEST PERFORMANCE INSIGHTS
+==================== Consistent performance across contexts Motivational tone generates fastest Celebratory tone takes longest (more complex) PVP Victory context is most complex Level Up context is most efficient QUALITY ASSESSMENT
+================== All banter samples generated successfully Context-appropriate responses Tone-appropriate language Gaming terminology used correctly Variations generated for each sample Emoji usage (handled properly) SYSTEM RESOURCE USAGE
+=====================
+- CPU Usage: ~11-13% (low impact)
+- Memory Usage: ~67-69% (moderate)
+- GPU Utilization: Estimated 80%+ (good utilization)
+- Ollama Processes: 2 active processes
+- Network: HTTP requests to localhost:11434 OPTIMIZATION OPPORTUNITIES
+===========================
+1. PVP Victory context could be optimized (slowest)
+2. Celebratory tone generation could be improved
+3. Longer responses (PVP Victory) take more time
+4. Consider prompt optimization for faster generation
+5. Batch processing could improve overall throughput BASELINE ESTABLISHED
+====================
+This baseline establishes current Ollama performance:
+- Average latency: 3.2 seconds
+- Throughput: 13.8 tokens/second
+- Success rate: 100%
+- Quality: High (context and tone appropriate) NEXT STEPS
+==========
+1. Implement optimizations based on findings
+2. Test with optimized prompts
+3. Measure performance improvements
+4. Compare before/after metrics
+5. Document optimization impact FILES GENERATED
+===============
+- csv_data/baseline_test_results_1759099000.json (detailed metrics)
+- This report: reports/baseline_performance_report.txt RECOMMENDATIONS
+===============
+1. Focus optimization on PVP Victory and Celebratory tone
+2. Consider prompt engineering for faster generation
+3. Monitor GPU utilization during optimization
+4. Test with different model parameters
+5. Implement caching for repeated contexts This baseline provides a solid foundation for measuring optimization improvements in Chimera Heart's banter generation system.

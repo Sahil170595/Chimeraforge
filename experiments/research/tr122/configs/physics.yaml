@@ -1,0 +1,45 @@
+experiment:
+  name: "tr122_physics_v1"
+  seed: 42
+  output_dir: "scripts/tr122/results"
+
+poller:
+  target_period_ms: 100
+  gap_dt_threshold_s: 0.25
+  gappy_gap_fraction_threshold: 0.10
+
+safety:
+  max_temp_c: 83.0
+  resume_temp_c: 80.0
+
+models:
+  baseline: "models/tiny-gpt2" # Valid, Local, Tiny
+  standard: "gpt2" # Valid, Standard (Small download if needed, or mapped to 100m)
+  stress: "gpt2-xl" # Keep as stress target (will download if run)
+
+tests:
+  instrument_response:
+    enabled: true
+
+  vram_cliff:
+    enabled: true
+    min_ctx: 512
+    max_ctx: 131072 # 128k
+    step_mb: 4
+    repetitions: 3
+
+  joule_curve:
+    enabled: true
+    prompts:
+      - "Let's discuss the physics of computation." # Short prompt
+    gen_tokens: 64
+    batch_sizes: [1, 2, 4, 8, 16]
+    repetitions: 3
+    warmup: true
+
+  heat_soak:
+    enabled: true
+    duration_min: 6
+    rolling_window_min: 5
+    equilibrium_slope: 0.5 # deg C per min
+    model: "gpt2" # Use standard for heat soak

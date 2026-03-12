@@ -1,0 +1,56 @@
+# TR126 Phase 2: Compile Paradox — Baseline (Variable-Length Inputs)
+#
+# 2×3 factorial design isolating model SCALE from ARCHITECTURE:
+#   Row 1 (MHA):  GPT-2 25M / 50M / 100M   — FP32
+#   Row 2 (GQA):  Qwen2.5 0.5B / 1.5B / 3B — FP16
+#
+# Plus FP16 ablation on gpt2-100m to isolate dtype effect.
+#
+# NO fallback_backend — forces real Inductor+Triton on Linux.
+
+tier3_config: research/tr117/configs/matrix_tier3.yaml
+
+models:
+  # --- Row 1: GPT-2 (MHA) — FP32, increasing scale ---
+  - path: models/gpt2-25m
+    dtype: fp32
+  - path: models/gpt2-50m
+    dtype: fp32
+  - path: models/gpt2-100m
+    dtype: fp32
+  # --- FP16 ablation: same model, different precision ---
+  - path: models/gpt2-100m
+    dtype: fp16
+  # --- Row 2: Qwen2.5 (GQA) — FP16, increasing scale ---
+  - path: models/qwen2.5-0.5b
+    dtype: fp16
+  - path: models/qwen2.5-1.5b
+    dtype: fp16
+  - path: models/qwen2.5-3b
+    dtype: fp16
+
+scenarios:
+  - single_micro
+  - single_short
+  - single_medium
+  - single_long
+  - stress_single
+
+device: cuda
+
+repetitions: 30
+warmup_repetitions: 3
+max_new_tokens: 64
+
+torch_compile:
+  enabled: true
+  backend: inductor
+  # NO fallback_backend — the whole point of TR126
+  mode: reduce-overhead
+  dynamic: false
+  fullgraph: false
+
+modes:
+  - prefill
+  - kv_decode
+  - e2e_kv

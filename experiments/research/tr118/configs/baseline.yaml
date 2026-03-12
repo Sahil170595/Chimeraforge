@@ -1,0 +1,101 @@
+# TR118 Baseline Configuration
+# ONNX/TensorRT export and benchmarking settings
+
+# Model to export
+model:
+  name: "gpt2"
+  description: "GPT-2 Base (124M params) for production-grade local benchmarking"
+  
+# ONNX export settings
+onnx:
+  opset_version: 17
+  dynamic_axes: true  # Use dynamic batch/sequence
+  optimize_for_inference: true
+  trt_friendly_inputs: true  # Export with int32 inputs (TRT prefers int32; wrapper casts to int64)
+  
+# TensorRT build settings
+tensorrt:
+  precisions:
+    - fp32
+    - fp16
+    - int8
+  workspace_gb: 4
+  dynamic_shapes:
+    enabled: true  # Required when exporting ONNX with dynamic axes
+    profiles:
+      - name: "short"
+        min_shape: [1, 8]
+        opt_shape: [1, 32]
+        max_shape: [1, 64]
+      - name: "medium"
+        min_shape: [1, 32]
+        opt_shape: [1, 128]
+        max_shape: [1, 256]
+      - name: "long"
+        min_shape: [1, 128]
+        opt_shape: [1, 256]
+        max_shape: [1, 512]
+  int8_calibration:
+    dataset_name: "wikitext"
+    dataset_config: "wikitext-2-raw-v1"
+    split: "test"
+    text_field: "text"
+    samples: 256
+    batch_size: 8
+    seq_len: 128
+    seed: 42
+    cache_path: "artifacts/tensorrt/calib/gpt2_wikitext2_test_256x8x128.calib"
+
+# Benchmark settings
+benchmark:
+  prompt_config_path: "scripts/tr117/configs/matrix_tier3.yaml"
+  mode: prefill
+  max_new_tokens: 8
+  stop_on_eos: true
+  backends:
+    - transformers-gpu-compile
+    - onnxruntime-cpu
+    - onnxruntime-gpu
+    - tensorrt-fp32
+    - tensorrt-fp16
+    - tensorrt-int8
+  
+  # Reuse TR117 scenarios
+  scenarios:
+    - micro
+    - short
+    - medium
+    - long
+  
+  repetitions: 7
+  warmup_runs: 3
+  timeout_s: 30
+  
+# Accuracy validation settings
+accuracy:
+  perplexity_dataset: "wikitext-2-raw-v1"  # HuggingFace dataset
+  perplexity_samples: 1000
+  perplexity_batch_size: 4
+  perplexity_max_length: 128
+  rouge_threshold: 0.90  # Min ROUGE-L vs baseline
+  perplexity_thresholds:
+    fp32: 0.001  # <0.1% increase
+    fp16: 0.005  # <0.5% increase
+    int8: 0.020  # <2.0% increase
+  
+# Baseline comparison (from TR117)
+baseline:
+  backend: "transformers-gpu-compile"
+  mean_latency_ms: 389.2
+  median_latency_ms: 328.7
+  cost_per_million_tokens: 0.045
+
+# Output paths
+output:
+  onnx_dir: "artifacts/onnx"
+  tensorrt_dir: "artifacts/tensorrt"
+  results_dir: "scripts/tr118/results"
+  
+# Reproducibility
+seed: 42
+torch_deterministic: true

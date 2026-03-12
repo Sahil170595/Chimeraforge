@@ -1,0 +1,15 @@
+# Experimental: static-axis ONNX export + static-shape TensorRT build.
+# Note: ONNX export can be flaky on some Windows+torch builds; run explicitly via:
+#   python scripts/tr118/run_sweeps.py --variants onnx_static_axes --variants-dir scripts/tr118/configs/variants/experimental
+
+onnx:
+  dynamic_axes: false
+  static_seq_len: 128
+  static_batch: 1
+
+tensorrt:
+  dynamic_shapes:
+    enabled: false
+
+output:
+  onnx_dir: "artifacts/tr118/sweeps/onnx_static_axes/onnx"

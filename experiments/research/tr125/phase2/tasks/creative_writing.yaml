@@ -1,0 +1,166 @@
+name: creative_writing
+description: >
+  Open-ended creative text generation. Tests fluency, coherence,
+  and creativity. No gold-standard reference — uses coherence and
+  repetition metrics only.
+task_type: creative_writing
+metric_group: open_ended
+output_type: generate
+num_fewshot: 0
+
+prompt_template: |
+  {{ instruction }}
+
+filters:
+  - type: strip_whitespace
+
+samples:
+  - id: cw_001
+    instruction: "Write a short paragraph describing a sunset over the ocean."
+
+  - id: cw_002
+    instruction: "Write a brief story about a robot learning to paint."
+
+  - id: cw_003
+    instruction: "Describe the feeling of discovering a hidden garden in a city."
+
+  - id: cw_004
+    instruction: "Write a short dialogue between a scientist and an AI about consciousness."
+
+  - id: cw_005
+    instruction: "Describe a futuristic library where books are replaced by holograms."
+
+  - id: cw_006
+    instruction: "Write a paragraph about the first human colony on Mars."
+
+  - id: cw_007
+    instruction: "Describe the sounds and smells of a busy morning market."
+
+  - id: cw_008
+    instruction: "Write about a musician who can only play when it rains."
+
+  - id: cw_009
+    instruction: "Describe the journey of a single raindrop from cloud to river."
+
+  - id: cw_010
+    instruction: "Write a short reflection on the importance of curiosity."
+
+  - id: cw_011
+    instruction: "Describe an abandoned lighthouse on a foggy coast, focusing on texture and light."
+
+  - id: cw_012
+    instruction: "Write a brief character sketch of an elderly clockmaker who talks to his clocks."
+
+  - id: cw_013
+    instruction: "Compose a short poem about the silence between heartbeats."
+
+  - id: cw_014
+    instruction: "Write a dialogue between two strangers stuck in an elevator during a power outage."
+
+  - id: cw_015
+    instruction: "Describe a world where gravity reverses for one hour every day at noon."
+
+  - id: cw_016
+    instruction: "Write a paragraph about the last bookstore on Earth."
+
+  - id: cw_017
+    instruction: "Describe the view from the window of a train crossing the Siberian steppe in winter."
+
+  - id: cw_018
+    instruction: "Write a short narrative about a child who finds a door at the bottom of a swimming pool."
+
+  - id: cw_019
+    instruction: "Describe the taste of a meal that brings back a childhood memory."
+
+  - id: cw_020
+    instruction: "Write a reflection on what it means to forget and be forgotten."
+
+  - id: cw_021
+    instruction: "Describe an underwater city built inside a coral reef."
+
+  - id: cw_022
+    instruction: "Write a brief story about a letter that arrives fifty years too late."
+
+  - id: cw_023
+    instruction: "Describe the atmosphere of a jazz club at two in the morning."
+
+  - id: cw_024
+    instruction: "Write a character sketch of a street artist who paints only in shades of blue."
+
+  - id: cw_025
+    instruction: "Compose a short poem about the weight of unspoken words."
+
+  - id: cw_026
+    instruction: "Write a dialogue between a ghost and the new owner of its house."
+
+  - id: cw_027
+    instruction: "Describe a desert oasis from the perspective of someone who has been walking for days."
+
+  - id: cw_028
+    instruction: "Write a paragraph about a city where it has been raining without pause for a hundred years."
+
+  - id: cw_029
+    instruction: "Describe the opening ceremony of a space station orbiting Saturn."
+
+  - id: cw_030
+    instruction: "Write a short narrative about a beekeeper who can understand her bees."
+
+  - id: cw_031
+    instruction: "Describe the feeling of standing alone in an ancient forest at dawn."
+
+  - id: cw_032
+    instruction: "Write a reflection on the relationship between memory and identity."
+
+  - id: cw_033
+    instruction: "Describe a floating village tethered to clouds by enormous silk ropes."
+
+  - id: cw_034
+    instruction: "Write a brief story about a cartographer who maps imaginary countries."
+
+  - id: cw_035
+    instruction: "Describe the moment a deep-sea diver encounters a creature never seen before."
+
+  - id: cw_036
+    instruction: "Write a dialogue between the sun and the moon meeting during an eclipse."
+
+  - id: cw_037
+    instruction: "Describe the interior of a cathedral made entirely of ice."
+
+  - id: cw_038
+    instruction: "Write a character sketch of a translator who is slowly losing her hearing."
+
+  - id: cw_039
+    instruction: "Compose a short poem about the color of loneliness."
+
+  - id: cw_040
+    instruction: "Write a paragraph about a garden that blooms only under starlight."
+
+  - id: cw_041
+    instruction: "Describe the sounds of a battlefield the morning after the fighting has stopped."
+
+  - id: cw_042
+    instruction: "Write a short narrative about a photographer who captures moments that have not happened yet."
+
+  - id: cw_043
+    instruction: "Describe a marketplace on a planet with three suns and no night."
+
+  - id: cw_044
+    instruction: "Write a reflection on the meaning of home for someone who has never stayed in one place."
+
+  - id: cw_045
+    instruction: "Describe the experience of hearing your favorite song for the very last time."
+
+  - id: cw_046
+    instruction: "Write a dialogue between a river and a bridge about the passage of time."
+
+  - id: cw_047
+    instruction: "Describe a blacksmith's forge from the perspective of the metal being shaped."
+
+  - id: cw_048
+    instruction: "Write a brief story about a lighthouse keeper who receives messages in bottles from the future."
+
+  - id: cw_049
+    instruction: "Describe the first snowfall on a village that has never experienced winter."
+
+  - id: cw_050
+    instruction: "Write a short reflection on what silence sounds like in different places."

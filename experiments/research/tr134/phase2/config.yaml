@@ -1,0 +1,112 @@
+# TR134 Phase 2: Full Alignment Robustness Under Quantization Matrix
+# 2 models × 7 quants × ~685 prompts (485 capability + 200 safety) = ~9,590 samples
+#
+# Purpose: Measure safety vs capability degradation curves across all quant levels.
+
+experiment: tr134_phase2_full_matrix
+description: >
+  Full degradation matrix comparing safety behavior erosion vs capability
+  loss under quantization. 2 RLHF-trained Llama models across 7 quant
+  levels, evaluated on safety benchmarks (AdvBench, TruthfulQA, BBQ) and
+  capability benchmarks (MMLU, ARC-Challenge).
+
+models:
+  # Llama 3.2 1B — 7 quant levels
+  - name: llama3.2-1b-fp16
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-fp16"
+
+  - name: llama3.2-1b-q8_0
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q8_0"
+
+  - name: llama3.2-1b-q6_k
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q6_K"
+
+  - name: llama3.2-1b-q5_k_m
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q5_K_M"
+
+  - name: llama3.2-1b-q4_k_m
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q4_K_M"
+
+  - name: llama3.2-1b-q3_k_s
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q3_K_S"
+
+  - name: llama3.2-1b-q2_k
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q2_K"
+
+  # Llama 3.2 3B — 7 quant levels
+  - name: llama3.2-3b-fp16
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-fp16"
+
+  - name: llama3.2-3b-q8_0
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q8_0"
+
+  - name: llama3.2-3b-q6_k
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q6_K"
+
+  - name: llama3.2-3b-q5_k_m
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q5_K_M"
+
+  - name: llama3.2-3b-q4_k_m
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q4_K_M"
+
+  - name: llama3.2-3b-q3_k_s
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q3_K_S"
+
+  - name: llama3.2-3b-q2_k
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q2_K"
+
+backends:
+  - name: ollama
+    ollama_url: http://localhost:11434
+    extra:
+      timeout_s: 300
+
+task_paths:
+  # Safety tasks
+  - research/tr134/phase2/tasks/advbench_refusal.yaml
+  - research/tr134/phase2/tasks/truthfulqa.yaml
+  - research/tr134/phase2/tasks/bbq_bias.yaml
+  # Capability tasks
+  - research/tr134/phase2/tasks/mmlu_real.yaml
+  - research/tr134/phase2/tasks/arc_challenge.yaml
+
+benchmarks: []
+repetitions: 1
+seed: 42
+max_new_tokens: 256
+temperature: 0.0
+batch_size: 1
+warmup_runs: 2
+backend_skip: {}
+perplexity:
+  enabled: false
+resource_monitor: false
+output_dir: research/tr134/results/phase2

@@ -1,0 +1,72 @@
+experiment: tr131
+
+# ── Models (subset: the two with most TR129/TR130 data) ──────────────
+models:
+  - name: llama3.2-1b
+    ollama_tag: "llama3.2:1b"
+    hf_id: "unsloth/Llama-3.2-1B-Instruct"
+    params_m: 1200
+  - name: llama3.2-3b
+    ollama_tag: "llama3.2:3b"
+    hf_id: "unsloth/Llama-3.2-3B-Instruct"
+    params_m: 3200
+
+# ── Tool paths ───────────────────────────────────────────────────────
+nsys_path: "C:/Program Files/NVIDIA Corporation/Nsight Systems 2025.5.1/target-windows-x64/nsys.exe"
+ncu_path: "C:/Program Files/NVIDIA Corporation/Nsight Compute 2025.3.1/ncu.bat"
+
+# ── nsys configuration ───────────────────────────────────────────────
+nsys:
+  trace: "cuda"
+  gpuctxsw: false            # Requires admin on Windows — use kernel gaps as proxy
+  gpu_metrics_set: ""        # Requires admin on Windows — skip GPU perf counters
+  gpu_metrics_devices: ""    # Skip (requires admin)
+  gpu_metrics_frequency: 0   # Skip
+  sample: "none"             # CPU sampling off (avoids admin)
+  cpuctxsw: "none"           # Context switch tracing off (avoids admin)
+
+# ── Global settings ──────────────────────────────────────────────────
+max_new_tokens: 128
+seed: 42
+warmup_requests: 3
+prompt_tokens_low: 100
+prompt_tokens_high: 200
+
+# ── Phase 1: Validation ─────────────────────────────────────────────
+phase1:
+  requests: 3
+  profile_duration_s: 30
+
+# ── Phase 2: Ollama N=1 Profiled ────────────────────────────────────
+phase2:
+  n_agents: 1
+  requests_per_agent: 5
+  repetitions: 3
+  profile_duration_s: 30
+
+# ── Phase 3: Ollama N=8 Profiled ────────────────────────────────────
+phase3:
+  n_agents: 8
+  requests_per_agent: 3
+  repetitions: 3
+  profile_duration_s: 60
+
+# ── Phase 4: PyTorch Direct N=1 ─────────────────────────────────────
+phase4:
+  n_threads: 1
+  requests_per_thread: 5
+  repetitions: 3
+  profile_duration_s: 60
+
+# ── Phase 5: PyTorch Direct N=8 ─────────────────────────────────────
+phase5:
+  n_threads: 8
+  requests_per_thread: 3
+  repetitions: 3
+  profile_duration_s: 120
+
+# ── Phase 6: Nsight Compute Targeted ────────────────────────────────
+phase6:
+  kernel_launch_count: 5
+
+output_dir: research/tr131/results

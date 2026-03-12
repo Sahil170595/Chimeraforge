@@ -1,0 +1,1 @@
+incompatible:transformers_cannot_load_ollama_model

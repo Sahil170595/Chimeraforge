@@ -1,0 +1,94 @@
+experiment: tr130
+
+# ── Models (same 3 as TR129) ──────────────────────────────────────
+models:
+  - name: llama3.2-1b
+    ollama_tag: "llama3.2:1b"
+    hf_id: "unsloth/Llama-3.2-1B-Instruct"
+    params_m: 1200
+    gated: false
+  - name: qwen2.5-1.5b
+    ollama_tag: "qwen2.5:1.5b"
+    hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+    params_m: 1500
+    gated: false
+  - name: llama3.2-3b
+    ollama_tag: "llama3.2:3b"
+    hf_id: "unsloth/Llama-3.2-3B-Instruct"
+    params_m: 3200
+    gated: false
+
+# ── Backends ──────────────────────────────────────────────────────
+# Only one backend runs at a time (sequential — they compete for GPU)
+backends:
+  ollama:
+    port: 11434
+    timeout_s: 120
+  vllm:
+    port: 8000
+    timeout_s: 180
+    docker_image: "vllm/vllm-openai:latest"
+    docker_name: "tr130-vllm"
+    startup_timeout_s: 300
+    extra_args:
+      - "--max-model-len"
+      - "2048"
+      - "--dtype"
+      - "float16"
+      - "--enforce-eager"
+      - "--gpu-memory-utilization"
+      - "0.80"
+  tgi:
+    port: 8080
+    timeout_s: 180
+    docker_image: "ghcr.io/huggingface/text-generation-inference:latest"
+    docker_name: "tr130-tgi"
+    startup_timeout_s: 300
+    extra_args:
+      - "--max-input-length"
+      - "1024"
+      - "--max-total-tokens"
+      - "2048"
+
+# ── Global settings ──────────────────────────────────────────────
+max_new_tokens: 128
+seed: 42
+warmup_requests: 3
+gpu_poll_interval_s: 1.0
+
+# ── Phase 1: Environment Validation ──────────────────────────────
+# 3 backends × 3 models × 3 requests = ~27 rows
+# Confirms: GPU access, model loading, API format, timing extraction
+phase1:
+  requests_per_combo: 3
+  prompt_tokens_low: 100
+  prompt_tokens_high: 200
+
+# ── Phase 2: Single-Agent Baseline (N=1) ─────────────────────────
+# 3 backends × 3 models × 50 requests = ~450 rows
+# Establishes per-backend reference throughput
+phase2:
+  requests_per_model: 50
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# ── Phase 3: N-Agent Scaling — CORE ─────────────────────────────
+# 3 backends × 3 models × 4 N-levels × 30 req/agent
+# 36 configs, ~4,050 rows (including N*30 rows per config)
+# 4 data points per model sufficient for Amdahl fit (TR129 proved shape smooth)
+phase3:
+  n_agent_levels: [1, 2, 4, 8]
+  requests_per_agent: 30
+  cooldown_between_configs_s: 5
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# ── Phase 4: TTFT Streaming Comparison ───────────────────────────
+# 3 backends × 3 models × 30 streaming requests = ~270 rows
+# Time-To-First-Token comparison across serving stacks
+phase4:
+  requests_per_model: 30
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+output_dir: research/tr130/results

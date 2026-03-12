@@ -1,0 +1,56 @@
+# TR127: Long-Context Performance Characterization
+# Sweeps context length from 512 to 32K tokens across models and backends.
+experiment: tr127
+
+context_lengths: [512, 1024, 2048, 4096, 8192, 16384, 32768]
+
+models:
+  - name: qwen2.5-0.5b
+    path: models/qwen2.5-0.5b
+    params_m: 500
+    max_context: 32768
+    dtype: fp16
+    ollama_tag: null  # No Ollama variant
+
+  - name: qwen2.5-1.5b
+    path: models/qwen2.5-1.5b
+    params_m: 1543
+    max_context: 131072
+    dtype: fp16
+    ollama_tag: "qwen2.5:1.5b"
+
+  - name: qwen2.5-3b
+    path: models/qwen2.5-3b
+    params_m: 3000
+    max_context: 32768
+    dtype: fp16
+    ollama_tag: null
+
+  - name: llama3.2-1b
+    path: null  # Ollama only
+    params_m: 1236
+    max_context: 131072
+    dtype: fp16
+    ollama_tag: "llama3.2:1b"
+
+  - name: llama3.2-3b
+    path: null  # Ollama only
+    params_m: 3213
+    max_context: 131072
+    dtype: fp16
+    ollama_tag: "llama3.2:3b"
+
+backends:
+  - transformers-gpu
+  - ollama
+
+device: cuda
+repetitions: 10
+warmup_repetitions: 3
+max_new_tokens: 128
+seed: 42
+
+ollama_url: http://localhost:11434
+ollama_timeout_s: 600  # Long contexts need longer timeouts
+
+output_dir: research/tr127/results

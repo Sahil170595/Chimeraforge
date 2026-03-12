@@ -1,0 +1,10 @@
+
+CHIMERA HEART ML PERFORMANCE REPORT
+Generated: 2025-09-30 19:46:27 OVERALL PERFORMANCE:
+- Total Inferences: 0
+- Time Span: 0.0 minutes
+- Average Latency: 0.00 ms
+- Average Throughput: 0.00 tokens/sec
+- P95 Latency: 0.00 ms
+- P99 Latency: 0.00 ms
+- QPS: 0.00 queries/sec MODEL PERFORMANCE: CONTEXT PERFORMANCE:

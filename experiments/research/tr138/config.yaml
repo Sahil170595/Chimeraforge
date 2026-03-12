@@ -1,0 +1,131 @@
+experiment: tr138_batch_inference_safety
+description: >
+  Batch Inference Safety Under Non-Determinism. Tests whether batch-induced
+  output non-determinism (from FP non-associativity in GPU kernels)
+  disproportionately degrades safety compared to capability. Four phases:
+  (1) batch size x output determinism on vLLM, (2) co-batching interference
+  with adversarial prompts, (3) quantization x concurrency interaction on Ollama,
+  and (4) compact true-batching validation on vLLM prompt lists.
+  Three models across two families (Llama 3.2 1B/3B, Qwen 2.5 1.5B).
+  Safety benchmarks (AdvBench, TruthfulQA, BBQ, jailbreak) + MMLU/ARC
+  capability controls — reused from TR134.
+
+# ----- Phase 1: Batch Size x Output Determinism (vLLM) -----
+phase1:
+  models:
+    - name: llama3.2-1b
+      hf_id: "unsloth/Llama-3.2-1B-Instruct"
+      params_m: 1236
+
+    - name: llama3.2-3b
+      hf_id: "unsloth/Llama-3.2-3B-Instruct"
+      params_m: 3213
+
+    - name: qwen2.5-1.5b
+      hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+      params_m: 1543
+
+  backend: vllm
+  batch_sizes: [1, 2, 4, 8, 16, 32]
+  task_scope: all  # safety + capability
+
+# ----- Phase 2: Co-Batching Interference (vLLM) -----
+phase2:
+  models:
+    - name: llama3.2-1b
+      hf_id: "unsloth/Llama-3.2-1B-Instruct"
+      params_m: 1236
+
+    - name: llama3.2-3b
+      hf_id: "unsloth/Llama-3.2-3B-Instruct"
+      params_m: 3213
+
+    - name: qwen2.5-1.5b
+      hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+      params_m: 1543
+
+  backend: vllm
+  batch_size: 8
+  conditions: [solo, benign, adversarial, safety]
+  task_scope: safety  # safety prompts only (470)
+
+# ----- Phase 3: Quantization x Concurrency (Ollama) -----
+phase3:
+  models:
+    - name: llama3.2-1b
+      ollama_tag: "llama3.2:1b"
+      hf_id: "meta-llama/Llama-3.2-1B-Instruct"
+      params_m: 1236
+
+    - name: llama3.2-3b
+      ollama_tag: "llama3.2:3b"
+      hf_id: "meta-llama/Llama-3.2-3B-Instruct"
+      params_m: 3213
+
+    - name: qwen2.5-1.5b
+      ollama_tag: "qwen2.5:1.5b"
+      hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+      params_m: 1543
+
+  backend: ollama
+  quant_levels: [Q8_0, Q4_K_M, Q2_K]
+  concurrency_levels: [1, 4, 8]
+  task_scope: safety_subset  # advbench (100) + jailbreak (120) = 220
+
+# ----- Phase 4: True Batching Validation (vLLM prompt-list API) -----
+phase4:
+  models:
+    - name: llama3.2-3b
+      hf_id: "unsloth/Llama-3.2-3B-Instruct"
+      params_m: 3213
+
+    - name: qwen2.5-1.5b
+      hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+      params_m: 1543
+
+  backend: vllm
+  batch_sizes: [1, 4, 8]
+  task_limits:
+    advbench_refusal: 60
+    jailbreak_amplification: 80
+    bbq_bias: 80
+    truthfulqa: 30
+    mmlu_real: 100
+    arc_challenge: 100
+  task_scope: reduced_all  # compact safety + capability validation subset (450)
+
+# ----- Shared settings -----
+backends:
+  vllm:
+    port: 8000
+    timeout_s: 180
+    docker_image: "vllm/vllm-openai:latest"
+    docker_name: "tr138-vllm"
+    startup_timeout_s: 300
+    extra_args:
+      - "--max-model-len"
+      - "2048"
+      - "--dtype"
+      - "float16"
+      - "--gpu-memory-utilization"
+      - "0.80"
+
+  ollama:
+    port: 11434
+    timeout_s: 300
+
+task_paths:
+  - research/tr138/tasks/advbench_refusal.yaml
+  - research/tr138/tasks/truthfulqa.yaml
+  - research/tr138/tasks/bbq_bias.yaml
+  - research/tr138/tasks/jailbreak_amplification.yaml
+  - research/tr138/tasks/mmlu_real.yaml
+  - research/tr138/tasks/arc_challenge.yaml
+
+max_new_tokens: 256
+temperature: 0.0
+seed: 42
+warmup_requests: 3
+cooldown_between_models_s: 10
+
+output_dir: research/tr138/results

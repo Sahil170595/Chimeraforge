@@ -1,0 +1,78 @@
+# TR123: torch.compile re-run for models that failed due to DNS dropout
+# Only qwen2.5-1.5b and phi-2 (gpt2 and llama-3.2-1b already done)
+
+models:
+  - name: qwen2.5-1.5b
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    gated: false
+    attention_type: GQA
+    fp16_vram_gb: 3.1
+    architecture:
+      n_layers: 28
+      n_heads: 12
+      n_kv_heads: 2
+      d_head: 128
+      d_model: 1536
+
+  - name: phi-2
+    path: microsoft/phi-2
+    params_m: 2700
+    gated: false
+    attention_type: MHA
+    trust_remote_code: true
+    fp16_vram_gb: 5.4
+    architecture:
+      n_layers: 32
+      n_heads: 32
+      n_kv_heads: 32
+      d_head: 80
+      d_model: 2560
+
+backends:
+  - transformers-gpu-compile
+
+backend_skip: {}
+
+scenarios:
+  - name: short_prompt
+    prompt_tokens: 64
+    generate_tokens: 64
+  - name: medium_prompt
+    prompt_tokens: 256
+    generate_tokens: 128
+  - name: long_prompt
+    prompt_tokens: 512
+    generate_tokens: 256
+  - name: long_context
+    prompt_tokens: 1024
+    generate_tokens: 128
+  - name: decode_heavy
+    prompt_tokens: 64
+    generate_tokens: 512
+
+repetitions: 7
+warmup_runs: 2
+seed: 42
+
+measurement:
+  cuda_events: true
+  resource_monitor: true
+  monitor_interval_s: 0.1
+  memory_snapshots: true
+
+kv_cache:
+  measure_memory_overhead: false
+
+cloud_pricing:
+  consumer_rtx4080:
+    hardware_cost: 1200.0
+    amortization_years: 3
+    effective_hourly: 0.046
+
+energy:
+  usd_per_kwh: 0.20
+  carbon_intensity_gco2e_per_kwh: 500.0
+
+output:
+  results_dir: research/tr123/results

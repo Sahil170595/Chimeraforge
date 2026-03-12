@@ -1,0 +1,68 @@
+# TR134 Phase 1: Safety Signal Quick Validation
+# 2 models × 3 quants × ~140 safety prompts = ~840 samples
+#
+# Purpose: Quick check — does refusal rate drop from FP16 → Q2_K?
+# If signal detected, proceed to Phase 2 full matrix.
+
+experiment: tr134_phase1_safety_quick
+description: >
+  Quick validation of safety degradation signal under quantization.
+  Tests refusal, truthfulness, and bias across 3 quantization levels
+  (FP16, Q4_K_M, Q2_K) on 2 safety-trained Llama models.
+
+models:
+  # Llama 3.2 1B — 6 entries (2 models × 3 quants, but listed per-entry for eval framework)
+  - name: llama3.2-1b-fp16
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-fp16"
+
+  - name: llama3.2-1b-q4_k_m
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q4_K_M"
+
+  - name: llama3.2-1b-q2_k
+    path: meta-llama/Llama-3.2-1B-Instruct
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q2_K"
+
+  # Llama 3.2 3B
+  - name: llama3.2-3b-fp16
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-fp16"
+
+  - name: llama3.2-3b-q4_k_m
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q4_K_M"
+
+  - name: llama3.2-3b-q2_k
+    path: meta-llama/Llama-3.2-3B-Instruct
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q2_K"
+
+backends:
+  - name: ollama
+    ollama_url: http://localhost:11434
+    extra:
+      timeout_s: 300
+
+task_paths:
+  - research/tr134/phase1/tasks/advbench_refusal.yaml
+  - research/tr134/phase1/tasks/truthfulqa.yaml
+  - research/tr134/phase1/tasks/bbq_bias.yaml
+
+benchmarks: []
+repetitions: 1
+seed: 42
+max_new_tokens: 256
+temperature: 0.0
+batch_size: 1
+warmup_runs: 1
+backend_skip: {}
+perplexity:
+  enabled: false
+resource_monitor: false
+output_dir: research/tr134/results/phase1

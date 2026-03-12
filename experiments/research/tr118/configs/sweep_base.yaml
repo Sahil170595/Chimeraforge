@@ -1,0 +1,68 @@
+# TR118 Sweep Base Configuration
+# Purpose: parameter sweeps (shapes/workspace/builder) with fixed (batch, seq_len)
+# so results are comparable across variants.
+
+model:
+  name: "gpt2"
+  description: "Toy GPT-2 config (~103k params) for fast, comparable sweeps"
+
+onnx:
+  opset_version: 17
+  dynamic_axes: true
+  trt_friendly_inputs: true
+  optimize_for_inference: true
+
+tensorrt:
+  precisions: [fp16]
+  workspace_gb: 4
+  dynamic_shapes:
+    enabled: true
+    profiles:
+      - name: "sweep"
+        min_shape: [1, 8]
+        opt_shape: [1, 128]
+        max_shape: [1, 256]
+
+benchmark:
+  prompt_config_path: "scripts/tr117/configs/matrix_tier3.yaml"
+  modes: [prefill, generate]
+  backends:
+    - transformers-gpu-compile
+    - onnxruntime-gpu
+    - tensorrt-fp16
+  scenarios:
+    - single_short
+
+  # Keep this small-ish; sweeps scale by number of variants.
+  repetitions: 3
+  warmup_runs: 1
+  timeout_s: 60
+
+  # Fixed-shape benchmarking (for apples-to-apples sweeps).
+  min_seq_len: 128
+  max_seq_len: 128
+  max_new_tokens: 8
+  stop_on_eos: true
+
+  enable_resource_monitoring: false
+
+accuracy:
+  # Optional for sweeps; `run_sweeps.py` defaults to skipping accuracy.
+  perplexity_dataset: "wikitext-2-raw-v1"
+  perplexity_samples: 256
+  perplexity_batch_size: 4
+  perplexity_max_length: 128
+  perplexity_thresholds:
+    fp16: 0.010
+
+baseline:
+  backend: "transformers-gpu-compile"
+
+output:
+  # Reuse pre-exported ONNX by default; `run_sweeps.py` isolates TRT/results per variant.
+  onnx_dir: "artifacts/onnx"
+  tensorrt_dir: "artifacts/tensorrt"
+  results_dir: "scripts/tr118/results"
+
+seed: 42
+torch_deterministic: true

@@ -1,0 +1,114 @@
+# TR117 FULL TIER 3 - PhD+ Frontier Lab Quality
+# No compromises. Complete cross-backend, cross-model, cross-scenario sweep.
+
+repetitions: 7  # Full statistical power for 95% CI with tight bounds
+
+prompt_sets:
+  micro:
+    - "Hello"
+    - "Test"
+  short:
+    - "Summarize RLHF in one sentence."
+    - "List two ways to improve throughput on local LLMs."
+  medium:
+    - "Explain how backpressure works in an inference service and when to enable queueing."
+    - "Compare torch.compile vs ONNXRuntime on CPU for small models in two sentences."
+  long:
+    - "Provide a concise overview of the attention mechanism and how KV cache impacts latency in local inference pipelines. Keep it under 120 words."
+    - "Explain how dynamic shapes affect TensorRT engine builds and runtime performance, and when you would choose static vs dynamic profiles."
+  stress:
+    - "latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency latency"
+
+scenarios:
+  # Single-shot inference
+  - name: single_micro
+    prompt_set: micro
+    stream: false
+    mode: single
+  
+  - name: single_short
+    prompt_set: short
+    stream: false
+    mode: single
+  
+  - name: single_medium
+    prompt_set: medium
+    stream: false
+    mode: single
+  
+  - name: single_long
+    prompt_set: long
+    stream: false
+    mode: single
+  
+  # Dual-agent coordination (like TR114)
+  - name: dual_short
+    prompt_set: short
+    stream: false
+    mode: dual
+  
+  - name: dual_medium
+    prompt_set: medium
+    stream: false
+    mode: dual
+  
+  # Stress testing
+  - name: stress_single
+    prompt_set: stress
+    stream: false
+    mode: single
+
+models:
+  # HuggingFace model (for transformers/ORT/TensorRT comparison)
+  - name: models/tiny-gpt2
+    description: "124M params - HF baseline"
+    params_millions: 124
+    
+  # Ollama models - complete size sweep (270M → 8B)
+  - name: gemma3:270m
+    description: "270M params - Smallest"
+    params_millions: 270
+    
+  - name: gemma3:1b-it-qat
+    description: "1B params - Small"
+    params_millions: 1000
+    
+  - name: gemma3:latest
+    description: "3B params - Medium"
+    params_millions: 3000
+  
+  - name: qwen2.5:7b
+    description: "7B params - Large"
+    params_millions: 7000
+  
+  - name: llama3.1:8b-instruct-q4_0
+    description: "8B params (4-bit quant) - Large efficient"
+    params_millions: 8000
+
+backends:
+  - transformers-cpu
+  - transformers-cpu-compile
+  - transformers-gpu
+  - transformers-gpu-compile
+  - onnxruntime
+  - tensorrt
+  - ollama
+
+quantization:
+  modes:
+    - fp32
+    - fp16
+    - int8
+
+baseline_backend: transformers-cpu
+accuracy_threshold: 0.70
+
+# Reproducibility (required for frontier lab standards)
+seed: 42
+temperature: 0.7
+top_p: 0.9
+max_tokens: 128
+
+# Resource monitoring (required for cost analysis)
+enable_resource_monitoring: true
+resource_sampling_interval_s: 0.1

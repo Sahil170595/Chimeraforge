@@ -1,0 +1,271 @@
+name: classification
+description: >
+  Text classification tasks. Tests the model's ability to categorize
+  text into predefined labels. Uses exact match scoring.
+task_type: classification
+metric_group: classification
+output_type: generate
+num_fewshot: 0
+
+prompt_template: |
+  Classify the following text into one of these categories: {{ categories }}
+
+  Text: {{ text }}
+
+  Category:
+
+filters:
+  - type: strip_whitespace
+  - type: lowercase
+  - type: truncate_at_newline
+
+samples:
+  - id: cls_001
+    categories: "positive, negative, neutral"
+    text: "This product exceeded all my expectations. Absolutely wonderful!"
+    reference: "positive"
+
+  - id: cls_002
+    categories: "positive, negative, neutral"
+    text: "Terrible quality. Broke after one day of use."
+    reference: "negative"
+
+  - id: cls_003
+    categories: "positive, negative, neutral"
+    text: "The package arrived on time. It works as described."
+    reference: "neutral"
+
+  - id: cls_004
+    categories: "sports, technology, politics, science"
+    text: "The team won the championship after a dramatic overtime victory."
+    reference: "sports"
+
+  - id: cls_005
+    categories: "sports, technology, politics, science"
+    text: "Researchers discovered a new species of deep-sea organisms near hydrothermal vents."
+    reference: "science"
+
+  - id: cls_006
+    categories: "sports, technology, politics, science"
+    text: "The new processor achieves 30% better performance per watt than its predecessor."
+    reference: "technology"
+
+  - id: cls_007
+    categories: "sports, technology, politics, science"
+    text: "The senate voted to approve the new infrastructure spending bill."
+    reference: "politics"
+
+  - id: cls_008
+    categories: "urgent, normal, low_priority"
+    text: "Server is down. All customer-facing services are offline."
+    reference: "urgent"
+
+  - id: cls_009
+    categories: "urgent, normal, low_priority"
+    text: "Please update the documentation for the new API endpoint when convenient."
+    reference: "low_priority"
+
+  - id: cls_010
+    categories: "urgent, normal, low_priority"
+    text: "The weekly report is ready for review."
+    reference: "normal"
+
+  - id: cls_011
+    categories: "positive, negative, neutral"
+    text: "I love the new design. It feels premium and well-crafted."
+    reference: "positive"
+
+  - id: cls_012
+    categories: "positive, negative, neutral"
+    text: "The food was cold and the service was painfully slow."
+    reference: "negative"
+
+  - id: cls_013
+    categories: "positive, negative, neutral"
+    text: "The meeting is scheduled for 3 PM in conference room B."
+    reference: "neutral"
+
+  - id: cls_014
+    categories: "positive, negative, neutral"
+    text: "Worst experience I have ever had with customer support."
+    reference: "negative"
+
+  - id: cls_015
+    categories: "positive, negative, neutral"
+    text: "The software update includes several new features and stability improvements."
+    reference: "neutral"
+
+  - id: cls_016
+    categories: "positive, negative, neutral"
+    text: "Absolutely delightful! The team went above and beyond to help us."
+    reference: "positive"
+
+  - id: cls_017
+    categories: "sports, technology, politics, science"
+    text: "The marathon runner set a new world record in the final stretch."
+    reference: "sports"
+
+  - id: cls_018
+    categories: "sports, technology, politics, science"
+    text: "The new satellite will map ocean temperatures with unprecedented accuracy."
+    reference: "science"
+
+  - id: cls_019
+    categories: "sports, technology, politics, science"
+    text: "The startup unveiled a wearable device that monitors blood sugar in real time."
+    reference: "technology"
+
+  - id: cls_020
+    categories: "sports, technology, politics, science"
+    text: "The governor signed an executive order expanding renewable energy incentives."
+    reference: "politics"
+
+  - id: cls_021
+    categories: "sports, technology, politics, science"
+    text: "Physicists confirmed the existence of a new subatomic particle at the collider."
+    reference: "science"
+
+  - id: cls_022
+    categories: "sports, technology, politics, science"
+    text: "The basketball draft picks were announced, surprising analysts across the league."
+    reference: "sports"
+
+  - id: cls_023
+    categories: "urgent, normal, low_priority"
+    text: "Critical security vulnerability detected in the production authentication system."
+    reference: "urgent"
+
+  - id: cls_024
+    categories: "urgent, normal, low_priority"
+    text: "Consider reorganizing the shared drive folders sometime next quarter."
+    reference: "low_priority"
+
+  - id: cls_025
+    categories: "urgent, normal, low_priority"
+    text: "The client has requested a progress update by end of day."
+    reference: "normal"
+
+  - id: cls_026
+    categories: "urgent, normal, low_priority"
+    text: "Payment processing is failing for all transactions. Revenue impact is immediate."
+    reference: "urgent"
+
+  - id: cls_027
+    categories: "urgent, normal, low_priority"
+    text: "We should think about refreshing the office furniture at some point."
+    reference: "low_priority"
+
+  - id: cls_028
+    categories: "urgent, normal, low_priority"
+    text: "Please submit your timesheets by Friday as usual."
+    reference: "normal"
+
+  - id: cls_029
+    categories: "question, complaint, request, feedback"
+    text: "What are your operating hours on weekends?"
+    reference: "question"
+
+  - id: cls_030
+    categories: "question, complaint, request, feedback"
+    text: "I was charged twice for the same order and I want a refund immediately."
+    reference: "complaint"
+
+  - id: cls_031
+    categories: "question, complaint, request, feedback"
+    text: "Could you please send me a copy of the invoice for my records?"
+    reference: "request"
+
+  - id: cls_032
+    categories: "question, complaint, request, feedback"
+    text: "Overall the experience was great, but the checkout process could be faster."
+    reference: "feedback"
+
+  - id: cls_033
+    categories: "question, complaint, request, feedback"
+    text: "How do I reset my password if I no longer have access to my email?"
+    reference: "question"
+
+  - id: cls_034
+    categories: "question, complaint, request, feedback"
+    text: "The product arrived damaged and the packaging was completely torn open."
+    reference: "complaint"
+
+  - id: cls_035
+    categories: "question, complaint, request, feedback"
+    text: "I would like to schedule a meeting with your sales team next Tuesday."
+    reference: "request"
+
+  - id: cls_036
+    categories: "question, complaint, request, feedback"
+    text: "Your mobile app is intuitive and easy to navigate. Great work on the redesign."
+    reference: "feedback"
+
+  - id: cls_037
+    categories: "finance, healthcare, education, entertainment"
+    text: "The central bank raised interest rates by a quarter point to curb inflation."
+    reference: "finance"
+
+  - id: cls_038
+    categories: "finance, healthcare, education, entertainment"
+    text: "A new clinical trial shows promising results for the Alzheimer's drug candidate."
+    reference: "healthcare"
+
+  - id: cls_039
+    categories: "finance, healthcare, education, entertainment"
+    text: "The university announced a new scholarship program for first-generation students."
+    reference: "education"
+
+  - id: cls_040
+    categories: "finance, healthcare, education, entertainment"
+    text: "The blockbuster film broke opening weekend box office records worldwide."
+    reference: "entertainment"
+
+  - id: cls_041
+    categories: "finance, healthcare, education, entertainment"
+    text: "Stock markets rallied after the Federal Reserve signaled a pause in rate hikes."
+    reference: "finance"
+
+  - id: cls_042
+    categories: "finance, healthcare, education, entertainment"
+    text: "Hospitals are adopting AI-powered diagnostic tools to reduce misdiagnosis rates."
+    reference: "healthcare"
+
+  - id: cls_043
+    categories: "finance, healthcare, education, entertainment"
+    text: "The school district approved a new STEM curriculum starting next fall."
+    reference: "education"
+
+  - id: cls_044
+    categories: "finance, healthcare, education, entertainment"
+    text: "The streaming platform released its most-watched original series this quarter."
+    reference: "entertainment"
+
+  - id: cls_045
+    categories: "question, complaint, request, feedback"
+    text: "Is there a way to track my order after it has been shipped?"
+    reference: "question"
+
+  - id: cls_046
+    categories: "question, complaint, request, feedback"
+    text: "Your staff was rude and unhelpful when I visited the store yesterday."
+    reference: "complaint"
+
+  - id: cls_047
+    categories: "finance, healthcare, education, entertainment"
+    text: "Venture capital funding for biotech startups reached a five-year high."
+    reference: "finance"
+
+  - id: cls_048
+    categories: "finance, healthcare, education, entertainment"
+    text: "The new vaccine rollout targets underserved rural communities first."
+    reference: "healthcare"
+
+  - id: cls_049
+    categories: "question, complaint, request, feedback"
+    text: "Please add me to the mailing list for product updates and promotions."
+    reference: "request"
+
+  - id: cls_050
+    categories: "finance, healthcare, education, entertainment"
+    text: "The award-winning documentary explores the history of jazz in New Orleans."
+    reference: "entertainment"

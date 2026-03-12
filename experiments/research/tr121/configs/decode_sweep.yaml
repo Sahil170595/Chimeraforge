@@ -1,0 +1,31 @@
+run_name: tr121_decode_length_sweep_v1
+
+# Sweep gen_tokens to measure how decode-length changes scaling exponents and phase dominance.
+gen_tokens_list: [8, 32, 64, 128]
+
+repetitions: 3
+warmup_repetitions: 1
+seed: 42
+
+scenarios:
+  - short
+  - medium
+
+# Keep this sweep small but regime-covering:
+# - HF: small-model local family on CPU+GPU
+# - Ollama: mid and large quantized models
+models:
+  - models/gpt2-5m
+  - models/gpt2-25m
+  - models/gpt2-45m
+  - models/gpt2-50m
+  - models/gpt2-75m
+  - models/gpt2-100m
+  - gemma3:270m
+  - qwen2.5:7b
+  - gpt-oss-20b:latest
+
+backends:
+  - hf_cpu_fp32
+  - hf_gpu_fp16
+  - ollama

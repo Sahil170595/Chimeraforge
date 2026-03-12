@@ -1,0 +1,46 @@
+repetitions: 3
+
+prompt_sets:
+  short:
+    - "Summarize RLHF in one sentence."
+    - "List two ways to improve throughput on local LLMs."
+  medium:
+    - "Explain how backpressure works in an inference service and when to enable queueing."
+    - "Compare torch.compile vs ONNXRuntime on CPU for small models in two sentences."
+  long:
+    - "Provide a concise overview of the attention mechanism and how KV cache impacts latency in local inference pipelines. Keep it under 120 words."
+    - "Explain how dynamic shapes affect TensorRT engine builds and runtime performance, and when you would choose static vs dynamic profiles."
+
+scenarios:
+  - name: single_short
+    prompt_set: short
+    stream: false
+    mode: single
+  - name: single_medium
+    prompt_set: medium
+    stream: false
+    mode: single
+  - name: single_long
+    prompt_set: long
+    stream: false
+    mode: single
+
+models:
+  - name: models/tiny-gpt2
+    description: "Local HuggingFace GPT-2 for transformers/ORT paths."
+  - name: gemma3:latest
+    description: "Ollama model for local GPU/CPU inference."
+
+backends:
+  - transformers-cpu
+  - transformers-cpu-compile
+  - onnxruntime
+  - ollama
+
+quantization:
+  modes:
+    - fp32
+    - fp16
+
+baseline_backend: transformers-cpu
+accuracy_threshold: 0.70

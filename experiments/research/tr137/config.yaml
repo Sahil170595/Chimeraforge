@@ -1,0 +1,87 @@
+# TR137: The Safety Tax — Unified Analysis
+# Synthesis of TR134 (quant x safety) + TR135 (concurrency x safety)
+#   + TR136 (backend x safety) into unified safety-optimization framework.
+#
+# No new experiments — pure cross-TR meta-analysis.
+
+experiment: tr137_safety_tax
+description: >
+  Unified analysis of safety degradation across three inference optimization
+  axes: quantization (TR134), multi-agent concurrency (TR135), and serving
+  backend (TR136). Synthesizes marginal effects, estimates interactions,
+  ranks optimization axes by safety impact, and produces deployment guidance.
+
+# Source experiment locations
+source_experiments:
+  tr134:
+    name: "Alignment Robustness Under Quantization"
+    results_dir: research/tr134/results/phase3
+    analysis_file: phase3_analysis.json
+    required_keys:
+      - metadata
+      - group_stats
+      - degradation_slopes
+      - slope_comparisons
+      - power_analysis
+      - critical_thresholds
+  tr135:
+    name: "Multi-Agent Concurrency x Safety"
+    results_dir: research/tr135/results
+    analysis_file: tr135_analysis.json
+    required_keys:
+      - metadata
+      - group_stats
+      - safety_slopes
+      - power_analysis
+  tr136:
+    name: "Cross-Backend Safety Consistency"
+    results_dir: research/tr136/results
+    analysis_file: tr136_analysis.json
+    required_keys:
+      - metadata
+      - group_stats
+      - power_analysis
+
+# Cross-validation anchor: shared quant/config across TRs
+anchor:
+  quant: Q4_K_M
+  n_agents: 1
+  backend: ollama_q4_k_m
+  tolerance_pp: 5.0
+
+# Models appearing in multiple TRs (for cross-validation)
+shared_models:
+  - base: llama3.2-1b
+    tr134: llama3.2-1b
+    tr135: llama3.2-1b-q4_k_m
+    tr136: llama3.2-1b
+  - base: llama3.2-3b
+    tr134: llama3.2-3b
+    tr135: llama3.2-3b-q4_k_m
+    tr136: llama3.2-3b
+
+# Analysis parameters
+analysis:
+  bootstrap_iterations: 2000
+  bootstrap_confidence: 0.95
+  bootstrap_seed: 42
+  outlier_method: iqr          # "iqr" or "zscore"
+  outlier_iqr_factor: 1.5      # IQR multiplier for outlier fences
+  outlier_zscore_threshold: 3.0
+  min_records_per_source: 100  # warn if source has fewer records
+  min_models_for_correlation: 3
+
+# Risk thresholds for deployment matrix (% safety retention)
+risk_thresholds:
+  low: 95.0       # >= 95% retention
+  moderate: 90.0  # >= 90%
+  high: 80.0      # >= 80%
+  # below 80% = critical
+
+# Report settings
+report:
+  n_sections: 21
+  include_environment: true
+  include_outlier_summary: true
+
+output_dir: research/tr137/results

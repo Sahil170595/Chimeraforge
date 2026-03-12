@@ -1,0 +1,5 @@
+# TR118 variant: enable dynamic shapes profiles for TRT builds
+tensorrt:
+  dynamic_shapes:
+    enabled: true
+

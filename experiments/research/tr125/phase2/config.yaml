@@ -1,0 +1,226 @@
+# TR125 Phase 2: Production-Grade Quantization Decision Matrix
+# 4 small models × 7 quant levels (incl FP16) + 1 8B model × 6 quant levels = 34 entries
+# All via Ollama. Native timing from backend_metadata (framework patch applied).
+#
+# Setup: python research/tr125/phase2/setup_ollama.py
+# Run:   python research/tr125/phase2/run.py
+# Analyze: python research/tr125/phase2/analyze.py
+
+experiment: tr125_phase2_full_matrix
+description: >
+  Quantization decision matrix with real benchmark data: MMLU (285 questions,
+  57 subjects from cais/mmlu) and ARC-Challenge (200 questions from allenai/ai2_arc)
+  as primary quality gates, plus 5 generation tasks (50 samples each) as secondary.
+  7 quant levels (Q2_K through FP16) for 4 small models + 6 levels for llama3.1-8b.
+  Native Ollama timing for tok/s and TTFT. FP16 Ollama baseline eliminates
+  base-vs-instruct confound. 5 models spanning 1.2B-8B.
+
+models:
+  # ── llama3.2-1b (1.2B params) — 7 quant levels ──────────────────────
+  - name: llama3.2-1b-q2_K
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q2_K"
+
+  - name: llama3.2-1b-q3_K_S
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q3_K_S"
+
+  - name: llama3.2-1b-q4_K_M
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q4_K_M"
+
+  - name: llama3.2-1b-q5_K_M
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q5_K_M"
+
+  - name: llama3.2-1b-q6_K
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q6_K"
+
+  - name: llama3.2-1b-q8_0
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-q8_0"
+
+  - name: llama3.2-1b-fp16
+    path: unsloth/Llama-3.2-1B
+    params_m: 1236
+    ollama_tag: "llama3.2:1b-instruct-fp16"
+
+  # ── qwen2.5-1.5b (1.5B params) — 7 quant levels ────────────────────
+  - name: qwen2.5-1.5b-q2_K
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-q2_K"
+
+  - name: qwen2.5-1.5b-q3_K_S
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-q3_K_S"
+
+  - name: qwen2.5-1.5b-q4_K_M
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-q4_K_M"
+
+  - name: qwen2.5-1.5b-q5_K_M
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-q5_K_M"
+
+  - name: qwen2.5-1.5b-q6_K
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-q6_K"
+
+  - name: qwen2.5-1.5b-q8_0
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-q8_0"
+
+  - name: qwen2.5-1.5b-fp16
+    path: Qwen/Qwen2.5-1.5B
+    params_m: 1543
+    ollama_tag: "qwen2.5:1.5b-instruct-fp16"
+
+  # ── llama3.2-3b (3.2B params) — 7 quant levels ─────────────────────
+  - name: llama3.2-3b-q2_K
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q2_K"
+
+  - name: llama3.2-3b-q3_K_S
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q3_K_S"
+
+  - name: llama3.2-3b-q4_K_M
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q4_K_M"
+
+  - name: llama3.2-3b-q5_K_M
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q5_K_M"
+
+  - name: llama3.2-3b-q6_K
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q6_K"
+
+  - name: llama3.2-3b-q8_0
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-q8_0"
+
+  - name: llama3.2-3b-fp16
+    path: meta-llama/Llama-3.2-3B
+    params_m: 3213
+    ollama_tag: "llama3.2:3b-instruct-fp16"
+
+  # ── phi-2 (2.7B params) — 7 quant levels ────────────────────────────
+  - name: phi-2-q2_K
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-q2_K"
+
+  - name: phi-2-q3_K_S
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-q3_K_S"
+
+  - name: phi-2-q4_K_M
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-q4_K_M"
+
+  - name: phi-2-q5_K_M
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-q5_K_M"
+
+  - name: phi-2-q6_K
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-q6_K"
+
+  - name: phi-2-q8_0
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-q8_0"
+
+  - name: phi-2-fp16
+    path: microsoft/phi-2
+    params_m: 2700
+    ollama_tag: "phi:2.7b-chat-v2-fp16"
+
+  # ── llama3.1-8b (8.0B params) — 6 quant levels (no FP16: ~16GB) ────
+  - name: llama3.1-8b-q2_K
+    path: meta-llama/Llama-3.1-8B
+    params_m: 8030
+    ollama_tag: "llama3.1:8b-instruct-q2_K"
+
+  - name: llama3.1-8b-q3_K_S
+    path: meta-llama/Llama-3.1-8B
+    params_m: 8030
+    ollama_tag: "llama3.1:8b-instruct-q3_K_S"
+
+  - name: llama3.1-8b-q4_K_M
+    path: meta-llama/Llama-3.1-8B
+    params_m: 8030
+    ollama_tag: "llama3.1:8b-instruct-q4_K_M"
+
+  - name: llama3.1-8b-q5_K_M
+    path: meta-llama/Llama-3.1-8B
+    params_m: 8030
+    ollama_tag: "llama3.1:8b-instruct-q5_K_M"
+
+  - name: llama3.1-8b-q6_K
+    path: meta-llama/Llama-3.1-8B
+    params_m: 8030
+    ollama_tag: "llama3.1:8b-instruct-q6_K"
+
+  - name: llama3.1-8b-q8_0
+    path: meta-llama/Llama-3.1-8B
+    params_m: 8030
+    ollama_tag: "llama3.1:8b-instruct-q8_0"
+
+backends:
+  - name: ollama
+    ollama_url: http://localhost:11434
+    extra:
+      timeout_s: 300  # 300s for 8B models
+
+task_paths:
+  - research/tr125/phase2/tasks/summarization.yaml
+  - research/tr125/phase2/tasks/qa.yaml
+  - research/tr125/phase2/tasks/code_generation.yaml
+  - research/tr125/phase2/tasks/creative_writing.yaml
+  - research/tr125/phase2/tasks/classification.yaml
+  - research/tr125/phase2/tasks/mmlu_real.yaml
+  - research/tr125/phase2/tasks/arc_challenge.yaml
+
+# No benchmarks — Ollama cannot do loglikelihood ranking
+benchmarks: []
+
+repetitions: 1
+seed: 42
+max_new_tokens: 256
+temperature: 0.0
+batch_size: 1
+warmup_runs: 2
+
+backend_skip: {}
+
+perplexity:
+  enabled: false
+
+resource_monitor: true
+monitor_interval_s: 0.1
+output_dir: results/eval/tr125_phase2

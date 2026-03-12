@@ -1,0 +1,18 @@
+# TR118 experiment dependencies.
+# Install via: pip install -r scripts/tr118/requirements.txt
+
+torch>=2.5.1
+transformers>=4.48.0
+onnx>=1.15.0
+onnxruntime>=1.16.3
+onnxruntime-gpu>=1.16.3; platform_system!="Darwin"
+datasets>=2.19.0
+numpy>=2.1.0
+pandas>=2.2.2
+scipy>=1.13.1
+matplotlib>=3.10.0
+pyyaml>=6.0.2
+
+# TensorRT/pycuda are optional.
+# - Windows: `pip install tensorrt pycuda` (large downloads); then run `python scripts/tr118/fix_pycuda_windows.py`.
+# - Linux: install via NVIDIA/TensorRT packages or pip wheels as appropriate for your CUDA version.

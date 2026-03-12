@@ -1,0 +1,88 @@
+experiment: tr129
+
+models:
+  - name: llama3.2-1b
+    ollama_tag: "llama3.2:1b"
+    params_m: 1200
+  - name: qwen2.5-1.5b
+    ollama_tag: "qwen2.5:1.5b"
+    params_m: 1500
+  - name: llama3.2-3b
+    ollama_tag: "llama3.2:3b"
+    params_m: 3200
+
+ollama_url: http://localhost:11434
+ollama_timeout_s: 120
+max_new_tokens: 128
+seed: 42
+warmup_requests: 3
+gpu_poll_interval_s: 1.0
+
+# Phase 1: Single-agent baseline (N=1 closed-loop)
+# 3 models × 50 req = 150 rows, ~5 min
+phase1:
+  requests_per_model: 50
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 2: Homogeneous N-agent scaling — CORE
+# N = {1, 2, 3, 4, 5, 6, 7, 8} agents × 3 models × 30 req/agent
+# 24 configs, ~2,700 rows (8 N-levels per model), ~60 min
+# 8 data points per model enables meaningful curve fitting (not 4-point interpolation)
+phase2:
+  n_agent_levels: [1, 2, 3, 4, 5, 6, 7, 8]
+  requests_per_agent: 30
+  cooldown_between_configs_s: 5
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 3: Think-time sweep (fixed N=4)
+# 4 think_times × 3 models × 4 agents × 30 req/agent
+# ~1,440 rows, ~30 min
+phase3:
+  n_agents: 4
+  think_times_ms: [0, 100, 500, 2000]
+  requests_per_agent: 30
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+
+# Phase 4: Heterogeneous multi-model agents (N=4)
+# 4 configs × 4 agents × 30 req/agent
+# ~480 rows, ~15 min
+phase4:
+  n_agents: 4
+  requests_per_agent: 30
+  prompt_tokens_low: 100
+  prompt_tokens_high: 300
+  configs:
+    - id: homo_1b
+      description: "All agents use llama3.2:1b (control)"
+      agents:
+        - "llama3.2:1b"
+        - "llama3.2:1b"
+        - "llama3.2:1b"
+        - "llama3.2:1b"
+    - id: mixed_small
+      description: "Two 1b + two 1.5b"
+      agents:
+        - "llama3.2:1b"
+        - "llama3.2:1b"
+        - "qwen2.5:1.5b"
+        - "qwen2.5:1.5b"
+    - id: mixed_size
+      description: "Two 1b + two 3b"
+      agents:
+        - "llama3.2:1b"
+        - "llama3.2:1b"
+        - "llama3.2:3b"
+        - "llama3.2:3b"
+    - id: all_different
+      description: "1b + 1.5b + 3b + 1b"
+      agents:
+        - "llama3.2:1b"
+        - "qwen2.5:1.5b"
+        - "llama3.2:3b"
+        - "llama3.2:1b"
+  ollama_max_loaded_models: 3
+
+output_dir: research/tr129/results

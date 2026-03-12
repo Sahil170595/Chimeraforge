@@ -1,0 +1,7 @@
+# TR118 variant: TensorRT INT8 only (calibration TBD)
+tensorrt:
+  precisions: [int8]
+benchmark:
+  backends:
+    - tensorrt-int8
+

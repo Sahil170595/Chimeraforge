@@ -1,0 +1,653 @@
+name: code_generation
+description: >
+  Generate short code snippets from natural language descriptions.
+  Tests code understanding, syntax correctness, and logic.
+task_type: code_generation
+metric_group: code_quality
+output_type: generate
+num_fewshot: 0
+
+prompt_template: |
+  Write a Python function that {{ task_description }}
+
+  ```python
+
+filters:
+  - type: strip_whitespace
+
+samples:
+  - id: code_001
+    task_description: "returns the factorial of a non-negative integer n."
+    reference: |
+      def factorial(n):
+          if n <= 1:
+              return 1
+          return n * factorial(n - 1)
+
+  - id: code_002
+    task_description: "checks if a string is a palindrome, ignoring case and spaces."
+    reference: |
+      def is_palindrome(s):
+          cleaned = s.replace(" ", "").lower()
+          return cleaned == cleaned[::-1]
+
+  - id: code_003
+    task_description: "returns the nth Fibonacci number using iteration."
+    reference: |
+      def fibonacci(n):
+          if n <= 1:
+              return n
+          a, b = 0, 1
+          for _ in range(2, n + 1):
+              a, b = b, a + b
+          return b
+
+  - id: code_004
+    task_description: "finds the maximum element in a list without using the built-in max function."
+    reference: |
+      def find_max(lst):
+          if not lst:
+              return None
+          result = lst[0]
+          for x in lst[1:]:
+              if x > result:
+                  result = x
+          return result
+
+  - id: code_005
+    task_description: "reverses a singly linked list in-place."
+    reference: |
+      def reverse_linked_list(head):
+          prev = None
+          current = head
+          while current:
+              next_node = current.next
+              current.next = prev
+              prev = current
+              current = next_node
+          return prev
+
+  - id: code_006
+    task_description: "counts the number of vowels in a given string."
+    reference: |
+      def count_vowels(s):
+          return sum(1 for c in s.lower() if c in 'aeiou')
+
+  - id: code_007
+    task_description: "merges two sorted lists into a single sorted list."
+    reference: |
+      def merge_sorted(a, b):
+          result = []
+          i = j = 0
+          while i < len(a) and j < len(b):
+              if a[i] <= b[j]:
+                  result.append(a[i])
+                  i += 1
+              else:
+                  result.append(b[j])
+                  j += 1
+          result.extend(a[i:])
+          result.extend(b[j:])
+          return result
+
+  - id: code_008
+    task_description: "checks if a number is prime."
+    reference: |
+      def is_prime(n):
+          if n < 2:
+              return False
+          for i in range(2, int(n ** 0.5) + 1):
+              if n % i == 0:
+                  return False
+          return True
+
+  - id: code_009
+    task_description: "flattens a nested list of arbitrary depth."
+    reference: |
+      def flatten(lst):
+          result = []
+          for item in lst:
+              if isinstance(item, list):
+                  result.extend(flatten(item))
+              else:
+                  result.append(item)
+          return result
+
+  - id: code_010
+    task_description: "computes the greatest common divisor of two integers."
+    reference: |
+      def gcd(a, b):
+          while b:
+              a, b = b, a % b
+          return a
+
+  - id: code_011
+    task_description: "returns a list with duplicate elements removed while preserving order."
+    reference: |
+      def remove_duplicates(lst):
+          seen = set()
+          result = []
+          for item in lst:
+              if item not in seen:
+                  seen.add(item)
+                  result.append(item)
+          return result
+
+  - id: code_012
+    task_description: "performs binary search on a sorted list and returns the index of the target, or -1 if not found."
+    reference: |
+      def binary_search(lst, target):
+          lo, hi = 0, len(lst) - 1
+          while lo <= hi:
+              mid = (lo + hi) // 2
+              if lst[mid] == target:
+                  return mid
+              elif lst[mid] < target:
+                  lo = mid + 1
+              else:
+                  hi = mid - 1
+          return -1
+
+  - id: code_013
+    task_description: "rotates a list to the right by k positions."
+    reference: |
+      def rotate_right(lst, k):
+          if not lst:
+              return lst
+          k = k % len(lst)
+          return lst[-k:] + lst[:-k] if k else lst[:]
+
+  - id: code_014
+    task_description: "returns the intersection of two lists as a new list without duplicates."
+    reference: |
+      def intersection(a, b):
+          set_b = set(b)
+          seen = set()
+          result = []
+          for x in a:
+              if x in set_b and x not in seen:
+                  seen.add(x)
+                  result.append(x)
+          return result
+
+  - id: code_015
+    task_description: "transposes a 2D matrix (list of lists)."
+    reference: |
+      def transpose(matrix):
+          if not matrix:
+              return []
+          rows, cols = len(matrix), len(matrix[0])
+          return [[matrix[r][c] for r in range(rows)] for c in range(cols)]
+
+  - id: code_016
+    task_description: "converts a Roman numeral string to an integer."
+    reference: |
+      def roman_to_int(s):
+          values = {'I': 1, 'V': 5, 'X': 10, 'L': 50,
+                    'C': 100, 'D': 500, 'M': 1000}
+          total = 0
+          for i in range(len(s)):
+              if i + 1 < len(s) and values[s[i]] < values[s[i + 1]]:
+                  total -= values[s[i]]
+              else:
+                  total += values[s[i]]
+          return total
+
+  - id: code_017
+    task_description: "returns all permutations of a list."
+    reference: |
+      def permutations(lst):
+          if len(lst) <= 1:
+              return [lst[:]]
+          result = []
+          for i in range(len(lst)):
+              rest = lst[:i] + lst[i + 1:]
+              for perm in permutations(rest):
+                  result.append([lst[i]] + perm)
+          return result
+
+  - id: code_018
+    task_description: "checks if two strings are anagrams of each other."
+    reference: |
+      def are_anagrams(s1, s2):
+          return sorted(s1.lower().replace(" ", "")) == sorted(s2.lower().replace(" ", ""))
+
+  - id: code_019
+    task_description: "implements a stack using a list with push, pop, and peek methods, returned as a class."
+    reference: |
+      class Stack:
+          def __init__(self):
+              self._items = []
+          def push(self, item):
+              self._items.append(item)
+          def pop(self):
+              if not self._items:
+                  raise IndexError("pop from empty stack")
+              return self._items.pop()
+          def peek(self):
+              if not self._items:
+                  raise IndexError("peek from empty stack")
+              return self._items[-1]
+          def is_empty(self):
+              return len(self._items) == 0
+
+  - id: code_020
+    task_description: "returns the power set (all subsets) of a given list."
+    reference: |
+      def power_set(lst):
+          if not lst:
+              return [[]]
+          rest = power_set(lst[1:])
+          return rest + [[lst[0]] + subset for subset in rest]
+
+  - id: code_021
+    task_description: "validates whether a string of parentheses, brackets, and braces is balanced."
+    reference: |
+      def is_balanced(s):
+          stack = []
+          pairs = {')': '(', ']': '[', '}': '{'}
+          for ch in s:
+              if ch in '([{':
+                  stack.append(ch)
+              elif ch in ')]}':
+                  if not stack or stack[-1] != pairs[ch]:
+                      return False
+                  stack.pop()
+          return len(stack) == 0
+
+  - id: code_022
+    task_description: "converts a decimal integer to its binary string representation."
+    reference: |
+      def to_binary(n):
+          if n == 0:
+              return '0'
+          negative = n < 0
+          n = abs(n)
+          bits = []
+          while n:
+              bits.append(str(n % 2))
+              n //= 2
+          result = ''.join(reversed(bits))
+          return '-' + result if negative else result
+
+  - id: code_023
+    task_description: "computes the mean, median, and mode of a list of numbers and returns them as a dictionary."
+    reference: |
+      def stats(lst):
+          from collections import Counter
+          n = len(lst)
+          mean = sum(lst) / n
+          sorted_lst = sorted(lst)
+          mid = n // 2
+          median = sorted_lst[mid] if n % 2 else (sorted_lst[mid - 1] + sorted_lst[mid]) / 2
+          counts = Counter(lst)
+          mode = max(counts, key=counts.get)
+          return {'mean': mean, 'median': median, 'mode': mode}
+
+  - id: code_024
+    task_description: "implements insertion sort on a list of numbers."
+    reference: |
+      def insertion_sort(lst):
+          result = lst[:]
+          for i in range(1, len(result)):
+              key = result[i]
+              j = i - 1
+              while j >= 0 and result[j] > key:
+                  result[j + 1] = result[j]
+                  j -= 1
+              result[j + 1] = key
+          return result
+
+  - id: code_025
+    task_description: "computes the Levenshtein edit distance between two strings."
+    reference: |
+      def edit_distance(s1, s2):
+          m, n = len(s1), len(s2)
+          dp = [[0] * (n + 1) for _ in range(m + 1)]
+          for i in range(m + 1):
+              dp[i][0] = i
+          for j in range(n + 1):
+              dp[0][j] = j
+          for i in range(1, m + 1):
+              for j in range(1, n + 1):
+                  cost = 0 if s1[i - 1] == s2[j - 1] else 1
+                  dp[i][j] = min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost)
+          return dp[m][n]
+
+  - id: code_026
+    task_description: "groups a list of strings by their first character into a dictionary."
+    reference: |
+      def group_by_first_char(words):
+          groups = {}
+          for word in words:
+              if word:
+                  key = word[0]
+                  groups.setdefault(key, []).append(word)
+          return groups
+
+  - id: code_027
+    task_description: "returns the longest common prefix among a list of strings."
+    reference: |
+      def longest_common_prefix(strs):
+          if not strs:
+              return ""
+          prefix = strs[0]
+          for s in strs[1:]:
+              while not s.startswith(prefix):
+                  prefix = prefix[:-1]
+                  if not prefix:
+                      return ""
+          return prefix
+
+  - id: code_028
+    task_description: "inverts a dictionary so that values become keys and keys become lists of original keys."
+    reference: |
+      def invert_dict(d):
+          inverted = {}
+          for key, value in d.items():
+              inverted.setdefault(value, []).append(key)
+          return inverted
+
+  - id: code_029
+    task_description: "performs breadth-first search on an adjacency list graph and returns nodes in BFS order."
+    reference: |
+      def bfs(graph, start):
+          from collections import deque
+          visited = set([start])
+          queue = deque([start])
+          order = []
+          while queue:
+              node = queue.popleft()
+              order.append(node)
+              for neighbor in graph.get(node, []):
+                  if neighbor not in visited:
+                      visited.add(neighbor)
+                      queue.append(neighbor)
+          return order
+
+  - id: code_030
+    task_description: "performs depth-first search on an adjacency list graph and returns nodes in DFS order."
+    reference: |
+      def dfs(graph, start):
+          visited = set()
+          order = []
+          def _dfs(node):
+              visited.add(node)
+              order.append(node)
+              for neighbor in graph.get(node, []):
+                  if neighbor not in visited:
+                      _dfs(neighbor)
+          _dfs(start)
+          return order
+
+  - id: code_031
+    task_description: "computes the n-th row of Pascal's triangle."
+    reference: |
+      def pascal_row(n):
+          row = [1]
+          for k in range(1, n + 1):
+              row.append(row[-1] * (n - k + 1) // k)
+          return row
+
+  - id: code_032
+    task_description: "returns the two indices of numbers in a list that add up to a given target."
+    reference: |
+      def two_sum(nums, target):
+          seen = {}
+          for i, num in enumerate(nums):
+              complement = target - num
+              if complement in seen:
+                  return [seen[complement], i]
+              seen[num] = i
+          return []
+
+  - id: code_033
+    task_description: "counts the number of set bits (1s) in the binary representation of an integer."
+    reference: |
+      def count_set_bits(n):
+          count = 0
+          n = abs(n)
+          while n:
+              count += n & 1
+              n >>= 1
+          return count
+
+  - id: code_034
+    task_description: "encodes a string using run-length encoding."
+    reference: |
+      def run_length_encode(s):
+          if not s:
+              return ""
+          result = []
+          count = 1
+          for i in range(1, len(s)):
+              if s[i] == s[i - 1]:
+                  count += 1
+              else:
+                  result.append(f"{s[i - 1]}{count}")
+                  count = 1
+          result.append(f"{s[-1]}{count}")
+          return "".join(result)
+
+  - id: code_035
+    task_description: "decodes a run-length encoded string back to its original form."
+    reference: |
+      def run_length_decode(s):
+          result = []
+          i = 0
+          while i < len(s):
+              char = s[i]
+              i += 1
+              num = []
+              while i < len(s) and s[i].isdigit():
+                  num.append(s[i])
+                  i += 1
+              result.append(char * int("".join(num)))
+          return "".join(result)
+
+  - id: code_036
+    task_description: "finds all pairs of numbers in a list that sum to a given target."
+    reference: |
+      def find_pairs(lst, target):
+          seen = set()
+          pairs = set()
+          for num in lst:
+              complement = target - num
+              if complement in seen:
+                  pair = (min(num, complement), max(num, complement))
+                  pairs.add(pair)
+              seen.add(num)
+          return sorted(pairs)
+
+  - id: code_037
+    task_description: "determines if a given directed graph (adjacency list) contains a cycle."
+    reference: |
+      def has_cycle(graph):
+          WHITE, GRAY, BLACK = 0, 1, 2
+          color = {node: WHITE for node in graph}
+          def visit(node):
+              color[node] = GRAY
+              for neighbor in graph.get(node, []):
+                  if color.get(neighbor, WHITE) == GRAY:
+                      return True
+                  if color.get(neighbor, WHITE) == WHITE and visit(neighbor):
+                      return True
+              color[node] = BLACK
+              return False
+          return any(color[n] == WHITE and visit(n) for n in graph)
+
+  - id: code_038
+    task_description: "computes the longest increasing subsequence length of a list using dynamic programming."
+    reference: |
+      def lis_length(nums):
+          if not nums:
+              return 0
+          dp = [1] * len(nums)
+          for i in range(1, len(nums)):
+              for j in range(i):
+                  if nums[j] < nums[i]:
+                      dp[i] = max(dp[i], dp[j] + 1)
+          return max(dp)
+
+  - id: code_039
+    task_description: "returns the top k most frequent elements in a list."
+    reference: |
+      def top_k_frequent(nums, k):
+          from collections import Counter
+          counts = Counter(nums)
+          return [item for item, _ in counts.most_common(k)]
+
+  - id: code_040
+    task_description: "converts a nested dictionary to a flat dictionary with dot-separated keys."
+    reference: |
+      def flatten_dict(d, parent_key='', sep='.'):
+          items = {}
+          for k, v in d.items():
+              new_key = f"{parent_key}{sep}{k}" if parent_key else k
+              if isinstance(v, dict):
+                  items.update(flatten_dict(v, new_key, sep))
+              else:
+                  items[new_key] = v
+          return items
+
+  - id: code_041
+    task_description: "implements a simple Caesar cipher that shifts each letter by a given offset."
+    reference: |
+      def caesar_cipher(text, shift):
+          result = []
+          for ch in text:
+              if ch.isalpha():
+                  base = ord('A') if ch.isupper() else ord('a')
+                  result.append(chr((ord(ch) - base + shift) % 26 + base))
+              else:
+                  result.append(ch)
+          return ''.join(result)
+
+  - id: code_042
+    task_description: "checks if a given binary tree is a valid binary search tree using in-order bounds."
+    reference: |
+      def is_valid_bst(node, lo=float('-inf'), hi=float('inf')):
+          if node is None:
+              return True
+          if node.val <= lo or node.val >= hi:
+              return False
+          return is_valid_bst(node.left, lo, node.val) and is_valid_bst(node.right, node.val, hi)
+
+  - id: code_043
+    task_description: "computes the maximum depth of a binary tree."
+    reference: |
+      def max_depth(root):
+          if root is None:
+              return 0
+          return 1 + max(max_depth(root.left), max_depth(root.right))
+
+  - id: code_044
+    task_description: "multiplies two matrices (2D lists) and returns the resulting matrix."
+    reference: |
+      def matrix_multiply(a, b):
+          rows_a, cols_a = len(a), len(a[0])
+          cols_b = len(b[0])
+          result = [[0] * cols_b for _ in range(rows_a)]
+          for i in range(rows_a):
+              for j in range(cols_b):
+                  for k in range(cols_a):
+                      result[i][j] += a[i][k] * b[k][j]
+          return result
+
+  - id: code_045
+    task_description: "solves the 0/1 knapsack problem given weights, values, and a capacity, returning the maximum value."
+    reference: |
+      def knapsack(weights, values, capacity):
+          n = len(weights)
+          dp = [[0] * (capacity + 1) for _ in range(n + 1)]
+          for i in range(1, n + 1):
+              for w in range(capacity + 1):
+                  dp[i][w] = dp[i - 1][w]
+                  if weights[i - 1] <= w:
+                      dp[i][w] = max(dp[i][w], dp[i - 1][w - weights[i - 1]] + values[i - 1])
+          return dp[n][capacity]
+
+  - id: code_046
+    task_description: "returns the minimum number of coins needed to make a given amount, or -1 if impossible."
+    reference: |
+      def coin_change(coins, amount):
+          dp = [float('inf')] * (amount + 1)
+          dp[0] = 0
+          for coin in coins:
+              for x in range(coin, amount + 1):
+                  dp[x] = min(dp[x], dp[x - coin] + 1)
+          return dp[amount] if dp[amount] != float('inf') else -1
+
+  - id: code_047
+    task_description: "converts a string of space-separated words to title case, capitalizing the first letter of each word."
+    reference: |
+      def to_title_case(s):
+          return ' '.join(word[0].upper() + word[1:].lower() if word else ''
+                          for word in s.split(' '))
+
+  - id: code_048
+    task_description: "implements a simple LRU cache with get and put methods using an OrderedDict."
+    reference: |
+      from collections import OrderedDict
+
+      class LRUCache:
+          def __init__(self, capacity):
+              self.capacity = capacity
+              self.cache = OrderedDict()
+          def get(self, key):
+              if key not in self.cache:
+                  return -1
+              self.cache.move_to_end(key)
+              return self.cache[key]
+          def put(self, key, value):
+              if key in self.cache:
+                  self.cache.move_to_end(key)
+              self.cache[key] = value
+              if len(self.cache) > self.capacity:
+                  self.cache.popitem(last=False)
+
+  - id: code_049
+    task_description: "performs topological sort on a directed acyclic graph represented as an adjacency list."
+    reference: |
+      def topological_sort(graph):
+          from collections import deque
+          in_degree = {u: 0 for u in graph}
+          for u in graph:
+              for v in graph[u]:
+                  in_degree[v] = in_degree.get(v, 0) + 1
+          queue = deque([u for u in in_degree if in_degree[u] == 0])
+          order = []
+          while queue:
+              node = queue.popleft()
+              order.append(node)
+              for v in graph.get(node, []):
+                  in_degree[v] -= 1
+                  if in_degree[v] == 0:
+                      queue.append(v)
+          return order if len(order) == len(in_degree) else []
+
+  - id: code_050
+    task_description: "implements a trie insert and search for a collection of words."
+    reference: |
+      class TrieNode:
+          def __init__(self):
+              self.children = {}
+              self.is_end = False
+
+      class Trie:
+          def __init__(self):
+              self.root = TrieNode()
+          def insert(self, word):
+              node = self.root
+              for ch in word:
+                  if ch not in node.children:
+                      node.children[ch] = TrieNode()
+                  node = node.children[ch]
+              node.is_end = True
+          def search(self, word):
+              node = self.root
+              for ch in word:
+                  if ch not in node.children:
+                      return False
+                  node = node.children[ch]
+              return node.is_end

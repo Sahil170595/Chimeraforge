@@ -1,0 +1,81 @@
+experiment: tr139_multi_turn_jailbreak_quant
+description: >
+  Multi-Turn Jailbreak Susceptibility Under Quantization. Tests whether
+  quantization makes models more susceptible to multi-turn conversational
+  jailbreaks. Four models across two families (Llama 3.2 1B/3B, Llama 3.1 8B,
+  Qwen 2.5 1.5B) tested at 6 quantization levels with 5 attack strategies
+  (direct, benign_context, foot-in-the-door, crescendo, attention shift) on 50
+  harmful behaviors from 10 JailbreakBench categories. Phase 2 tests refusal
+  persistence under continued pressure at 5 quant levels.
+
+# ----- Phase 1: Multi-Turn Attack Effectiveness x Quantization -----
+phase1:
+  models:
+    - name: llama3.2-1b
+      ollama_tag: "llama3.2:1b"
+      hf_id: "meta-llama/Llama-3.2-1B-Instruct"
+      params_m: 1236
+
+    - name: llama3.2-3b
+      ollama_tag: "llama3.2:3b"
+      hf_id: "meta-llama/Llama-3.2-3B-Instruct"
+      params_m: 3213
+
+    - name: qwen2.5-1.5b
+      ollama_tag: "qwen2.5:1.5b"
+      hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+      params_m: 1544
+
+    - name: llama3.1-8b
+      ollama_tag: "llama3.1:8b"
+      hf_id: "meta-llama/Llama-3.1-8B-Instruct"
+      params_m: 8030
+      skip_fp16: true  # 16GB+ in FP16, use Q8_0 as baseline
+
+  quant_levels: [Q8_0, Q6_K, Q5_K_M, Q4_K_M, Q3_K_M, Q2_K]
+  attack_strategies: [direct, benign_context, foot_in_door, crescendo, attention_shift]
+  # 4 models x 6 quants x 5 strategies x 50 behaviors = 6,000 conversations
+
+# ----- Phase 2: Refusal Persistence Under Pressure -----
+phase2:
+  models:
+    - name: llama3.2-1b
+      ollama_tag: "llama3.2:1b"
+      hf_id: "meta-llama/Llama-3.2-1B-Instruct"
+      params_m: 1236
+
+    - name: llama3.2-3b
+      ollama_tag: "llama3.2:3b"
+      hf_id: "meta-llama/Llama-3.2-3B-Instruct"
+      params_m: 3213
+
+    - name: qwen2.5-1.5b
+      ollama_tag: "qwen2.5:1.5b"
+      hf_id: "Qwen/Qwen2.5-1.5B-Instruct"
+      params_m: 1544
+
+    - name: llama3.1-8b
+      ollama_tag: "llama3.1:8b"
+      hf_id: "meta-llama/Llama-3.1-8B-Instruct"
+      params_m: 8030
+      skip_fp16: true
+
+  quant_levels: [Q8_0, Q6_K, Q4_K_M, Q3_K_M, Q2_K]
+  pressure_turns: 5
+  # 4 models x 5 quants x 50 behaviors = 1,000 conversations
+
+# ----- Backend -----
+backends:
+  ollama:
+    port: 11434
+    timeout_s: 300
+    chat_timeout_s: 120
+
+# ----- Shared settings -----
+max_new_tokens: 256
+temperature: 0.0
+seed: 42
+warmup_requests: 3
+cooldown_between_models_s: 10
+
+output_dir: research/tr139/results
