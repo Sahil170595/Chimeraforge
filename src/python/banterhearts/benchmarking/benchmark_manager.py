@@ -2,8 +2,10 @@
 Benchmark Manager for Chimera Heart Self-Healing Pipeline
 """
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any
 from pathlib import Path
 
 
