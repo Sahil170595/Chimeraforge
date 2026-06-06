@@ -693,7 +693,7 @@ The matrix is organized by the chronological order of the reports (TR123 through
 | TR123 | Cost Economics | Phase-split $/token pricing for production KV-cached inference; MHA vs GQA architecture selection | Compile ROI quantification; consumer vs cloud break-even; carbon/energy budgeting; workload-blend cost estimation | High | 525 cells, best cost $0.013/1M tokens (GPT-2/compile, chat blend), GQA 11.4x KV memory advantage, compile 1.2-2.5x decode speedup, 30/30 KV formula validation, consumer 95.4% cheaper than cloud, TCO $153/yr vs $2,880/yr at 1B tok/month | Windows aot_eager fallback for compile (resolved by TR126); no quality data (resolved by TR124); cost numbers bound to measured hardware + electricity rate |
 | TR124 | Quality Assurance | Backend equivalence confirmed -- cheapest backend is the best backend; quality-cost Pareto frontier established | Per-model quality signatures for task routing; quality gate thresholds; stochastic decoding policy (use greedy for evaluation) | High | 3,600 samples, 0/7 metrics significant after Holm-Bonferroni, composite range 0.29 (gpt2) to 0.63 (phi-2), 3/8 combos Pareto-optimal, llama-3.2-1b best quality-adjusted cost at $0.13/quality-point, Phase 2 avg -10.7% quality loss from quantization, Phase 3 CV=0.33 at temp=0.7 | Ollama determinism unvalidated; automated metrics only (no human evaluation); base-vs-instruct confound in Phase 2 (resolved by TR125) |
 | TR125 | Quantization | Q4_K_M as universal default quantization; Q2_K ban for all quality-sensitive tasks; per-model quant tolerance map | Cost savings quantification (30-67% vs FP16); VRAM budget reduction; repetition collapse detection at extreme quantization | High | ~26,000 samples, 34 model-quant variants, Q4_K_M max loss -4.1pp, Q3_K_S cliff at -10.1pp to -12.2pp, Q2_K universally >11pp loss (qwen2.5-1.5b -40.6pp), phi-2 most robust (-1.8pp through Q4_K_M), 10x cost range ($0.020-$0.198), TOST 0/18 at +/-3pp, 7/16 Bonferroni survivors at Q2_K boundary | TOST underpowered at +/-3pp equivalence margin; single-rep Ollama determinism assumption; tier classifications below 9pp MDE are point-estimate-based |
-| TR126 | Compilation | Prefill-only compile on Linux with Inductor+Triton; never compile decode; all Windows compile results invalidated | Scale-dependent backend selection (small models -> compile wins; large -> Ollama wins); ANOVA interaction quantification | High | ~29,900 measurements, -40.0% latency reduction (d=-0.59, p=8.87e-61), prefill d=-1.21, Ollama 7x decode advantage (d=2.38), compiled decode 100% crash rate, 916 Triton kernels, ANOVA F(8,1608)=453.1 p<1e-16, bug persists on PyTorch 2.10, StaticCache 5.8x slower | Compiled decode is architecturally broken (DynamicCache + CUDA graphs incompatible); CUDA graph crash is length-dependent (works at 64 tokens, crashes at 128); Windows results remain invalid |
+| TR126 | Compilation | Prefill-only compile on Linux with Inductor+Triton; never compile decode; all Windows compile results invalidated | Scale-dependent backend selection (small models -> compile wins; large -> Ollama wins); ANOVA interaction quantification | High | ~29,900 measurements, -40.0% latency reduction (d=-0.59, p=8.87e-61), prefill d=-1.21, Ollama 7x decode advantage (d=2.38), compiled decode 100% crash rate, 916 Triton kernels, ANOVA F(8,1608)=453.1 p<1e-16, bug persists on PyTorch 2.10, StaticCache 5.8x slower | Compiled decode crashes on stock PyTorch (originally read as architectural; SUPERSEDED 2026-06-05 -- fixable from PyTorch internals via input-preservation, PR #184102 in review, see Appendix BI); CUDA graph crash is length-dependent (works at 64 tokens, crashes at 128); Windows results remain invalid |
 | TR127 | Context Scaling | VRAM budget formula per model; Ollama for >4K token contexts on 12GB VRAM; HF FP16 limited to 4-8K tokens | Per-token VRAM cost estimation (0.75-1.16 MB/token FP16); TTFT planning; decode throughput degradation curves | High | 1,144 measurements, two-regime scaling (pre-spillover b=1.58-1.78, R^2=0.999+; post-spillover 25-105x cliffs), Ollama sub-linear b<0.2, spillover at 8-16K tokens, decode 41-53% degradation over 64x context, HF 95% collapse, TTFT >1s at 4K on HF | Only 512-32K range tested; per-token VRAM cost includes activations and allocator overhead (not pure KV); OOM cliff follows spillover by one step |
 | TR128 | Production Load | NUM_PARALLEL=1 (no-op confirmed); streaming always on (zero overhead); 70% utilization cap; empirical saturation curves replace M/D/1 | TTFT amplification planning; thermal safety margin; multi-turn context growth estimation | High | 3,172 measurements, 0/30 NUM_PARALLEL tests significant (mean |change| 4.0%), M/D/1 deviation up to 20.4x, peak 66 deg C (threshold 80 deg C), 0/9 streaming tests significant, TTFT 29.9x at 2.0 req/s, qwen2.5-1.5b 66% decode warmup anomaly | Sliding-window context inconclusive (p=0.042, n=8, wouldn't survive Bonferroni); qwen2.5-1.5b warmup mechanism unknown; 15/15 distributions non-normal |
 | TR129 | Multi-Agent Scaling | 2-3 agents per GPU optimal; Amdahl prediction formula with per-model serial fractions; think-time tradeoff quantification | Saturation point identification; fairness guarantee; GPU tok/s constancy confirmation | High | 5,310 measurements, Amdahl s=0.39-0.54 (R^2>0.97), total throughput plateau at N=2 (<3% gain N=2 to N=8), per-agent eta(8)=17-20%, saturation at N=3-4, Jain's index >=0.997, GPU tok/s constant across N | Phase 4 confounded (homo_1b 25% above Phase 2 N=4); think-time improves per-request but reduces sustained throughput; serial fraction is model-fit, not physically derived |
@@ -883,7 +883,7 @@ TR120 found that torch.compile on Windows silently falls back to `aot_eager`, a 
 | Triton kernels generated | 916 across 6 models | Physical proof of compilation |
 | ANOVA backend x model | F(8,1608)=453.1 | p<1e-16, eta^2=0.107 |
 | StaticCache decode | 5.8x slower | First successful compiled decode, but impractical |
-| PyTorch 2.10 rerun | Identical crash | 4,522 measurements confirm architectural bug |
+| PyTorch 2.10 rerun | Identical crash | 4,522 measurements; stock-PyTorch crash (fixable via #184102, see Appendix BI) |
 | Padded vs dynamic compile | 15% improvement | d=-0.91 padded vs d=-0.59 dynamic |
 | qwen2.5-0.5b padded speedup | 5.0x | Highest in Phase 2 |
 | 1.5B crossover (TOST) | +/-1ms, p=0.001 | Compiled HF = Ollama at qwen2.5-1.5b |
@@ -893,9 +893,9 @@ TR120 found that torch.compile on Windows silently falls back to `aot_eager`, a 
 
 The inverse relationship between model size and compile benefit deserves further examination because it determines backend selection policy. At GPT-2 25M parameters, Triton kernel fusion eliminates redundant memory accesses in the small attention heads, achieving 2.5x speedup. At Qwen2.5-3B, the larger weight matrices are already memory-bandwidth-bound, and kernel fusion can only reduce the overhead fraction (kernel launch, memory allocation), which is proportionally smaller. The practical implication is that compilation is most valuable precisely where Ollama is least competitive (small models with low memory bandwidth demand) and least valuable where Ollama is most competitive (large models with high bandwidth demand). This creates a natural segmentation: compiled HF for prefill on small models, Ollama for everything else.
 
-The compiled decode story is a five-part failure sequence that establishes a robust negative result. First, `reduce-overhead` mode crashes 100% on autoregressive decode at 128+ tokens due to CUDA graph shape incompatibility with DynamicCache's growing KV tensors. Second, `mode="default"` produces identical crashes because PyTorch 2.8's Inductor invokes CUDA graph trees internally regardless of the mode parameter. Third, even when compiled decode succeeds at 64 tokens (Phase 2 baseline), it provides zero speedup (+2.2%, not significant, d=0.026). Fourth, three-layer patching of `cudagraph_trees.py` confirms the crash is architectural: `torch.cat` in `DynamicCache.update()` is fundamentally incompatible with CUDA graph replay. Fifth, StaticCache enables the first successful compiled decode but is 5.8x slower than eager due to per-step compilation overhead. The full Phase 3 rerun on PyTorch 2.10 (NGC 26.01) produces identical results, confirming this is not a version-specific regression. Issue pytorch/pytorch#175557 was filed and assertion fix PR #175562 was submitted.
+The compiled decode story is a five-part failure sequence that establishes a robust negative result. First, `reduce-overhead` mode crashes 100% on autoregressive decode at 128+ tokens due to CUDA graph shape incompatibility with DynamicCache's growing KV tensors. Second, `mode="default"` produces identical crashes because PyTorch 2.8's Inductor invokes CUDA graph trees internally regardless of the mode parameter. Third, even when compiled decode succeeds at 64 tokens (Phase 2 baseline), it provides zero speedup (+2.2%, not significant, d=0.026). Fourth, three-layer patching of `cudagraph_trees.py` (a "never-free" approach) failed to fix the crash, which at the time was read as evidence the crash is architectural. Fifth, StaticCache enables the first successful compiled decode but is 5.8x slower than eager due to per-step compilation overhead. The full Phase 3 rerun on PyTorch 2.10 (NGC 26.01) produces identical results, confirming this is not a version-specific regression. Issue pytorch/pytorch#175557 was filed and assertion-cleanup PR #175562 was submitted. (UPDATE 2026-06-05: the "architectural / every path exhausted" reading was superseded. The never-free approach was the wrong fix; the opposite approach -- preserving cudagraph-pool-aliased inputs before they are freed -- patches it from PyTorch internals. See Appendix BI.)
 
-The backend ranking reversal at scale has immediate practical implications for any deployment serving multiple model sizes. For small models (<=500M parameters), compiled HuggingFace dominates because Triton fusion provides large speedups on compute-bound workloads. For larger models (>=1.5B), Ollama's quantized inference matches or beats compiled FP16 on prefill (formally confirmed by TOST equivalence at the 1.5B crossover: compiled HF and Ollama are within +/-1ms for Qwen2.5-1.5B, p=0.001) and delivers 7x faster decode (d=2.38, p<1e-209, the largest effect size in the study). This establishes the compile policy that propagates through the rest of the program: prefill-only on Linux with Inductor+Triton for small models (<=1B parameters), Ollama for everything else, and never compile decode under any configuration. The policy is backed by five independent lines of evidence: (1) reduce-overhead crashes decode at 128+ tokens, (2) mode="default" also crashes, (3) compiled decode at 64 tokens provides no speedup, (4) three-layer patching of cudagraph_trees.py confirms the crash is architectural, and (5) StaticCache enables decode but is 5.8x slower than eager. Every viable compiled decode path has been exhausted.
+The backend ranking reversal at scale has immediate practical implications for any deployment serving multiple model sizes. For small models (<=500M parameters), compiled HuggingFace dominates because Triton fusion provides large speedups on compute-bound workloads. For larger models (>=1.5B), Ollama's quantized inference matches or beats compiled FP16 on prefill (formally confirmed by TOST equivalence at the 1.5B crossover: compiled HF and Ollama are within +/-1ms for Qwen2.5-1.5B, p=0.001) and delivers 7x faster decode (d=2.38, p<1e-209, the largest effect size in the study). This establishes the compile policy that propagates through the rest of the program: prefill-only on Linux with Inductor+Triton for small models (<=1B parameters), Ollama for everything else, and never compile decode under any configuration. The policy is backed by five independent lines of evidence: (1) reduce-overhead crashes decode at 128+ tokens, (2) mode="default" also crashes, (3) compiled decode at 64 tokens provides no speedup, (4) the never-free patch of cudagraph_trees.py did not fix the crash, and (5) StaticCache enables decode but is 5.8x slower than eager. On stock PyTorch every viable compiled decode path tested here was exhausted; UPDATE 2026-06-05: the crash is now fixable from PyTorch internals via input-preservation (PR #184102, in review), so the prefill-only/eager-decode policy holds for stock PyTorch but is no longer a permanent architectural limit. See Appendix BI.
 
 The padded configuration result from Phase 2 adds a nuance to compile deployment guidance: padding inputs to fixed shapes improves compiled performance by 15% (d=-0.91 padded versus d=-0.59 dynamic), validating TR120's shape-stability hypothesis. Qwen2.5-0.5B achieves a 5.0x speedup under padding, the highest in the study. For production systems that can bucket input lengths into fixed sizes, padded compilation with `dynamic=False` is the optimal configuration. For systems with highly variable input lengths, `dynamic=True` is necessary but incurs approximately 85% higher compiled latency for small models compared to the padded case. This tradeoff is encoded in TR133's throughput model as a binary flag rather than a continuous parameter, a simplification that may introduce prediction error for workloads with bimodal input length distributions.
 
@@ -1703,7 +1703,7 @@ Rule 3: never compile on Windows. Evidence: Windows lacks Triton and the compile
 
 Rule 4: scale-aware application. Small models (below approximately 1.5B parameters) benefit most from compilation because prefill is a larger fraction of their total inference time. Larger models show diminishing returns because Ollama's GGUF engine already saturates the GPU for decode, and prefill time becomes a smaller fraction of end-to-end latency. At the scale crossover (approximately 1.5B), the compile investment (engineering complexity, Docker/Linux requirement) may not be justified.
 
-The compile bug (pytorch/pytorch#175557) persists as of PyTorch 2.10. If a future PyTorch release fixes compiled decode, the policy should be re-evaluated by re-running TR126 Phase 2/3 benchmarks. Until then, rule 2 is absolute.
+The compile bug (pytorch/pytorch#175557) persists on stock PyTorch through 2.10. UPDATE 2026-06-05: PR #184102 (in review) fixes it from PyTorch internals via input-preservation; validated on a real gpt2 reduce-overhead decode of 128 tokens (baseline crashes, patched completes with cudagraphs active). Rule 2 remains correct for stock/unpatched PyTorch; once #184102 (or equivalent) ships, re-evaluate the policy by re-running TR126 Phase 2/3 benchmarks. See Appendix BI.
 
 The practical impact of the compile policy is workload-dependent. For decode-heavy workloads (chat, code generation, long-form summarization), the compile policy has no effect because decode is the bottleneck and compile is not applied to decode. For prefill-heavy workloads (RAG retrieval, document classification, embedding computation), the compile policy can reduce prefill latency by 24-60%, which directly improves TTFT and overall throughput. The ROI of implementing the compile policy therefore depends on the prefill-to-decode ratio of the target workload, which can be estimated using the blend ratios in Section 7.1.
 
@@ -1922,8 +1922,8 @@ This section makes explicit the boundaries within which the Phase 2 conclusions 
 | TR124 | Ollama determinism at temp=0 unvalidated | Flagged as caveat; single-rep variance may be underestimated | **Open** |
 | TR125 | TOST underpowered at ±3pp equivalence margin | Wilson CIs provided; 6/18 pass at ±5pp generation margin | **Mitigated** |
 | TR125 | Base-vs-instruct confound in Phase 1 FP16 baselines | Identified and corrected in Phase 2 with Ollama FP16 baselines | **Resolved** |
-| TR126 | Compiled decode crashes in all torch.compile modes | Documented as architectural (DynamicCache + CUDA graphs incompatible); PR #175562 filed | **Accepted** |
-| TR126 | Bug persists across PyTorch 2.8 and 2.10 | Confirmed architectural; awaiting upstream fix | **Accepted** |
+| TR126 | Compiled decode crashes in all torch.compile modes | Originally documented as architectural; SUPERSEDED 2026-06-05: fixable from PyTorch internals via input-preservation (PR #184102, in review); validated on real decode. See Appendix BI. | **Resolved upstream (in review)** |
+| TR126 | Bug persists across PyTorch 2.8 and 2.10 | Baseline crash confirmed on both; #184102 fixes both (2.10 and 2.12 nightly) when hand-applied. Assertion-cleanup PR #175562 landed in main. See Appendix BI. | **Resolved upstream (in review)** |
 | TR127 | Context range limited to 512-32K tokens | Sufficient for consumer GPU VRAM budgets; 32K exceeds OOM for all FP16 models >0.5B | **Accepted** |
 | TR128 | Sliding-window context benefit inconclusive | p=0.042 for 1/3 models at n=8; needs larger sample sizes | **Open** |
 | TR129 | Phase 4 (heterogeneous models) confounded by Ollama restart/warmup | Conservative interpretation; avoid mixed-model deployment claims | **Accepted** |
@@ -2386,7 +2386,7 @@ TR125 transforms quantization from a binary choice (full precision vs "some comp
 
 ### O.4 TR126 Narrative
 
-TR126 is the most satisfying report in the program because it resolves a genuine mystery. The Windows compile paradox (TR120) appeared to show that torch.compile hurts performance. TR126 proves this was an artifact: real Triton compilation delivers large, consistent speedups. The report also reveals that compiled decode crashes in all modes — a limitation that was obscured on Windows where compile never worked at all. The net policy is clear: compile prefill, never decode.
+TR126 is the most satisfying report in the program because it resolves a genuine mystery. The Windows compile paradox (TR120) appeared to show that torch.compile hurts performance. TR126 proves this was an artifact: real Triton compilation delivers large, consistent speedups. The report also reveals that compiled decode crashes in all modes — a limitation that was obscured on Windows where compile never worked at all. The net policy is clear: compile prefill, never decode (on stock PyTorch). UPDATE 2026-06-05: the decode crash is now fixable from PyTorch internals (PR #184102, in review), so "never decode" is a stock-PyTorch policy, not a permanent limit; see Appendix BI.
 
 ### O.5 TR127 Narrative
 
@@ -3321,6 +3321,94 @@ This report follows the documentation principles established in Phase 1 (TR118_v
 3. **Caveats are explicit.** The TOST failure (TR125), Ollama determinism gap (TR124/TR125), and WDDM profiling limitation (TR131) are documented in the claim status table, limitations table, and threats section.
 4. **The report is structured for multiple audiences.** The reading guide (§1.4) maps four distinct reading paths. The whitepaper (separate document) provides executive-level guidance. The extended appendices provide deep-dive material.
 5. **Terminology is consistent.** All terms are defined in Appendices D, AG, and AO. Metric definitions are consistent across all 11 TRs.
+
+---
+
+## Appendix BI: Update / Resolution -- TR126 Compiled-Decode Crash (2026-06-05)
+
+This appendix updates the TR126 compiled-decode conclusions. It does not change
+any TR126 measurement, statistic, or run; only the forward-looking conclusions
+about whether the crash is fixable change. All other TRs are unaffected.
+
+What TR126 originally concluded. The compiled autoregressive-decode crash
+("accessing tensor output of CUDAGraphs that has been overwritten by a
+subsequent run") was read as architectural and not patchable from PyTorch
+internals -- the inference being that a fix would have to come from the
+model/cache layer. That reading rested on a "never-free" prototype that disabled
+the dealloc/free path plus the assertion and still crashed.
+
+What changed.
+
+1. PR #175562 (assertion cleanup) landed in PyTorch main as squash commit
+   be90a1495310 (2026-06-04). It replaces a hard
+   `assert len(node.tensor_weakrefs) == len(node.stack_traces)` in
+   `dealloc_current_path_weakrefs` with a warning. It is a small defensive
+   cleanup and does NOT by itself fix the decode crash. (The PR page shows
+   "Closed" rather than a green "Merged" badge because the mergebot lands by
+   pushing the squashed commit directly to main; the commit is in main.)
+   https://github.com/pytorch/pytorch/pull/175562
+
+2. The crash IS fixable from PyTorch internals. The never-free approach was the
+   wrong direction; the opposite approach works -- preserve/clone the
+   cudagraph-pool-aliased inputs BEFORE the dealloc frees them. PR #184102
+   (jansel, "Fix cudagraph handoff across compiled calls", Fixes #175557) does
+   this via `_preserve_inputs_that_alias_current_path`. So TR126's
+   "architectural, not patchable" conclusion was correct only for the
+   sledgehammer it tested, and is superseded.
+   https://github.com/pytorch/pytorch/pull/184102
+
+3. Validated on a REAL decode, not just synthetic. In Docker on an RTX 4080
+   Laptop, against two torch builds (NGC pytorch:26.01 torch 2.10.0a0 / triton
+   3.6.0, and pip nightly torch 2.12.0.dev20260408 / triton 3.7.0 = current
+   main), each PR's diff was hand-applied to the installed torch (pure-Python,
+   no rebuild). Workload: stock gpt2, mode="reduce-overhead", past_key_values
+   fed back each step, 128 tokens (faithful to TR126 phase2/phase3 _kv_decode).
+   Baseline crashes at the first decode step (the TR126 crash). With #184102 it
+   completes all 128 tokens with cudagraphs still active (a dynamic-shape
+   recording warning fires, confirming it is not an eager fallback). The fix
+   also held across 7 synthetic feedback topologies (simple, no-mark, strided,
+   cross-call, graph-break, graph_partition x2): baseline crashes all, #184102
+   fixes all.
+
+4. One coverage gap found and reported (synthetic, source-verified). When a
+   compiled function splits into multiple cudagraph partitions and a top-level
+   input consumed only by a LATER partition is fed back from the pool, #184102
+   still crashes: each partition is cudagraphified and dispatched through its own
+   `_run` with only its input slice, so `_preserve` only clones the current
+   partition's inputs while `dealloc` frees the whole path, freeing the
+   later-partition input before it can be cloned (confirmed by instrumenting
+   `_preserve`: every call sees n_inputs=1). Surgically isolated -- feeding back
+   the first-partition input passes, the later-partition input crashes -- and
+   reproduces identically on torch 2.10 and 2.12 nightly. CAVEAT: the partition
+   split was forced synthetically via a DeviceCopy boundary
+   (.to('cpu').to('cuda')); no real model has been shown to hit this topology
+   (the real gpt2 decode does not), so the practical blast radius is unproven and
+   likely small. vmoens' alternative PR #176295 catches this case by raising a
+   clear "please .clone()" error for partitioned calls. #184102 is not broken;
+   this is one incompleteness.
+
+5. Status: #184102 is under active maintainer review, NOT merged (as of
+   2026-06-05). eellison (core cudagraph_trees author) noted it should probably
+   be opt-in (potentially many copies) and that it needs to interact with cached
+   outputs. The upstream decode fix is in progress, not finalized.
+
+Net correction. Compiled decode with a growing KV cache is NOT a permanent
+architectural dead end. On stock/unpatched PyTorch the TR126 measurements stand
+and the prefill-only / eager-decode policy remains the right default. But the
+crash is patchable from PyTorch internals (input-preservation, #184102), is
+validated on a real decode, and the fix is under maintainer review. When it (or
+an equivalent) ships, re-run TR126 Phase 2/3 to re-evaluate the decode-compile
+ban.
+
+Public artifacts:
+- Validation gist (FINDING.md + 3 probe scripts + 4 run logs):
+  https://gist.github.com/Sahil170595/062d40cb18e2b2e27e99c1efbfa3ccdb
+- Endorsement comment on #184102 (real decode + topologies, links the gist):
+  https://github.com/pytorch/pytorch/pull/184102#issuecomment-4635948508
+
+Related issues: #154824 (broader umbrella: cudagraph tree may release input
+nodes during replay) remains open; #175557 (the autoregressive-decode crash) is
+what #184102 fixes.
 
 ---
 

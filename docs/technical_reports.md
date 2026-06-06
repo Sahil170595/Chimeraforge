@@ -35,7 +35,7 @@ The canonical technical report archive lives in
 | TR123 | [Technical_Report_123.md](../outputs/publish_ready/reports/Technical_Report_123.md) | KV-cache production economics |
 | TR124 | [Technical_Report_124.md](../outputs/publish_ready/reports/Technical_Report_124.md) | Quality and accuracy baseline |
 | TR125 | [Technical_Report_125.md](../outputs/publish_ready/reports/Technical_Report_125.md) | Quantization decision matrix |
-| TR126 | [Technical_Report_126.md](../outputs/publish_ready/reports/Technical_Report_126.md) | Linux/Triton compile validation |
+| TR126 | [Technical_Report_126.md](../outputs/publish_ready/reports/Technical_Report_126.md) | Linux/Triton compile validation (Update 2026-06-05: decode crash fixed upstream by PyTorch #184102, in review; #175562 landed; one synthetic multi-partition gap found + reported) |
 | TR127 | [Technical_Report_127.md](../outputs/publish_ready/reports/Technical_Report_127.md) | Long-context characterization |
 | TR128 | [Technical_Report_128.md](../outputs/publish_ready/reports/Technical_Report_128.md) | Production workloads |
 | TR129 | [Technical_Report_129.md](../outputs/publish_ready/reports/Technical_Report_129.md) | N-agent scaling laws |
