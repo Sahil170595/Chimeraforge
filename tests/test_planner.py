@@ -843,3 +843,75 @@ class TestFormatter:
 
         raw = format_json([])
         assert json.loads(raw) == []
+
+
+# ── Safety Gate (Gate 5) ─────────────────────────────────────────────
+
+
+class TestSafetyGate:
+    """Opt-in safety gate over the (model, quant) refusal table."""
+
+    def _plan(self, models, model_name, safety_target=None, quality_target=0.0):
+        return enumerate_candidates(
+            models=models,
+            target_models=[model_name],
+            hardware="RTX 4080 12GB",
+            request_rate=1.0,
+            latency_slo=5000.0,
+            quality_target=quality_target,
+            budget=1000.0,
+            avg_tokens=128,
+            context_length=2048,
+            safety_target=safety_target,
+        )
+
+    def test_gate_off_by_default_keeps_collapse_cell(self, bundled_models):
+        # No safety_target -> gate inert -> the unsafe Q2_K cell still appears.
+        quants = {c.quant for c in self._plan(bundled_models, "llama3.2-1b")}
+        assert "Q2_K" in quants
+
+    def test_gate_rejects_collapse_cell(self, bundled_models):
+        baseline = {(c.model, c.quant) for c in self._plan(bundled_models, "llama3.2-1b")}
+        assert ("llama3.2-1b", "Q2_K") in baseline  # present absent the gate
+        gated = {
+            (c.model, c.quant)
+            for c in self._plan(bundled_models, "llama3.2-1b", safety_target=0.8)
+        }
+        assert ("llama3.2-1b", "Q2_K") not in gated  # refusal 0.368 < 0.8 -> rejected
+        assert ("llama3.2-1b", "Q4_K_M") in gated  # refusal 0.905 >= 0.8 -> kept
+
+    def test_candidates_carry_safety_fields(self, bundled_models):
+        cands = self._plan(bundled_models, "llama3.2-1b", safety_target=0.8)
+        assert cands
+        for c in cands:
+            assert c.safety_refusal is not None and c.safety_refusal >= 0.8
+            assert c.rtsi_risk in ("HIGH", "MODERATE", "LOW", "UNKNOWN")
+
+    def test_non_monotonic_3b_is_data_faithful(self, bundled_models):
+        # llama3.2-3b refusal is non-monotonic: Q4_K_M (0.664) < Q2_K (0.927).
+        # The gate must follow the data, not "lower quant = less safe" intuition.
+        baseline = {(c.model, c.quant) for c in self._plan(bundled_models, "llama3.2-3b")}
+        assert ("llama3.2-3b", "Q4_K_M") in baseline  # generated absent the gate
+        gated = {
+            (c.model, c.quant)
+            for c in self._plan(bundled_models, "llama3.2-3b", safety_target=0.7)
+        }
+        assert ("llama3.2-3b", "Q4_K_M") not in gated  # 0.664 < 0.7 -> rejected
+        assert ("llama3.2-3b", "Q2_K") in gated  # 0.927 >= 0.7 -> kept
+
+    def test_unknown_safety_passes_with_warning(self, bundled_models):
+        # qwen2.5-0.5b is in the planner registry but has no safety data.
+        # The gate blocks only KNOWN-unsafe cells, so it passes — with a warning.
+        cands = self._plan(bundled_models, "qwen2.5-0.5b", safety_target=0.8)
+        assert cands
+        for c in cands:
+            assert c.safety_refusal is None
+            assert c.rtsi_risk == "UNKNOWN"
+            assert any("not screened" in w for w in c.warnings)
+
+    def test_rtsi_high_warning_on_kept_cell(self, bundled_models):
+        # Low target keeps the collapse cell; it must still carry the RTSI warning.
+        cands = self._plan(bundled_models, "llama3.2-1b", safety_target=0.3)
+        q2k = [c for c in cands if c.quant == "Q2_K"]
+        assert q2k
+        assert any("RTSI" in w and "HIGH" in w for w in q2k[0].warnings)
