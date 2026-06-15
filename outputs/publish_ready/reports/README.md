@@ -58,6 +58,13 @@ The current corpus spans:
 | TR135 | `Technical_Report_135.md` |
 | TR136 | `Technical_Report_136.md` |
 | TR137 | `Technical_Report_137.md` |
+| TR142 v3 | `Technical_Report_142_v3.md` (RTSI behavioural screen — backs the `plan` safety gate) |
+| TR146 | `Technical_Report_146.md` (mechanistic probing — why the safety gate is lookup-only) |
+
+The `plan` safety gate (`--safety-target`) is sourced from TR134 (refusal rates) and
+TR142 v3 (RTSI). TR146 establishes that mechanistic probes do not predict
+quantization-induced safety degradation, which is why the gate is lookup-only and
+never extrapolates to unscreened cells.
 
 ## Conclusive Synthesis Sets
 
