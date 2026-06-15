@@ -179,12 +179,14 @@ pip install chimeraforge[all]       # Everything including dev tools
 
 ```bash
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
+chimeraforge plan --model-size 3b --safety-target 0.85
 chimeraforge plan --list-hardware
 chimeraforge plan --model-size 3b --json
 ```
 
 - Searches (model x quantization x backend x N-agents) space in <1 second
-- 4-gate pipeline: VRAM feasibility -> quality gate -> latency gate -> budget gate
+- 5-gate pipeline: VRAM -> quality -> safety (opt-in) -> latency -> budget
+- Safety gate rejects configs whose refusal rate (TR134/TR142) falls below `--safety-target`
 - Validated: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05%
 - No ML needed -- empirical lookup tables with first-principles interpolation
 

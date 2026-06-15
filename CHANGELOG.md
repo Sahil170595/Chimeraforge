@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Planner safety gate (Gate 5): `plan --safety-target` rejects configs whose
+  refusal rate (TR134/TR142) falls below the bar. Opt-in; off by default.
+- `SafetyModel` exposing per-(model, quant) refusal rate + RTSI risk tier,
+  bundled in `fitted_models.json` (GGUF quants only, lookup-only — no
+  extrapolation, since safety does not generalise across cells per TR142/TR146).
+- Safety surfaced in `plan` output: refusal rate + RTSI risk in the
+  recommendation panel, Safety column in the alternatives table, and
+  `safety_refusal` + `rtsi_risk` fields in `--json`.
+- `scripts/build_safety_data.py` ETL plus vendored TR142 source CSVs under
+  `data/safety/tr142/`.
+
 ## [0.2.0] - 2026-03-08
 
 ### Added

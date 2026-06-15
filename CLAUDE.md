@@ -39,7 +39,7 @@ src/
     cli.py                            # Typer entry point, `plan` command (lazy imports)
     planner/
       __init__.py                     # Re-exports Candidate, all models, load_models
-      engine.py                       # 4-gate search: Candidate dataclass, enumerate_candidates()
+      engine.py                       # 5-gate search (4 + opt-in safety): Candidate dataclass, enumerate_candidates()
       models.py                       # 6 predict-only dataclass models + PlannerModels container
       hardware.py                     # GPUSpec dataclass, GPU_DB (15 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH
@@ -132,7 +132,7 @@ resources/prompts/                    # Legacy banter_prompts.txt (not used in b
 
 ## Planner Architecture (src/chimeraforge/planner/)
 
-The `chimeraforge plan` CLI runs a 4-gate exhaustive search over (model x quant x backend x N_agents):
+The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th safety gate) over (model x quant x backend x N_agents):
 
 **Gate 1 — VRAM:** `weight_gb + kv_cache_gb + activations_gb <= hw_vram`
 - Weight: `params_B * bits_per_weight / 8 * overhead_factor`
@@ -151,6 +151,13 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search over (model x quant 
 
 **Gate 4 — Cost:** `monthly_cost <= budget`
 - Monthly = `hw_cost_per_hour * 720 * N_agents`
+
+**Gate 5 — Safety (opt-in):** `refusal_rate >= safety_target` (only when `--safety-target` is set)
+- Lookup table (model|quant) of TR134 refusal rate + TR142 RTSI risk tier; GGUF quants only
+- Lookup-only: unknown cells pass with a "not screened" warning (no extrapolation — TR142/TR146)
+- Evaluated before the backend/N loop (safety is backend-independent in this data)
+- Refusal is non-monotonic in quant (e.g. llama3.2-3b Q4_K_M < Q2_K) — the gate follows the data
+- Regenerate the bundled `safety` block via `scripts/build_safety_data.py`
 
 Results sorted by (cost asc, quality desc). Output: Rich panels + alternatives table, or JSON.
 
