@@ -811,6 +811,52 @@ class TestCLIPlan:
         result = runner.invoke(app, ["plan", "--json"])
         assert result.exit_code == 0
 
+    def _extract_json(self, output: str):
+        text = self._strip_ansi(output)
+        return json.loads(text[text.index("[") : text.rindex("]") + 1])
+
+    def test_plan_invalid_safety_target(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--safety-target", "1.5"])
+        assert result.exit_code == 1
+
+    def test_plan_safety_target_accepted(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--safety-target", "0.8"])
+        assert result.exit_code == 0
+
+    def test_plan_json_includes_safety_fields(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--json"])
+        data = self._extract_json(result.output)
+        assert data
+        assert "safety_refusal" in data[0]
+        assert "rtsi_risk" in data[0]
+
+    def test_plan_safety_filters_collapse_cell(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            ["plan", "--model-size", "1b", "--quality-target", "0",
+             "--safety-target", "0.8", "--json"],
+        )
+        data = self._extract_json(result.output)
+        pairs = {(c["model"], c["quant"]) for c in data}
+        assert ("llama3.2-1b", "Q2_K") not in pairs  # refusal 0.368 < 0.8
+        assert ("llama3.2-1b", "Q4_K_M") in pairs  # refusal 0.905 >= 0.8
+
 
 # -- Formatter ----------------------------------------------------------------
 
