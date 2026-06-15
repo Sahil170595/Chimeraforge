@@ -33,6 +33,7 @@ from chimeraforge.planner.models import (
     LatencyModel,
     PlannerModels,
     QualityModel,
+    SafetyModel,
     ScalingModel,
     ThroughputModel,
     VRAMModel,
@@ -217,6 +218,78 @@ class TestQualityModel:
         m = QualityModel()
         q = m.predict("nonexistent", "FP16")
         assert q == 0.5
+
+
+# ── Safety Model ─────────────────────────────────────────────────────
+
+
+class TestSafetyModel:
+    def test_refusal_lookup_collapse_cell(self, bundled_models):
+        # TR134: llama3.2-1b refusal collapses from ~0.94 (FP16) to ~0.37 (Q2_K).
+        fp16 = bundled_models.safety.predict_refusal("llama3.2-1b", "FP16")
+        q2k = bundled_models.safety.predict_refusal("llama3.2-1b", "Q2_K")
+        assert fp16 > 0.9
+        assert q2k == pytest.approx(0.368, abs=0.01)
+        assert q2k < fp16
+
+    def test_refusal_safe_cell(self, bundled_models):
+        # Q4_K_M holds refusal high — should clear a 0.8 safety bar.
+        q4 = bundled_models.safety.predict_refusal("llama3.2-1b", "Q4_K_M")
+        assert q4 == pytest.approx(0.905, abs=0.01)
+        assert q4 >= 0.8
+
+    def test_unknown_model_returns_none(self, bundled_models):
+        # qwen2.5-3b is in the planner registry but has no safety data.
+        # Lookup-only: must return None, never a fabricated guess.
+        assert bundled_models.safety.predict_refusal("qwen2.5-3b", "Q4_K_M") is None
+
+    def test_non_gguf_quant_returns_none(self, bundled_models):
+        # AWQ/GPTQ are excluded from the safety block (planner can't search them).
+        assert bundled_models.safety.predict_refusal("llama3.2-1b", "AWQ") is None
+
+    def test_rtsi_risk_high_on_collapse_cells(self, bundled_models):
+        assert bundled_models.safety.rtsi_risk("llama3.2-1b", "Q2_K") == "HIGH"
+        assert bundled_models.safety.rtsi_risk("qwen2.5-1.5b", "Q2_K") == "HIGH"
+
+    def test_rtsi_risk_unknown_when_unscreened(self, bundled_models):
+        assert bundled_models.safety.rtsi_risk("qwen2.5-3b", "Q4_K_M") == "UNKNOWN"
+
+    def test_refusal_drop_pp_negative_on_regression(self, bundled_models):
+        drop = bundled_models.safety.refusal_drop_pp("llama3.2-1b", "Q2_K")
+        assert drop is not None
+        assert drop < -40  # ~-57pp regression
+
+    def test_refusal_drop_pp_none_when_unscreened(self, bundled_models):
+        assert bundled_models.safety.refusal_drop_pp("qwen2.5-3b", "Q4_K_M") is None
+
+    def test_fp16_baselines_cover_overlap_models(self, bundled_models):
+        baselines = bundled_models.safety.fp16_baselines
+        for m in ("llama3.2-1b", "llama3.2-3b", "qwen2.5-1.5b", "phi-2"):
+            assert m in baselines
+        assert baselines["llama3.2-1b"] > 0.9
+
+    def test_bundled_safety_is_fitted_and_populated(self, bundled_models):
+        assert bundled_models.safety.fitted is True
+        assert len(bundled_models.safety.lookup) >= 40
+
+    def test_serialization_round_trip(self):
+        m = SafetyModel(
+            lookup={"llama3.2-1b|Q2_K": 0.37, "llama3.2-1b|FP16": 0.94},
+            fp16_baselines={"llama3.2-1b": 0.94},
+            rtsi={"llama3.2-1b|Q2_K": {"score": 0.56, "risk": "HIGH"}},
+            fitted=True,
+        )
+        restored = SafetyModel.from_dict(m.to_dict())
+        assert restored.predict_refusal("llama3.2-1b", "Q2_K") == 0.37
+        assert restored.rtsi_risk("llama3.2-1b", "Q2_K") == "HIGH"
+        assert restored.refusal_drop_pp("llama3.2-1b", "Q2_K") == pytest.approx(-57.0)
+        assert restored.fitted is True
+
+    def test_empty_model_defaults(self):
+        m = SafetyModel()
+        assert m.predict_refusal("anything", "Q4_K_M") is None
+        assert m.rtsi_risk("anything", "Q4_K_M") == "UNKNOWN"
+        assert m.fitted is False
 
 
 # ── Cost Model ───────────────────────────────────────────────────────

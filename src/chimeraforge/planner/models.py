@@ -1,4 +1,4 @@
-"""Six predictive models for the capacity planner (predict-only).
+"""Seven predictive models for the capacity planner (predict-only).
 
 Stripped of fit() methods and numpy/scipy dependencies. These models
 load pre-fitted coefficients from fitted_models.json and predict only.
@@ -9,6 +9,7 @@ load pre-fitted coefficients from fitted_models.json and predict only.
 4. QualityModel:    Lookup table + FP16 baseline + avg delta per quant
 5. CostModel:       cost_per_token = hw_cost_per_hour / (tok/s * 3600)
 6. LatencyModel:    M/D/1 approximation with 70% utilisation cap
+7. SafetyModel:     Lookup of refusal rate + RTSI risk (TR134/TR142), no extrapolation
 """
 
 from __future__ import annotations
@@ -368,6 +369,64 @@ class LatencyModel:
         return m
 
 
+# ── 7. Safety Model ───────────────────────────────────────────────────
+
+
+@dataclass
+class SafetyModel:
+    """Predict refusal rate + RTSI risk for a (model, quant) combo.
+
+    Backed by TR134 (refusal rates) and TR142 (RTSI behavioural screen).
+    Lookup-only: safety does not generalise across cells (TR142/TR146), so
+    unknown (model, quant) pairs return None rather than an extrapolated guess.
+    """
+
+    lookup: dict[str, float] = field(default_factory=dict)
+    fp16_baselines: dict[str, float] = field(default_factory=dict)
+    rtsi: dict[str, dict] = field(default_factory=dict)
+    fitted: bool = False
+
+    def predict_refusal(self, model: str, quant: str) -> float | None:
+        """Refusal rate in [0, 1], or None if the cell is unscreened."""
+        return self.lookup.get(f"{model}|{quant}")
+
+    def rtsi_risk(self, model: str, quant: str) -> str:
+        """RTSI risk tier: HIGH, MODERATE, LOW, or UNKNOWN if unscreened."""
+        entry = self.rtsi.get(f"{model}|{quant}")
+        if entry is None:
+            return "UNKNOWN"
+        return entry.get("risk", "UNKNOWN")
+
+    def refusal_drop_pp(self, model: str, quant: str) -> float | None:
+        """Refusal change vs the model's FP16 baseline, in percentage points.
+
+        Negative = safety regression. None if either value is unavailable.
+        """
+        refusal = self.predict_refusal(model, quant)
+        fp16 = self.fp16_baselines.get(model)
+        if refusal is None or fp16 is None:
+            return None
+        return (refusal - fp16) * 100
+
+    def to_dict(self) -> dict:
+        return {
+            "lookup": self.lookup,
+            "fp16_baselines": self.fp16_baselines,
+            "rtsi": self.rtsi,
+            "fitted": self.fitted,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> SafetyModel:
+        m = cls(
+            lookup=d.get("lookup", {}),
+            fp16_baselines=d.get("fp16_baselines", {}),
+            rtsi=d.get("rtsi", {}),
+        )
+        m.fitted = d.get("fitted", False)
+        return m
+
+
 # ── Aggregate model container ─────────────────────────────────────────
 
 
@@ -379,6 +438,7 @@ class PlannerModels:
     quality: QualityModel = field(default_factory=QualityModel)
     cost: CostModel = field(default_factory=CostModel)
     latency: LatencyModel = field(default_factory=LatencyModel)
+    safety: SafetyModel = field(default_factory=SafetyModel)
 
 
 def load_models(path: Path | str) -> PlannerModels:
@@ -392,6 +452,7 @@ def load_models(path: Path | str) -> PlannerModels:
         quality=QualityModel.from_dict(data.get("quality", {})),
         cost=CostModel.from_dict(data.get("cost", {})),
         latency=LatencyModel.from_dict(data.get("latency", {})),
+        safety=SafetyModel.from_dict(data.get("safety", {})),
     )
     log.info("Models loaded from %s", path)
     return models
