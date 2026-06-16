@@ -19,7 +19,7 @@ class BenchmarkManager:
         self.reports_dir = repo_root / "outputs" / "reports"
         self.csv_dir = repo_root / "data" / "csv"
 
-    def get_recent_metrics(self, hours: int = 1) -> List[Dict[str, Any]]:
+    def get_recent_metrics(self, hours: int = 1) -> list[dict[str, Any]]:
         """Get recent benchmark metrics."""
         # Simulate loading recent metrics
         return [
@@ -70,7 +70,7 @@ class BenchmarkManager:
             },
         ]
 
-    def get_historical_metrics(self, days: int = 30) -> List[Dict[str, Any]]:
+    def get_historical_metrics(self, days: int = 30) -> list[dict[str, Any]]:
         """Get historical benchmark metrics for pattern analysis."""
         # Generate simulated historical data with realistic patterns
         base_time = datetime.now() - timedelta(days=days)

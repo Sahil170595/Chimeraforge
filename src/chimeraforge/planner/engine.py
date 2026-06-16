@@ -34,6 +34,8 @@ class Candidate:
     utilisation: float
     monthly_cost: float
     cost_per_1m_tok: float
+    safety_refusal: float | None
+    rtsi_risk: str
     warnings: list[str]
 
 
@@ -70,8 +72,15 @@ def enumerate_candidates(
     budget: float,
     avg_tokens: int,
     context_length: int,
+    safety_target: float | None = None,
 ) -> list[Candidate]:
-    """Search (model, quant, backend, N) space with 4 gates."""
+    """Search (model, quant, backend, N) space with gates.
+
+    Gates: VRAM, quality, latency, budget — plus an opt-in safety gate
+    (rejects cells whose refusal rate < ``safety_target``). When
+    ``safety_target`` is None the safety gate is inert but each candidate
+    still carries its refusal rate and RTSI risk tier.
+    """
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
     hw_cost_hr = gpu.cost_per_hour if gpu else 0.035
@@ -91,6 +100,18 @@ def enumerate_candidates(
                 continue
 
             quality_tier = models.quality.quality_tier(model, quant)
+
+            # Safety gate (Gate 5): safety data is per (model, quant) and
+            # backend-independent, so evaluate it here — before the backend/N
+            # loop — to skip known-unsafe cells early. Opt-in via safety_target.
+            safety_refusal = models.safety.predict_refusal(model, quant)
+            rtsi_risk = models.safety.rtsi_risk(model, quant)
+            if (
+                safety_target is not None
+                and safety_refusal is not None
+                and safety_refusal < safety_target
+            ):
+                continue  # known-unsafe cell: refusal rate below target
 
             for backend in BACKENDS:
                 # Predict N=1 throughput
@@ -155,6 +176,10 @@ def enumerate_candidates(
                     warnings.append(f"requires {best_n} GPU instances")
                 if vram / hw_vram > 0.9:
                     warnings.append("VRAM usage > 90% of capacity")
+                if safety_target is not None and safety_refusal is None:
+                    warnings.append("safety not screened (no TR134/TR142 data)")
+                if rtsi_risk in ("HIGH", "MODERATE"):
+                    warnings.append(f"RTSI refusal-instability risk: {rtsi_risk}")
 
                 candidates.append(
                     Candidate(
@@ -172,6 +197,10 @@ def enumerate_candidates(
                         utilisation=round(lat["utilisation"], 3),
                         monthly_cost=round(monthly, 2),
                         cost_per_1m_tok=round(cost_1m, 4),
+                        safety_refusal=(
+                            round(safety_refusal, 3) if safety_refusal is not None else None
+                        ),
+                        rtsi_risk=rtsi_risk,
                         warnings=warnings,
                     )
                 )

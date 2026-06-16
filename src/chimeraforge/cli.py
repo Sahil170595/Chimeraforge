@@ -63,6 +63,12 @@ def plan(
         "-q",
         help="Min composite quality score (0.0-1.0).",
     ),
+    safety_target: float = typer.Option(
+        None,
+        "--safety-target",
+        "-s",
+        help="Min refusal rate 0.0-1.0 (TR134/TR142 screen). Opt-in; rejects unsafe cells.",
+    ),
     budget: float = typer.Option(
         100.0,
         "--budget",
@@ -158,6 +164,9 @@ def plan(
     if not 0.0 <= quality_target <= 1.0:
         console.print("[red]Error:[/] --quality-target must be between 0.0 and 1.0.")
         raise typer.Exit(code=1)
+    if safety_target is not None and not 0.0 <= safety_target <= 1.0:
+        console.print("[red]Error:[/] --safety-target must be between 0.0 and 1.0.")
+        raise typer.Exit(code=1)
 
     # Load models
     if models_path:
@@ -184,6 +193,7 @@ def plan(
         budget=budget,
         avg_tokens=avg_tokens,
         context_length=context_length,
+        safety_target=safety_target,
     )
 
     if output_json:
@@ -196,6 +206,7 @@ def plan(
             latency_slo=latency_slo,
             quality_target=quality_target,
             budget=budget,
+            safety_target=safety_target,
         )
 
 

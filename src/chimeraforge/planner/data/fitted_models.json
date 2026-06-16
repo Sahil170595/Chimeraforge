@@ -134,5 +134,196 @@
     },
     "safety_factor": 0.7,
     "fitted": true
+  },
+  "safety": {
+    "lookup": {
+      "llama3.2-1b|FP16": 0.9364,
+      "llama3.2-1b|Q2_K": 0.3682,
+      "llama3.2-1b|Q3_K_S": 0.8,
+      "llama3.2-1b|Q4_K_M": 0.9045,
+      "llama3.2-1b|Q5_K_M": 0.9182,
+      "llama3.2-1b|Q6_K": 0.9409,
+      "llama3.2-1b|Q8_0": 0.9455,
+      "llama3.2-3b|FP16": 0.7636,
+      "llama3.2-3b|Q2_K": 0.9273,
+      "llama3.2-3b|Q3_K_S": 0.95,
+      "llama3.2-3b|Q4_K_M": 0.6636,
+      "llama3.2-3b|Q5_K_M": 0.7682,
+      "llama3.2-3b|Q6_K": 0.7727,
+      "llama3.2-3b|Q8_0": 0.7455,
+      "mistral-7b|Q2_K": 0.1227,
+      "mistral-7b|Q3_K_S": 0.1909,
+      "mistral-7b|Q4_K_M": 0.2227,
+      "mistral-7b|Q5_K_M": 0.2455,
+      "mistral-7b|Q6_K": 0.2864,
+      "mistral-7b|Q8_0": 0.2364,
+      "phi-2|FP16": 0.5864,
+      "phi-2|Q2_K": 0.55,
+      "phi-2|Q3_K_S": 0.5636,
+      "phi-2|Q4_K_M": 0.55,
+      "phi-2|Q5_K_M": 0.5773,
+      "phi-2|Q6_K": 0.5409,
+      "phi-2|Q8_0": 0.5864,
+      "qwen2.5-1.5b|FP16": 0.8409,
+      "qwen2.5-1.5b|Q2_K": 0.3409,
+      "qwen2.5-1.5b|Q3_K_S": 0.8455,
+      "qwen2.5-1.5b|Q4_K_M": 0.8,
+      "qwen2.5-1.5b|Q5_K_M": 0.8727,
+      "qwen2.5-1.5b|Q6_K": 0.8545,
+      "qwen2.5-1.5b|Q8_0": 0.8318,
+      "qwen2.5-7b|Q2_K": 0.8091,
+      "qwen2.5-7b|Q3_K_S": 0.8455,
+      "qwen2.5-7b|Q4_K_M": 0.9455,
+      "qwen2.5-7b|Q5_K_M": 0.9318,
+      "qwen2.5-7b|Q6_K": 0.9364,
+      "qwen2.5-7b|Q8_0": 0.9318
+    },
+    "fp16_baselines": {
+      "llama3.2-1b": 0.9364,
+      "llama3.2-3b": 0.7636,
+      "phi-2": 0.5864,
+      "qwen2.5-1.5b": 0.8409
+    },
+    "rtsi": {
+      "llama3.2-1b|Q2_K": {
+        "score": 0.5614,
+        "risk": "HIGH"
+      },
+      "llama3.2-1b|Q3_K_S": {
+        "score": 0.3127,
+        "risk": "MODERATE"
+      },
+      "llama3.2-1b|Q4_K_M": {
+        "score": 0.0328,
+        "risk": "LOW"
+      },
+      "llama3.2-1b|Q5_K_M": {
+        "score": 0.1211,
+        "risk": "MODERATE"
+      },
+      "llama3.2-1b|Q6_K": {
+        "score": 0.0608,
+        "risk": "LOW"
+      },
+      "llama3.2-1b|Q8_0": {
+        "score": 0.0028,
+        "risk": "LOW"
+      },
+      "llama3.2-3b|Q2_K": {
+        "score": 0.085,
+        "risk": "LOW"
+      },
+      "llama3.2-3b|Q3_K_S": {
+        "score": 0.1345,
+        "risk": "MODERATE"
+      },
+      "llama3.2-3b|Q4_K_M": {
+        "score": 0.0348,
+        "risk": "LOW"
+      },
+      "llama3.2-3b|Q5_K_M": {
+        "score": 0.0881,
+        "risk": "LOW"
+      },
+      "llama3.2-3b|Q6_K": {
+        "score": 0.0274,
+        "risk": "LOW"
+      },
+      "llama3.2-3b|Q8_0": {
+        "score": 0.0153,
+        "risk": "LOW"
+      },
+      "mistral-7b|Q2_K": {
+        "score": 0.1066,
+        "risk": "MODERATE"
+      },
+      "mistral-7b|Q3_K_S": {
+        "score": 0.2232,
+        "risk": "MODERATE"
+      },
+      "mistral-7b|Q4_K_M": {
+        "score": 0.0374,
+        "risk": "LOW"
+      },
+      "mistral-7b|Q5_K_M": {
+        "score": 0.0181,
+        "risk": "LOW"
+      },
+      "mistral-7b|Q6_K": {
+        "score": 0.0412,
+        "risk": "LOW"
+      },
+      "phi-2|Q2_K": {
+        "score": 0.4112,
+        "risk": "HIGH"
+      },
+      "phi-2|Q3_K_S": {
+        "score": 0.1612,
+        "risk": "MODERATE"
+      },
+      "phi-2|Q4_K_M": {
+        "score": 0.0444,
+        "risk": "LOW"
+      },
+      "phi-2|Q5_K_M": {
+        "score": 0.0008,
+        "risk": "LOW"
+      },
+      "phi-2|Q6_K": {
+        "score": 0.0345,
+        "risk": "LOW"
+      },
+      "phi-2|Q8_0": {
+        "score": 0.0376,
+        "risk": "LOW"
+      },
+      "qwen2.5-1.5b|Q2_K": {
+        "score": 0.6729,
+        "risk": "HIGH"
+      },
+      "qwen2.5-1.5b|Q3_K_S": {
+        "score": 0.3848,
+        "risk": "MODERATE"
+      },
+      "qwen2.5-1.5b|Q4_K_M": {
+        "score": 0.0129,
+        "risk": "LOW"
+      },
+      "qwen2.5-1.5b|Q5_K_M": {
+        "score": 0.0216,
+        "risk": "LOW"
+      },
+      "qwen2.5-1.5b|Q6_K": {
+        "score": 0.0114,
+        "risk": "LOW"
+      },
+      "qwen2.5-1.5b|Q8_0": {
+        "score": 0.0002,
+        "risk": "LOW"
+      },
+      "qwen2.5-7b|Q2_K": {
+        "score": 0.1667,
+        "risk": "MODERATE"
+      },
+      "qwen2.5-7b|Q3_K_S": {
+        "score": 0.0586,
+        "risk": "LOW"
+      },
+      "qwen2.5-7b|Q4_K_M": {
+        "score": 0.0249,
+        "risk": "LOW"
+      },
+      "qwen2.5-7b|Q5_K_M": {
+        "score": 0.034,
+        "risk": "LOW"
+      },
+      "qwen2.5-7b|Q6_K": {
+        "score": 0.0285,
+        "risk": "LOW"
+      }
+    },
+    "metric": "refusal_rate",
+    "source": "TR134/TR142 (banterhearts research/tr142 phase56_v3_full_canonical)",
+    "fitted": true
   }
 }

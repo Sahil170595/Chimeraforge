@@ -13,16 +13,13 @@ import json
 import logging
 import csv
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 import argparse
 import httpx
 
 # Import core logic from the existing runner
 # We assume this script is run as a module or the path allows import
 from ..demo_multiagent.run_multiagent_demo import (
-    parse_args as base_parse_args,
-    build_options,
-    extract_metrics,
     ResourceCoordinator,
     build_prompts,
 )
@@ -135,7 +132,8 @@ async def instrumented_call_ollama(
                 # Let's decode and parse line by line to be accurate to how clients work
                 text_chunk = chunk.decode("utf-8")
                 for line in text_chunk.splitlines():
-                    if not line: continue
+                    if not line:
+                        continue
                     data = json.loads(line)
                     
                     if not first_token_time and not data.get("done"):

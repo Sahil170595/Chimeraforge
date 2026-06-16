@@ -33,6 +33,7 @@ from chimeraforge.planner.models import (
     LatencyModel,
     PlannerModels,
     QualityModel,
+    SafetyModel,
     ScalingModel,
     ThroughputModel,
     VRAMModel,
@@ -217,6 +218,78 @@ class TestQualityModel:
         m = QualityModel()
         q = m.predict("nonexistent", "FP16")
         assert q == 0.5
+
+
+# ── Safety Model ─────────────────────────────────────────────────────
+
+
+class TestSafetyModel:
+    def test_refusal_lookup_collapse_cell(self, bundled_models):
+        # TR134: llama3.2-1b refusal collapses from ~0.94 (FP16) to ~0.37 (Q2_K).
+        fp16 = bundled_models.safety.predict_refusal("llama3.2-1b", "FP16")
+        q2k = bundled_models.safety.predict_refusal("llama3.2-1b", "Q2_K")
+        assert fp16 > 0.9
+        assert q2k == pytest.approx(0.368, abs=0.01)
+        assert q2k < fp16
+
+    def test_refusal_safe_cell(self, bundled_models):
+        # Q4_K_M holds refusal high — should clear a 0.8 safety bar.
+        q4 = bundled_models.safety.predict_refusal("llama3.2-1b", "Q4_K_M")
+        assert q4 == pytest.approx(0.905, abs=0.01)
+        assert q4 >= 0.8
+
+    def test_unknown_model_returns_none(self, bundled_models):
+        # qwen2.5-3b is in the planner registry but has no safety data.
+        # Lookup-only: must return None, never a fabricated guess.
+        assert bundled_models.safety.predict_refusal("qwen2.5-3b", "Q4_K_M") is None
+
+    def test_non_gguf_quant_returns_none(self, bundled_models):
+        # AWQ/GPTQ are excluded from the safety block (planner can't search them).
+        assert bundled_models.safety.predict_refusal("llama3.2-1b", "AWQ") is None
+
+    def test_rtsi_risk_high_on_collapse_cells(self, bundled_models):
+        assert bundled_models.safety.rtsi_risk("llama3.2-1b", "Q2_K") == "HIGH"
+        assert bundled_models.safety.rtsi_risk("qwen2.5-1.5b", "Q2_K") == "HIGH"
+
+    def test_rtsi_risk_unknown_when_unscreened(self, bundled_models):
+        assert bundled_models.safety.rtsi_risk("qwen2.5-3b", "Q4_K_M") == "UNKNOWN"
+
+    def test_refusal_drop_pp_negative_on_regression(self, bundled_models):
+        drop = bundled_models.safety.refusal_drop_pp("llama3.2-1b", "Q2_K")
+        assert drop is not None
+        assert drop < -40  # ~-57pp regression
+
+    def test_refusal_drop_pp_none_when_unscreened(self, bundled_models):
+        assert bundled_models.safety.refusal_drop_pp("qwen2.5-3b", "Q4_K_M") is None
+
+    def test_fp16_baselines_cover_overlap_models(self, bundled_models):
+        baselines = bundled_models.safety.fp16_baselines
+        for m in ("llama3.2-1b", "llama3.2-3b", "qwen2.5-1.5b", "phi-2"):
+            assert m in baselines
+        assert baselines["llama3.2-1b"] > 0.9
+
+    def test_bundled_safety_is_fitted_and_populated(self, bundled_models):
+        assert bundled_models.safety.fitted is True
+        assert len(bundled_models.safety.lookup) >= 40
+
+    def test_serialization_round_trip(self):
+        m = SafetyModel(
+            lookup={"llama3.2-1b|Q2_K": 0.37, "llama3.2-1b|FP16": 0.94},
+            fp16_baselines={"llama3.2-1b": 0.94},
+            rtsi={"llama3.2-1b|Q2_K": {"score": 0.56, "risk": "HIGH"}},
+            fitted=True,
+        )
+        restored = SafetyModel.from_dict(m.to_dict())
+        assert restored.predict_refusal("llama3.2-1b", "Q2_K") == 0.37
+        assert restored.rtsi_risk("llama3.2-1b", "Q2_K") == "HIGH"
+        assert restored.refusal_drop_pp("llama3.2-1b", "Q2_K") == pytest.approx(-57.0)
+        assert restored.fitted is True
+
+    def test_empty_model_defaults(self):
+        m = SafetyModel()
+        assert m.predict_refusal("anything", "Q4_K_M") is None
+        assert m.rtsi_risk("anything", "Q4_K_M") == "UNKNOWN"
+        assert m.fitted is False
 
 
 # ── Cost Model ───────────────────────────────────────────────────────
@@ -738,6 +811,52 @@ class TestCLIPlan:
         result = runner.invoke(app, ["plan", "--json"])
         assert result.exit_code == 0
 
+    def _extract_json(self, output: str):
+        text = self._strip_ansi(output)
+        return json.loads(text[text.index("[") : text.rindex("]") + 1])
+
+    def test_plan_invalid_safety_target(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--safety-target", "1.5"])
+        assert result.exit_code == 1
+
+    def test_plan_safety_target_accepted(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--safety-target", "0.8"])
+        assert result.exit_code == 0
+
+    def test_plan_json_includes_safety_fields(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--json"])
+        data = self._extract_json(result.output)
+        assert data
+        assert "safety_refusal" in data[0]
+        assert "rtsi_risk" in data[0]
+
+    def test_plan_safety_filters_collapse_cell(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            ["plan", "--model-size", "1b", "--quality-target", "0",
+             "--safety-target", "0.8", "--json"],
+        )
+        data = self._extract_json(result.output)
+        pairs = {(c["model"], c["quant"]) for c in data}
+        assert ("llama3.2-1b", "Q2_K") not in pairs  # refusal 0.368 < 0.8
+        assert ("llama3.2-1b", "Q4_K_M") in pairs  # refusal 0.905 >= 0.8
+
 
 # -- Formatter ----------------------------------------------------------------
 
@@ -770,3 +889,75 @@ class TestFormatter:
 
         raw = format_json([])
         assert json.loads(raw) == []
+
+
+# ── Safety Gate (Gate 5) ─────────────────────────────────────────────
+
+
+class TestSafetyGate:
+    """Opt-in safety gate over the (model, quant) refusal table."""
+
+    def _plan(self, models, model_name, safety_target=None, quality_target=0.0):
+        return enumerate_candidates(
+            models=models,
+            target_models=[model_name],
+            hardware="RTX 4080 12GB",
+            request_rate=1.0,
+            latency_slo=5000.0,
+            quality_target=quality_target,
+            budget=1000.0,
+            avg_tokens=128,
+            context_length=2048,
+            safety_target=safety_target,
+        )
+
+    def test_gate_off_by_default_keeps_collapse_cell(self, bundled_models):
+        # No safety_target -> gate inert -> the unsafe Q2_K cell still appears.
+        quants = {c.quant for c in self._plan(bundled_models, "llama3.2-1b")}
+        assert "Q2_K" in quants
+
+    def test_gate_rejects_collapse_cell(self, bundled_models):
+        baseline = {(c.model, c.quant) for c in self._plan(bundled_models, "llama3.2-1b")}
+        assert ("llama3.2-1b", "Q2_K") in baseline  # present absent the gate
+        gated = {
+            (c.model, c.quant)
+            for c in self._plan(bundled_models, "llama3.2-1b", safety_target=0.8)
+        }
+        assert ("llama3.2-1b", "Q2_K") not in gated  # refusal 0.368 < 0.8 -> rejected
+        assert ("llama3.2-1b", "Q4_K_M") in gated  # refusal 0.905 >= 0.8 -> kept
+
+    def test_candidates_carry_safety_fields(self, bundled_models):
+        cands = self._plan(bundled_models, "llama3.2-1b", safety_target=0.8)
+        assert cands
+        for c in cands:
+            assert c.safety_refusal is not None and c.safety_refusal >= 0.8
+            assert c.rtsi_risk in ("HIGH", "MODERATE", "LOW", "UNKNOWN")
+
+    def test_non_monotonic_3b_is_data_faithful(self, bundled_models):
+        # llama3.2-3b refusal is non-monotonic: Q4_K_M (0.664) < Q2_K (0.927).
+        # The gate must follow the data, not "lower quant = less safe" intuition.
+        baseline = {(c.model, c.quant) for c in self._plan(bundled_models, "llama3.2-3b")}
+        assert ("llama3.2-3b", "Q4_K_M") in baseline  # generated absent the gate
+        gated = {
+            (c.model, c.quant)
+            for c in self._plan(bundled_models, "llama3.2-3b", safety_target=0.7)
+        }
+        assert ("llama3.2-3b", "Q4_K_M") not in gated  # 0.664 < 0.7 -> rejected
+        assert ("llama3.2-3b", "Q2_K") in gated  # 0.927 >= 0.7 -> kept
+
+    def test_unknown_safety_passes_with_warning(self, bundled_models):
+        # qwen2.5-0.5b is in the planner registry but has no safety data.
+        # The gate blocks only KNOWN-unsafe cells, so it passes — with a warning.
+        cands = self._plan(bundled_models, "qwen2.5-0.5b", safety_target=0.8)
+        assert cands
+        for c in cands:
+            assert c.safety_refusal is None
+            assert c.rtsi_risk == "UNKNOWN"
+            assert any("not screened" in w for w in c.warnings)
+
+    def test_rtsi_high_warning_on_kept_cell(self, bundled_models):
+        # Low target keeps the collapse cell; it must still carry the RTSI warning.
+        cands = self._plan(bundled_models, "llama3.2-1b", safety_target=0.3)
+        q2k = [c for c in cands if c.quant == "Q2_K"]
+        assert q2k
+        assert any("RTSI" in w and "HIGH" in w for w in q2k[0].warnings)

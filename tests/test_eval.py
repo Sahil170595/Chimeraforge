@@ -438,10 +438,15 @@ class TestCLIEval:
             ],
         )
         assert result.exit_code == 0
-        # Extract JSON array from output (torch may emit warnings to stdout)
+        # The eval path imports torch/transformers, which emit logging + a tqdm
+        # progress bar. In a real shell that goes to stderr (stdout stays clean
+        # JSON), but typer's CliRunner merges the streams into result.output, and
+        # the JSON "[" lands mid-line after the bar's carriage return. Locate the
+        # array start ("[" followed by a newline — tqdm's "[00:00" is not) and
+        # raw_decode so any trailing noise is ignored.
         import re
 
-        match = re.search(r"^\[", result.output, re.MULTILINE)
+        match = re.search(r"\[\s*\n", result.output)
         assert match is not None, f"No JSON array found in output: {result.output[:200]}"
-        parsed = json.loads(result.output[match.start() :])
+        parsed, _ = json.JSONDecoder().raw_decode(result.output[match.start() :])
         assert len(parsed) == 1

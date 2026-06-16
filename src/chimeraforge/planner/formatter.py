@@ -23,6 +23,7 @@ def format_recommendation(
     latency_slo: float,
     quality_target: float,
     budget: float,
+    safety_target: float | None = None,
 ) -> None:
     """Print recommendation using Rich panels and tables."""
     if not candidates:
@@ -46,6 +47,10 @@ def format_recommendation(
     constraints.add_row("Request rate", f"{request_rate} req/s")
     constraints.add_row("Latency SLO", f"{latency_slo} ms (p95)")
     constraints.add_row("Quality target", f"{quality_target}")
+    constraints.add_row(
+        "Safety target",
+        f"{safety_target} (min refusal)" if safety_target is not None else "off",
+    )
     constraints.add_row("Budget", f"${budget}/mo")
     constraints.add_row("Hardware", hardware)
 
@@ -80,8 +85,19 @@ def format_recommendation(
         "concerning": "red",
         "unacceptable": "bold red",
     }.get(best.quality_tier, "white")
+    risk_color = {
+        "HIGH": "bold red",
+        "MODERATE": "yellow",
+        "LOW": "green",
+        "UNKNOWN": "dim",
+    }.get(best.rtsi_risk, "white")
+    refusal_str = (
+        f"{best.safety_refusal}" if best.safety_refusal is not None else "n/a (unscreened)"
+    )
     cost_table.add_row("Quality score", str(best.quality))
     cost_table.add_row("Quality tier", f"[{tier_color}]{best.quality_tier}[/]")
+    cost_table.add_row("Refusal rate", refusal_str)
+    cost_table.add_row("RTSI risk", f"[{risk_color}]{best.rtsi_risk}[/]")
     cost_table.add_row("VRAM per GPU", f"{best.vram_gb} GB")
     cost_table.add_row("Monthly cost", f"[bold green]${best.monthly_cost}[/]")
     cost_table.add_row("Cost per 1M tok", f"${best.cost_per_1m_tok}")
@@ -109,6 +125,7 @@ def format_recommendation(
         alt_table.add_column("N", justify="right")
         alt_table.add_column("$/mo", justify="right")
         alt_table.add_column("Quality", justify="right")
+        alt_table.add_column("Safety", justify="right")
         alt_table.add_column("p95 ms", justify="right")
 
         for i, alt in enumerate(alts, 1):
@@ -120,6 +137,7 @@ def format_recommendation(
                 str(alt.n_agents),
                 f"${alt.monthly_cost}",
                 str(alt.quality),
+                f"{alt.safety_refusal}" if alt.safety_refusal is not None else "?",
                 f"{alt.p95_latency_ms}",
             )
         console.print(alt_table)
