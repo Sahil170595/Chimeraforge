@@ -1,6 +1,5 @@
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -11,11 +10,11 @@ SRC_PYTHON = ROOT / "src" / "python"
 if str(SRC_PYTHON) not in sys.path:
     sys.path.insert(0, str(SRC_PYTHON))
 
-from banterhearts.monitoring.analysis import MetricPoint, SLO, analyze_metrics
-from banterhearts.monitoring.agents.aggregator import MetricAggregator
-from banterhearts.monitoring.agents.parsers import parse_log_lines
-from banterhearts.monitoring.agents.model_recommender import ModelRecommender
-from banterhearts.monitoring.performance_monitor import PerformanceMonitor
+from banterhearts.monitoring.analysis import MetricPoint, SLO, analyze_metrics  # noqa: E402
+from banterhearts.monitoring.agents.aggregator import MetricAggregator  # noqa: E402
+from banterhearts.monitoring.agents.parsers import parse_log_lines  # noqa: E402
+from banterhearts.monitoring.agents.model_recommender import ModelRecommender  # noqa: E402
+from banterhearts.monitoring.performance_monitor import PerformanceMonitor  # noqa: E402
 
 
 def test_analyze_metrics_with_slo_pass():
