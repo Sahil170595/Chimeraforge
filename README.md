@@ -5,13 +5,19 @@
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**~146,000+ data points. 30 technical reports. One consumer GPU. A shipped CLI tool.**
+**~146,000+ data points. 30+ technical reports. One consumer GPU. A CLI that plans LLM deployments on performance, cost — and safety.**
 
 ```bash
 pip install chimeraforge
 ```
 
-This repository contains everything behind Technical Reports TR108 through TR137 -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
+This repository contains everything behind Technical Reports TR108 through TR137 (plus the TR142/TR146 safety provenance) -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
+
+> **New in v0.3.0:** an opt-in **safety gate** for `chimeraforge plan` — it screens every
+> (model × quant) configuration against measured refusal-rate data (TR134) and a behavioural
+> RTSI risk tier (TR142), so the planner won't recommend a config that quietly collapses
+> safety (e.g. `llama3.2-1b` refusal drops 0.94 → 0.37 at Q2_K). Plus hardened, fail-loud
+> error handling across every command. See the [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -23,7 +29,7 @@ The research program spans three completed phases:
 
 - **Phase 1 (TR108-TR122):** Language comparison (Python vs Rust), multi-agent concurrency, backend benchmarking, cost/energy economics, scaling laws. 8,000+ runs.
 - **Phase 2 (TR123-TR133):** KV-cache economics, quality baselines, quantization decision matrix, compile paradox resolution, context scaling, production workloads, N-agent scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning. ~70,000+ measurements.
-- **Phase 3 (TR134-TR137):** Automation and evaluation infrastructure, validation workflows, and the synthesis layer built on top of the deployment framework.
+- **Phase 3 (TR134-TR137):** Safety alignment under inference optimization — alignment robustness under quantization, safety under multi-agent concurrency, cross-backend consistency, and the "safety tax" synthesis. Operationalized in v0.3.0 as the planner's opt-in safety gate (backed by TR142 RTSI + TR146 mechanistic findings).
 
 Through **~146,000+ data points** across 30 technical reports, we've answered the core deployment questions: which backend, which quantization level, which serving stack, how many agents, what context budget, how to plan capacity, and how to operationalize evaluation on a single consumer GPU (RTX 4080 Laptop, 12 GB VRAM).
 
@@ -162,6 +168,7 @@ Phase 2 produces a complete, artifact-backed deployment framework from ~70,000 m
 | **Quantization** | Q4_K_M default; Q8_0 quality-critical; never Q2_K | Universal sweet spot across 5 models (TR125) |
 | **Context budget** | Ollama for >4K tokens on 12 GB | VRAM spillover = 25-105x cliffs (TR127) |
 | **Capacity planning** | `chimeraforge plan` | Validated R²>=0.859; beats M/D/1 by 20.4x (TR133) |
+| **Safety screening** | `plan --safety-target` (opt-in) | Refusal-rate + RTSI risk per config; rejects safety-collapsing cells (TR134/TR142) |
 
 ### `chimeraforge` CLI — 6 Commands, One Tool
 
@@ -736,7 +743,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-This research was conducted as part of the Banterhearts LLM Performance Research Program. Phase 1 (TR108-TR122) established the measurement methodology and cross-language comparison. Phase 2 (TR123-TR133) produced the deployment framework and capacity planner. Phase 3 (TR134-TR137) extended the program into automation and evaluation infrastructure. Production APIs and orchestration services remain in the main Banterhearts repository.
+This research was conducted as part of the Banterhearts LLM Performance Research Program. Phase 1 (TR108-TR122) established the measurement methodology and cross-language comparison. Phase 2 (TR123-TR133) produced the deployment framework and capacity planner. Phase 3 (TR134-TR137) measured the safety cost of inference optimization — alignment robustness and the "safety tax" — now operationalized as the planner's safety gate (v0.3.0). Production APIs and orchestration services remain in the main Banterhearts repository.
 
 ---
 
