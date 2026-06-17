@@ -22,7 +22,7 @@ console = Console()
 
 app = typer.Typer(
     name="chimeraforge",
-    help="LLM deployment optimizer — backed by 70,000+ real measurements.",
+    help="LLM deployment optimizer — backed by ~204,000 real measurements.",
     no_args_is_help=True,
     add_completion=False,
 )

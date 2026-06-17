@@ -1,6 +1,6 @@
 """ChimeraForge — LLM deployment optimizer.
 
-Backed by 70,000+ real measurements across 26 technical reports
+Backed by ~204,000 real measurements across 32 technical reports
 on consumer GPUs. Plan, benchmark, evaluate, and optimize LLM
 inference deployments.
 """
