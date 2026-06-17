@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by 70,000+ real measurements on consumer GPUs. Ships both research artifacts (26+ technical reports, TR108-TR133) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.2.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.3.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -35,7 +35,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.2.0"
+    __init__.py                       # Exports __version__ = "0.3.0"
     cli.py                            # Typer entry point, `plan` command (lazy imports)
     planner/
       __init__.py                     # Re-exports Candidate, all models, load_models

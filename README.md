@@ -740,8 +740,8 @@ This research was conducted as part of the Banterhearts LLM Performance Research
 
 ---
 
-**Last Updated:** March 8, 2026 (v0.2.0 published to PyPI)
+**Last Updated:** June 16, 2026 (v0.3.0)
 **Repository:** https://github.com/Sahil170595/Chimeraforge
 **PyPI:** https://pypi.org/project/chimeraforge/
-**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.2.0 Live on PyPI
+**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.3.0
 

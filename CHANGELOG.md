@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-16
+
 ### Added
 - Planner safety gate (Gate 5): `plan --safety-target` rejects configs whose
   refusal rate (TR134/TR142) falls below the bar. Opt-in; off by default.
@@ -18,6 +20,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `safety_refusal` + `rtsi_risk` fields in `--json`.
 - `scripts/build_safety_data.py` ETL plus vendored TR142 source CSVs under
   `data/safety/tr142/`.
+
+### Changed
+- Split the monolithic `cli.py` (863 lines) into per-command modules under
+  `chimeraforge/commands/`; `cli.py` is now a thin Typer registrar.
+- Split the `test_bench.py` and `test_planner.py` god files into focused
+  per-concern modules; moved the `bundled_models` fixture to `conftest.py`.
+
+### Fixed
+- CLI commands fail loud (clean message + exit 1) instead of leaking a raw
+  traceback on: missing/malformed `--models-path` (plan), malformed or
+  non-result JSON (report/compare/refit), and unknown `--backend` (bench).
+- `plan --latency-slo` rejects non-positive values (previously accepted).
+- `report` rejects JSON that is not a bench result (e.g. `{}`) instead of
+  emitting an empty report.
+- `bench` no longer crashes with a UnicodeEncodeError when stdout is a
+  non-UTF-8 pipe/redirect on Windows (progress spinner disabled when not a TTY).
 
 ## [0.2.0] - 2026-03-08
 
