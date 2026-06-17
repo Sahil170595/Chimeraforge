@@ -5,7 +5,7 @@
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**~146,000+ data points. 30+ technical reports. One consumer GPU. A CLI that plans LLM deployments on performance, cost — and safety.**
+**~204,000 primary measurements. 32 technical reports. One consumer GPU. A CLI that plans LLM deployments on performance, cost — and safety.**
 
 ```bash
 pip install chimeraforge
@@ -25,13 +25,15 @@ This repository contains everything behind Technical Reports TR108 through TR137
 
 Chimeraforge is the research and benchmarking breakout from the Banterhearts program. It contains every asset required to measure LLM inference performance, run the TR-series test plans, publish the technical reports, and ship the predictive capacity planner. This repo stays focused on measurement, analysis, and deployment tooling.
 
+> **Program context:** the parent Banterhearts program now spans **~1,337,000 primary + judge measurements across 48+ technical reports** (as of 2026-06-17) — including the safety attack-surface and serving-stack research that lives in dedicated sibling repos. **ChimeraForge is the actionable splice of that program**: the ~204,000-measurement subset (TR108–137 + the TR142/TR146 safety provenance) distilled into a shipping CLI for deployment decisions.
+
 The research program spans three completed phases:
 
 - **Phase 1 (TR108-TR122):** Language comparison (Python vs Rust), multi-agent concurrency, backend benchmarking, cost/energy economics, scaling laws. 8,000+ runs.
-- **Phase 2 (TR123-TR133):** KV-cache economics, quality baselines, quantization decision matrix, compile paradox resolution, context scaling, production workloads, N-agent scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning. ~70,000+ measurements.
+- **Phase 2 (TR123-TR133):** KV-cache economics, quality baselines, quantization decision matrix, compile paradox resolution, context scaling, production workloads, N-agent scaling, serving stack comparison, GPU kernel profiling, and predictive capacity planning. ~106,000 measurements.
 - **Phase 3 (TR134-TR137):** Safety alignment under inference optimization — alignment robustness under quantization, safety under multi-agent concurrency, cross-backend consistency, and the "safety tax" synthesis. Operationalized in v0.3.0 as the planner's opt-in safety gate (backed by TR142 RTSI + TR146 mechanistic findings).
 
-Through **~146,000+ data points** across 30 technical reports, we've answered the core deployment questions: which backend, which quantization level, which serving stack, how many agents, what context budget, how to plan capacity, and how to operationalize evaluation on a single consumer GPU (RTX 4080 Laptop, 12 GB VRAM).
+Through **~204,000 primary measurements** across 32 technical reports, we've answered the core deployment questions: which backend, which quantization level, which serving stack, how many agents, what context budget, how to plan capacity, and how to operationalize evaluation on a single consumer GPU (RTX 4080 Laptop, 12 GB VRAM).
 
 ---
 
@@ -77,7 +79,7 @@ Through **~146,000+ data points** across 30 technical reports, we've answered th
 
 ## Quick Takeaways: What We Discovered
 
-All findings below are verified against the TR108-TR137 corpus, spanning roughly 146,000 data points across Phase 1, Phase 2, and Phase 3. Every number is reproducible and traceable to raw data.
+All findings below are verified against the TR108-TR137 corpus, spanning roughly 204,000 primary measurements across Phase 1, Phase 2, and Phase 3. Every number is reproducible and traceable to raw data.
 
 ### Single-Agent Performance: Rust vs Python
 
@@ -158,7 +160,7 @@ Rust supports multiple async runtimes (Tokio, async-std, smol). **Which one shou
 
 ### Phase 2: Deployment Decisions (TR123-TR133)
 
-Phase 2 produces a complete, artifact-backed deployment framework from ~70,000 measurements:
+Phase 2 produces a complete, artifact-backed deployment framework from ~106,000 measurements:
 
 | Decision | Recommendation | Evidence |
 |----------|---------------|----------|
@@ -294,7 +296,7 @@ chimeraforge report --results-files run1.json,run2.json --format html --output r
 
 ## Research Journey: Technical Reports TR108-TR137
 
-Our research progressed systematically, with each report building on previous findings and answering specific questions. We've collected **~146,000+ data points** across **30 technical reports** (TR108-TR137), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, scaling studies, quantization, compilation, context scaling, serving stack comparison, GPU kernel profiling, predictive capacity planning, and evaluation automation.
+Our research progressed systematically, with each report building on previous findings and answering specific questions. We've collected **~204,000 primary measurements** across **32 technical reports** (TR108-TR137 plus the TR142/TR146 safety provenance), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, scaling studies, quantization, compilation, context scaling, serving stack comparison, GPU kernel profiling, predictive capacity planning, and safety alignment.
 
 ### TR108: Single-Inference Optimization
 **Question:** What's the best configuration for a single LLM request?  
@@ -491,7 +493,7 @@ Our research progressed systematically, with each report building on previous fi
 - Full reproducibility: code, data, and methodology all available
 - Statistical rigor: confidence intervals, variance measures, multiple runs
 - Process isolation: cold-start testing to avoid warm-cache bias
-- Comprehensive coverage: ~146,000+ data points across 30 technical reports (TR108-TR137)
+- Comprehensive coverage: ~204,000 primary measurements across 32 technical reports (TR108-TR137 + TR142/TR146)
 
 ---
 
@@ -527,7 +529,7 @@ Our research progressed systematically, with each report building on previous fi
 | **TR132** | How does continuous batching work at kernel level? | 77-80% kernel reduction, 79-83% bandwidth-per-token reduction. | Proves the mechanism; vLLM and TGI use identical amortization. |
 | **TR133** | Can we automate capacity planning? | Yes — 4/4 validation targets met; `chimeraforge plan` shipped. | Empirical lookup tables outperform theoretical queueing models. |
 
-**Full report links:** See `outputs/publish_ready/reports/` for all 30 technical reports plus conclusive syntheses.
+**Full report links:** See `outputs/publish_ready/reports/` for all 32 technical reports plus conclusive syntheses.
 
 ---
 
@@ -692,8 +694,9 @@ All reports include:
 
 ### Total Research Investment
 
-- **~146,000+ data points** across Phase 1, Phase 2, and Phase 3
-- **30 technical reports** (TR108-TR137) plus 4 conclusive synthesis families
+- **~204,000 primary measurements** across Phase 1, Phase 2, and Phase 3 (de-duplicated: TR137 and TR142 are syntheses of already-counted data)
+- **32 technical reports** (TR108-TR137 + TR142/TR146) plus 4 conclusive synthesis families
+- Parent Banterhearts program: **~1,337,000 primary + judge measurements across 48+ technical reports** (as of 2026-06-17) — ChimeraForge is the actionable-CLI splice
 - **4 serving stacks** benchmarked (Ollama, vLLM, TGI, PyTorch Direct)
 - **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
 - **GPU kernel profiling** with Nsight Systems (~2 GB traces)
