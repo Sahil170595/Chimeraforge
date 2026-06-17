@@ -91,6 +91,19 @@ def report(
         raise typer.Exit(code=1)
 
     config = ReportConfig(title=title, format=fmt)
+    try:
+        results = load_results(paths)
+    except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
+        console.print(f"[red]Error:[/] failed to read result file(s): {exc}")
+        raise typer.Exit(code=1)
+
+    if not any(isinstance(r, dict) and "model" in r for r in results):
+        console.print(
+            "[red]Error:[/] no valid bench results found "
+            "(expected JSON objects with a 'model' field)."
+        )
+        raise typer.Exit(code=1)
+
     rpt = generate_report(paths, config)
 
     if output:
@@ -108,4 +121,4 @@ def report(
         }
         console.print(json_mod.dumps(meta, indent=2))
     else:
-        format_report_rich(load_results(paths), console)
+        format_report_rich(results, console)

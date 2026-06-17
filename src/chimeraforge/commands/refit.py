@@ -84,7 +84,11 @@ def refit(
         raise typer.Exit(code=1)
 
     base_path = Path(base_models) if base_models else None
-    merged, summary = refit_from_bench(paths, base_path)
+    try:
+        merged, summary = refit_from_bench(paths, base_path)
+    except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
+        console.print(f"[red]Error:[/] failed to read bench file(s): {exc}")
+        raise typer.Exit(code=1)
 
     # Determine output path
     if output:

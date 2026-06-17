@@ -141,6 +141,7 @@ def bench(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
+            disable=not console.is_terminal,  # no live spinner when piped/redirected
         ) as progress:
             try:
                 if all_quants:
@@ -179,7 +180,8 @@ def bench(
                         base_url=base_url,
                     )
                     results = [result]
-            except RuntimeError as exc:
+            except (RuntimeError, ValueError) as exc:
+                # RuntimeError: health/model pre-flight failure; ValueError: unknown backend
                 progress.stop()
                 console.print(Panel(str(exc), title="ERROR", border_style="red"))
                 raise typer.Exit(code=1)

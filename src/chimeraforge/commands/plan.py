@@ -131,6 +131,9 @@ def plan(
     if budget <= 0:
         console.print("[red]Error:[/] --budget must be positive.")
         raise typer.Exit(code=1)
+    if latency_slo <= 0:
+        console.print("[red]Error:[/] --latency-slo must be positive.")
+        raise typer.Exit(code=1)
     if not 0.0 <= quality_target <= 1.0:
         console.print("[red]Error:[/] --quality-target must be between 0.0 and 1.0.")
         raise typer.Exit(code=1)
@@ -140,7 +143,14 @@ def plan(
 
     # Load models
     if models_path:
-        planner_models = load_models(models_path)
+        try:
+            planner_models = load_models(models_path)
+        except FileNotFoundError:
+            console.print(f"[red]Error:[/] models file not found: {models_path}")
+            raise typer.Exit(code=1)
+        except ValueError as exc:  # JSONDecodeError subclasses ValueError
+            console.print(f"[red]Error:[/] invalid models file '{models_path}': {exc}")
+            raise typer.Exit(code=1)
     else:
         planner_models = load_bundled_models()
 

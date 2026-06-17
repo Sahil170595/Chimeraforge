@@ -62,7 +62,11 @@ def compare(
             raise typer.Exit(code=1)
         candidate_paths.append(p)
 
-    rows = compare_results(baseline_path, candidate_paths)
+    try:
+        rows = compare_results(baseline_path, candidate_paths)
+    except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
+        console.print(f"[red]Error:[/] failed to read result file(s): {exc}")
+        raise typer.Exit(code=1)
 
     if output_json:
         console.print(format_comparison_json(rows))
