@@ -54,3 +54,20 @@ class Backend(ABC):
     @abstractmethod
     async def get_version(self) -> str | None:
         """Return the backend version string, or None if unavailable."""
+
+    async def generate_text(
+        self,
+        model: str,
+        prompt: str,
+        options: dict | None = None,
+    ) -> str:
+        """Run a single generation and return the response text.
+
+        Optional capability used by the safety screen. Backends that do not
+        implement it raise NotImplementedError (the screen reports a clean
+        "not supported" error rather than crashing).
+        """
+        raise NotImplementedError(
+            f"backend '{getattr(self, 'name', type(self).__name__)}' "
+            "does not support text generation for the safety screen yet"
+        )

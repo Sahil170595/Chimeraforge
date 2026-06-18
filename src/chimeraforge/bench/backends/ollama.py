@@ -105,6 +105,26 @@ class OllamaBackend(Backend):
             eval_duration_ms=eval_duration_ms,
         )
 
+    async def generate_text(
+        self,
+        model: str,
+        prompt: str,
+        options: dict | None = None,
+    ) -> str:
+        """POST /api/generate (stream=False) and return the response text."""
+        payload: dict = {"model": model, "prompt": prompt, "stream": False}
+        if options:
+            payload["options"] = options
+
+        client = await self._get_client()
+        resp = await client.post(
+            f"{self.base_url}/api/generate",
+            json=payload,
+            timeout=300,
+        )
+        resp.raise_for_status()
+        return resp.json().get("response", "")
+
     async def get_version(self) -> str | None:
         """GET /api/version."""
         try:
