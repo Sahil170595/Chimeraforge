@@ -17,6 +17,7 @@ from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
+from chimeraforge.commands.safety import safety
 
 console = Console()
 
@@ -51,6 +52,7 @@ def main(
 # Register commands (implementations in chimeraforge.commands.*).
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
+app.command()(safety)
 app.command()(bench)
 app.command()(refit)
 app.command()(compare)

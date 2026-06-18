@@ -166,3 +166,81 @@ class TestSafetyScreenRunner:
         d = res.to_dict()
         assert d["model"] == "llama3.2-3b" and d["quant"] == "Q4_K_M"
         assert d["refusal_rate"] == 1.0 and d["n_prompts"] == 2
+
+
+# ── CLI command (fail-loud paths + mocked success) ───────────────────
+
+
+async def _stub_screen(
+    model, prompts, backend_name="ollama", quant=None, base_url=None, on_progress=None
+):
+    n_ref = len(prompts) if model != "low" else 1
+    return SafetyScreenResult(
+        model=model,
+        backend=backend_name,
+        quant=quant,
+        n_prompts=len(prompts),
+        n_refused=n_ref,
+        n_errors=0,
+        refusal_rate=n_ref / len(prompts),
+    )
+
+
+class TestSafetyCLI:
+    @staticmethod
+    def _run(args):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        return CliRunner().invoke(app, args)
+
+    def test_help(self):
+        r = self._run(["safety", "--help"])
+        assert r.exit_code == 0
+        assert "--prompts" in r.output and "--model" in r.output
+
+    def test_missing_required_args(self):
+        assert self._run(["safety"]).exit_code == 2
+
+    def test_prompts_file_not_found(self):
+        r = self._run(["safety", "--model", "m", "--prompts", "/nonexistent_xyz.txt"])
+        assert r.exit_code == 1
+        assert not isinstance(r.exception, (FileNotFoundError, ValueError))
+
+    def test_empty_prompts_file(self, tmp_path):
+        f = tmp_path / "empty.txt"
+        f.write_text("\n   \n", encoding="utf-8")
+        assert self._run(["safety", "--model", "m", "--prompts", str(f)]).exit_code == 1
+
+    def test_invalid_safety_target(self, tmp_path):
+        f = tmp_path / "p.txt"
+        f.write_text("prompt one\n", encoding="utf-8")
+        r = self._run(["safety", "--model", "m", "--prompts", str(f), "--safety-target", "1.5"])
+        assert r.exit_code == 1
+
+    def test_unknown_backend_fails_clean(self, tmp_path):
+        f = tmp_path / "p.txt"
+        f.write_text("prompt one\nprompt two\n", encoding="utf-8")
+        r = self._run(["safety", "--model", "m", "--prompts", str(f), "--backend", "nope"])
+        assert r.exit_code == 1
+        assert not isinstance(r.exception, (ValueError, RuntimeError))
+
+    def test_success_json(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("chimeraforge.safety.run_safety_screen", _stub_screen)
+        f = tmp_path / "p.txt"
+        f.write_text("a\nb\nc\n", encoding="utf-8")
+        r = self._run(["safety", "--model", "llama3.2-3b", "--prompts", str(f), "--json"])
+        assert r.exit_code == 0
+        import json as _json
+
+        data = _json.loads(r.output[r.output.index("{") :])
+        assert data["refusal_rate"] == 1.0 and data["n_prompts"] == 3
+
+    def test_below_target_exits_1(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("chimeraforge.safety.run_safety_screen", _stub_screen)
+        f = tmp_path / "p.txt"
+        f.write_text("a\nb\n", encoding="utf-8")
+        # model "low" makes the stub return refusal_rate 0.5 < target 0.8
+        r = self._run(["safety", "--model", "low", "--prompts", str(f), "--safety-target", "0.8"])
+        assert r.exit_code == 1
