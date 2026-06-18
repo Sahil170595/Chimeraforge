@@ -172,14 +172,15 @@ Phase 2 produces a complete, artifact-backed deployment framework from ~106,000 
 | **Capacity planning** | `chimeraforge plan` | Validated R²>=0.859; beats M/D/1 by 20.4x (TR133) |
 | **Safety screening** | `plan --safety-target` (opt-in) | Refusal-rate + RTSI risk per config; rejects safety-collapsing cells (TR134/TR142) |
 
-### `chimeraforge` CLI — 6 Commands, One Tool
+### `chimeraforge` CLI — 7 Commands, One Tool
 
-Install from PyPI and get all 6 commands:
+Install from PyPI and get all 7 commands:
 
 ```bash
 pip install chimeraforge            # Core (plan only)
 pip install chimeraforge[bench]     # + live benchmarking
 pip install chimeraforge[eval]      # + quality evaluation (BERTScore, ROUGE)
+pip install chimeraforge[safety]    # + live refusal screen
 pip install chimeraforge[refit]     # + coefficient refitting (numpy, scipy)
 pip install chimeraforge[all]       # Everything including dev tools
 ```
@@ -198,6 +199,19 @@ chimeraforge plan --model-size 3b --json
 - Safety gate rejects configs whose refusal rate (TR134/TR142) falls below `--safety-target`
 - Validated: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05%
 - No ML needed -- empirical lookup tables with first-principles interpolation
+
+#### `chimeraforge safety` — Live Refusal Screen
+
+```bash
+chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --safety-target 0.85
+chimeraforge safety --model llama3.2-3b --prompts harmful.txt --json
+```
+
+- Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based — the TR134 regex baseline), and reports the measured refusal rate.
+- Compares to the bundled gate data when the (model, quant) is covered — expected refusal, drift, and RTSI risk tier — so you can screen configs the table doesn't include.
+- Exits 1 if the measured refusal rate falls below `--safety-target`.
+- **You provide the prompts** (`--prompts`, one per line); no attack corpus ships with the package. Point it at HarmBench / AdvBench / your own set.
+- Needs `chimeraforge[safety]` + a running backend (Ollama; vLLM/TGI not yet).
 
 #### `chimeraforge bench` — Live Inference Benchmarking
 
@@ -604,7 +618,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`data/csv/`** | CSV exports of benchmark data | When you want to analyze data in Excel, Python, or other tools |
 | **`data/research/`** | Research data from experiments | When you want to access experiment-specific datasets |
 | **`outputs/reports/`** | Exploratory, legacy, and scratch report outputs | When you want working notes or historical report artifacts that are not canonical |
-| **`src/chimeraforge/`** | ChimeraForge CLI (plan, bench, eval, report, compare, refit) | The full CLI toolchain |
+| **`src/chimeraforge/`** | ChimeraForge CLI (plan, safety, bench, eval, report, compare, refit) | The full CLI toolchain |
 | **`outputs/publish_ready/reports/`** | Canonical TR archive (TR108-TR137) + conclusive syntheses | **Start here** for comprehensive findings and analysis |
 | **`outputs/publish_ready/docs/`** | Publish-ready benchmark narratives and supporting writeups | When you want public-facing benchmark context beyond the TR archive |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
@@ -701,7 +715,7 @@ All reports include:
 - **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
 - **GPU kernel profiling** with Nsight Systems (~2 GB traces)
 - **1 PyTorch upstream contribution** (pytorch/pytorch#175557, PR #175562)
-- **1 shipped CLI tool** (`chimeraforge` — 6 commands: plan, bench, eval, report, compare, refit) published to PyPI
+- **1 shipped CLI tool** (`chimeraforge` — 7 commands: plan, safety, bench, eval, report, compare, refit) published to PyPI
 
 ### Methodology Highlights
 

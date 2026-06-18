@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `chimeraforge safety` — live refusal screen. Runs user-provided probe prompts
+  against a running model, classifies refusals (rule-based, the TR134 regex
+  baseline), and reports the measured refusal rate against the bundled gate data
+  (expected, drift, RTSI tier); exits 1 below `--safety-target`. Behind the
+  `chimeraforge[safety]` extra. Ollama backend (vLLM/TGI not yet); no attack
+  corpus is bundled — bring your own benchmark.
+- `Backend.generate_text()` returning response text (used by the safety screen).
+
 ## [0.3.0] - 2026-06-16
 
 ### Added
