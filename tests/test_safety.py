@@ -244,3 +244,79 @@ class TestSafetyCLI:
         # model "low" makes the stub return refusal_rate 0.5 < target 0.8
         r = self._run(["safety", "--model", "low", "--prompts", str(f), "--safety-target", "0.8"])
         assert r.exit_code == 1
+
+    def test_comparison_resolves_ollama_tag(self, tmp_path, monkeypatch):
+        # An Ollama tag must resolve to the bundled registry model (llama3.2-1b Q2_K).
+        monkeypatch.setattr("chimeraforge.safety.run_safety_screen", _stub_screen)
+        f = tmp_path / "p.txt"
+        f.write_text("a\nb\n", encoding="utf-8")
+        r = self._run(
+            ["safety", "--model", "llama3.2:1b-instruct-q2_K", "--prompts", str(f), "--json"]
+        )
+        assert r.exit_code == 0
+        import json as _json
+
+        data = _json.loads(r.output[r.output.index("{") :])
+        assert data["resolved_to"] == "llama3.2-1b Q2_K"
+        assert data["expected_refusal"] is not None
+        assert data["rtsi_risk"] == "HIGH"
+
+
+# ── Model identity / resolution ──────────────────────────────────────
+
+
+class TestModelResolution:
+    @pytest.mark.parametrize(
+        "identifier,expected",
+        [
+            ("llama3.2:1b-instruct-q8_0", "llama3.2-1b"),
+            ("llama3.2:3b-instruct-q4_K_M", "llama3.2-3b"),
+            ("qwen2.5:1.5b-instruct-q2_K", "qwen2.5-1.5b"),
+            ("qwen2.5:0.5b", "qwen2.5-0.5b"),
+            ("qwen2.5:3b-instruct-q8_0", "qwen2.5-3b"),
+            ("llama3.1:8b-instruct-q8_0", "llama3.1-8b"),
+            ("phi:latest", "phi-2"),
+            ("llama3.2-1b", "llama3.2-1b"),
+            ("qwen2.5-1.5b", "qwen2.5-1.5b"),
+        ],
+    )
+    def test_resolve(self, identifier, expected):
+        from chimeraforge.planner.identity import resolve_model
+
+        assert resolve_model(identifier) == expected
+
+    @pytest.mark.parametrize("identifier", ["gpt-4o", "mystery-model", "gemma2:9b", ""])
+    def test_unresolvable(self, identifier):
+        from chimeraforge.planner.identity import resolve_model
+
+        assert resolve_model(identifier) is None
+
+    @pytest.mark.parametrize(
+        "identifier,q",
+        [
+            ("llama3.2:1b-instruct-q8_0", "Q8_0"),
+            ("x-q4_K_M", "Q4_K_M"),
+            ("x-q2_K", "Q2_K"),
+            ("model-fp16", "FP16"),
+            ("no-quant-here", None),
+        ],
+    )
+    def test_parse_quant(self, identifier, q):
+        from chimeraforge.planner.identity import parse_quant
+
+        assert parse_quant(identifier) == q
+
+    def test_parse_identity_fields(self):
+        from chimeraforge.planner.identity import parse_identity
+
+        idy = parse_identity("llama3.2:3b-instruct-q4_K_M")
+        assert idy.family == "llama3.2"
+        assert idy.variant == "instruct"
+        assert idy.params_b == 3.0
+        assert idy.quant == "Q4_K_M"
+
+    def test_quant_override_wins(self):
+        from chimeraforge.planner.identity import parse_identity
+
+        idy = parse_identity("llama3.2:1b-instruct-q8_0", quant_override="Q2_K")
+        assert idy.quant == "Q2_K"

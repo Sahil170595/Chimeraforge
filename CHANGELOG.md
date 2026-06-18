@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `chimeraforge[safety]` extra. Ollama backend (vLLM/TGI not yet); no attack
   corpus is bundled — bring your own benchmark.
 - `Backend.generate_text()` returning response text (used by the safety screen).
+- Model-identity resolution (`planner.identity`): maps Ollama tags / HF paths to
+  registry models by architecture-family + parameter count (not exact name), so
+  `safety`'s bundled-data comparison works against live backend model tags.
 
 ## [0.3.0] - 2026-06-16
 

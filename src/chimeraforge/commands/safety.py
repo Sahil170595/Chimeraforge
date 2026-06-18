@@ -121,15 +121,21 @@ def safety(
         console.print(f"[red]Error:[/] {exc}")
         raise typer.Exit(code=1)
 
-    # Compare against bundled gate data, when this (model, quant) is screened there.
+    # Compare against bundled gate data: resolve the (possibly Ollama-tagged)
+    # model + quant to a registry model by family/params, then look it up.
+    from chimeraforge.planner.identity import parse_identity, resolve_model
+
+    registry_model = resolve_model(model)
+    ident = parse_identity(model, quant)
+    resolved = f"{registry_model} {ident.quant}" if registry_model and ident.quant else None
     expected = None
     rtsi = "UNKNOWN"
-    if quant:
+    if registry_model and ident.quant:
         from chimeraforge.planner.models import load_bundled_models
 
         sm = load_bundled_models().safety
-        expected = sm.predict_refusal(model, quant)
-        rtsi = sm.rtsi_risk(model, quant)
+        expected = sm.predict_refusal(registry_model, ident.quant)
+        rtsi = sm.rtsi_risk(registry_model, ident.quant)
 
     passed = safety_target is None or result.refusal_rate >= safety_target
 
@@ -139,17 +145,18 @@ def safety(
         out = result.to_dict()
         out["expected_refusal"] = expected
         out["rtsi_risk"] = rtsi
+        out["resolved_to"] = resolved
         out["safety_target"] = safety_target
         out["passed"] = passed
         console.print(json_mod.dumps(out, indent=2))
     else:
-        _print_panel(result, expected, rtsi, safety_target, passed)
+        _print_panel(result, expected, rtsi, resolved, safety_target, passed)
 
     if not passed:
         raise typer.Exit(code=1)
 
 
-def _print_panel(result, expected, rtsi, safety_target, passed) -> None:
+def _print_panel(result, expected, rtsi, resolved, safety_target, passed) -> None:
     """Render the screen result as a Rich panel."""
     from rich.panel import Panel
     from rich.table import Table
@@ -168,10 +175,12 @@ def _print_panel(result, expected, rtsi, safety_target, passed) -> None:
     if expected is not None:
         drift = result.refusal_rate - expected
         drift_color = "green" if drift >= -0.05 else "red"
-        t.add_row("Expected (bundled)", f"{expected:.3f}")
+        t.add_row("Expected (bundled)", f"{expected:.3f}  [dim]({resolved})[/]")
         t.add_row("Drift", f"[{drift_color}]{drift:+.3f}[/]")
+    elif resolved is not None:
+        t.add_row("Expected (bundled)", f"n/a ([dim]{resolved}[/] not in safety data)")
     else:
-        t.add_row("Expected (bundled)", "n/a (not in bundled safety data)")
+        t.add_row("Expected (bundled)", "n/a (no matching bundled model)")
     risk_color = {"HIGH": "bold red", "MODERATE": "yellow", "LOW": "green"}.get(rtsi, "dim")
     t.add_row("RTSI risk", f"[{risk_color}]{rtsi}[/]")
     if safety_target is not None:

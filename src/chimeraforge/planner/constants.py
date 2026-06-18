@@ -33,6 +33,19 @@ MODEL_PARAMS_B: dict[str, float] = {
     "llama3.1-8b": 8.03,
 }
 
+# Canonical architecture/family per registry model. Used to resolve arbitrary
+# identifiers (Ollama tags, HF paths) to a registry model by family + params
+# rather than exact name (see planner.identity).
+MODEL_FAMILY: dict[str, str] = {
+    "qwen2.5-0.5b": "qwen2.5",
+    "llama3.2-1b": "llama3.2",
+    "qwen2.5-1.5b": "qwen2.5",
+    "phi-2": "phi",
+    "qwen2.5-3b": "qwen2.5",
+    "llama3.2-3b": "llama3.2",
+    "llama3.1-8b": "llama3.1",
+}
+
 # Architecture metadata for KV-cache formula
 MODEL_ARCH: dict[str, dict[str, int]] = {
     "qwen2.5-0.5b": {"n_layers": 24, "n_kv_heads": 2, "d_head": 64},

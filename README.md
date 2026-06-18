@@ -208,7 +208,7 @@ chimeraforge safety --model llama3.2-3b --prompts harmful.txt --json
 ```
 
 - Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based — the TR134 regex baseline), and reports the measured refusal rate.
-- Compares to the bundled gate data when the (model, quant) is covered — expected refusal, drift, and RTSI risk tier — so you can screen configs the table doesn't include.
+- Compares to the bundled gate data — expected refusal, drift, and RTSI risk tier. Ollama tags (`llama3.2:1b-instruct-q2_K`) resolve to the registry model by architecture-family + parameter count, so the comparison works against live backend tags.
 - Exits 1 if the measured refusal rate falls below `--safety-target`.
 - **You provide the prompts** (`--prompts`, one per line); no attack corpus ships with the package. Point it at HarmBench / AdvBench / your own set.
 - Needs `chimeraforge[safety]` + a running backend (Ollama; vLLM/TGI not yet).
