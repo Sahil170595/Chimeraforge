@@ -13,11 +13,12 @@ pip install chimeraforge
 
 This repository contains everything behind Technical Reports TR108 through TR137 (plus the TR142/TR146 safety provenance) -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
 
-> **New in v0.3.0:** an opt-in **safety gate** for `chimeraforge plan` — it screens every
-> (model × quant) configuration against measured refusal-rate data (TR134) and a behavioural
-> RTSI risk tier (TR142), so the planner won't recommend a config that quietly collapses
-> safety (e.g. `llama3.2-1b` refusal drops 0.94 → 0.37 at Q2_K). Plus hardened, fail-loud
-> error handling across every command. See the [CHANGELOG](CHANGELOG.md).
+> **New in v0.4.0:** the **`chimeraforge safety`** command — screen a *live* model's refusal
+> rate against your prompt set and compare it to the bundled TR134/TR142 data (Ollama tags
+> resolve to registry models by architecture-family + size). It complements the v0.3.0
+> `plan --safety-target` gate: the gate *decides* from bundled data, `safety` *measures* the
+> running model (e.g. `llama3.2-1b` refusal collapses 0.94 → 0.37 at Q2_K). See the
+> [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -764,8 +765,8 @@ This research was conducted as part of the Banterhearts LLM Performance Research
 
 ---
 
-**Last Updated:** June 16, 2026 (v0.3.0)
+**Last Updated:** June 19, 2026 (v0.4.0)
 **Repository:** https://github.com/Sahil170595/Chimeraforge
 **PyPI:** https://pypi.org/project/chimeraforge/
-**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.3.0
+**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.4.0
 
