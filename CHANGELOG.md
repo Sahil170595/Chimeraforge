@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-22
+
+### Added
+- CI matrix now covers Python 3.13 and 3.14 (was 3.10–3.12); added the 3.14
+  classifier.
+
+### Fixed
+- `safety` and `eval` `--json` emit plain JSON (Rich syntax-highlighting disabled
+  via `highlight=False`), so `--json | jq` is clean and parsing is robust when
+  colour is forced (e.g. on CI).
+- Hardened the `safety --help` test to strip ANSI before matching option names —
+  the v0.4.0 CI failure (Rich colourises `--help`, so `--prompts` was not a
+  literal substring of the raw output).
+
 ## [0.4.0] - 2026-06-19
 
 ### Added
