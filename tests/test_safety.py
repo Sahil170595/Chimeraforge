@@ -195,10 +195,19 @@ class TestSafetyCLI:
 
         return CliRunner().invoke(app, args)
 
+    @staticmethod
+    def _strip_ansi(text: str) -> str:
+        import re
+
+        return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
     def test_help(self):
         r = self._run(["safety", "--help"])
         assert r.exit_code == 0
-        assert "--prompts" in r.output and "--model" in r.output
+        # Strip ANSI: Rich colorises option names (CI forces colour), so
+        # "--prompts" is not a literal substring of the raw output.
+        out = self._strip_ansi(r.output)
+        assert "--prompts" in out and "--model" in out
 
     def test_missing_required_args(self):
         assert self._run(["safety"]).exit_code == 2
@@ -234,7 +243,8 @@ class TestSafetyCLI:
         assert r.exit_code == 0
         import json as _json
 
-        data = _json.loads(r.output[r.output.index("{") :])
+        out = self._strip_ansi(r.output)
+        data = _json.loads(out[out.index("{") :])
         assert data["refusal_rate"] == 1.0 and data["n_prompts"] == 3
 
     def test_below_target_exits_1(self, tmp_path, monkeypatch):
@@ -256,7 +266,8 @@ class TestSafetyCLI:
         assert r.exit_code == 0
         import json as _json
 
-        data = _json.loads(r.output[r.output.index("{") :])
+        out = self._strip_ansi(r.output)
+        data = _json.loads(out[out.index("{") :])
         assert data["resolved_to"] == "llama3.2-1b Q2_K"
         assert data["expected_refusal"] is not None
         assert data["rtsi_risk"] == "HIGH"

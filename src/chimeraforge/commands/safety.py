@@ -148,7 +148,9 @@ def safety(
         out["resolved_to"] = resolved
         out["safety_target"] = safety_target
         out["passed"] = passed
-        console.print(json_mod.dumps(out, indent=2))
+        # highlight=False + soft_wrap: emit plain JSON so `--json | jq` is clean
+        # and not broken by Rich's syntax highlighting when colour is forced.
+        console.print(json_mod.dumps(out, indent=2), highlight=False, soft_wrap=True)
     else:
         _print_panel(result, expected, rtsi, resolved, safety_target, passed)
 

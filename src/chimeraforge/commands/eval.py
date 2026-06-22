@@ -122,6 +122,8 @@ def eval_cmd(
     )
 
     if output_json:
-        console.print(format_eval_json([result]))
+        # highlight=False + soft_wrap: clean JSON for `--json | jq`, not broken
+        # by Rich syntax highlighting when colour is forced.
+        console.print(format_eval_json([result]), highlight=False, soft_wrap=True)
     else:
         format_eval_table([result], console)
