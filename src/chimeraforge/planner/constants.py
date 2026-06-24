@@ -22,6 +22,16 @@ QUANT_BPW: dict[str, float] = {
 # Supported serving backends
 BACKENDS = ["ollama", "vllm", "tgi"]
 
+# Roofline throughput estimate for off-registry models. Decode is memory-bound:
+# each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
+# MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16
+# datapoint: 146.33 tok/s / (556 GB/s / 2.48 GB) = 0.65 (see models.ThroughputModel).
+MBU_DEFAULT = 0.65
+
+# Default architecture used only when a model's real config cannot be resolved.
+DEFAULT_ARCH: dict[str, int] = {"n_layers": 32, "n_kv_heads": 8, "d_head": 128}
+DEFAULT_PARAMS_B = 3.0
+
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {
     "qwen2.5-0.5b": 0.49,

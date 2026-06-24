@@ -12,13 +12,27 @@ ChimeraForge is an LLM inference benchmarking and deployment planning platform, 
 # Install (editable, all deps)
 pip install -e ".[all]"
 
-# Run capacity planner
+# Run capacity planner (registry size-class search)
 chimeraforge plan --model-size 3b --request-rate 1.0 --hardware "RTX 4080 12GB"
+
+# Plan ANY model (model-agnostic): Ollama tag, HF repo, or manual overrides
+chimeraforge plan --model ollama:qwen2.5:7b --ollama-url http://localhost:11434
+chimeraforge plan --model Qwen/Qwen2.5-1.5B-Instruct --hardware "RTX 4090 24GB"
+chimeraforge plan --model my/unreleased-7b --params-b 7 --n-layers 32 --n-kv-heads 8 --d-head 128 --no-network
+
+# Discover + rank deployable models for your hardware (Ollama install / HF Hub)
+chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
+chimeraforge suggest --source hf --hf-limit 8 --hardware "RTX 4080 12GB"
+
+# Build a local catalog of curated models, then rank it OFFLINE
+chimeraforge catalog --build              # resolves seed (+ --with-ollama) to specs, caches them
+chimeraforge catalog                      # list cached catalog
+chimeraforge suggest --source catalog --hardware "RTX 4080 12GB"   # no network needed
 
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (292 total: 80 planner + 73 bench + 42 eval + 26 report + 47 refit + 19 compare + 5 monitoring)
+# Run tests (420 total; model-agnostic adds resolver/discovery/catalog/diagnostics + engine/CLI specs)
 pytest tests/ -v
 
 # Lint
@@ -36,14 +50,18 @@ cd src/rust/demo_multiagent && cargo build --release
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
     __init__.py                       # Exports __version__ = "0.4.1"
-    cli.py                            # Typer entry point, `plan` command (lazy imports)
+    cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
+    commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
       __init__.py                     # Re-exports Candidate, all models, load_models
-      engine.py                       # 5-gate search (4 + opt-in safety): Candidate dataclass, enumerate_candidates()
-      models.py                       # 6 predict-only dataclass models + PlannerModels container
+      engine.py                       # 5-gate search (4 + opt-in safety): Candidate (w/ params_b, model_source, provenance), enumerate_candidates(specs=...)
+      models.py                       # 7 predict-only dataclass models; ThroughputModel.roofline_tps(), QualityModel.estimate() (provenance)
+      resolver.py                     # ModelSpec + resolve_spec(): any id -> params/arch (registry/Ollama /api/show/HF config.json/manual). Model-agnostic core.
+      discovery.py                    # suggest(): enumerate models from Ollama /api/tags + HF Hub, resolve, rank
+      identity.py                     # parse_identity()/resolve_model(): family+param matching; _FAMILIES derived from registry
       hardware.py                     # GPUSpec dataclass, GPU_DB (15 GPUs), bandwidth_ratio()
-      constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH
-      formatter.py                    # Rich panels/tables output + JSON serialization
+      constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
+      formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
       data/fitted_models.json         # Pre-fitted coefficients from TR133 (loaded via importlib.resources)
 
   python/banterhearts/                # Python agent benchmarking package
@@ -160,6 +178,21 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th 
 - Regenerate the bundled `safety` block via `scripts/build_safety_data.py`
 
 Results sorted by (cost asc, quality desc). Output: Rich panels + alternatives table, or JSON.
+
+### Model-Agnostic Resolution (resolver.py / discovery.py)
+
+The planner is no longer limited to the 7 bundled registry models. `plan --model <id>` and `suggest` accept arbitrary identifiers and resolve real params/architecture:
+
+- **`ModelSpec`** (resolver.py): `params_b, n_layers, n_kv_heads, d_head, hidden_size, native_quant, family, source, registry_alias`. `resolve_spec()` tries sources in priority order: manual overrides → exact registry → on-disk cache (`~/.cache/chimeraforge/specs`, override `$CHIMERAFORGE_CACHE`) → Ollama `POST /api/show` (GGUF metadata) → HF `config.json` + `?expand[]=safetensors` param count → offline family/size approximation.
+- **Routing:** slashed `org/name` → HF; `ollama:`-prefixed or colon-tag or `--ollama-url` set → Ollama (falls back to approximation if the live fetch fails); else registry/approx. HF is checked before Ollama so a repo is never sent to `/api/show`.
+- **VRAM** is exact for any model (real arch drives weight + KV-cache). **Throughput** for genuinely off-registry models uses `ThroughputModel.roofline_tps()` — memory-bandwidth-bound decode `MBU * bandwidth / (2*params_GB) * quant_mult`, `MBU_DEFAULT=0.65` calibrated to the llama3.2-1b ollama FP16 datapoint (146 tok/s). **Quality** uses `QualityModel.estimate()` → measured (lookup) / estimated (fp16 baseline+delta or family prior) / unknown (0.5). **Safety** stays lookup-only (UNKNOWN off-registry — TR142/TR146).
+- **`registry_alias`:** an offline approximation (e.g. `llama3.2:3b`) reuses the matched registry model's *measured* throughput/quality/safety rather than roofline; genuinely off-registry models (Ollama/HF/manual) do not.
+- **Provenance:** every `Candidate` carries `params_b`, `model_source`, and a `provenance` dict (`vram/throughput/quality/safety` ∈ measured|estimated|unknown), surfaced in output (`~` = estimated) and as honest warnings. Never presents a roofline guess as measured.
+- **Native quant pinning:** a fully-specified tag (`...:q8_0`) is evaluated only at that quant, not the whole quant ladder.
+- **`suggest`** (discovery.py): pulls candidates from Ollama `/api/tags` (installed) and/or HF Hub (top text-generation by downloads) and/or the local catalog, resolves each, runs the gate search, shows the best config per model. `--source ollama,hf,catalog` (comma-sep).
+- **Live catalog** (discovery.py + `catalog` command): `catalog --build` resolves a bundled curated seed (`data/model_catalog.json`, ~10 models spanning 0.36B-14.8B) plus optionally installed Ollama models, persists specs to `~/.cache/chimeraforge/catalog.json`. `suggest --source catalog` then ranks them **fully offline** (verified through a dead proxy). `catalog` (no flag) lists the cached set.
+- **Rejection diagnostics:** `enumerate_candidates(trace=[...])` records `(model, quant, gate, detail)` for every rejected cell; `summarize_trace()` reports the *binding* gate per model. `plan` shows "Why nothing fit" on a 0-result instead of a generic message.
+- **Optional dep:** network resolution needs `httpx` (the `resolve` extra); a clear error points there if missing. HF returns 401 for both gated AND nonexistent repos — the `X-Error-Code: GatedRepo` header disambiguates them.
 
 ### Key Gotchas in Planner
 - Quantization is a throughput *multiplier* (faster at lower precision), not a penalty

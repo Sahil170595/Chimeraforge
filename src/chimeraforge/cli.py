@@ -12,12 +12,14 @@ from rich.console import Console
 
 import chimeraforge
 from chimeraforge.commands.bench import bench
+from chimeraforge.commands.catalog import catalog
 from chimeraforge.commands.compare import compare
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
 from chimeraforge.commands.safety import safety
+from chimeraforge.commands.suggest import suggest
 
 console = Console()
 
@@ -52,6 +54,8 @@ def main(
 # Register commands (implementations in chimeraforge.commands.*).
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
+app.command()(suggest)
+app.command()(catalog)
 app.command()(safety)
 app.command()(bench)
 app.command()(refit)

@@ -58,18 +58,22 @@ def format_recommendation(
     rec = Table(show_header=False, box=None, padding=(0, 2))
     rec.add_column("Key", style="bold cyan")
     rec.add_column("Value", style="bold")
-    params_str = f"{MODEL_PARAMS_B.get(best.model, '?')}B"
-    rec.add_row("Model", f"{best.model} ({params_str} params)")
+    params_val = best.params_b or MODEL_PARAMS_B.get(best.model, "?")
+    rec.add_row("Model", f"{best.model} ({params_val}B params)")
     bpw_str = f"{QUANT_BPW.get(best.quant, '?')} bpw"
     rec.add_row("Quantization", f"{best.quant} ({bpw_str})")
     rec.add_row("Backend", best.backend)
     rec.add_row("Instances", str(best.n_agents))
+    if best.model_source != "registry":
+        rec.add_row("Source", f"[yellow]{best.model_source}[/] (off-registry)")
 
     # Performance table
     perf = Table(show_header=False, box=None, padding=(0, 2))
     perf.add_column("Key", style="dim")
     perf.add_column("Value")
-    perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s")
+    tp_basis = best.provenance.get("throughput", "measured")
+    tp_color = "green" if tp_basis == "measured" else "yellow"
+    perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis})[/]")
     perf.add_row("Total throughput", f"{best.total_throughput_tps} tok/s")
     perf.add_row("Scaling eta(N)", str(best.eta))
     perf.add_row("p95 latency", f"{best.p95_latency_ms} ms")
@@ -94,7 +98,9 @@ def format_recommendation(
     refusal_str = (
         f"{best.safety_refusal}" if best.safety_refusal is not None else "n/a (unscreened)"
     )
-    cost_table.add_row("Quality score", str(best.quality))
+    q_basis = best.provenance.get("quality", "measured")
+    q_color = {"measured": "green", "estimated": "yellow", "unknown": "red"}.get(q_basis, "white")
+    cost_table.add_row("Quality score", f"{best.quality}  [{q_color}]({q_basis})[/]")
     cost_table.add_row("Quality tier", f"[{tier_color}]{best.quality_tier}[/]")
     cost_table.add_row("Refusal rate", refusal_str)
     cost_table.add_row("RTSI risk", f"[{risk_color}]{best.rtsi_risk}[/]")
@@ -148,6 +154,93 @@ def format_recommendation(
 def format_json(candidates: list[Candidate]) -> str:
     """Format candidates as JSON for programmatic consumption."""
     return json.dumps([asdict(c) for c in candidates], indent=2)
+
+
+def format_suggestions(
+    ranked: list[Candidate],
+    hardware: str,
+    considered: int,
+    dropped: int,
+    errors: list[tuple[str, str]] | None = None,
+) -> None:
+    """Render discovered-and-ranked model suggestions as a Rich table."""
+    errors = errors or []
+    if not ranked:
+        console.print(
+            Panel(
+                f"[bold red]No discovered model fits the constraints on {hardware}.[/]\n\n"
+                f"{considered} model(s) considered; none passed the gates.\n"
+                "Try: a larger GPU, higher budget/latency SLO, or a lower quality target.",
+                title="ChimeraForge Suggest",
+                border_style="red",
+            )
+        )
+        _print_resolve_errors(errors)
+        return
+
+    table = Table(title=f"Suggested models for {hardware} (best config per model)")
+    table.add_column("#", style="dim", width=3)
+    table.add_column("Model")
+    table.add_column("Src", style="dim")
+    table.add_column("Params", justify="right")
+    table.add_column("Quant")
+    table.add_column("Backend")
+    table.add_column("N", justify="right")
+    table.add_column("$/mo", justify="right")
+    table.add_column("Quality", justify="right")
+    table.add_column("p95 ms", justify="right")
+
+    for i, c in enumerate(ranked, 1):
+        q_basis = c.provenance.get("quality", "measured")
+        q_mark = "" if q_basis == "measured" else "~"
+        tp_basis = c.provenance.get("throughput", "measured")
+        tp_mark = "" if tp_basis == "measured" else "~"
+        table.add_row(
+            str(i),
+            c.model,
+            c.model_source.replace("registry-approx", "approx").replace("registry", "reg"),
+            f"{c.params_b}B",
+            c.quant,
+            c.backend,
+            str(c.n_agents),
+            f"${c.monthly_cost}",
+            f"{q_mark}{c.quality}",
+            f"{tp_mark}{c.p95_latency_ms}",
+        )
+    console.print()
+    console.print(table)
+    console.print(
+        f"  [dim]{len(ranked)} of {considered} considered models fit; "
+        f"{dropped} dropped (VRAM/budget/latency/quality). "
+        f"~ = estimated, not measured.[/]"
+    )
+    _print_resolve_errors(errors)
+
+
+def _print_resolve_errors(errors: list[tuple[str, str]]) -> None:
+    if not errors:
+        return
+    lines = "\n".join(f"  - {ident}: {msg}" for ident, msg in errors[:8])
+    if len(errors) > 8:
+        lines += f"\n  - ... and {len(errors) - 8} more"
+    console.print(Panel(lines, title=f"Unresolved ({len(errors)})", border_style="yellow"))
+
+
+def format_suggestions_json(
+    ranked: list[Candidate],
+    considered: int,
+    errors: list[tuple[str, str]] | None = None,
+) -> str:
+    """Format ranked suggestions as JSON."""
+    return json.dumps(
+        {
+            "considered": considered,
+            "fit": len(ranked),
+            "suggestions": [asdict(c) for c in ranked],
+            "unresolved": [{"id": i, "error": m} for i, m in (errors or [])],
+        },
+        indent=2,
+    )
 
 
 def print_hardware_table() -> None:

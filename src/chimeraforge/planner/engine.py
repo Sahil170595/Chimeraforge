@@ -7,7 +7,7 @@ deployment configurations.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
     BACKENDS,
@@ -16,6 +16,7 @@ from chimeraforge.planner.constants import (
 )
 from chimeraforge.planner.hardware import get_gpu
 from chimeraforge.planner.models import PlannerModels
+from chimeraforge.planner.resolver import SOURCE_REGISTRY, SOURCE_REGISTRY_APPROX, ModelSpec
 
 
 @dataclass
@@ -37,6 +38,10 @@ class Candidate:
     safety_refusal: float | None
     rtsi_risk: str
     warnings: list[str]
+    # Model-agnostic metadata: where the model facts and each prediction came from.
+    params_b: float = 0.0
+    model_source: str = SOURCE_REGISTRY
+    provenance: dict[str, str] = field(default_factory=dict)
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -73,6 +78,8 @@ def enumerate_candidates(
     avg_tokens: int,
     context_length: int,
     safety_target: float | None = None,
+    specs: dict[str, ModelSpec] | None = None,
+    trace: list[tuple[str, str, str, str]] | None = None,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -80,7 +87,22 @@ def enumerate_candidates(
     (rejects cells whose refusal rate < ``safety_target``). When
     ``safety_target`` is None the safety gate is inert but each candidate
     still carries its refusal rate and RTSI risk tier.
+
+    ``specs`` maps a model name to a resolved :class:`ModelSpec`. Off-registry
+    models drive VRAM from real architecture and throughput from a roofline
+    estimate; registry models fall back to bundled data with identical numbers
+    to before. Every candidate records per-prediction provenance.
+
+    ``trace`` (optional out-param): if a list is passed, each rejected cell is
+    appended as ``(model, quant, gate, detail)`` so callers can explain why a
+    search returned nothing. No overhead when ``None``.
     """
+
+    def _reject(model: str, quant: str, gate: str, detail: str) -> None:
+        if trace is not None:
+            trace.append((model, quant, gate, detail))
+
+    specs = specs or {}
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
     hw_cost_hr = gpu.cost_per_hour if gpu else 0.035
@@ -88,34 +110,78 @@ def enumerate_candidates(
     candidates: list[Candidate] = []
 
     for model in target_models:
-        for quant in QUANT_LEVELS:
-            # Gate 1: VRAM
-            vram = models.vram.predict(model, quant, context_length)
+        spec = specs.get(model)
+        if spec is None and model in MODEL_PARAMS_B:
+            spec = ModelSpec.from_registry(model)
+        params_b = spec.params_b if spec else MODEL_PARAMS_B.get(model, 3.0)
+        arch = spec.arch() if spec else None
+        family = spec.family if spec else None
+        model_source = spec.source if spec else SOURCE_REGISTRY
+
+        # ``alias`` is the registry model whose measured data we may reuse: the
+        # model itself for registry hits, the matched model for offline
+        # approximations, else None for genuinely off-registry models (which use
+        # first-principles roofline + estimated/unknown quality & safety).
+        alias = (spec.registry_alias if spec else None) or (
+            model if model in MODEL_PARAMS_B else None
+        )
+        use_measured = alias is not None
+        lookup_name = alias or model
+
+        # A fully-specified tag (e.g. ``...:q8_0``) IS that quant -- evaluate only
+        # it, not the whole quant ladder. An identifier without a native quant
+        # (registry name, size class, bare tag) searches all quants as before.
+        quants = (
+            [spec.native_quant] if (spec and spec.native_quant in QUANT_LEVELS) else QUANT_LEVELS
+        )
+
+        for quant in quants:
+            # Gate 1: VRAM (exact for off-registry models via resolved arch)
+            vram = models.vram.predict(model, quant, context_length, params_b=params_b, arch=arch)
             if vram > hw_vram:
+                _reject(model, quant, "vram", f"{vram:.1f}GB > {hw_vram:.0f}GB capacity")
                 continue
 
-            # Gate 2: Quality
-            quality = models.quality.predict(model, quant)
+            # Gate 2: Quality (with provenance: measured | estimated | unknown)
+            quality, quality_source = models.quality.estimate(lookup_name, quant, family)
             if quality < quality_target:
+                _reject(model, quant, "quality", f"{quality:.2f} < target {quality_target}")
                 continue
 
-            quality_tier = models.quality.quality_tier(model, quant)
+            quality_tier = models.quality.quality_tier(lookup_name, quant)
 
             # Safety gate (Gate 5): safety data is per (model, quant) and
             # backend-independent, so evaluate it here — before the backend/N
             # loop — to skip known-unsafe cells early. Opt-in via safety_target.
-            safety_refusal = models.safety.predict_refusal(model, quant)
-            rtsi_risk = models.safety.rtsi_risk(model, quant)
+            safety_refusal = models.safety.predict_refusal(lookup_name, quant)
+            rtsi_risk = models.safety.rtsi_risk(lookup_name, quant)
             if (
                 safety_target is not None
                 and safety_refusal is not None
                 and safety_refusal < safety_target
             ):
+                _reject(
+                    model, quant, "safety", f"refusal {safety_refusal:.2f} < target {safety_target}"
+                )
                 continue  # known-unsafe cell: refusal rate below target
 
             for backend in BACKENDS:
-                # Predict N=1 throughput
-                n1_tps = models.throughput.predict(model, backend, quant, hardware)
+                # Predict N=1 throughput, recording provenance. A direct
+                # (model|backend|quant) lookup is "measured"; the bundled
+                # fp16/power-law fallback for a registry(-aliased) model, or a
+                # roofline estimate for a genuinely off-registry model, is
+                # "estimated".
+                used_roofline = False
+                if f"{lookup_name}|{backend}|{quant}" in models.throughput.lookup:
+                    n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
+                    throughput_source = "measured"
+                elif use_measured:
+                    n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
+                    throughput_source = "estimated"
+                else:
+                    n1_tps = models.throughput.roofline_tps(params_b, quant, hardware)
+                    throughput_source = "estimated"
+                    used_roofline = True
 
                 # Find minimum N to meet request_rate
                 required_tps = request_rate * avg_tokens
@@ -123,49 +189,79 @@ def enumerate_candidates(
                 # Find minimum N that satisfies both throughput and latency
                 best_n = None
                 for n in range(1, 17):
-                    eta = models.scaling.predict_eta(model, backend, n)
+                    eta = models.scaling.predict_eta(lookup_name, backend, n)
                     total_tps = n * n1_tps * eta
                     if total_tps < required_tps:
                         continue
 
                     lat = models.latency.predict_p95(
-                        model,
+                        lookup_name,
                         backend,
                         request_rate,
                         n_agents=n,
                         avg_tokens=avg_tokens,
                         quant=quant,
-                        throughput_model=models.throughput,
                         scaling_model=models.scaling,
                         hardware=hardware,
+                        n1_tps=n1_tps,
                     )
                     if lat["p95_ms"] <= latency_slo:
                         best_n = n
                         break
 
                 if best_n is None:
+                    cap_tps = 16 * n1_tps * models.scaling.predict_eta(lookup_name, backend, 16)
+                    required_tps = request_rate * avg_tokens
+                    if cap_tps < required_tps:
+                        _reject(
+                            model,
+                            quant,
+                            "throughput",
+                            f"{backend}: max {cap_tps:.0f} tok/s at N=16 < {required_tps:.0f} needed",
+                        )
+                    else:
+                        _reject(
+                            model, quant, "latency", f"{backend}: p95 > {latency_slo:.0f}ms SLO"
+                        )
                     continue
 
-                eta = models.scaling.predict_eta(model, backend, best_n)
+                eta = models.scaling.predict_eta(lookup_name, backend, best_n)
                 total_tps = best_n * n1_tps * eta
                 lat = models.latency.predict_p95(
-                    model,
+                    lookup_name,
                     backend,
                     request_rate,
                     n_agents=best_n,
                     avg_tokens=avg_tokens,
                     quant=quant,
-                    throughput_model=models.throughput,
                     scaling_model=models.scaling,
                     hardware=hardware,
+                    n1_tps=n1_tps,
                 )
 
                 # Gate 4: Cost
                 monthly = models.cost.predict_monthly(hw_cost_hr) * best_n
                 if monthly > budget:
+                    _reject(
+                        model,
+                        quant,
+                        "budget",
+                        f"{backend}: ${monthly:.0f}/mo (N={best_n}) > ${budget:.0f}",
+                    )
                     continue
 
                 cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr)
+
+                safety_source = "measured" if safety_refusal is not None else "unknown"
+                # VRAM is first-principles either way; it's "measured" when arch
+                # came from the registry, "estimated" when from a resolved spec.
+                vram_source = "measured" if use_measured else "estimated"
+                provenance = {
+                    "vram": vram_source,
+                    "throughput": throughput_source,
+                    "quality": quality_source,
+                    "safety": safety_source,
+                }
 
                 warnings = []
                 if lat["saturated"]:
@@ -180,6 +276,20 @@ def enumerate_candidates(
                     warnings.append("safety not screened (no TR134/TR142 data)")
                 if rtsi_risk in ("HIGH", "MODERATE"):
                     warnings.append(f"RTSI refusal-instability risk: {rtsi_risk}")
+                if model_source == SOURCE_REGISTRY_APPROX:
+                    warnings.append(
+                        f"approximated to registry model '{alias}' by family/size; "
+                        "metadata not from the actual model"
+                    )
+                if used_roofline:
+                    warnings.append(
+                        f"off-registry model ({model_source}): throughput is a roofline "
+                        "estimate, not measured"
+                    )
+                if quality_source == "unknown":
+                    warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
+                elif quality_source == "estimated" and not use_measured:
+                    warnings.append("quality estimated from family prior, not measured")
 
                 candidates.append(
                     Candidate(
@@ -202,9 +312,37 @@ def enumerate_candidates(
                         ),
                         rtsi_risk=rtsi_risk,
                         warnings=warnings,
+                        params_b=round(params_b, 4),
+                        model_source=model_source,
+                        provenance=provenance,
                     )
                 )
 
     # Sort by monthly cost (primary), then by quality (secondary, desc)
     candidates.sort(key=lambda c: (c.monthly_cost, -c.quality))
     return candidates
+
+
+# Order in which a (model, quant) cell is tested; used to pick the *binding*
+# gate (the furthest one reached) when summarising a failed search.
+_GATE_ORDER = ["vram", "quality", "safety", "throughput", "latency", "budget"]
+
+
+def summarize_trace(trace: list[tuple[str, str, str, str]]) -> list[str]:
+    """Turn a rejection trace into human-readable 'why nothing fit' lines.
+
+    For each model, reports the furthest gate any of its quants reached (the
+    binding constraint) plus one concrete example detail.
+    """
+    by_model: dict[str, list[tuple[str, str, str]]] = {}
+    for model, quant, gate, detail in trace:
+        by_model.setdefault(model, []).append((quant, gate, detail))
+
+    lines: list[str] = []
+    for model, rejects in by_model.items():
+        furthest = max(
+            rejects, key=lambda r: _GATE_ORDER.index(r[1]) if r[1] in _GATE_ORDER else -1
+        )
+        _, gate, detail = furthest
+        lines.append(f"{model}: blocked at {gate} gate - {detail}")
+    return lines

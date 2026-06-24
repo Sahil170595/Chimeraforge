@@ -17,9 +17,12 @@ from dataclasses import dataclass
 
 from chimeraforge.planner.constants import MODEL_FAMILY, MODEL_PARAMS_B, QUANT_LEVELS
 
-# Family generations recognised in identifiers. Order matters: more specific
-# generations first so "llama3.2" is preferred and not shadowed by "llama3.1".
-_FAMILIES = ("llama3.2", "llama3.1", "qwen2.5", "mistral", "phi")
+# Family generations recognised in identifiers. Derived from the registry so the
+# two can't drift, plus extras we can parse even without registry coverage.
+# Ordered longest-first so a specific generation ("llama3.2") is matched before a
+# prefix of it ("llama3.1" / "llama3").
+_EXTRA_FAMILIES = ("mistral", "gemma2", "gemma", "phi")
+_FAMILIES = tuple(sorted(set(MODEL_FAMILY.values()) | set(_EXTRA_FAMILIES), key=len, reverse=True))
 
 _PARAMS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*b\b", re.IGNORECASE)
 _QUANT_RE = re.compile(r"\b(q\d_?[a-z0-9_]*|fp16|f16)\b", re.IGNORECASE)
