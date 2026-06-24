@@ -108,6 +108,12 @@ def plan(
         "--d-head",
         help="Manual override: per-head dimension.",
     ),
+    measure_first: bool = typer.Option(
+        False,
+        "--measure",
+        help="Benchmark the --model live first (real throughput+scaling), then plan "
+        "on the measured numbers. Requires a live backend serving the model.",
+    ),
     output_json: bool = typer.Option(
         False,
         "--json",
@@ -145,7 +151,7 @@ def plan(
         print_models_table,
     )
     from chimeraforge.planner.hardware import get_gpu
-    from chimeraforge.planner.models import load_bundled_models, load_models
+    from chimeraforge.planner.models import load_effective_models, load_models
 
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.WARNING,
@@ -182,8 +188,30 @@ def plan(
     if safety_target is not None and not 0.0 <= safety_target <= 1.0:
         console.print("[red]Error:[/] --safety-target must be between 0.0 and 1.0.")
         raise typer.Exit(code=1)
+    if measure_first and not model:
+        console.print("[red]Error:[/] --measure requires --model.")
+        raise typer.Exit(code=1)
 
-    # Load models
+    # Optionally benchmark the model(s) live first, folding real throughput +
+    # scaling into the local corpus so the plan below runs on measured numbers.
+    if measure_first and model:
+        import asyncio
+
+        from chimeraforge.measure import measure_model
+
+        for ident in model:
+            console.print(f"[dim]Measuring {ident} on ollama (live)...[/]")
+            try:
+                mres = asyncio.run(measure_model(ident, backend="ollama", ollama_url=ollama_url))
+            except RuntimeError as exc:
+                console.print(f"[red]Error measuring '{ident}':[/] {exc}")
+                raise typer.Exit(code=1)
+            console.print(
+                f"[green]Measured[/] {ident}: {mres.tps_n1} tok/s"
+                + (f", eta(N={mres.n_concurrent})={mres.eta_at_n}" if mres.eta_at_n else "")
+            )
+
+    # Load models (explicit path > measured corpus > bundled)
     if models_path:
         try:
             planner_models = load_models(models_path)
@@ -194,7 +222,7 @@ def plan(
             console.print(f"[red]Error:[/] invalid models file '{models_path}': {exc}")
             raise typer.Exit(code=1)
     else:
-        planner_models = load_bundled_models()
+        planner_models = load_effective_models()
 
     # Resolve explicit --model ids to concrete specs (registry / Ollama / HF /
     # manual). When absent, fall back to the registry size-class search.

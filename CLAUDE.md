@@ -29,10 +29,14 @@ chimeraforge catalog --build              # resolves seed (+ --with-ollama) to s
 chimeraforge catalog                      # list cached catalog
 chimeraforge suggest --source catalog --hardware "RTX 4080 12GB"   # no network needed
 
+# Measure-on-demand: benchmark a live model for REAL throughput+scaling, then plan on it
+chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
+chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (provenance: measured)
+
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (420 total; model-agnostic adds resolver/discovery/catalog/diagnostics + engine/CLI specs)
+# Run tests (431 total; model-agnostic adds resolver/discovery/catalog/measure/diagnostics + specs)
 pytest tests/ -v
 
 # Lint
@@ -191,6 +195,7 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 - **Native quant pinning:** a fully-specified tag (`...:q8_0`) is evaluated only at that quant, not the whole quant ladder.
 - **`suggest`** (discovery.py): pulls candidates from Ollama `/api/tags` (installed) and/or HF Hub (top text-generation by downloads) and/or the local catalog, resolves each, runs the gate search, shows the best config per model. `--source ollama,hf,catalog` (comma-sep).
 - **Live catalog** (discovery.py + `catalog` command): `catalog --build` resolves a bundled curated seed (`data/model_catalog.json`, ~10 models spanning 0.36B-14.8B) plus optionally installed Ollama models, persists specs to `~/.cache/chimeraforge/catalog.json`. `suggest --source catalog` then ranks them **fully offline** (verified through a dead proxy). `catalog` (no flag) lists the cached set.
+- **Measure-on-demand (the empirical loop, not guessing):** `measure` (chimeraforge/measure.py) and `plan --measure` benchmark a live model via the existing `bench` machinery — real N=1 throughput + service time, plus concurrency scaling at N agents → serial fraction via `serial_fraction_from_eta()` (inverts the Amdahl model) — then fold it into a local `fitted_models.json` through `refit_from_bench`. `load_effective_models()` makes `plan`/`suggest` prefer that measured corpus (path: `~/.cache/chimeraforge/fitted_models.json`) over bundled data automatically, so provenance flips to genuinely **measured**. Verified: roofline estimated 195.8 tok/s for llama3.2:1b-q8_0, measured was 174.5 (~12% high) — the guess was real but biased; measurement corrects it. Quality is deliberately NOT synthesised (the planner's quality scale is a TR benchmark composite; a quick text-similarity run is a different metric) — it stays labeled `estimated` with a note.
 - **Rejection diagnostics:** `enumerate_candidates(trace=[...])` records `(model, quant, gate, detail)` for every rejected cell; `summarize_trace()` reports the *binding* gate per model. `plan` shows "Why nothing fit" on a 0-result instead of a generic message.
 - **Optional dep:** network resolution needs `httpx` (the `resolve` extra); a clear error points there if missing. HF returns 401 for both gated AND nonexistent repos — the `X-Error-Code: GatedRepo` header disambiguates them.
 

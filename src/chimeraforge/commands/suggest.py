@@ -78,7 +78,7 @@ def suggest(
         suggest as run_suggest,
     )
     from chimeraforge.planner.formatter import format_suggestions, format_suggestions_json
-    from chimeraforge.planner.models import load_bundled_models
+    from chimeraforge.planner.models import load_effective_models
     from chimeraforge.planner.resolver import DEFAULT_OLLAMA_URL, ResolverError
 
     # When ollama is a source, resolve its tags via real /api/show metadata.
@@ -121,7 +121,7 @@ def suggest(
             console.print(f"  [dim]- {ident}: {msg}[/]")
         raise typer.Exit(code=1)
 
-    models = load_bundled_models()
+    models = load_effective_models()
     ranked = run_suggest(
         models,
         specs,

@@ -15,6 +15,24 @@ from pathlib import Path
 
 import pytest
 
+from chimeraforge.planner.models import ScalingModel
+from chimeraforge.refit.fitter import serial_fraction_from_eta
+
+
+class TestSerialFractionFromEta:
+    """Invert the planner's Amdahl model to recover s from a measured eta."""
+
+    @pytest.mark.parametrize("s,n", [(0.15, 4), (0.45, 4), (0.7, 8), (0.92, 4)])
+    def test_roundtrip_through_scaling_model(self, s, n):
+        # predict_eta(s) -> eta -> serial_fraction_from_eta should recover s.
+        eta = ScalingModel(serial_fractions={"m|b": s}).predict_eta("m", "b", n)
+        assert serial_fraction_from_eta(eta, n) == pytest.approx(s, abs=1e-6)
+
+    def test_degenerate_inputs(self):
+        assert serial_fraction_from_eta(0.5, 1) == 1.0  # n<=1 -> perfect
+        assert serial_fraction_from_eta(0.0, 4) == 1.0  # non-positive eta
+        assert 0.0 <= serial_fraction_from_eta(2.0, 4) <= 1.0  # eta>1 clamps
+
 
 # ---------------------------------------------------------------------------
 # Helpers — synthetic bench result dicts

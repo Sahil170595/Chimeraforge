@@ -287,6 +287,16 @@ def _cache_dir() -> Path:
     return root / "specs"
 
 
+def measured_corpus_path() -> Path:
+    """Path to the on-demand measured fitted_models.json (sibling of the cache).
+
+    ``measure`` writes real benchmark-derived coefficients here; ``plan`` and
+    ``suggest`` prefer it over the bundled data when it exists, so measured
+    numbers are used automatically without ``--models-path``.
+    """
+    return _cache_dir().parent / "fitted_models.json"
+
+
 def _cache_key(identifier: str) -> str:
     return re.sub(r"[^\w.-]", "_", identifier.lower())
 

@@ -192,6 +192,23 @@ def fit_power_law(
 # ---------------------------------------------------------------------------
 
 
+def serial_fraction_from_eta(eta: float, n: int) -> float:
+    """Invert the planner's Amdahl model to recover ``s`` from a measured eta.
+
+    The planner uses ``eta(N) = 1 / (s + (1-s)*N)`` (see ScalingModel), where a
+    *larger* s means better concurrency. Given a measured per-agent efficiency
+    ``eta = tps@N / tps@1`` at ``N`` agents, solve for s:
+
+        s = (N - 1/eta) / (N - 1)
+
+    Clamped to [0, 1]; returns 1.0 (perfect) for ``n <= 1`` or non-positive eta.
+    """
+    if n <= 1 or eta <= 0:
+        return 1.0
+    s = (n - 1.0 / eta) / (n - 1)
+    return max(0.0, min(1.0, s))
+
+
 def compute_hardware_offsets(
     results: list[dict],
     existing_models: dict,

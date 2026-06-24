@@ -542,3 +542,24 @@ def load_bundled_models() -> PlannerModels:
     models_file = data_dir / "fitted_models.json"
     with pkg_resources.as_file(models_file) as p:
         return load_models(p)
+
+
+def load_effective_models(models_path: str | Path | None = None) -> PlannerModels:
+    """Load the planner models, preferring measured data when available.
+
+    Priority: an explicit ``models_path`` > the on-demand measured corpus
+    (written by ``measure``) > the bundled data. This closes the empirical loop
+    so a model benchmarked once is planned on real numbers thereafter, without
+    re-passing ``--models-path``.
+    """
+    if models_path:
+        return load_models(models_path)
+    from chimeraforge.planner.resolver import measured_corpus_path
+
+    corpus = measured_corpus_path()
+    if corpus.is_file():
+        try:
+            return load_models(corpus)
+        except (ValueError, OSError) as exc:
+            log.warning("ignoring unreadable measured corpus %s: %s", corpus, exc)
+    return load_bundled_models()

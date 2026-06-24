@@ -15,6 +15,7 @@ from chimeraforge.commands.bench import bench
 from chimeraforge.commands.catalog import catalog
 from chimeraforge.commands.compare import compare
 from chimeraforge.commands.eval import eval_cmd
+from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
@@ -55,6 +56,7 @@ def main(
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
 app.command()(suggest)
+app.command()(measure)
 app.command()(catalog)
 app.command()(safety)
 app.command()(bench)
