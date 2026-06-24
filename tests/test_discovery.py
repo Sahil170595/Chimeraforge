@@ -7,6 +7,8 @@ implicitly via the resolver's error contract.
 
 from __future__ import annotations
 
+import re
+
 from chimeraforge.planner.discovery import (
     best_per_model,
     build_catalog,
@@ -15,6 +17,16 @@ from chimeraforge.planner.discovery import (
     suggest,
 )
 from chimeraforge.planner.resolver import ModelSpec
+
+
+def _strip_ansi(text: str) -> str:
+    """Drop ANSI escapes so assertions don't break when Rich forces colour.
+
+    Under a forced-colour terminal (e.g. CI) Rich injects escape codes between
+    characters -- ``--build`` renders as ``-<esc>-build`` -- so a raw substring
+    check fails. Stripping first makes the assertion terminal-independent.
+    """
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 def _offreg(name, params_b, n_kv_heads=8):
@@ -148,7 +160,7 @@ class TestCommandsOffline:
 
         result = CliRunner().invoke(app, ["catalog", "--help"])
         assert result.exit_code == 0
-        assert "--build" in result.output
+        assert "--build" in _strip_ansi(result.output)
 
     def test_catalog_list_empty(self, tmp_path, monkeypatch):
         from typer.testing import CliRunner
@@ -158,7 +170,7 @@ class TestCommandsOffline:
         monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
         result = CliRunner().invoke(app, ["catalog"])
         assert result.exit_code == 0
-        assert "empty" in result.output.lower()
+        assert "empty" in _strip_ansi(result.output).lower()
 
     def test_suggest_bad_source(self):
         from typer.testing import CliRunner
@@ -176,4 +188,4 @@ class TestCommandsOffline:
         monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
         result = CliRunner().invoke(app, ["suggest", "--source", "catalog"])
         assert result.exit_code == 1
-        assert "catalog" in result.output.lower()
+        assert "catalog" in _strip_ansi(result.output).lower()
