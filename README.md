@@ -26,7 +26,7 @@ This repository contains everything behind Technical Reports TR108 through TR137
 
 Chimeraforge is the research and benchmarking breakout from the Banterhearts program. It contains every asset required to measure LLM inference performance, run the TR-series test plans, publish the technical reports, and ship the predictive capacity planner. This repo stays focused on measurement, analysis, and deployment tooling.
 
-> **Program context:** the parent Banterhearts program now spans **~1,337,000 primary + judge measurements across 48+ technical reports** (as of 2026-06-17) — including the safety attack-surface and serving-stack research that lives in dedicated sibling repos. **ChimeraForge is the actionable splice of that program**: the ~204,000-measurement subset (TR108–137 + the TR142/TR146 safety provenance) distilled into a shipping CLI for deployment decisions.
+> **Program context:** the parent Banterhearts program now spans **~1,337,000 primary + judge measurements across 54 technical reports** (as of 2026-06-23) — including the safety attack-surface and serving-stack research that lives in dedicated sibling repos. **ChimeraForge is the actionable splice of that program**: the ~204,000-measurement subset (TR108–137 + the TR142/TR146 safety provenance) distilled into a shipping CLI for deployment decisions.
 
 The research program spans three completed phases:
 
@@ -711,7 +711,7 @@ All reports include:
 
 - **~204,000 primary measurements** across Phase 1, Phase 2, and Phase 3 (de-duplicated: TR137 and TR142 are syntheses of already-counted data)
 - **32 technical reports** (TR108-TR137 + TR142/TR146) plus 4 conclusive synthesis families
-- Parent Banterhearts program: **~1,337,000 primary + judge measurements across 48+ technical reports** (as of 2026-06-17) — ChimeraForge is the actionable-CLI splice
+- Parent Banterhearts program: **~1,337,000 primary + judge measurements across 54 technical reports** (as of 2026-06-23) — ChimeraForge is the actionable-CLI splice
 - **4 serving stacks** benchmarked (Ollama, vLLM, TGI, PyTorch Direct)
 - **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
 - **GPU kernel profiling** with Nsight Systems (~2 GB traces)
