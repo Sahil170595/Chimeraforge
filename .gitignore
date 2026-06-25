@@ -143,6 +143,7 @@ local.env
 .claude/
 experiments/TR118/models/
 PRODUCT_SPEC.md
+VISION.md
 experiments/TR118/results/**/*.jsonl
 experiments/TR116/all_metrics_extracted.json
 experiments/TR116/results/**/metrics.json

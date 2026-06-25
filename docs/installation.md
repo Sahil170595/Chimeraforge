@@ -234,7 +234,7 @@ ollama run gemma3:latest "test"  # Should use GPU
 
 - [Quick Start Guide](quick_start.md)
 - [Benchmarking Guide](benchmarking.md)
-- [Configuration Reference](configuration.md)
+- [Using the Planner](planning.md)
 
 ---
 

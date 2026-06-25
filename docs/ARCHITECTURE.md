@@ -1,5 +1,11 @@
 # Architecture Documentation
 
+> **Scope:** this document covers the **research / agent-benchmarking subsystem**
+> (`src/python/banterhearts/`, `src/rust/`) that produced the TR-series data. For
+> the **planner CLI** (`src/chimeraforge/` -- the shipping product), see the
+> "Planner Architecture" section of the top-level `CLAUDE.md` and
+> [Using the Planner](planning.md).
+
 ## Overview
 
 Chimeraforge is a benchmarking and research repository focused on LLM performance optimization. The architecture is designed for reproducibility, extensibility, and comprehensive performance analysis.
