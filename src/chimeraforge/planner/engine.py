@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from chimeraforge.planner.constants import (
     BACKENDS,
     MODEL_PARAMS_B,
+    QUANT_BPW,
     QUANT_LEVELS,
 )
 from chimeraforge.planner.hardware import get_gpu
@@ -128,12 +129,10 @@ def enumerate_candidates(
         use_measured = alias is not None
         lookup_name = alias or model
 
-        # A fully-specified tag (e.g. ``...:q8_0``) IS that quant -- evaluate only
-        # it, not the whole quant ladder. An identifier without a native quant
-        # (registry name, size class, bare tag) searches all quants as before.
-        quants = (
-            [spec.native_quant] if (spec and spec.native_quant in QUANT_LEVELS) else QUANT_LEVELS
-        )
+        # A fully-specified tag (e.g. ``...:q8_0``, ``...:q4_0``) IS that quant --
+        # evaluate only it (any quant with a known bpw, not just the search
+        # ladder). An identifier without a native quant searches all quants.
+        quants = [spec.native_quant] if (spec and spec.native_quant in QUANT_BPW) else QUANT_LEVELS
 
         for quant in quants:
             # Gate 1: VRAM (exact for off-registry models via resolved arch)
@@ -183,14 +182,19 @@ def enumerate_candidates(
                     throughput_source = "estimated"
                     used_roofline = True
 
-                # Find minimum N to meet request_rate
+                # Find minimum N to meet request_rate. N counts INDEPENDENT GPU
+                # instances (VRAM is per-GPU, cost is per-GPU x N), so replicas
+                # behind a load balancer scale linearly (eta = 1). The Amdahl
+                # serial-fraction model is concurrency-on-one-backend physics, not
+                # replica fan-out; modelling per-GPU batching throughput is Phase 2
+                # (KV-cache-bound). Each replica runs single-stream (conservative).
+                eta = 1.0
                 required_tps = request_rate * avg_tokens
 
                 # Find minimum N that satisfies both throughput and latency
                 best_n = None
                 for n in range(1, 17):
-                    eta = models.scaling.predict_eta(lookup_name, backend, n)
-                    total_tps = n * n1_tps * eta
+                    total_tps = n * n1_tps  # linear replica scaling
                     if total_tps < required_tps:
                         continue
 
@@ -201,7 +205,6 @@ def enumerate_candidates(
                         n_agents=n,
                         avg_tokens=avg_tokens,
                         quant=quant,
-                        scaling_model=models.scaling,
                         hardware=hardware,
                         n1_tps=n1_tps,
                     )
@@ -210,8 +213,7 @@ def enumerate_candidates(
                         break
 
                 if best_n is None:
-                    cap_tps = 16 * n1_tps * models.scaling.predict_eta(lookup_name, backend, 16)
-                    required_tps = request_rate * avg_tokens
+                    cap_tps = 16 * n1_tps
                     if cap_tps < required_tps:
                         _reject(
                             model,
@@ -225,8 +227,7 @@ def enumerate_candidates(
                         )
                     continue
 
-                eta = models.scaling.predict_eta(lookup_name, backend, best_n)
-                total_tps = best_n * n1_tps * eta
+                total_tps = best_n * n1_tps
                 lat = models.latency.predict_p95(
                     lookup_name,
                     backend,
@@ -234,7 +235,6 @@ def enumerate_candidates(
                     n_agents=best_n,
                     avg_tokens=avg_tokens,
                     quant=quant,
-                    scaling_model=models.scaling,
                     hardware=hardware,
                     n1_tps=n1_tps,
                 )
@@ -250,7 +250,10 @@ def enumerate_candidates(
                     )
                     continue
 
-                cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr)
+                # Cost per 1M tokens: total_tps is N GPUs' throughput, so the rate
+                # must be N GPUs' cost (else understated by N). N identical replicas
+                # leave $/token unchanged -- which is the correct invariant.
+                cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * best_n)
 
                 safety_source = "measured" if safety_refusal is not None else "unknown"
                 # VRAM is first-principles either way; it's "measured" when arch

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chimeraforge"
-version = "0.4.1"
+version = "0.5.0"
 description = "LLM deployment optimizer (performance, cost, and safety) — backed by ~204,000 real measurements on consumer GPUs"
 readme = "README.md"
 requires-python = ">=3.10"

@@ -107,6 +107,25 @@ class ThroughputModel:
     size_power_b: float = 0.5
     fitted: bool = False
 
+    def quant_multiplier(self, quant: str) -> float:
+        """Throughput multiplier for a quant vs FP16.
+
+        Exact lookup when fitted; otherwise the nearest known quant by effective
+        bpw (so legacy/i-quants like ``Q4_0``/``IQ4_XS`` get a sane speed instead
+        of being treated as FP16). Falls back to 1.0 when nothing is known.
+        """
+        if quant in self.quant_multipliers:
+            return self.quant_multipliers[quant]
+        bpw = QUANT_BPW.get(quant)
+        if bpw is None:
+            return 1.0
+        known = [
+            (QUANT_BPW[q], mult) for q, mult in self.quant_multipliers.items() if q in QUANT_BPW
+        ]
+        if not known:
+            return 1.0
+        return min(known, key=lambda x: abs(x[0] - bpw))[1]
+
     def predict(
         self,
         model: str,
@@ -121,7 +140,7 @@ class ThroughputModel:
         else:
             fp16_key = f"{model}|{backend}|FP16"
             fp16_tps = self.lookup.get(fp16_key)
-            qm = self.quant_multipliers.get(quant, 1.0)
+            qm = self.quant_multiplier(quant)
 
             if fp16_tps:
                 tps = fp16_tps * qm
@@ -143,13 +162,18 @@ class ThroughputModel:
     ) -> float:
         """Memory-bandwidth-bound decode throughput for an off-registry model.
 
-        Decode reads every weight once per token, so the FP16 ceiling is
-        ``bandwidth / (2 * params_GB)``; ``mbu`` discounts it to realised
-        utilisation (calibrated to 0.65 on the llama3.2-1b ollama datapoint).
-        The empirical quant multiplier is then applied on top -- quant speedups
-        are not purely bandwidth proportional (dequant overhead), so a pure
-        smaller-weight roofline would over-state them. Used when no measured
-        lookup exists for (model, backend).
+        Decode reads every weight once per token. Written as an FP16 bandwidth
+        roofline times the empirical quant speedup:
+
+            tps = (MBU * bw / fp16_weight_gb) * quant_multiplier(quant)
+
+        This is algebraically identical to a *quantized*-weight roofline scaled by
+        a dequant-efficiency factor: ``MBU*bw/quant_weight_gb * (qm * bpw/16)``.
+        Using the measured multiplier (Q4_K_M ~= 1.9x) is deliberate -- a pure
+        quantized roofline assumes decode is purely bandwidth-bound and predicts
+        ~3.6x for Q4, ~2x higher than measured (dequant is not free). MBU=0.65 is
+        calibrated on the llama3.2-1b ollama FP16 datapoint. Used when no measured
+        lookup exists for (model, backend); the `measure` path supersedes it.
         """
         if params_b <= 0:
             return 0.1
@@ -157,8 +181,7 @@ class ThroughputModel:
         bandwidth = gpu.bandwidth_gbps if gpu else 556.0  # RTX 4080 reference
         fp16_weight_gb = params_b * 16.0 / 8.0
         base_tps = mbu * bandwidth / fp16_weight_gb
-        qm = self.quant_multipliers.get(quant, 1.0)
-        return max(base_tps * qm, 0.1)
+        return max(base_tps * self.quant_multiplier(quant), 0.1)
 
     def to_dict(self) -> dict:
         return {

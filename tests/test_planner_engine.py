@@ -270,7 +270,8 @@ class TestRejectionTrace:
         assert "vram" in gates or "quality" in gates
 
     def test_summarize_trace_picks_binding_gate(self, bundled_models):
-        # 14B-style off-registry model at high request rate -> throughput-bound.
+        # 14B off-registry at an extreme rate even 16 linear replicas can't serve
+        # -> throughput-bound (the fastest/smallest quant fits VRAM but not rate).
         spec = ModelSpec(
             name="big/m", params_b=14.0, n_layers=40, n_kv_heads=8, d_head=128, source="hf"
         )
@@ -279,10 +280,10 @@ class TestRejectionTrace:
             models=bundled_models,
             target_models=["big/m"],
             hardware="RTX 4090 24GB",
-            request_rate=5.0,  # 5 * 128 = 640 tok/s, impossible for 14B on one GPU
+            request_rate=30.0,  # 30*128=3840 tok/s; 16 replicas of a 14B can't reach it
             latency_slo=10000,
             quality_target=0.0,
-            budget=10000,
+            budget=100000,
             avg_tokens=128,
             context_length=2048,
             specs={"big/m": spec},
@@ -291,6 +292,86 @@ class TestRejectionTrace:
         assert cands == []
         lines = summarize_trace(trace)
         assert any("big/m" in ln and "throughput" in ln for ln in lines)
+
+    def test_linear_replica_scaling_unblocks_large_models(self, bundled_models):
+        # C-1: N independent GPUs scale linearly, so a 7B that one GPU can't serve
+        # at the rate now plans with multiple replicas (used to be rejected when
+        # Amdahl capped total throughput at ~1.8x regardless of N).
+        spec = ModelSpec(
+            name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
+        )
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["mistral/7b"],
+            hardware="RTX 4080 12GB",
+            request_rate=1.0,  # 128 tok/s; one 7B replica can't, several can
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"mistral/7b": spec},
+        )
+        assert cands, "linear replica scaling should let a 7B meet 1 req/s with N>1"
+        c = cands[0]
+        assert c.n_agents > 1
+        assert c.eta == 1.0  # replicas, not Amdahl
+        # Linear: total throughput is exactly N * per-replica.
+        assert c.total_throughput_tps == pytest.approx(c.n_agents * c.throughput_tps, rel=1e-3)
+
+    def test_cost_per_1m_invariant_in_replica_count(self, bundled_models):
+        # C-2: adding identical replicas must not change $/token (cost and tokens
+        # both scale by N). Previously cost_per_1m was understated by N.
+        spec = ModelSpec(
+            name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
+        )
+
+        def best(rate):
+            cs = enumerate_candidates(
+                models=bundled_models,
+                target_models=["mistral/7b"],
+                hardware="RTX 4080 12GB",
+                request_rate=rate,
+                latency_slo=10000,
+                quality_target=0.0,
+                budget=10000,
+                avg_tokens=128,
+                context_length=2048,
+                specs={"mistral/7b": spec},
+            )
+            return next(c for c in cs if c.quant == "Q4_K_M")
+
+        low, high = best(1.0), best(3.0)
+        assert high.n_agents > low.n_agents  # more replicas at higher rate
+        assert high.cost_per_1m_tok == pytest.approx(low.cost_per_1m_tok, rel=1e-3)
+
+    def test_native_legacy_quant_pinned_and_costed(self, bundled_models):
+        # M-2: a q4_0 native tag must be evaluated at q4_0 (real bpw), not dropped.
+        spec = ModelSpec(
+            name="x/y:q4_0",
+            params_b=7.0,
+            n_layers=32,
+            n_kv_heads=8,
+            d_head=128,
+            native_quant="Q4_0",
+            source="ollama",
+        )
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["x/y:q4_0"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"x/y:q4_0": spec},
+        )
+        assert cands
+        assert {c.quant for c in cands} == {"Q4_0"}  # pinned, not the full ladder
+        # Q4_0 (4.5 bpw) VRAM must be well below the FP16 (16 bpw) footprint.
+        assert cands[0].vram_gb < 7.0 * 16 / 8
 
     def test_no_trace_overhead_when_none(self, bundled_models):
         # Passing trace=None must not raise and must still search normally.

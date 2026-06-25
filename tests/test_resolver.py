@@ -171,6 +171,32 @@ class TestResolveSpec:
         assert resolver._cache_load("llama3.2:3b") == spec
 
 
+class TestParseQuant:
+    """parse_quant must recognise legacy/i-quants, not just the search ladder."""
+
+    def test_legacy_and_iquants_recognised(self):
+        from chimeraforge.planner.identity import parse_quant
+
+        assert parse_quant("llama3.2:1b-q4_0") == "Q4_0"
+        assert parse_quant("model-q5_1") == "Q5_1"
+        assert parse_quant("foo-iq4_xs") == "IQ4_XS"
+        assert parse_quant("bar-f16") == "FP16"
+
+    def test_unknown_quant_is_none(self):
+        from chimeraforge.planner.identity import parse_quant
+
+        assert parse_quant("model-q9_z") is None
+        assert parse_quant("no-quant-here") is None
+
+    def test_recognised_quants_have_bpw(self):
+        from chimeraforge.planner.constants import QUANT_BPW
+        from chimeraforge.planner.identity import parse_quant
+
+        for tag in ("q4_0", "q5_0", "q5_1", "iq4_xs", "iq3_xxs"):
+            q = parse_quant(f"m-{tag}")
+            assert q in QUANT_BPW and QUANT_BPW[q] < 16.0
+
+
 class TestRouting:
     """Routing decisions (HF vs Ollama vs approx) with fetchers monkeypatched."""
 
