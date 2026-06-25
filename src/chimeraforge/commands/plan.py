@@ -1,4 +1,4 @@
-"""`plan` command — predictive capacity planner."""
+"""`plan` command - predictive capacity planner."""
 
 from __future__ import annotations
 

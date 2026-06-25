@@ -1,4 +1,4 @@
-"""`compare` command — diff benchmark results between runs."""
+"""`compare` command - diff benchmark results between runs."""
 
 from __future__ import annotations
 

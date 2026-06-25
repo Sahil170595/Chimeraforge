@@ -1,4 +1,4 @@
-"""ChimeraForge Benchmarking Engine — run real LLM inference benchmarks.
+"""ChimeraForge Benchmarking Engine - run real LLM inference benchmarks.
 
 Public API:
     run_benchmark       Run a single benchmark configuration

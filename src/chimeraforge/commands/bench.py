@@ -1,4 +1,4 @@
-"""`bench` command — live LLM inference benchmarking."""
+"""`bench` command - live LLM inference benchmarking."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""`measure` command — benchmark a live model and fold it into the planner corpus."""
+"""`measure` command - benchmark a live model and fold it into the planner corpus."""
 
 from __future__ import annotations
 

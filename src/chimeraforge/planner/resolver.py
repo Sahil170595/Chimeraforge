@@ -132,7 +132,7 @@ class ModelSpec:
         )
 
 
-# ── Pure parsers (dict -> ModelSpec) ──────────────────────────────────
+# -- Pure parsers (dict -> ModelSpec) ----------------------------------
 
 
 def parse_param_size(label: str | None) -> float | None:
@@ -277,7 +277,7 @@ def spec_from_overrides(name: str, overrides: dict) -> ModelSpec | None:
     )
 
 
-# ── Spec cache ────────────────────────────────────────────────────────
+# -- Spec cache --------------------------------------------------------
 
 
 def _cache_dir() -> Path:
@@ -325,7 +325,7 @@ def _cache_store(identifier: str, spec: ModelSpec) -> None:
         log.warning("could not write spec cache for %s: %s", identifier, exc)
 
 
-# ── Network fetchers (network -> dict) ────────────────────────────────
+# -- Network fetchers (network -> dict) --------------------------------
 
 
 def _httpx():
@@ -391,7 +391,7 @@ def fetch_hf(repo: str, hf_token: str | None = None) -> tuple[dict, float | None
         raise ResolverError(f"could not fetch HF metadata for '{repo}': {exc}") from exc
 
 
-# ── Top-level resolver ────────────────────────────────────────────────
+# -- Top-level resolver ------------------------------------------------
 
 
 def resolve_spec(

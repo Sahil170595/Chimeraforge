@@ -1,4 +1,4 @@
-"""`refit` command — re-fit planner coefficients from benchmark results."""
+"""`refit` command - re-fit planner coefficients from benchmark results."""
 
 from __future__ import annotations
 

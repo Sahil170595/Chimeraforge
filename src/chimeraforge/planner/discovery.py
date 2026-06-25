@@ -35,7 +35,7 @@ SOURCE_CATALOG = "catalog"
 DEFAULT_HF_LIMIT = 8
 
 
-# ── Network discovery ─────────────────────────────────────────────────
+# -- Network discovery -------------------------------------------------
 
 
 def fetch_ollama_tags(base_url: str = DEFAULT_OLLAMA_URL) -> list[str]:
@@ -107,7 +107,7 @@ def resolve_many(
     return specs, errors
 
 
-# ── Pure orchestration ────────────────────────────────────────────────
+# -- Pure orchestration ------------------------------------------------
 
 
 def best_per_model(candidates: list[Candidate]) -> list[Candidate]:
@@ -155,7 +155,7 @@ def suggest(
     return best_per_model(candidates)
 
 
-# ── Live catalog ──────────────────────────────────────────────────────
+# -- Live catalog ------------------------------------------------------
 #
 # A persistent index of resolved ModelSpecs, so `suggest --source catalog`
 # ranks a curated set of known-good models offline (after one `catalog build`).

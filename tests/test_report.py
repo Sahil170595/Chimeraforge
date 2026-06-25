@@ -1,4 +1,4 @@
-"""ChimeraForge Report — unit tests.
+"""ChimeraForge Report - unit tests.
 
 Tests statistical analysis, report generation (Markdown, HTML, Rich),
 loading, saving, and CLI integration.

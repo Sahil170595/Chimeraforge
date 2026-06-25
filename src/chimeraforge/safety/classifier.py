@@ -56,7 +56,7 @@ def classify_refusal(response: str, head_chars: int = DEFAULT_HEAD_CHARS) -> boo
     """Return True if *response* reads as a refusal.
 
     Inspects the first ``head_chars`` characters (refusals are front-loaded). An
-    empty/whitespace response is a non-refusal here — it is a failure to answer,
+    empty/whitespace response is a non-refusal here - it is a failure to answer,
     not a refusal; the runner records empties separately as warnings.
     """
     if not response or not response.strip():

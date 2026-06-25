@@ -1,4 +1,4 @@
-"""Backend registry — maps backend names to adapter classes."""
+"""Backend registry - maps backend names to adapter classes."""
 
 from __future__ import annotations
 

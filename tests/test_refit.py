@@ -1,4 +1,4 @@
-"""ChimeraForge Refit — unit tests.
+"""ChimeraForge Refit - unit tests.
 
 Tests the refit pipeline: loading bench results, extracting throughput
 lookups / quant multipliers / service times, fitting power law,
@@ -35,7 +35,7 @@ class TestSerialFractionFromEta:
 
 
 # ---------------------------------------------------------------------------
-# Helpers — synthetic bench result dicts
+# Helpers - synthetic bench result dicts
 # ---------------------------------------------------------------------------
 
 

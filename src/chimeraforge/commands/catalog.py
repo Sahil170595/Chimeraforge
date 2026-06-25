@@ -1,4 +1,4 @@
-"""`catalog` command — build and inspect the local model catalog.
+"""`catalog` command - build and inspect the local model catalog.
 
 The catalog is a persisted set of resolved ModelSpecs (params + architecture)
 covering a curated seed of popular models plus, optionally, the models installed

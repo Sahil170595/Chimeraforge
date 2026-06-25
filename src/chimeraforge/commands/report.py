@@ -1,4 +1,4 @@
-"""`report` command — generate benchmark reports from result files."""
+"""`report` command - generate benchmark reports from result files."""
 
 from __future__ import annotations
 

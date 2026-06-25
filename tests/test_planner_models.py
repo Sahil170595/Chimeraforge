@@ -16,7 +16,7 @@ from chimeraforge.planner.models import (
 )
 
 
-# ── VRAM Model ───────────────────────────────────────────────────────
+# -- VRAM Model -------------------------------------------------------
 
 
 class TestVRAMModel:
@@ -47,7 +47,7 @@ class TestVRAMModel:
                 assert v > 0, f"VRAM should be positive for {model} {quant}"
 
 
-# ── KV-cache-bound concurrency (0.6.0) ───────────────────────────────
+# -- KV-cache-bound concurrency (0.6.0) -------------------------------
 
 
 class TestMaxConcurrentSeqs:
@@ -84,7 +84,7 @@ class TestMaxConcurrentSeqs:
         assert q4 > fp16  # smaller weights leave more VRAM for KV
 
 
-# ── Throughput Model ─────────────────────────────────────────────────
+# -- Throughput Model -------------------------------------------------
 
 
 class TestThroughputModel:
@@ -117,7 +117,7 @@ class TestThroughputModel:
         assert tps >= 0.1
 
 
-# ── Scaling Model ────────────────────────────────────────────────────
+# -- Scaling Model ----------------------------------------------------
 
 
 class TestScalingModel:
@@ -137,7 +137,7 @@ class TestScalingModel:
         assert 0 < eta < 1
 
 
-# ── Quality Model ────────────────────────────────────────────────────
+# -- Quality Model ----------------------------------------------------
 
 
 class TestQualityModel:
@@ -160,7 +160,7 @@ class TestQualityModel:
         assert q == 0.5
 
 
-# ── Safety Model ─────────────────────────────────────────────────────
+# -- Safety Model -----------------------------------------------------
 
 
 class TestSafetyModel:
@@ -173,7 +173,7 @@ class TestSafetyModel:
         assert q2k < fp16
 
     def test_refusal_safe_cell(self, bundled_models):
-        # Q4_K_M holds refusal high — should clear a 0.8 safety bar.
+        # Q4_K_M holds refusal high - should clear a 0.8 safety bar.
         q4 = bundled_models.safety.predict_refusal("llama3.2-1b", "Q4_K_M")
         assert q4 == pytest.approx(0.905, abs=0.01)
         assert q4 >= 0.8
@@ -232,7 +232,7 @@ class TestSafetyModel:
         assert m.fitted is False
 
 
-# ── Cost Model ───────────────────────────────────────────────────────
+# -- Cost Model -------------------------------------------------------
 
 
 class TestCostModel:
@@ -261,7 +261,7 @@ class TestCostModel:
         assert cost1 > cost2
 
 
-# ── Latency Model ────────────────────────────────────────────────────
+# -- Latency Model ----------------------------------------------------
 
 
 class TestLatencyModel:

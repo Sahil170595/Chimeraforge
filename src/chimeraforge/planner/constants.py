@@ -1,4 +1,4 @@
-"""Constants — quant levels, model registry, backends.
+"""Constants - quant levels, model registry, backends.
 
 Extracted from TR133 research. No repo-specific paths or imports.
 """

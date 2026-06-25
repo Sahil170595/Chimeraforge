@@ -34,7 +34,7 @@ from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
 log = logging.getLogger("chimeraforge.planner.models")
 
 
-# ── 1. VRAM Model ─────────────────────────────────────────────────────
+# -- 1. VRAM Model -----------------------------------------------------
 
 
 @dataclass
@@ -125,7 +125,7 @@ class VRAMModel:
         return m
 
 
-# ── 2. Throughput Model ───────────────────────────────────────────────
+# -- 2. Throughput Model -----------------------------------------------
 
 
 @dataclass
@@ -235,7 +235,7 @@ class ThroughputModel:
         return m
 
 
-# ── 3. Scaling Model ──────────────────────────────────────────────────
+# -- 3. Scaling Model --------------------------------------------------
 
 
 @dataclass
@@ -277,7 +277,7 @@ class ScalingModel:
         return m
 
 
-# ── 4. Quality Model ──────────────────────────────────────────────────
+# -- 4. Quality Model --------------------------------------------------
 
 
 @dataclass
@@ -380,7 +380,7 @@ class QualityModel:
         return m
 
 
-# ── 5. Cost Model ─────────────────────────────────────────────────────
+# -- 5. Cost Model -----------------------------------------------------
 
 
 @dataclass
@@ -410,7 +410,7 @@ class CostModel:
         return cls(hw_cost_per_hour=d.get("hw_cost_per_hour", 0.035))
 
 
-# ── 6. Latency Model ─────────────────────────────────────────────────
+# -- 6. Latency Model -------------------------------------------------
 
 
 @dataclass
@@ -499,7 +499,7 @@ class LatencyModel:
         return m
 
 
-# ── 7. Safety Model ───────────────────────────────────────────────────
+# -- 7. Safety Model ---------------------------------------------------
 
 
 @dataclass
@@ -557,7 +557,7 @@ class SafetyModel:
         return m
 
 
-# ── Aggregate model container ─────────────────────────────────────────
+# -- Aggregate model container -----------------------------------------
 
 
 @dataclass

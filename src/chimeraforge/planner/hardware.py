@@ -19,11 +19,11 @@ class GPUSpec:
     cost_per_hour: float  # $/hr (cloud rental or amortised consumer)
 
 
-# Reference GPU — all TR measurements collected on this card
+# Reference GPU - all TR measurements collected on this card
 REFERENCE_GPU = "RTX 4080 12GB"
 
 GPU_DB: dict[str, GPUSpec] = {
-    # Consumer — NVIDIA
+    # Consumer - NVIDIA
     "RTX 4060 8GB": GPUSpec("RTX 4060 8GB", 8.0, 272.0, 0.020),
     "RTX 4060 Ti 8GB": GPUSpec("RTX 4060 Ti 8GB", 8.0, 288.0, 0.025),
     "RTX 4060 Ti 16GB": GPUSpec("RTX 4060 Ti 16GB", 16.0, 288.0, 0.030),
@@ -34,7 +34,7 @@ GPU_DB: dict[str, GPUSpec] = {
     "RTX 4090 24GB": GPUSpec("RTX 4090 24GB", 24.0, 1008.0, 0.060),
     "RTX 3090 24GB": GPUSpec("RTX 3090 24GB", 24.0, 936.0, 0.040),
     "RTX 3080 10GB": GPUSpec("RTX 3080 10GB", 10.0, 760.0, 0.025),
-    # Data-center — NVIDIA
+    # Data-center - NVIDIA
     "A100 40GB": GPUSpec("A100 40GB", 40.0, 1555.0, 1.10),
     "A100 80GB": GPUSpec("A100 80GB", 80.0, 2039.0, 1.60),
     "H100 80GB": GPUSpec("H100 80GB", 80.0, 3352.0, 2.50),

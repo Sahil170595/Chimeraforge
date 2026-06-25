@@ -1,4 +1,4 @@
-"""`eval` command — quality evaluation with text-similarity metrics."""
+"""`eval` command - quality evaluation with text-similarity metrics."""
 
 from __future__ import annotations
 

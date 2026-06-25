@@ -88,7 +88,7 @@ def enumerate_candidates(
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
-    Gates: VRAM, quality, latency, budget — plus an opt-in safety gate
+    Gates: VRAM, quality, latency, budget - plus an opt-in safety gate
     (rejects cells whose refusal rate < ``safety_target``). When
     ``safety_target`` is None the safety gate is inert but each candidate
     still carries its refusal rate and RTSI risk tier.
@@ -164,8 +164,8 @@ def enumerate_candidates(
             quality_tier = models.quality.quality_tier(lookup_name, quant)
 
             # Safety gate (Gate 5): safety data is per (model, quant) and
-            # backend-independent, so evaluate it here — before the backend/N
-            # loop — to skip known-unsafe cells early. Opt-in via safety_target.
+            # backend-independent, so evaluate it here - before the backend/N
+            # loop - to skip known-unsafe cells early. Opt-in via safety_target.
             safety_refusal = models.safety.predict_refusal(lookup_name, quant)
             rtsi_risk = models.safety.rtsi_risk(lookup_name, quant)
             if (

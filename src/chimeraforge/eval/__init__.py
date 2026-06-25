@@ -1,4 +1,4 @@
-"""ChimeraForge Quality Evaluation — text-similarity metrics for LLM outputs.
+"""ChimeraForge Quality Evaluation - text-similarity metrics for LLM outputs.
 
 Public API:
     evaluate_quality    Compute all quality metrics for predictions vs references

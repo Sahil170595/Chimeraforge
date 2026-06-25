@@ -15,7 +15,7 @@ from chimeraforge.planner.engine import (
 from chimeraforge.planner.resolver import ModelSpec
 
 
-# ── Planner Engine ───────────────────────────────────────────────────
+# -- Planner Engine ---------------------------------------------------
 
 
 class TestPlanner:
@@ -132,7 +132,7 @@ class TestPlanner:
         assert "monthly_cost" in data[0]
 
 
-# ── Model-Agnostic Specs ─────────────────────────────────────────────
+# -- Model-Agnostic Specs ---------------------------------------------
 
 
 class TestOffRegistrySpecs:
@@ -390,7 +390,7 @@ class TestRejectionTrace:
         assert cands
 
 
-# ── Safety Gate (Gate 5) ─────────────────────────────────────────────
+# -- Safety Gate (Gate 5) ---------------------------------------------
 
 
 class TestSafetyGate:
@@ -444,7 +444,7 @@ class TestSafetyGate:
 
     def test_unknown_safety_passes_with_warning(self, bundled_models):
         # qwen2.5-0.5b is in the planner registry but has no safety data.
-        # The gate blocks only KNOWN-unsafe cells, so it passes — with a warning.
+        # The gate blocks only KNOWN-unsafe cells, so it passes - with a warning.
         cands = self._plan(bundled_models, "qwen2.5-0.5b", safety_target=0.8)
         assert cands
         for c in cands:
@@ -460,7 +460,7 @@ class TestSafetyGate:
         assert any("RTSI" in w and "HIGH" in w for w in q2k[0].warnings)
 
 
-# ── Spot Checks (Real Data Validation) ───────────────────────────────
+# -- Spot Checks (Real Data Validation) -------------------------------
 
 
 class TestSpotChecks:
