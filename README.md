@@ -13,12 +13,14 @@ pip install chimeraforge
 
 This repository contains everything behind Technical Reports TR108 through TR137 (plus the TR142/TR146 safety provenance) -- source code, benchmark harnesses, datasets, logs, publish-ready technical reports, and the `chimeraforge` CLI that operationalizes the findings into deployment decisions. Every performance claim is backed by reproducible benchmarks, every number traces to raw data, and every finding is documented with full methodology.
 
-> **New in v0.4.0:** the **`chimeraforge safety`** command — screen a *live* model's refusal
-> rate against your prompt set and compare it to the bundled TR134/TR142 data (Ollama tags
-> resolve to registry models by architecture-family + size). It complements the v0.3.0
-> `plan --safety-target` gate: the gate *decides* from bundled data, `safety` *measures* the
-> running model (e.g. `llama3.2-1b` refusal collapses 0.94 → 0.37 at Q2_K). See the
-> [CHANGELOG](CHANGELOG.md).
+> **New in v0.5.0 — model-agnostic planning.** `plan --model <id>` now plans *any* model —
+> a registry name, an Ollama tag, or a Hugging Face repo — by resolving its real parameters
+> and architecture (Ollama `/api/show`, HF `config.json`). New commands: **`suggest`** (discover
+> and rank deployable models from your Ollama install / the HF Hub), **`catalog`** (a curated,
+> offline-rankable model set), and **`measure`** (benchmark a live model and plan on the *measured*
+> numbers, not estimates). Also fixes two planner correctness bugs: throughput now scales linearly
+> across GPU replicas (was capped at ~1.8×, rejecting models ≥7B) and `cost_per_1m_tok` is no longer
+> understated by the instance count. See the [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -173,12 +175,13 @@ Phase 2 produces a complete, artifact-backed deployment framework from ~106,000 
 | **Capacity planning** | `chimeraforge plan` | Validated R²>=0.859; beats M/D/1 by 20.4x (TR133) |
 | **Safety screening** | `plan --safety-target` (opt-in) | Refusal-rate + RTSI risk per config; rejects safety-collapsing cells (TR134/TR142) |
 
-### `chimeraforge` CLI — 7 Commands, One Tool
+### `chimeraforge` CLI — 10 Commands, One Tool
 
-Install from PyPI and get all 7 commands:
+Install from PyPI and get all 10 commands:
 
 ```bash
 pip install chimeraforge            # Core (plan only)
+pip install chimeraforge[resolve]   # + model-agnostic resolution (Ollama/HF metadata)
 pip install chimeraforge[bench]     # + live benchmarking
 pip install chimeraforge[eval]      # + quality evaluation (BERTScore, ROUGE)
 pip install chimeraforge[safety]    # + live refusal screen
@@ -190,16 +193,49 @@ pip install chimeraforge[all]       # Everything including dev tools
 
 ```bash
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
+chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"   # any HF repo
+chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434  # any Ollama tag
+chimeraforge plan --model qwen3:14b --measure                                   # bench live, plan on real numbers
 chimeraforge plan --model-size 3b --safety-target 0.85
-chimeraforge plan --list-hardware
 chimeraforge plan --model-size 3b --json
 ```
 
-- Searches (model x quantization x backend x N-agents) space in <1 second
+- Plans **any** model: registry size class, HF repo (`org/name`), Ollama tag, or manual overrides
+- Searches (model x quantization x backend x N-instances) space in <1 second
 - 5-gate pipeline: VRAM -> quality -> safety (opt-in) -> latency -> budget
-- Safety gate rejects configs whose refusal rate (TR134/TR142) falls below `--safety-target`
-- Validated: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05%
-- No ML needed -- empirical lookup tables with first-principles interpolation
+- Per-prediction provenance (`measured` / `estimated` / `unknown`); explains the binding gate when nothing fits
+- Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05%
+- No ML needed -- empirical lookup tables with first-principles interpolation (roofline for off-registry)
+
+#### `chimeraforge suggest` — Discover & Rank Models
+
+```bash
+chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
+chimeraforge suggest --source hf --hf-limit 8 --hardware "RTX 4080 12GB"
+chimeraforge suggest --source catalog --hardware "RTX 4080 12GB"   # offline, after `catalog --build`
+```
+
+- Pulls candidate models from a live Ollama (`/api/tags`), the HF Hub (top text-generation), and/or the local catalog
+- Resolves each to real params/arch, runs the same gate search, and shows the best config per model
+
+#### `chimeraforge measure` — Benchmark Live, Plan on Real Numbers
+
+```bash
+chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
+chimeraforge plan --model qwen3:14b --measure   # measure then plan in one step
+```
+
+- Benchmarks the live model (real N=1 throughput, service time, concurrency scaling) and folds it into a local corpus
+- `plan` / `suggest` then prefer the measured numbers automatically (provenance flips to `measured`)
+
+#### `chimeraforge catalog` — Local Model Catalog
+
+```bash
+chimeraforge catalog --build         # resolve a curated seed (+ --with-ollama) and cache specs
+chimeraforge catalog                 # list the cached catalog
+```
+
+- Persists resolved specs so `suggest --source catalog` ranks a known-good set fully offline
 
 #### `chimeraforge safety` — Live Refusal Screen
 
@@ -311,105 +347,14 @@ chimeraforge report --results-files run1.json,run2.json --format html --output r
 
 ## Research Journey: Technical Reports TR108-TR137
 
-Our research progressed systematically, with each report building on previous findings and answering specific questions. We've collected **~204,000 primary measurements** across **32 technical reports** (TR108-TR137 plus the TR142/TR146 safety provenance), covering single-agent performance, multi-agent concurrency, runtime optimization, backend comparisons, cost analysis, scaling studies, quantization, compilation, context scaling, serving stack comparison, GPU kernel profiling, predictive capacity planning, and safety alignment.
+The research progressed systematically — **~204,000 primary measurements** across **32 technical
+reports** (TR108-TR137 + the TR142/TR146 safety provenance), covering single-agent performance,
+multi-agent concurrency, runtime optimization, backend comparisons, cost/energy economics, scaling
+studies, quantization, compilation, context scaling, serving-stack comparison, GPU kernel profiling,
+predictive capacity planning, and safety alignment.
 
-### TR108: Single-Inference Optimization
-**Question:** What's the best configuration for a single LLM request?  
-**Answer:** GPU=80 layers, Context=512 tokens, Temperature=0.8  
-**Why It Matters:** Established the baseline for all future comparisons. Single-inference optimization is different from agent optimization.  
-**Scale:** 150+ benchmark runs  
-**Key Insight:** Optimal settings for simple requests don't necessarily work for complex agent workflows.
-
-### TR109: Python Agent Workflow Optimization
-**Question:** Do agent workflows need different settings than single requests?  
-**Answer:** Yes! Agents work better with smaller context windows (512-1024 vs 2048) and have lower optimization success rates (39% vs higher for single-inference).  
-**Why It Matters:** You can't just copy single-inference settings to agents. Agent workflows have different characteristics.  
-**Scale:** 54 benchmark runs (18 configurations × 3 runs)  
-**Key Insight:** Agent tasks require distinct optimization strategies. What works for one-shot requests doesn't work for multi-step workflows.
-
-### TR110: Python Multi-Agent Concurrent Execution
-**Question:** Can we run multiple Python agents at the same time efficiently?  
-**Answer:** Yes! With dual Ollama instances, Python achieves 99.25% peak efficiency (nearly perfect parallelism).  
-**Why It Matters:** Proves that multi-agent systems can nearly double capacity with minimal overhead. Critical for scaling.  
-**Scale:** 150 benchmark runs, 30 configurations  
-**Key Insight:** Dual Ollama architecture is essential. Single Ollama instance creates a bottleneck that prevents true concurrency.
-
-### TR111_v2: Rust Single-Agent Performance
-**Question:** How fast can a Rust agent go?  
-**Answer:** 114.54 tokens/second baseline, which is 15.2% faster than Python's 99.34 tok/s.  
-**Why It Matters:** First comprehensive Rust agent benchmark with full workflow parity (not just micro-benchmarks).  
-**Scale:** 57 benchmark runs, 19 configurations  
-**Key Insight:** Rust's performance advantage is real and substantial. The 15% throughput gain is consistent and reproducible.
-
-### TR112_v2: Rust vs Python Single-Agent Comparison
-**Question:** What are the real-world differences between Rust and Python for single agents?  
-**Answer:** Rust is faster (15.2%), uses less memory (67% less), starts faster (83% faster), and is more consistent (46% better).  
-**Why It Matters:** Comprehensive apples-to-apples comparison with identical workflows. Provides definitive data for decision-making.  
-**Scale:** 111 benchmark runs, 37 configurations (19 Rust + 18 Python)  
-**Key Insight:** Rust's advantages are consistent across all metrics. The performance gap is real and significant.
-
-### TR113: Rust Multi-Agent (Single Ollama)
-**Question:** What happens if we run Rust multi-agent with one Ollama instance?  
-**Answer:** Efficiency caps at 82.2% because both agents share one inference queue, creating serialization.  
-**Why It Matters:** Identified the architectural bottleneck. Proved that dual Ollama is necessary, not optional.  
-**Scale:** 19 configurations (single-run exploratory sweep)  
-**Key Insight:** Server-level serialization is the limiting factor, not Rust's async runtime.
-
-### TR114_v2: Rust Multi-Agent (Dual Ollama)
-**Question:** Does dual Ollama fix the bottleneck and enable true Rust concurrency?  
-**Answer:** Yes! Rust achieves 98.281% mean efficiency and 99.396% peak efficiency, exceeding Python's 95.8% mean and 99.25% peak.  
-**Why It Matters:** Validates that Rust can achieve near-perfect parallelism and even exceed Python in multi-agent scenarios.  
-**Scale:** 135 benchmark runs, 27 configurations  
-**Key Insight:** With proper architecture (dual Ollama), Rust's single-agent advantage translates to multi-agent superiority.
-
-### TR115_v2: Rust Runtime Optimization
-**Question:** Which Rust async runtime is best for multi-agent workloads?  
-**Answer:** Tokio-default is recommended (98.72% mean, 1.21pp consistency). All working runtimes achieve ~100% peak, so consistency matters more than peak.  
-**Why It Matters:** Provides production guidance. Peak performance is similar across runtimes, but consistency varies dramatically.  
-**Scale:** 150 benchmark runs, 5 runtimes, 6 configurations each  
-**Key Insight:** For production, choose based on consistency, not peak performance. Tokio-default is the most reliable.
-
-### TR116: Cross-Model Multi-Agent Benchmarks
-**Question:** Does model choice (Gemma, Llama, Qwen) impact multi-agent coordination efficiency?  
-**Answer:** Yes! Gemma 3 achieves 99.2% efficiency in Rust (best scaling), while Python never exceeds 86% regardless of model.  
-**Why It Matters:** Model choice affects scaling characteristics. Rust's advantages hold across all models, but some models scale better than others.  
-**Scale:** 60+ multi-agent runs across 3 models  
-**Key Insight:** Rust + Gemma 3 is the optimal combination for high-concurrency agent swarms.
-
-### TR117: Cross-Backend Inference Benchmark & Multi-Agent Root Cause
-**Question:** Which inference backend is fastest, and why does Python have an 86% efficiency ceiling?  
-**Answer:** GPU-compile wins on mean latency (389ms), but plain GPU wins on median (323ms) - revealing the "compile paradox". Python's 86% ceiling is caused by event loop lag (16ms spikes).  
-**Why It Matters:** Backend choice matters for latency, and Python's structural limitations prevent >86% efficiency in multi-agent scenarios.  
-**Scale:** 3,017 inference runs + multi-agent root cause analysis  
-**Key Insight:** Transformers-gpu-compile for best mean latency, but Python's event loop is the bottleneck preventing higher efficiency.
-
-### TR118_v2.2: ONNX Runtime + TensorRT Deep Dive
-**Question:** Can specialized runtimes (ONNX, TensorRT) beat PyTorch for inference?  
-**Answer:** TensorRT-fp16 achieves best prefill latency (2.48ms, -87% vs baseline), but requires careful optimization.  
-**Why It Matters:** Specialized runtimes can provide significant latency improvements for production workloads.  
-**Scale:** Comprehensive ONNX/TensorRT optimization study  
-**Key Insight:** TensorRT offers substantial gains but requires infrastructure investment.
-
-### TR119: Cost & Energy Analysis
-**Question:** What are the cost and energy implications of different backends?  
-**Answer:** onnxruntime-gpu provides best cost efficiency ($0.1279/1M tokens on-demand).  
-**Why It Matters:** Cost and energy efficiency are critical for production deployment at scale.  
-**Scale:** Comprehensive cost/energy economics analysis  
-**Key Insight:** Backend choice significantly impacts operational costs.
-
-### TR120: The "Compile Paradox" Root-Cause Audit
-**Question:** Why does GPU-compile win on mean but lose on median?  
-**Answer:** TR117 compile label was misattributed; shape stability is the critical factor, not compilation itself.  
-**Why It Matters:** Understanding the true cause of performance differences enables better optimization strategies.  
-**Scale:** Root-cause analysis of compile paradox  
-**Key Insight:** Shape stability matters more than compilation for consistent performance.
-
-### TR121v1: Model Scaling Study
-**Question:** How does performance scale from 5M to 20B parameters?  
-**Answer:** Scaling pipeline established, demonstrating performance characteristics across model sizes.  
-**Why It Matters:** Understanding scaling behavior is essential for choosing appropriate model sizes.  
-**Scale:** Model scaling study from 5M to 20B parameters  
-**Key Insight:** Performance characteristics vary significantly with model size.
+See the **[Report Guide](#report-guide-what-each-technical-report-answers)** below for a one-line
+question + outcome per report, and `outputs/publish_ready/reports/` for the full archive.
 
 ---
 
@@ -444,71 +389,6 @@ Our research progressed systematically, with each report building on previous fi
 **What it is:** A measure of consistency. Lower CV = more consistent performance.  
 **Why it matters:** Consistent performance = predictable capacity = easier planning = better user experience.  
 **Real-world impact:** 2.6% CV means performance is very predictable. 4.8% CV means more variation, making capacity planning harder.
-
----
-
-## Who Should Read This Repository
-
-### For CTOs and Engineering Leaders
-
-**What you'll learn:**
-- When Rust's performance gains justify its development overhead
-- When Python's velocity is the right trade-off
-- Infrastructure cost implications of language choice
-- Scaling characteristics of different architectures
-
-**How to use this repo:**
-1. Read the "Quick Takeaways" section above for executive summary
-2. Review the "Report Guide" section for high-level findings
-3. Check Technical Report 112_v2 for business impact analysis (includes cost calculations)
-4. Use the findings to inform architecture decisions
-
-**Key decision framework:**
-- **Choose Rust if:** Performance, memory efficiency, and consistency are critical. You're building high-throughput systems where every millisecond matters. You have Rust expertise or are willing to invest in it.
-- **Choose Python if:** Development velocity, ecosystem, and team familiarity are priorities. You need to iterate quickly. You have a Python-heavy team.
-
-### For Engineers and Developers
-
-**What you'll learn:**
-- Optimal configurations for different scenarios
-- How to reproduce our benchmarks
-- Implementation patterns for high-performance agents
-- Optimization strategies that actually work
-
-**How to use this repo:**
-1. Follow `docs/quick_start.md` to run your first benchmark
-2. Review `docs/benchmarking.md` for comprehensive methodology
-3. Check `docs/rust_vs_python.md` for detailed comparison tables
-4. Use `scripts/` for automation and analysis
-5. Study source code in `src/` to understand implementations
-
-**Key takeaways:**
-- Start with proven configurations, then customize
-- Dual Ollama is essential for multi-agent (not optional)
-- Rust: Use Tokio-default runtime
-- Python: Use asyncio with dual Ollama instances
-- Optimization success rates differ by language (Rust more reliable)
-
-### For Researchers and Academics
-
-**What you'll learn:**
-- Reproducible methodology for LLM agent benchmarking
-- Statistical analysis techniques for performance evaluation
-- How to structure experiments for valid comparisons
-- Raw data formats and analysis tools
-
-**How to use this repo:**
-1. Review `docs/methodology.md` for experimental design
-2. Study Technical Reports for analysis techniques
-3. Examine raw data in `benchmarks/` and `outputs/`
-4. Use our code as a foundation for your own research
-5. Check `docs/statistical_analysis.md` for analysis methods
-
-**Key contributions:**
-- Full reproducibility: code, data, and methodology all available
-- Statistical rigor: confidence intervals, variance measures, multiple runs
-- Process isolation: cold-start testing to avoid warm-cache bias
-- Comprehensive coverage: ~204,000 primary measurements across 32 technical reports (TR108-TR137 + TR142/TR146)
 
 ---
 
@@ -619,7 +499,7 @@ All scripts write outputs into `benchmarks/` or `outputs/` so the data stays co-
 | **`data/csv/`** | CSV exports of benchmark data | When you want to analyze data in Excel, Python, or other tools |
 | **`data/research/`** | Research data from experiments | When you want to access experiment-specific datasets |
 | **`outputs/reports/`** | Exploratory, legacy, and scratch report outputs | When you want working notes or historical report artifacts that are not canonical |
-| **`src/chimeraforge/`** | ChimeraForge CLI (plan, safety, bench, eval, report, compare, refit) | The full CLI toolchain |
+| **`src/chimeraforge/`** | ChimeraForge CLI (plan, suggest, measure, catalog, safety, bench, eval, report, compare, refit) | The full CLI toolchain |
 | **`outputs/publish_ready/reports/`** | Canonical TR archive (TR108-TR137) + conclusive syntheses | **Start here** for comprehensive findings and analysis |
 | **`outputs/publish_ready/docs/`** | Publish-ready benchmark narratives and supporting writeups | When you want public-facing benchmark context beyond the TR archive |
 | **`outputs/runs/`** | Benchmark run outputs | When you want to inspect individual benchmark execution logs |
@@ -716,7 +596,7 @@ All reports include:
 - **7 quantization levels** tested across 5 models with real MMLU/ARC benchmarks
 - **GPU kernel profiling** with Nsight Systems (~2 GB traces)
 - **1 PyTorch upstream contribution** (pytorch/pytorch#175557, PR #175562)
-- **1 shipped CLI tool** (`chimeraforge` — 7 commands: plan, safety, bench, eval, report, compare, refit) published to PyPI
+- **1 shipped CLI tool** (`chimeraforge` — 10 commands: plan, suggest, measure, catalog, safety, bench, eval, report, compare, refit) published to PyPI
 
 ### Methodology Highlights
 
@@ -765,8 +645,8 @@ This research was conducted as part of the Banterhearts LLM Performance Research
 
 ---
 
-**Last Updated:** June 22, 2026 (v0.4.1)
+**Last Updated:** June 25, 2026 (v0.5.0)
 **Repository:** https://github.com/Sahil170595/Chimeraforge
 **PyPI:** https://pypi.org/project/chimeraforge/
-**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.4.1
+**Status:** Phase 1 + Phase 2 + Phase 3 Complete | v0.5.0
 
