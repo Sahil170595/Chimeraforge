@@ -1,4 +1,4 @@
-"""ChimeraForge CLI — Typer application.
+"""ChimeraForge CLI - Typer application.
 
 The command implementations live in ``chimeraforge.commands.*``; this module
 wires them onto the Typer ``app``. Heavy modules are imported lazily inside each
@@ -26,7 +26,7 @@ console = Console()
 
 app = typer.Typer(
     name="chimeraforge",
-    help="LLM deployment optimizer — backed by ~204,000 real measurements.",
+    help="LLM deployment optimizer - backed by ~204,000 real measurements.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -49,7 +49,7 @@ def main(
         is_eager=True,
     ),
 ) -> None:
-    """ChimeraForge — LLM deployment optimizer."""
+    """ChimeraForge - LLM deployment optimizer."""
 
 
 # Register commands (implementations in chimeraforge.commands.*).

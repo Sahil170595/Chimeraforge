@@ -138,7 +138,7 @@ def plan(
 ) -> None:
     """Recommend optimal LLM deployment configuration.
 
-    Searches model × quantization × backend × instance-count space,
+    Searches model x quantization x backend x instance-count space,
     filtering through VRAM, quality, latency, and budget gates.
     """
     import logging
