@@ -78,6 +78,8 @@ def format_recommendation(
     perf.add_row("Scaling eta(N)", str(best.eta))
     perf.add_row("p95 latency", f"{best.p95_latency_ms} ms")
     perf.add_row("Utilisation", f"{best.utilisation:.1%}")
+    if best.max_concurrent_seqs:
+        perf.add_row("Max concurrent/GPU", f"{best.max_concurrent_seqs} seqs (KV-cache bound)")
 
     # Quality + cost table
     cost_table = Table(show_header=False, box=None, padding=(0, 2))

@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
     BACKENDS,
+    DEFAULT_ARCH,
+    MODEL_ARCH,
     MODEL_PARAMS_B,
     QUANT_BPW,
     QUANT_LEVELS,
@@ -43,6 +45,8 @@ class Candidate:
     params_b: float = 0.0
     model_source: str = SOURCE_REGISTRY
     provenance: dict[str, str] = field(default_factory=dict)
+    # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
+    max_concurrent_seqs: int = 0
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -140,6 +144,16 @@ def enumerate_candidates(
             if vram > hw_vram:
                 _reject(model, quant, "vram", f"{vram:.1f}GB > {hw_vram:.0f}GB capacity")
                 continue
+
+            # KV-cache-bound concurrency a single GPU can hold (backend-independent;
+            # informational in 0.5.x, the basis for batched throughput in 0.6.0).
+            max_seqs = models.vram.max_concurrent_seqs(
+                params_b,
+                quant,
+                arch or MODEL_ARCH.get(model, DEFAULT_ARCH),
+                context_length,
+                hw_vram,
+            )
 
             # Gate 2: Quality (with provenance: measured | estimated | unknown)
             quality, quality_source = models.quality.estimate(lookup_name, quant, family)
@@ -318,6 +332,7 @@ def enumerate_candidates(
                         params_b=round(params_b, 4),
                         model_source=model_source,
                         provenance=provenance,
+                        max_concurrent_seqs=max_seqs,
                     )
                 )
 

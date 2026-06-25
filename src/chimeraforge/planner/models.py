@@ -20,6 +20,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from chimeraforge.planner.constants import (
+    DEFAULT_ARCH,
+    KV_CACHE_UTILISATION,
+    KV_DTYPE_BYTES,
     MBU_DEFAULT,
     MODEL_ARCH,
     MODEL_FAMILY,
@@ -60,8 +63,15 @@ class VRAMModel:
         bpw = QUANT_BPW.get(quant, 16.0)
         weight_gb = params * bpw / 8
 
-        arch = arch or MODEL_ARCH.get(model, {"n_layers": 32, "n_kv_heads": 8, "d_head": 128})
+        arch = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
+        kv_gb = self.kv_cache_gb(arch, context_length, batch_size)
+        act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024) ** 2
 
+        return weight_gb * self.overhead_factor + kv_gb + act_gb
+
+    @staticmethod
+    def kv_cache_gb(arch: dict[str, int], context_length: int, batch_size: int = 1) -> float:
+        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * dtype``."""
         kv_bytes = (
             2
             * arch["n_layers"]
@@ -69,13 +79,34 @@ class VRAMModel:
             * context_length
             * arch["n_kv_heads"]
             * arch["d_head"]
-            * 2
+            * KV_DTYPE_BYTES
         )
-        kv_gb = kv_bytes / (1024**3)
+        return kv_bytes / (1024**3)
 
+    def max_concurrent_seqs(
+        self,
+        params_b: float,
+        quant: str,
+        arch: dict[str, int],
+        context_length: int,
+        hw_vram_gb: float,
+        utilisation: float = KV_CACHE_UTILISATION,
+    ) -> int:
+        """Max concurrent sequences a single GPU can hold, KV-cache bound.
+
+        This is the real concurrency limiter for batched backends (vLLM/TGI):
+        after model weights + activations, the remaining VRAM divided by the
+        per-sequence KV-cache caps how many requests can be in flight at once.
+        First-principles memory arithmetic -- no fitting. Returns 0 if the weights
+        alone don't fit.
+        """
+        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor
         act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024) ** 2
-
-        return weight_gb * self.overhead_factor + kv_gb + act_gb
+        free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
+        per_seq_gb = self.kv_cache_gb(arch, context_length, batch_size=1)
+        if per_seq_gb <= 0 or free_gb <= 0:
+            return 0
+        return int(free_gb / per_seq_gb)
 
     def to_dict(self) -> dict:
         return {

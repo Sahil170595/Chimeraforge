@@ -52,6 +52,15 @@ MBU_DEFAULT = 0.65
 DEFAULT_ARCH: dict[str, int] = {"n_layers": 32, "n_kv_heads": 8, "d_head": 128}
 DEFAULT_PARAMS_B = 3.0
 
+# Fraction of VRAM a batched server can devote to KV-cache after weights +
+# activations + framework overhead. PagedAttention packs KV at block granularity,
+# so realised utilisation is high but not 1.0. Used to bound concurrent sequences.
+KV_CACHE_UTILISATION = 0.9
+
+# KV-cache element size in bytes. Backends keep KV in FP16 even when weights are
+# quantized (KV quantization is not yet modelled here).
+KV_DTYPE_BYTES = 2
+
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {
     "qwen2.5-0.5b": 0.49,

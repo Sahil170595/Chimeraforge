@@ -47,6 +47,43 @@ class TestVRAMModel:
                 assert v > 0, f"VRAM should be positive for {model} {quant}"
 
 
+# ── KV-cache-bound concurrency (0.6.0) ───────────────────────────────
+
+
+class TestMaxConcurrentSeqs:
+    ARCH = {"n_layers": 28, "n_kv_heads": 8, "d_head": 128}  # llama3.2-3b
+
+    def test_kv_cache_scales_with_context_batch_and_heads(self):
+        base = VRAMModel.kv_cache_gb(self.ARCH, 2048, 1)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1) == pytest.approx(2 * base)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 2048, 4) == pytest.approx(4 * base)
+        wide = {**self.ARCH, "n_kv_heads": 16}
+        assert VRAMModel.kv_cache_gb(wide, 2048, 1) == pytest.approx(2 * base)
+
+    def test_bigger_gpu_holds_more_seqs(self):
+        m = VRAMModel()
+        small = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 12.0)
+        big = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 24.0)
+        assert big > small > 0
+
+    def test_longer_context_fewer_seqs(self):
+        m = VRAMModel()
+        short = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 1024, 24.0)
+        long = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 8192, 24.0)
+        assert short > long
+
+    def test_weights_dont_fit_returns_zero(self):
+        m = VRAMModel()
+        # 70B FP16 (~154 GB) cannot fit a 24 GB card.
+        assert m.max_concurrent_seqs(70.0, "FP16", self.ARCH, 2048, 24.0) == 0
+
+    def test_quantization_increases_capacity(self):
+        m = VRAMModel()
+        fp16 = m.max_concurrent_seqs(3.21, "FP16", self.ARCH, 2048, 24.0)
+        q4 = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 24.0)
+        assert q4 > fp16  # smaller weights leave more VRAM for KV
+
+
 # ── Throughput Model ─────────────────────────────────────────────────
 
 
