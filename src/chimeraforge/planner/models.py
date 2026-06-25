@@ -21,12 +21,14 @@ from pathlib import Path
 
 from chimeraforge.planner.constants import (
     DEFAULT_ARCH,
+    FLOPS_PER_PARAM_PER_TOKEN,
     KV_CACHE_UTILISATION,
     KV_DTYPE_BYTES,
     MBU_DEFAULT,
     MODEL_ARCH,
     MODEL_FAMILY,
     MODEL_PARAMS_B,
+    PREFILL_MFU,
     QUANT_BPW,
 )
 from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
@@ -415,11 +417,32 @@ class CostModel:
 
 @dataclass
 class LatencyModel:
-    """M/D/1 queueing approximation with 70% utilisation safety cap."""
+    """Latency: prefill (TTFT) + decode (TPOT), with M/D/1 queueing on top."""
 
     service_times: dict[str, float] = field(default_factory=dict)
     safety_factor: float = 0.70
     fitted: bool = False
+
+    @staticmethod
+    def predict_ttft_ms(
+        params_b: float,
+        prompt_tokens: int,
+        hardware: str | None = None,
+        mfu: float = PREFILL_MFU,
+    ) -> float:
+        """Time-to-first-token = prefill compute time (compute-bound, ms).
+
+        Prefill does ~2 FLOPs/param/token over the prompt; time = FLOPs /
+        (peak_TFLOPS * MFU). Returns 0.0 when the GPU's compute is unknown (so the
+        caller omits a prefill term rather than guessing). Decode/TPOT is modelled
+        separately via throughput (bandwidth-bound).
+        """
+        gpu = get_gpu(hardware) if hardware else None
+        tflops = gpu.fp16_tflops if gpu else 0.0
+        if tflops <= 0 or params_b <= 0 or prompt_tokens <= 0:
+            return 0.0
+        flops = FLOPS_PER_PARAM_PER_TOKEN * params_b * 1e9 * prompt_tokens
+        return flops / (tflops * 1e12 * mfu) * 1000.0
 
     def predict_p95(
         self,
@@ -433,22 +456,23 @@ class LatencyModel:
         scaling_model: ScalingModel | None = None,
         hardware: str | None = None,
         n1_tps: float | None = None,
+        ttft_ms: float = 0.0,
     ) -> dict:
         """Predict p95 latency and utilisation.
 
-        ``n1_tps`` lets the caller supply an already-computed N=1 throughput (e.g.
-        a roofline estimate for an off-registry model) so the service time stays
-        consistent with the engine's throughput choice instead of being
-        recomputed from the lookup/power-law default.
+        ``n1_tps`` lets the caller supply an already-computed N=1 (decode)
+        throughput so the service time matches the engine's throughput choice.
+        ``ttft_ms`` adds the prefill term, so service time is the full request:
+        prefill (TTFT) + avg_tokens * decode-per-token (TPOT).
         """
         service_ms = None
 
         if n1_tps is not None and n1_tps > 0:
-            service_ms = avg_tokens / n1_tps * 1000
+            service_ms = ttft_ms + avg_tokens / n1_tps * 1000
         elif throughput_model is not None:
             tps = throughput_model.predict(model, backend, quant, hardware)
             if tps > 0:
-                service_ms = avg_tokens / tps * 1000
+                service_ms = ttft_ms + avg_tokens / tps * 1000
 
         if service_ms is None:
             key = f"{model}|{backend}"

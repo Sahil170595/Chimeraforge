@@ -297,6 +297,48 @@ class TestLatencyModel:
         assert result["saturated"]
 
 
+# -- Prefill / TTFT (0.6.0) ---------------------------------------------------
+
+
+class TestPrefillTTFT:
+    def test_ttft_scales_with_params(self):
+        m = LatencyModel()
+        small = m.predict_ttft_ms(7.0, 512, "RTX 4090 24GB")
+        big = m.predict_ttft_ms(14.0, 512, "RTX 4090 24GB")
+        assert big == pytest.approx(2 * small, rel=1e-3)  # linear in params
+
+    def test_ttft_scales_with_prompt_length(self):
+        m = LatencyModel()
+        short = m.predict_ttft_ms(7.0, 512, "RTX 4090 24GB")
+        long = m.predict_ttft_ms(7.0, 2048, "RTX 4090 24GB")
+        assert long == pytest.approx(4 * short, rel=1e-3)  # linear in prompt tokens
+
+    def test_faster_gpu_lower_ttft(self):
+        m = LatencyModel()
+        slow = m.predict_ttft_ms(7.0, 512, "T4 16GB")  # 65 TFLOPS
+        fast = m.predict_ttft_ms(7.0, 512, "H100 80GB")  # 989 TFLOPS
+        assert fast < slow
+
+    def test_unknown_gpu_returns_zero(self):
+        # No compute data -> 0.0 so the caller omits prefill rather than guessing.
+        assert LatencyModel().predict_ttft_ms(7.0, 512, "Some Unknown GPU") == 0.0
+
+    def test_zero_params_or_prompt_returns_zero(self):
+        m = LatencyModel()
+        assert m.predict_ttft_ms(0, 512, "RTX 4090 24GB") == 0.0
+        assert m.predict_ttft_ms(7.0, 0, "RTX 4090 24GB") == 0.0
+
+    def test_p95_includes_prefill(self, bundled_models):
+        # Same config, with vs without a prefill term -> prefill adds to service.
+        base = bundled_models.latency.predict_p95(
+            "llama3.2-3b", "ollama", request_rate=0.01, n1_tps=100.0, avg_tokens=128
+        )
+        with_prefill = bundled_models.latency.predict_p95(
+            "llama3.2-3b", "ollama", request_rate=0.01, n1_tps=100.0, avg_tokens=128, ttft_ms=200.0
+        )
+        assert with_prefill["service_ms"] == pytest.approx(base["service_ms"] + 200.0, rel=1e-3)
+
+
 # -- Scaling Model Edge Cases -------------------------------------------------
 
 

@@ -247,6 +247,47 @@ class TestOffRegistrySpecs:
         assert any("approximated" in w for w in cands[0].warnings)
 
 
+class TestPrefillDecodeFields:
+    """Candidates carry TTFT (prefill) and TPOT (decode) on a known GPU."""
+
+    def test_candidate_has_ttft_and_tpot(self, bundled_models):
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4090 24GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=200,
+            avg_tokens=128,
+            context_length=2048,
+            prompt_tokens=512,
+        )
+        c = cands[0]
+        assert c.ttft_ms > 0  # known GPU -> prefill computed
+        assert c.tpot_ms > 0  # decode per-token latency
+        # TPOT should be ~ 1000 / N=1 throughput.
+        assert c.tpot_ms == pytest.approx(1000.0 / c.throughput_tps, rel=0.05)
+
+    def test_longer_prompt_raises_ttft(self, bundled_models):
+        def ttft(pt):
+            cs = enumerate_candidates(
+                models=bundled_models,
+                target_models=["llama3.2-3b"],
+                hardware="RTX 4090 24GB",
+                request_rate=0.5,
+                latency_slo=10000,
+                quality_target=0.3,
+                budget=200,
+                avg_tokens=128,
+                context_length=2048,
+                prompt_tokens=pt,
+            )
+            return cs[0].ttft_ms
+
+        assert ttft(2048) > ttft(256)
+
+
 class TestRejectionTrace:
     """The optional trace explains why a search returned nothing."""
 

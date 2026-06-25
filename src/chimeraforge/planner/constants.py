@@ -61,6 +61,15 @@ KV_CACHE_UTILISATION = 0.9
 # quantized (KV quantization is not yet modelled here).
 KV_DTYPE_BYTES = 2
 
+# Prefill is compute-bound: ~2 FLOPs per parameter per prompt token. MFU (model
+# FLOPs utilisation) discounts peak TFLOPS to realised; 0.3-0.5 is typical for a
+# single-stream forward pass. Calibratable later from measured TTFT.
+FLOPS_PER_PARAM_PER_TOKEN = 2
+PREFILL_MFU = 0.4
+
+# Default prompt (input) length in tokens for TTFT estimation when unspecified.
+DEFAULT_PROMPT_TOKENS = 512
+
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {
     "qwen2.5-0.5b": 0.49,

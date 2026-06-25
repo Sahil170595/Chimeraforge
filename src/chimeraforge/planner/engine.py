@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from chimeraforge.planner.constants import (
     BACKENDS,
     DEFAULT_ARCH,
+    DEFAULT_PROMPT_TOKENS,
     MODEL_ARCH,
     MODEL_PARAMS_B,
     QUANT_BPW,
@@ -47,6 +48,9 @@ class Candidate:
     provenance: dict[str, str] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
     max_concurrent_seqs: int = 0
+    # Latency split (0.6.0): prefill time-to-first-token + decode time-per-output-token.
+    ttft_ms: float = 0.0
+    tpot_ms: float = 0.0
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -85,6 +89,7 @@ def enumerate_candidates(
     safety_target: float | None = None,
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
+    prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -122,6 +127,11 @@ def enumerate_candidates(
         arch = spec.arch() if spec else None
         family = spec.family if spec else None
         model_source = spec.source if spec else SOURCE_REGISTRY
+
+        # TTFT (prefill) is compute-bound: same for all quants/backends of a model
+        # on this GPU and prompt length, so compute it once. 0.0 when GPU compute
+        # is unknown -> latency falls back to decode-only.
+        ttft_ms = models.latency.predict_ttft_ms(params_b, prompt_tokens, hardware)
 
         # ``alias`` is the registry model whose measured data we may reuse: the
         # model itself for registry hits, the matched model for offline
@@ -221,6 +231,7 @@ def enumerate_candidates(
                         quant=quant,
                         hardware=hardware,
                         n1_tps=n1_tps,
+                        ttft_ms=ttft_ms,
                     )
                     if lat["p95_ms"] <= latency_slo:
                         best_n = n
@@ -251,7 +262,9 @@ def enumerate_candidates(
                     quant=quant,
                     hardware=hardware,
                     n1_tps=n1_tps,
+                    ttft_ms=ttft_ms,
                 )
+                tpot_ms = 1000.0 / n1_tps if n1_tps > 0 else 0.0
 
                 # Gate 4: Cost
                 monthly = models.cost.predict_monthly(hw_cost_hr) * best_n
@@ -333,6 +346,8 @@ def enumerate_candidates(
                         model_source=model_source,
                         provenance=provenance,
                         max_concurrent_seqs=max_seqs,
+                        ttft_ms=round(ttft_ms, 1),
+                        tpot_ms=round(tpot_ms, 1),
                     )
                 )
 

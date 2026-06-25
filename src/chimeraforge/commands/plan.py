@@ -66,7 +66,12 @@ def plan(
     avg_tokens: int = typer.Option(
         128,
         "--avg-tokens",
-        help="Average output tokens per request.",
+        help="Average output tokens per request (decode length).",
+    ),
+    prompt_tokens: int = typer.Option(
+        512,
+        "--prompt-tokens",
+        help="Average input prompt length in tokens (drives prefill / TTFT).",
     ),
     models_path: str = typer.Option(
         None,
@@ -286,6 +291,7 @@ def plan(
         safety_target=safety_target,
         specs=specs,
         trace=trace,
+        prompt_tokens=prompt_tokens,
     )
 
     if output_json:

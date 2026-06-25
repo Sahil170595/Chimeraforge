@@ -76,7 +76,11 @@ def format_recommendation(
     perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis})[/]")
     perf.add_row("Total throughput", f"{best.total_throughput_tps} tok/s")
     perf.add_row("Scaling eta(N)", str(best.eta))
-    perf.add_row("p95 latency", f"{best.p95_latency_ms} ms")
+    if best.ttft_ms:
+        perf.add_row("TTFT (prefill)", f"{best.ttft_ms} ms")
+    if best.tpot_ms:
+        perf.add_row("TPOT (per token)", f"{best.tpot_ms} ms")
+    perf.add_row("p95 latency", f"{best.p95_latency_ms} ms (end-to-end)")
     perf.add_row("Utilisation", f"{best.utilisation:.1%}")
     if best.max_concurrent_seqs:
         perf.add_row("Max concurrent/GPU", f"{best.max_concurrent_seqs} seqs (KV-cache bound)")
