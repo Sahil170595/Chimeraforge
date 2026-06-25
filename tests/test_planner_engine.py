@@ -7,7 +7,12 @@ import json
 import pytest
 
 from chimeraforge.planner.constants import BACKENDS, MODEL_PARAMS_B, QUANT_LEVELS
-from chimeraforge.planner.engine import enumerate_candidates, find_models_for_size
+from chimeraforge.planner.engine import (
+    enumerate_candidates,
+    find_models_for_size,
+    summarize_trace,
+)
+from chimeraforge.planner.resolver import ModelSpec
 
 
 # ── Planner Engine ───────────────────────────────────────────────────
@@ -125,6 +130,264 @@ class TestPlanner:
         assert len(data) > 0
         assert "model" in data[0]
         assert "monthly_cost" in data[0]
+
+
+# ── Model-Agnostic Specs ─────────────────────────────────────────────
+
+
+class TestOffRegistrySpecs:
+    """Off-registry models resolved to a ModelSpec drive the search."""
+
+    def _offreg_spec(self, name="mistralai/Mistral-7B-Instruct"):
+        # A genuinely off-registry 7B (no registry_alias) -> roofline + unknowns.
+        return ModelSpec(
+            name=name,
+            params_b=7.24,
+            n_layers=32,
+            n_kv_heads=8,
+            d_head=128,
+            family="mistral",
+            source="hf",
+        )
+
+    def test_offregistry_model_produces_candidates(self, bundled_models):
+        spec = self._offreg_spec()
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=[spec.name],
+            hardware="RTX 4090 24GB",
+            request_rate=1.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={spec.name: spec},
+        )
+        assert cands
+        c = cands[0]
+        assert c.params_b == 7.24
+        assert c.model_source == "hf"
+
+    def test_offregistry_provenance_is_honest(self, bundled_models):
+        spec = self._offreg_spec()
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=[spec.name],
+            hardware="RTX 4090 24GB",
+            request_rate=1.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={spec.name: spec},
+        )
+        c = cands[0]
+        assert c.provenance["throughput"] == "estimated"
+        assert c.provenance["quality"] in ("estimated", "unknown")
+        assert c.provenance["safety"] == "unknown"
+        assert any("roofline" in w for w in c.warnings)
+
+    def test_vram_uses_resolved_arch_not_default(self, bundled_models):
+        # A wide-KV spec must cost more VRAM than a narrow-KV one at same params.
+        wide = ModelSpec(
+            name="wide", params_b=7.0, n_layers=32, n_kv_heads=32, d_head=128, source="manual"
+        )
+        narrow = ModelSpec(
+            name="narrow", params_b=7.0, n_layers=32, n_kv_heads=2, d_head=128, source="manual"
+        )
+        v_wide = bundled_models.vram.predict(
+            "wide", "FP16", 8192, params_b=wide.params_b, arch=wide.arch()
+        )
+        v_narrow = bundled_models.vram.predict(
+            "narrow", "FP16", 8192, params_b=narrow.params_b, arch=narrow.arch()
+        )
+        assert v_wide > v_narrow  # KV cache scales with kv heads
+
+    def test_registry_alias_reuses_measured_data(self, bundled_models):
+        # An offline approximation (registry_alias set) must reuse the registry
+        # model's measured throughput/quality, not a roofline estimate.
+        approx = ModelSpec(
+            name="llama3.2:3b",
+            params_b=3.21,
+            n_layers=28,
+            n_kv_heads=8,
+            d_head=128,
+            family="llama3.2",
+            source="registry-approx",
+            registry_alias="llama3.2-3b",
+        )
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2:3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=300,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"llama3.2:3b": approx},
+        )
+        reg = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=300,
+            avg_tokens=128,
+            context_length=2048,
+        )
+        # Same best-candidate economics despite the aliased tag.
+        assert cands[0].throughput_tps == reg[0].throughput_tps
+        assert cands[0].quality == reg[0].quality
+        assert any("approximated" in w for w in cands[0].warnings)
+
+
+class TestRejectionTrace:
+    """The optional trace explains why a search returned nothing."""
+
+    def test_vram_blocked_trace(self, bundled_models):
+        trace: list = []
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.1-8b"],
+            hardware="RTX 4060 8GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.99,  # also impossible, but VRAM bites first per quant
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            trace=trace,
+        )
+        assert cands == []
+        assert trace  # rejections recorded
+        gates = {t[2] for t in trace}
+        assert "vram" in gates or "quality" in gates
+
+    def test_summarize_trace_picks_binding_gate(self, bundled_models):
+        # 14B off-registry at an extreme rate even 16 linear replicas can't serve
+        # -> throughput-bound (the fastest/smallest quant fits VRAM but not rate).
+        spec = ModelSpec(
+            name="big/m", params_b=14.0, n_layers=40, n_kv_heads=8, d_head=128, source="hf"
+        )
+        trace: list = []
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["big/m"],
+            hardware="RTX 4090 24GB",
+            request_rate=30.0,  # 30*128=3840 tok/s; 16 replicas of a 14B can't reach it
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"big/m": spec},
+            trace=trace,
+        )
+        assert cands == []
+        lines = summarize_trace(trace)
+        assert any("big/m" in ln and "throughput" in ln for ln in lines)
+
+    def test_linear_replica_scaling_unblocks_large_models(self, bundled_models):
+        # C-1: N independent GPUs scale linearly, so a 7B that one GPU can't serve
+        # at the rate now plans with multiple replicas (used to be rejected when
+        # Amdahl capped total throughput at ~1.8x regardless of N).
+        spec = ModelSpec(
+            name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
+        )
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["mistral/7b"],
+            hardware="RTX 4080 12GB",
+            request_rate=1.0,  # 128 tok/s; one 7B replica can't, several can
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"mistral/7b": spec},
+        )
+        assert cands, "linear replica scaling should let a 7B meet 1 req/s with N>1"
+        c = cands[0]
+        assert c.n_agents > 1
+        assert c.eta == 1.0  # replicas, not Amdahl
+        # Linear: total throughput is exactly N * per-replica.
+        assert c.total_throughput_tps == pytest.approx(c.n_agents * c.throughput_tps, rel=1e-3)
+
+    def test_cost_per_1m_invariant_in_replica_count(self, bundled_models):
+        # C-2: adding identical replicas must not change $/token (cost and tokens
+        # both scale by N). Previously cost_per_1m was understated by N.
+        spec = ModelSpec(
+            name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
+        )
+
+        def best(rate):
+            cs = enumerate_candidates(
+                models=bundled_models,
+                target_models=["mistral/7b"],
+                hardware="RTX 4080 12GB",
+                request_rate=rate,
+                latency_slo=10000,
+                quality_target=0.0,
+                budget=10000,
+                avg_tokens=128,
+                context_length=2048,
+                specs={"mistral/7b": spec},
+            )
+            return next(c for c in cs if c.quant == "Q4_K_M")
+
+        low, high = best(1.0), best(3.0)
+        assert high.n_agents > low.n_agents  # more replicas at higher rate
+        assert high.cost_per_1m_tok == pytest.approx(low.cost_per_1m_tok, rel=1e-3)
+
+    def test_native_legacy_quant_pinned_and_costed(self, bundled_models):
+        # M-2: a q4_0 native tag must be evaluated at q4_0 (real bpw), not dropped.
+        spec = ModelSpec(
+            name="x/y:q4_0",
+            params_b=7.0,
+            n_layers=32,
+            n_kv_heads=8,
+            d_head=128,
+            native_quant="Q4_0",
+            source="ollama",
+        )
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["x/y:q4_0"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=1000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"x/y:q4_0": spec},
+        )
+        assert cands
+        assert {c.quant for c in cands} == {"Q4_0"}  # pinned, not the full ladder
+        # Q4_0 (4.5 bpw) VRAM must be well below the FP16 (16 bpw) footprint.
+        assert cands[0].vram_gb < 7.0 * 16 / 8
+
+    def test_no_trace_overhead_when_none(self, bundled_models):
+        # Passing trace=None must not raise and must still search normally.
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=200,
+            avg_tokens=128,
+            context_length=2048,
+            trace=None,
+        )
+        assert cands
 
 
 # ── Safety Gate (Gate 5) ─────────────────────────────────────────────

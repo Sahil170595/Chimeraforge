@@ -91,6 +91,64 @@ class TestCLIPlan:
         assert "safety_refusal" in data[0]
         assert "rtsi_risk" in data[0]
 
+    def test_plan_help_lists_model_flag(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(app, ["plan", "--help"])
+        assert "--model" in self._strip_ansi(result.output)
+
+    def test_plan_offregistry_manual_override_json(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            [
+                "plan",
+                "--model",
+                "mystery/model-7b",
+                "--params-b",
+                "7.0",
+                "--n-layers",
+                "32",
+                "--n-kv-heads",
+                "8",
+                "--d-head",
+                "128",
+                "--no-network",
+                "--quality-target",
+                "0",
+                "--budget",
+                "1000",
+                "--hardware",
+                "RTX 4090 24GB",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0
+        data = self._extract_json(result.output)
+        assert data
+        c = data[0]
+        assert c["model"] == "mystery/model-7b"
+        assert c["params_b"] == 7.0
+        assert c["model_source"] == "manual"
+        assert c["provenance"]["throughput"] == "estimated"
+        assert c["provenance"]["safety"] == "unknown"
+
+    def test_plan_overrides_require_single_model(self):
+        from typer.testing import CliRunner
+        from chimeraforge.cli import app
+
+        runner = CliRunner()
+        result = runner.invoke(
+            app,
+            ["plan", "--model", "a/b", "--model", "c/d", "--params-b", "7.0"],
+        )
+        assert result.exit_code == 1
+
     def test_plan_safety_filters_collapse_cell(self):
         from typer.testing import CliRunner
         from chimeraforge.cli import app

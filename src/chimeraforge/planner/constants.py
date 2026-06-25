@@ -5,22 +5,52 @@ Extracted from TR133 research. No repo-specific paths or imports.
 
 from __future__ import annotations
 
-# Quant ordering: highest precision first
+# Canonical search ladder for the planner's quant sweep (highest precision first).
 QUANT_LEVELS = ["FP16", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q3_K_S", "Q2_K"]
 
-# Approximate bits-per-weight
+# Approximate effective bits-per-weight (incl. GGUF block/scale overhead). Broader
+# than QUANT_LEVELS so a model's *native* quant (e.g. an Ollama `q4_0`/`IQ4_XS`
+# tag) resolves to a real VRAM footprint instead of silently defaulting to FP16.
 QUANT_BPW: dict[str, float] = {
+    "FP32": 32.0,
     "FP16": 16.0,
+    "BF16": 16.0,
     "Q8_0": 8.0,
     "Q6_K": 6.5,
     "Q5_K_M": 5.5,
+    "Q5_K_S": 5.4,
+    "Q5_1": 6.0,
+    "Q5_0": 5.5,
     "Q4_K_M": 4.5,
+    "Q4_K_S": 4.4,
+    "Q4_1": 5.0,
+    "Q4_0": 4.5,
+    "Q3_K_L": 4.3,
+    "Q3_K_M": 3.9,
     "Q3_K_S": 3.5,
     "Q2_K": 2.5,
+    "Q2_K_S": 2.3,
+    "IQ4_NL": 4.5,
+    "IQ4_XS": 4.25,
+    "IQ3_S": 3.4,
+    "IQ3_XXS": 3.06,
+    "IQ2_M": 2.7,
+    "IQ2_XXS": 2.06,
+    "IQ1_S": 1.56,
 }
 
 # Supported serving backends
 BACKENDS = ["ollama", "vllm", "tgi"]
+
+# Roofline throughput estimate for off-registry models. Decode is memory-bound:
+# each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
+# MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16
+# datapoint: 146.33 tok/s / (556 GB/s / 2.48 GB) = 0.65 (see models.ThroughputModel).
+MBU_DEFAULT = 0.65
+
+# Default architecture used only when a model's real config cannot be resolved.
+DEFAULT_ARCH: dict[str, int] = {"n_layers": 32, "n_kv_heads": 8, "d_head": 128}
+DEFAULT_PARAMS_B = 3.0
 
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {

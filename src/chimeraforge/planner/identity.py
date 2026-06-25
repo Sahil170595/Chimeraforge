@@ -15,14 +15,19 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from chimeraforge.planner.constants import MODEL_FAMILY, MODEL_PARAMS_B, QUANT_LEVELS
+from chimeraforge.planner.constants import MODEL_FAMILY, MODEL_PARAMS_B, QUANT_BPW
 
-# Family generations recognised in identifiers. Order matters: more specific
-# generations first so "llama3.2" is preferred and not shadowed by "llama3.1".
-_FAMILIES = ("llama3.2", "llama3.1", "qwen2.5", "mistral", "phi")
+# Family generations recognised in identifiers. Derived from the registry so the
+# two can't drift, plus extras we can parse even without registry coverage.
+# Ordered longest-first so a specific generation ("llama3.2") is matched before a
+# prefix of it ("llama3.1" / "llama3").
+_EXTRA_FAMILIES = ("mistral", "gemma2", "gemma", "phi")
+_FAMILIES = tuple(sorted(set(MODEL_FAMILY.values()) | set(_EXTRA_FAMILIES), key=len, reverse=True))
 
 _PARAMS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*b\b", re.IGNORECASE)
-_QUANT_RE = re.compile(r"\b(q\d_?[a-z0-9_]*|fp16|f16)\b", re.IGNORECASE)
+# Match GGUF quant tags: K-quants (q4_K_M), legacy (q4_0/q5_1), i-quants (iq4_xs),
+# and float types (fp16/f16/bf16/f32).
+_QUANT_RE = re.compile(r"\b(iq\d[a-z0-9_]*|q\d_?[a-z0-9_]*|bf16|fp16|f16|f32)\b", re.IGNORECASE)
 _VARIANT_RE = re.compile(r"\b(instruct|chat|base|it)\b", re.IGNORECASE)
 
 # Accept the nearest same-family registry model within this fraction of params.
@@ -59,12 +64,20 @@ def parse_params_b(identifier: str) -> float | None:
 
 
 def parse_quant(identifier: str) -> str | None:
-    """Extract and normalise a quant level (e.g. ``q4_K_M`` -> ``Q4_K_M``)."""
+    """Extract and normalise a quant tag (e.g. ``q4_K_M`` -> ``Q4_K_M``).
+
+    Recognises any quant in ``QUANT_BPW`` (K-quants, legacy, i-quants, floats);
+    returns None for unknown tags so callers fall back to the search ladder.
+    """
     m = _QUANT_RE.search(identifier)
     if not m:
         return None
-    q = m.group(1).upper().replace("F16", "FP16")
-    return q if q in QUANT_LEVELS else None
+    q = m.group(1).upper()
+    if q == "F16":
+        q = "FP16"
+    elif q == "F32":
+        q = "FP32"
+    return q if q in QUANT_BPW else None
 
 
 def parse_variant(identifier: str) -> str | None:

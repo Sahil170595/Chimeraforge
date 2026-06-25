@@ -141,6 +141,7 @@ async def run_benchmark(
     prompt: str | None = None,
     options: dict | None = None,
     on_progress: Callable[[int, int], None] | None = None,
+    concurrency: int | None = None,
 ) -> BenchmarkResult:
     """Run a complete benchmark for one configuration.
 
@@ -156,6 +157,8 @@ async def run_benchmark(
         prompt: Custom prompt (default: PROMPT_MEDIUM).
         options: Additional backend-specific generation options.
         on_progress: Callback(completed, total) for progress tracking.
+        concurrency: Override the profile's concurrency (batch/server only),
+            so callers can measure scaling at a known N.
 
     Returns:
         BenchmarkResult with individual and aggregate metrics.
@@ -190,8 +193,12 @@ async def run_benchmark(
     if backend_name == "ollama":
         effective_options.setdefault("num_ctx", context_length)
 
-    # Get workload profile
+    # Get workload profile (optionally overriding concurrency)
     profile = get_profile(workload, rate=rate, runs=runs)
+    if concurrency is not None:
+        from dataclasses import replace
+
+        profile = replace(profile, concurrency=concurrency)
 
     # Collect environment
     env = collect_environment(backend_name, backend_version)

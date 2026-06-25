@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-24
+
+### Added
+- **Model-agnostic planning.** `plan --model <id>` accepts any model identifier —
+  a registry name, an Ollama tag (`ollama:NAME` / colon tags), or a Hugging Face
+  repo (`org/name`) — and resolves real parameters + attention geometry instead
+  of being limited to the bundled registry. Sources (priority order): manual
+  overrides (`--params-b/--n-layers/--n-kv-heads/--d-head`), registry, on-disk
+  spec cache, Ollama `/api/show`, HF `config.json` + `safetensors` param count,
+  then offline family/size approximation (`planner.resolver`).
+- **`suggest`** — discover and rank deployable models from a live Ollama
+  (`/api/tags`), the HF Hub (top text-generation), and/or the local catalog,
+  through the same gate search (`planner.discovery`).
+- **`catalog`** — build a persisted spec catalog from a curated seed
+  (`catalog --build`) so `suggest --source catalog` ranks models fully offline.
+- **`measure`** / **`plan --measure`** — benchmark a live model (real N=1
+  throughput, service time, and concurrency scaling → serial fraction) and fold
+  it into a local `fitted_models.json` via the `refit` loop, so plans run on
+  measured numbers (provenance: `measured`) rather than estimates.
+- **Per-prediction provenance** (`measured` / `estimated` / `unknown`) on every
+  candidate, surfaced in output (`~` markers) and as warnings.
+- **Rejection diagnostics** — `plan` reports the binding gate ("Why nothing fit")
+  on an empty result.
+- Roofline throughput estimate for off-registry models (memory-bandwidth bound).
+- Broader quant support: legacy and i-quants (`Q4_0`, `Q5_1`, `IQ4_XS`, …) are
+  recognised with effective bits-per-weight, so a model's native quant is costed
+  correctly instead of silently defaulting to FP16.
+- `resolve` extra (`httpx`) for network metadata resolution.
+
+### Fixed
+- **Throughput scaling across instances is now linear.** `n_agents` counts
+  independent GPU replicas (VRAM and cost are per-GPU), so total throughput scales
+  linearly; the previous Amdahl serial-fraction model wrongly capped it at ~1.8×
+  regardless of instance count, rejecting essentially every model ≥7B. (Per-GPU
+  batching throughput is intentionally future work.)
+- **`cost_per_1m_tok` no longer understated by the instance count** — it now uses
+  the N-GPU cost to match the N-GPU throughput, so adding identical replicas
+  leaves $/token unchanged (was N× too low).
+
+### Changed
+- `plan` / `suggest` prefer a measured corpus
+  (`~/.cache/chimeraforge/fitted_models.json`) over bundled coefficients when present.
+
 ## [0.4.1] - 2026-06-22
 
 ### Added

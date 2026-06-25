@@ -19,8 +19,14 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from chimeraforge.planner.constants import MODEL_ARCH, MODEL_PARAMS_B, QUANT_BPW
-from chimeraforge.planner.hardware import bandwidth_ratio
+from chimeraforge.planner.constants import (
+    MBU_DEFAULT,
+    MODEL_ARCH,
+    MODEL_FAMILY,
+    MODEL_PARAMS_B,
+    QUANT_BPW,
+)
+from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
 
 log = logging.getLogger("chimeraforge.planner.models")
 
@@ -42,13 +48,19 @@ class VRAMModel:
         quant: str,
         context_length: int = 2048,
         batch_size: int = 1,
+        params_b: float | None = None,
+        arch: dict[str, int] | None = None,
     ) -> float:
-        """Predict VRAM in GB."""
-        params = MODEL_PARAMS_B.get(model, 3.0)
+        """Predict VRAM in GB.
+
+        ``params_b``/``arch`` override the bundled registry, letting a resolved
+        off-registry ModelSpec drive an exact weight + KV-cache estimate.
+        """
+        params = params_b if params_b is not None else MODEL_PARAMS_B.get(model, 3.0)
         bpw = QUANT_BPW.get(quant, 16.0)
         weight_gb = params * bpw / 8
 
-        arch = MODEL_ARCH.get(model, {"n_layers": 32, "n_kv_heads": 8, "d_head": 128})
+        arch = arch or MODEL_ARCH.get(model, {"n_layers": 32, "n_kv_heads": 8, "d_head": 128})
 
         kv_bytes = (
             2
@@ -95,6 +107,25 @@ class ThroughputModel:
     size_power_b: float = 0.5
     fitted: bool = False
 
+    def quant_multiplier(self, quant: str) -> float:
+        """Throughput multiplier for a quant vs FP16.
+
+        Exact lookup when fitted; otherwise the nearest known quant by effective
+        bpw (so legacy/i-quants like ``Q4_0``/``IQ4_XS`` get a sane speed instead
+        of being treated as FP16). Falls back to 1.0 when nothing is known.
+        """
+        if quant in self.quant_multipliers:
+            return self.quant_multipliers[quant]
+        bpw = QUANT_BPW.get(quant)
+        if bpw is None:
+            return 1.0
+        known = [
+            (QUANT_BPW[q], mult) for q, mult in self.quant_multipliers.items() if q in QUANT_BPW
+        ]
+        if not known:
+            return 1.0
+        return min(known, key=lambda x: abs(x[0] - bpw))[1]
+
     def predict(
         self,
         model: str,
@@ -109,7 +140,7 @@ class ThroughputModel:
         else:
             fp16_key = f"{model}|{backend}|FP16"
             fp16_tps = self.lookup.get(fp16_key)
-            qm = self.quant_multipliers.get(quant, 1.0)
+            qm = self.quant_multiplier(quant)
 
             if fp16_tps:
                 tps = fp16_tps * qm
@@ -121,6 +152,36 @@ class ThroughputModel:
             tps *= bandwidth_ratio(hardware)
 
         return max(tps, 0.1)
+
+    def roofline_tps(
+        self,
+        params_b: float,
+        quant: str = "FP16",
+        hardware: str | None = None,
+        mbu: float = MBU_DEFAULT,
+    ) -> float:
+        """Memory-bandwidth-bound decode throughput for an off-registry model.
+
+        Decode reads every weight once per token. Written as an FP16 bandwidth
+        roofline times the empirical quant speedup:
+
+            tps = (MBU * bw / fp16_weight_gb) * quant_multiplier(quant)
+
+        This is algebraically identical to a *quantized*-weight roofline scaled by
+        a dequant-efficiency factor: ``MBU*bw/quant_weight_gb * (qm * bpw/16)``.
+        Using the measured multiplier (Q4_K_M ~= 1.9x) is deliberate -- a pure
+        quantized roofline assumes decode is purely bandwidth-bound and predicts
+        ~3.6x for Q4, ~2x higher than measured (dequant is not free). MBU=0.65 is
+        calibrated on the llama3.2-1b ollama FP16 datapoint. Used when no measured
+        lookup exists for (model, backend); the `measure` path supersedes it.
+        """
+        if params_b <= 0:
+            return 0.1
+        gpu = get_gpu(hardware) if hardware else None
+        bandwidth = gpu.bandwidth_gbps if gpu else 556.0  # RTX 4080 reference
+        fp16_weight_gb = params_b * 16.0 / 8.0
+        base_tps = mbu * bandwidth / fp16_weight_gb
+        return max(base_tps * self.quant_multiplier(quant), 0.1)
 
     def to_dict(self) -> dict:
         return {
@@ -221,6 +282,35 @@ class QualityModel:
             return max(0.0, min(1.0, fp16 + delta))
         return 0.5
 
+    def estimate(self, model: str, quant: str, family: str | None = None) -> tuple[float, str]:
+        """Predict quality and report provenance: measured | estimated | unknown.
+
+        - ``measured``: a direct (model, quant) lookup hit (TR-backed).
+        - ``estimated``: derived from the model's own FP16 baseline + quant delta,
+          or, for an off-registry model, the mean FP16 baseline of its family.
+        - ``unknown``: no basis -- returns the neutral 0.5 prior, flagged so the
+          caller never mistakes a guess for data.
+        """
+        if f"{model}|{quant}" in self.lookup:
+            return self.lookup[f"{model}|{quant}"], "measured"
+
+        fp16 = self.fp16_baselines.get(model)
+        if fp16 is None and f"{model}|FP16" in self.lookup:
+            fp16 = self.lookup[f"{model}|FP16"]
+        if fp16 is None and family is not None:
+            same_family = [
+                v for m, v in self.fp16_baselines.items() if MODEL_FAMILY.get(m) == family
+            ]
+            if same_family:
+                fp16 = sum(same_family) / len(same_family)
+
+        if fp16 is None:
+            return 0.5, "unknown"
+        if quant == "FP16":
+            return fp16, "estimated"
+        delta = self.quant_deltas.get(quant, 0.0)
+        return max(0.0, min(1.0, fp16 + delta)), "estimated"
+
     def quality_tier(self, model: str, quant: str) -> str:
         """Classify quality drop into a tier."""
         fp16 = self.fp16_baselines.get(model)
@@ -311,11 +401,20 @@ class LatencyModel:
         throughput_model: ThroughputModel | None = None,
         scaling_model: ScalingModel | None = None,
         hardware: str | None = None,
+        n1_tps: float | None = None,
     ) -> dict:
-        """Predict p95 latency and utilisation."""
+        """Predict p95 latency and utilisation.
+
+        ``n1_tps`` lets the caller supply an already-computed N=1 throughput (e.g.
+        a roofline estimate for an off-registry model) so the service time stays
+        consistent with the engine's throughput choice instead of being
+        recomputed from the lookup/power-law default.
+        """
         service_ms = None
 
-        if throughput_model is not None:
+        if n1_tps is not None and n1_tps > 0:
+            service_ms = avg_tokens / n1_tps * 1000
+        elif throughput_model is not None:
             tps = throughput_model.predict(model, backend, quant, hardware)
             if tps > 0:
                 service_ms = avg_tokens / tps * 1000
@@ -466,3 +565,24 @@ def load_bundled_models() -> PlannerModels:
     models_file = data_dir / "fitted_models.json"
     with pkg_resources.as_file(models_file) as p:
         return load_models(p)
+
+
+def load_effective_models(models_path: str | Path | None = None) -> PlannerModels:
+    """Load the planner models, preferring measured data when available.
+
+    Priority: an explicit ``models_path`` > the on-demand measured corpus
+    (written by ``measure``) > the bundled data. This closes the empirical loop
+    so a model benchmarked once is planned on real numbers thereafter, without
+    re-passing ``--models-path``.
+    """
+    if models_path:
+        return load_models(models_path)
+    from chimeraforge.planner.resolver import measured_corpus_path
+
+    corpus = measured_corpus_path()
+    if corpus.is_file():
+        try:
+            return load_models(corpus)
+        except (ValueError, OSError) as exc:
+            log.warning("ignoring unreadable measured corpus %s: %s", corpus, exc)
+    return load_bundled_models()
