@@ -216,6 +216,42 @@ class ThroughputModel:
         base_tps = mbu * bandwidth / fp16_weight_gb
         return max(base_tps * self.quant_multiplier(quant), 0.1)
 
+    def batched_decode_tps(
+        self,
+        n1_tps: float,
+        kv_per_seq_gb: float,
+        batch: int,
+        hardware: str | None = None,
+        params_b: float | None = None,
+        mbu: float = MBU_DEFAULT,
+    ) -> float:
+        """Aggregate decode tok/s for a continuous-batching backend at batch B.
+
+        Anchored to the single-stream ``n1_tps`` (measured or roofline, so it stays
+        quant-correct), then adds KV-amortization physics: at batch B the weights
+        are read once per step but each of the B sequences reads its own KV, so
+
+            aggregate(B) = B * bw*MBU / (weight_eff + B * kv_per_seq)
+
+        where ``weight_eff = bw*MBU / n1_tps`` backs the effective weight bytes out
+        of the calibrated single-stream rate. Rises ~linearly with B while weights
+        dominate, then saturates at ``bw*MBU / kv_per_seq`` (KV-bandwidth bound).
+        Capped by the decode compute ceiling. Returns ``n1_tps`` for batch <= 1.
+        """
+        if batch <= 1 or n1_tps <= 0:
+            return max(n1_tps, 0.1)
+        gpu = get_gpu(hardware) if hardware else None
+        bandwidth = gpu.bandwidth_gbps if gpu else 556.0
+        denom = bandwidth * mbu  # effective GB/s
+        weight_eff_gb = denom / n1_tps
+        agg = batch * denom / (weight_eff_gb + batch * kv_per_seq_gb)
+        if params_b and gpu and gpu.fp16_tflops > 0:
+            from chimeraforge.planner.constants import DECODE_COMPUTE_MFU
+
+            compute_ceiling = gpu.fp16_tflops * 1e12 * DECODE_COMPUTE_MFU / (2 * params_b * 1e9)
+            agg = min(agg, compute_ceiling)
+        return max(agg, n1_tps)
+
     def to_dict(self) -> dict:
         return {
             "lookup": self.lookup,
@@ -457,13 +493,17 @@ class LatencyModel:
         hardware: str | None = None,
         n1_tps: float | None = None,
         ttft_ms: float = 0.0,
+        concurrent_per_agent: int = 1,
     ) -> dict:
         """Predict p95 latency and utilisation.
 
-        ``n1_tps`` lets the caller supply an already-computed N=1 (decode)
-        throughput so the service time matches the engine's throughput choice.
-        ``ttft_ms`` adds the prefill term, so service time is the full request:
-        prefill (TTFT) + avg_tokens * decode-per-token (TPOT).
+        ``n1_tps`` is the rate a *single request* decodes at (slower at high batch
+        under contention), driving the in-service latency. ``concurrent_per_agent``
+        is how many requests one GPU serves at once (the batch size for a
+        continuous-batching backend; 1 for replicas), so system capacity is
+        ``n_agents * concurrent_per_agent / service_time`` -- this decouples
+        per-request latency from aggregate capacity. ``ttft_ms`` adds prefill, so
+        service time is the full request: TTFT + avg_tokens * decode-per-token.
         """
         service_ms = None
 
@@ -487,7 +527,7 @@ class LatencyModel:
         eta = 1.0
         if scaling_model and n_agents > 1:
             eta = scaling_model.predict_eta(model, backend, n_agents)
-        total_capacity = n_agents * mu * eta
+        total_capacity = n_agents * concurrent_per_agent * mu * eta
 
         rho = request_rate / total_capacity if total_capacity > 0 else 1.0
         saturated = rho > self.safety_factor

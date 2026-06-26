@@ -42,6 +42,20 @@ QUANT_BPW: dict[str, float] = {
 # Supported serving backends
 BACKENDS = ["ollama", "vllm", "tgi"]
 
+# Which backends do continuous (in-flight) batching -- one GPU serves many
+# sequences concurrently, amortizing weight reads. Ollama (llama.cpp) effectively
+# serves one stream per slot, so it is modelled at batch=1 (replicas, not batch).
+BACKEND_CONTINUOUS_BATCHING: dict[str, bool] = {
+    "ollama": False,
+    "vllm": True,
+    "tgi": True,
+}
+
+# Decode compute-utilisation ceiling for batched decode (when large batches turn
+# the FC/MLP kernels compute-bound). Decode is mostly memory-bound, so this acts
+# as a safety cap rarely reached on consumer GPUs.
+DECODE_COMPUTE_MFU = 0.5
+
 # Roofline throughput estimate for off-registry models. Decode is memory-bound:
 # each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
 # MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16

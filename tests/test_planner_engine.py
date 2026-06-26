@@ -311,8 +311,8 @@ class TestRejectionTrace:
         assert "vram" in gates or "quality" in gates
 
     def test_summarize_trace_picks_binding_gate(self, bundled_models):
-        # 14B off-registry at an extreme rate even 16 linear replicas can't serve
-        # -> throughput-bound (the fastest/smallest quant fits VRAM but not rate).
+        # 14B at an extreme rate that even 16 GPUs x max batch can't serve
+        # -> throughput-bound (the smallest quant fits VRAM but not the rate).
         spec = ModelSpec(
             name="big/m", params_b=14.0, n_layers=40, n_kv_heads=8, d_head=128, source="hf"
         )
@@ -321,10 +321,10 @@ class TestRejectionTrace:
             models=bundled_models,
             target_models=["big/m"],
             hardware="RTX 4090 24GB",
-            request_rate=30.0,  # 30*128=3840 tok/s; 16 replicas of a 14B can't reach it
+            request_rate=500.0,  # 64000 tok/s; beyond 16 GPUs even with batching
             latency_slo=10000,
             quality_target=0.0,
-            budget=100000,
+            budget=1_000_000,
             avg_tokens=128,
             context_length=2048,
             specs={"big/m": spec},
@@ -335,9 +335,9 @@ class TestRejectionTrace:
         assert any("big/m" in ln and "throughput" in ln for ln in lines)
 
     def test_linear_replica_scaling_unblocks_large_models(self, bundled_models):
-        # C-1: N independent GPUs scale linearly, so a 7B that one GPU can't serve
-        # at the rate now plans with multiple replicas (used to be rejected when
-        # Amdahl capped total throughput at ~1.8x regardless of N).
+        # C-1: a 7B that one single-stream GPU can't serve at the rate now plans
+        # (was rejected when Amdahl capped total throughput at ~1.8x). On the
+        # non-batching Ollama path that means linear replicas (eta=1).
         spec = ModelSpec(
             name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
         )
@@ -345,7 +345,7 @@ class TestRejectionTrace:
             models=bundled_models,
             target_models=["mistral/7b"],
             hardware="RTX 4080 12GB",
-            request_rate=1.0,  # 128 tok/s; one 7B replica can't, several can
+            request_rate=1.0,
             latency_slo=10000,
             quality_target=0.0,
             budget=1000,
@@ -353,21 +353,22 @@ class TestRejectionTrace:
             context_length=2048,
             specs={"mistral/7b": spec},
         )
-        assert cands, "linear replica scaling should let a 7B meet 1 req/s with N>1"
-        c = cands[0]
-        assert c.n_agents > 1
-        assert c.eta == 1.0  # replicas, not Amdahl
-        # Linear: total throughput is exactly N * per-replica.
-        assert c.total_throughput_tps == pytest.approx(c.n_agents * c.throughput_tps, rel=1e-3)
+        assert cands, "a 7B should now plan at 1 req/s (not rejected)"
+        ollama = next(c for c in cands if c.backend == "ollama")
+        assert ollama.effective_batch == 1  # Ollama = single-stream replicas
+        assert ollama.n_agents > 1  # needs several replicas at this rate
+        assert ollama.total_throughput_tps == pytest.approx(
+            ollama.n_agents * ollama.throughput_tps, rel=1e-3
+        )
 
     def test_cost_per_1m_invariant_in_replica_count(self, bundled_models):
-        # C-2: adding identical replicas must not change $/token (cost and tokens
-        # both scale by N). Previously cost_per_1m was understated by N.
+        # C-2: adding identical (single-stream) replicas must not change $/token.
+        # Use the Ollama path, where higher rate genuinely adds replicas.
         spec = ModelSpec(
             name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
         )
 
-        def best(rate):
+        def ollama_q4(rate):
             cs = enumerate_candidates(
                 models=bundled_models,
                 target_models=["mistral/7b"],
@@ -380,11 +381,56 @@ class TestRejectionTrace:
                 context_length=2048,
                 specs={"mistral/7b": spec},
             )
-            return next(c for c in cs if c.quant == "Q4_K_M")
+            return next(c for c in cs if c.backend == "ollama" and c.quant == "Q4_K_M")
 
-        low, high = best(1.0), best(3.0)
+        low, high = ollama_q4(1.0), ollama_q4(3.0)
         assert high.n_agents > low.n_agents  # more replicas at higher rate
         assert high.cost_per_1m_tok == pytest.approx(low.cost_per_1m_tok, rel=1e-3)
+
+
+class TestContinuousBatching:
+    """0.6.0: batched backends serve concurrent requests on one GPU (vLLM/TGI)."""
+
+    def _spec(self):
+        return ModelSpec(
+            name="m/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
+        )
+
+    def _plan(self, models, rate):
+        return enumerate_candidates(
+            models=models,
+            target_models=["m/7b"],
+            hardware="RTX 4090 24GB",
+            request_rate=rate,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=10000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"m/7b": self._spec()},
+        )
+
+    def test_vllm_batches_ollama_does_not(self, bundled_models):
+        cands = self._plan(bundled_models, rate=2.0)
+        vllm = next(c for c in cands if c.backend == "vllm")
+        ollama = next(c for c in cands if c.backend == "ollama")
+        assert vllm.effective_batch > 1  # continuous batching
+        assert ollama.effective_batch == 1  # single-stream
+
+    def test_batching_needs_fewer_gpus_than_replicas(self, bundled_models):
+        # At a rate one single-stream GPU can't serve, vLLM should meet it with
+        # fewer GPUs than Ollama (batching replaces replicas).
+        cands = self._plan(bundled_models, rate=3.0)
+        vllm = next(c for c in cands if c.backend == "vllm")
+        ollama = next(c for c in cands if c.backend == "ollama")
+        assert vllm.n_agents <= ollama.n_agents
+        # vLLM aggregate per the batch is well above single-stream.
+        assert vllm.total_throughput_tps >= ollama.total_throughput_tps
+
+    def test_batch_bounded_by_kv_cache(self, bundled_models):
+        cands = self._plan(bundled_models, rate=5.0)
+        vllm = next(c for c in cands if c.backend == "vllm")
+        assert vllm.effective_batch <= vllm.max_concurrent_seqs
 
     def test_native_legacy_quant_pinned_and_costed(self, bundled_models):
         # M-2: a q4_0 native tag must be evaluated at q4_0 (real bpw), not dropped.

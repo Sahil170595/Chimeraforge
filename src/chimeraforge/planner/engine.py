@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
+    BACKEND_CONTINUOUS_BATCHING,
     BACKENDS,
     DEFAULT_ARCH,
     DEFAULT_PROMPT_TOKENS,
@@ -51,6 +52,8 @@ class Candidate:
     # Latency split (0.6.0): prefill time-to-first-token + decode time-per-output-token.
     ttft_ms: float = 0.0
     tpot_ms: float = 0.0
+    # Continuous-batching: requests served concurrently per GPU (B; 1 = single-stream).
+    effective_batch: int = 1
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -155,15 +158,13 @@ def enumerate_candidates(
                 _reject(model, quant, "vram", f"{vram:.1f}GB > {hw_vram:.0f}GB capacity")
                 continue
 
-            # KV-cache-bound concurrency a single GPU can hold (backend-independent;
-            # informational in 0.5.x, the basis for batched throughput in 0.6.0).
+            # KV-cache-bound concurrency a single GPU can hold + per-sequence KV
+            # size; both feed the batched-throughput model (0.6.0).
+            arch_eff = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
             max_seqs = models.vram.max_concurrent_seqs(
-                params_b,
-                quant,
-                arch or MODEL_ARCH.get(model, DEFAULT_ARCH),
-                context_length,
-                hw_vram,
+                params_b, quant, arch_eff, context_length, hw_vram
             )
+            kv_per_seq_gb = models.vram.kv_cache_gb(arch_eff, context_length, 1)
 
             # Gate 2: Quality (with provenance: measured | estimated | unknown)
             quality, quality_source = models.quality.estimate(lookup_name, quant, family)
@@ -206,45 +207,58 @@ def enumerate_candidates(
                     throughput_source = "estimated"
                     used_roofline = True
 
-                # Find minimum N to meet request_rate. N counts INDEPENDENT GPU
-                # instances (VRAM is per-GPU, cost is per-GPU x N), so replicas
-                # behind a load balancer scale linearly (eta = 1). The Amdahl
-                # serial-fraction model is concurrency-on-one-backend physics, not
-                # replica fan-out; modelling per-GPU batching throughput is Phase 2
-                # (KV-cache-bound). Each replica runs single-stream (conservative).
+                # Search (N replicas x B batch-per-GPU) for the cheapest config
+                # meeting the rate under the latency SLO. N replicas scale linearly
+                # (eta=1). For a continuous-batching backend (vLLM/TGI) one GPU
+                # serves B concurrent sequences -- aggregate throughput rises with
+                # B up to the KV-cache cap -- so a single GPU can replace several
+                # single-stream (Ollama) replicas. Higher B trades per-request
+                # latency (TPOT) for aggregate throughput; we pick the smallest
+                # feasible (N, then B) for lowest cost + lowest latency.
                 eta = 1.0
                 required_tps = request_rate * avg_tokens
+                batched = BACKEND_CONTINUOUS_BATCHING.get(backend, False)
+                b_max = max_seqs if (batched and max_seqs > 1) else 1
+                batch_grid = _batch_grid(b_max)
 
-                # Find minimum N that satisfies both throughput and latency
-                best_n = None
+                best = None  # (n, b, per_gpu_tps, per_req_tps, lat)
                 for n in range(1, 17):
-                    total_tps = n * n1_tps  # linear replica scaling
-                    if total_tps < required_tps:
-                        continue
-
-                    lat = models.latency.predict_p95(
-                        lookup_name,
-                        backend,
-                        request_rate,
-                        n_agents=n,
-                        avg_tokens=avg_tokens,
-                        quant=quant,
-                        hardware=hardware,
-                        n1_tps=n1_tps,
-                        ttft_ms=ttft_ms,
-                    )
-                    if lat["p95_ms"] <= latency_slo:
-                        best_n = n
+                    for b in batch_grid:
+                        per_gpu = models.throughput.batched_decode_tps(
+                            n1_tps, kv_per_seq_gb, b, hardware, params_b
+                        )
+                        if n * per_gpu < required_tps:
+                            continue
+                        per_req = per_gpu / b
+                        lat = models.latency.predict_p95(
+                            lookup_name,
+                            backend,
+                            request_rate,
+                            n_agents=n,
+                            avg_tokens=avg_tokens,
+                            quant=quant,
+                            hardware=hardware,
+                            n1_tps=per_req,
+                            ttft_ms=ttft_ms,
+                            concurrent_per_agent=b,
+                        )
+                        if lat["p95_ms"] <= latency_slo:
+                            best = (n, b, per_gpu, per_req, lat)
+                            break
+                    if best:
                         break
 
-                if best_n is None:
-                    cap_tps = 16 * n1_tps
+                if best is None:
+                    cap_tps = 16 * models.throughput.batched_decode_tps(
+                        n1_tps, kv_per_seq_gb, b_max, hardware, params_b
+                    )
                     if cap_tps < required_tps:
                         _reject(
                             model,
                             quant,
                             "throughput",
-                            f"{backend}: max {cap_tps:.0f} tok/s at N=16 < {required_tps:.0f} needed",
+                            f"{backend}: max {cap_tps:.0f} tok/s at N=16 B={b_max} "
+                            f"< {required_tps:.0f} needed",
                         )
                     else:
                         _reject(
@@ -252,19 +266,9 @@ def enumerate_candidates(
                         )
                     continue
 
-                total_tps = best_n * n1_tps
-                lat = models.latency.predict_p95(
-                    lookup_name,
-                    backend,
-                    request_rate,
-                    n_agents=best_n,
-                    avg_tokens=avg_tokens,
-                    quant=quant,
-                    hardware=hardware,
-                    n1_tps=n1_tps,
-                    ttft_ms=ttft_ms,
-                )
-                tpot_ms = 1000.0 / n1_tps if n1_tps > 0 else 0.0
+                best_n, best_b, per_gpu_tps, per_req_tps, lat = best
+                total_tps = best_n * per_gpu_tps
+                tpot_ms = 1000.0 / per_req_tps if per_req_tps > 0 else 0.0
 
                 # Gate 4: Cost
                 monthly = models.cost.predict_monthly(hw_cost_hr) * best_n
@@ -348,12 +352,25 @@ def enumerate_candidates(
                         max_concurrent_seqs=max_seqs,
                         ttft_ms=round(ttft_ms, 1),
                         tpot_ms=round(tpot_ms, 1),
+                        effective_batch=best_b,
                     )
                 )
 
     # Sort by monthly cost (primary), then by quality (secondary, desc)
     candidates.sort(key=lambda c: (c.monthly_cost, -c.quality))
     return candidates
+
+
+def _batch_grid(b_max: int) -> list[int]:
+    """Batch sizes to try, 1..b_max on a log grid (cheap search, B can be large)."""
+    if b_max <= 1:
+        return [1]
+    grid, b = [], 1
+    while b < b_max:
+        grid.append(b)
+        b *= 2
+    grid.append(b_max)
+    return grid
 
 
 # Order in which a (model, quant) cell is tested; used to pick the *binding*

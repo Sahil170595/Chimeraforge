@@ -75,7 +75,8 @@ def format_recommendation(
     tp_color = "green" if tp_basis == "measured" else "yellow"
     perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis})[/]")
     perf.add_row("Total throughput", f"{best.total_throughput_tps} tok/s")
-    perf.add_row("Scaling eta(N)", str(best.eta))
+    if best.effective_batch > 1:
+        perf.add_row("Batch per GPU", f"{best.effective_batch} concurrent (continuous batching)")
     if best.ttft_ms:
         perf.add_row("TTFT (prefill)", f"{best.ttft_ms} ms")
     if best.tpot_ms:
