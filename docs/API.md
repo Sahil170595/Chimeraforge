@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document covers the public Python API for the `chimeraforge` package (v0.5.0).
+This document covers the public Python API for the `chimeraforge` package (v0.6.0).
 For CLI usage, see the [README](../README.md).
 
 Install: `pip install chimeraforge[all]`

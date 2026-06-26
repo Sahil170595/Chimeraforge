@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-25
+
+State-of-the-art serving model: the planner now reflects how LLM inference
+actually behaves (per the literature - PagedAttention, continuous batching,
+prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
+
+### Added
+- **Continuous-batching throughput.** vLLM/TGI are modelled with per-GPU
+  continuous batching instead of single-stream replicas: aggregate decode
+  throughput rises with batch size up to the KV-cache cap, anchored to the
+  measured/roofline single-stream rate so it stays quant-correct. One GPU can now
+  replace several Ollama replicas (e.g. a 7B at 3 req/s on a 4090: Ollama 5 GPUs
+  vs vLLM 1 GPU at batch 8). `Candidate.effective_batch`.
+- **Prefill/decode split.** Separate **TTFT** (prefill, compute-bound, from GPU
+  FP16 TFLOPS) and **TPOT** (decode, bandwidth-bound); end-to-end p95 now includes
+  prefill. `GPUSpec.fp16_tflops` for all GPUs; `plan --prompt-tokens`.
+- **KV-cache-bound max concurrency** per GPU (`max_concurrent_seqs`), the real
+  concurrency limiter for batched backends.
+- **Pareto frontier** (`plan --pareto`): the non-dominated cost/latency/quality
+  trade-off menu (tags cheapest / fastest / best-quality), not a single pick.
+- **Variance-aware queueing** (`plan --workload steady|chatbot|bursty|agent`):
+  two-moment wait so high-variance/agent workloads inflate the tail and carry a
+  "validate with a load test" warning - analytical queueing otherwise silently
+  approves fleets that miss SLOs for heavy-tailed traffic.
+- Numerical accuracy tests pinning throughput, the roofline calibration anchor,
+  the VRAM formula, TTFT, and batching invariants to ground truth (falsifiability).
+
+### Changed
+- **Throughput scales linearly across GPU replicas** (replaced the Amdahl
+  serial-fraction model, which capped total throughput at ~1.8x regardless of
+  instance count and rejected models >=7B). Per-GPU batching is modelled
+  separately (above).
+- **`cost_per_1m_tok` no longer understated by the instance count** (uses N-GPU
+  cost with N-GPU throughput; $/token is invariant in replica count).
+- Broader quant support (legacy + i-quants: `Q4_0`, `Q5_1`, `IQ4_XS`, ...) with
+  effective bits-per-weight, so a model's native quant is costed correctly.
+- Docs realigned to the planner product (research guides moved to an archive
+  section); ASCII-only source.
+
+### Notes
+- Per-backend MFU/MBU *calibration* is deferred: the `measure` loop already
+  supersedes the roofline estimate with real measurements for any benchmarked
+  model, which is stronger than tuning a global constant.
+
 ## [0.5.0] - 2026-06-24
 
 ### Added
