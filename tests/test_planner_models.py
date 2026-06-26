@@ -339,6 +339,36 @@ class TestPrefillTTFT:
         assert with_prefill["service_ms"] == pytest.approx(base["service_ms"] + 200.0, rel=1e-3)
 
 
+# -- Variance-aware queueing (0.6.0) ------------------------------------------
+
+
+class TestVarianceQueueing:
+    def _p95(self, models, cv2):
+        return models.latency.predict_p95(
+            "llama3.2-3b",
+            "ollama",
+            request_rate=0.4,
+            n_agents=1,
+            avg_tokens=128,
+            n1_tps=100.0,
+            service_cv2=cv2,
+        )["p95_ms"]
+
+    def test_cv2_zero_is_the_md1_default(self, bundled_models):
+        # service_cv2=0 must reproduce the prior M/D/1 behaviour (no arg = 0).
+        explicit = self._p95(bundled_models, 0.0)
+        default = bundled_models.latency.predict_p95(
+            "llama3.2-3b", "ollama", request_rate=0.4, n_agents=1, avg_tokens=128, n1_tps=100.0
+        )["p95_ms"]
+        assert explicit == pytest.approx(default)
+
+    def test_higher_variance_raises_tail(self, bundled_models):
+        low = self._p95(bundled_models, 0.0)
+        chat = self._p95(bundled_models, 1.0)
+        agent = self._p95(bundled_models, 8.0)
+        assert agent > chat > low  # heavier tail with more service variance
+
+
 # -- Scaling Model Edge Cases -------------------------------------------------
 
 

@@ -73,6 +73,12 @@ def plan(
         "--prompt-tokens",
         help="Average input prompt length in tokens (drives prefill / TTFT).",
     ),
+    workload: str = typer.Option(
+        "steady",
+        "--workload",
+        help="Service-time variance preset: steady, chatbot, bursty, agent. "
+        "High-variance (agent) inflates the tail estimate and warns.",
+    ),
     models_path: str = typer.Option(
         None,
         "--models-path",
@@ -193,6 +199,13 @@ def plan(
     if safety_target is not None and not 0.0 <= safety_target <= 1.0:
         console.print("[red]Error:[/] --safety-target must be between 0.0 and 1.0.")
         raise typer.Exit(code=1)
+
+    from chimeraforge.planner.constants import WORKLOAD_CV2
+
+    if workload not in WORKLOAD_CV2:
+        console.print(f"[red]Error:[/] --workload must be one of: {', '.join(WORKLOAD_CV2)}.")
+        raise typer.Exit(code=1)
+    workload_cv2 = WORKLOAD_CV2[workload]
     if measure_first and not model:
         console.print("[red]Error:[/] --measure requires --model.")
         raise typer.Exit(code=1)
@@ -292,6 +305,7 @@ def plan(
         specs=specs,
         trace=trace,
         prompt_tokens=prompt_tokens,
+        workload_cv2=workload_cv2,
     )
 
     if output_json:

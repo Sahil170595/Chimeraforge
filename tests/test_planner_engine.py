@@ -432,6 +432,35 @@ class TestContinuousBatching:
         vllm = next(c for c in cands if c.backend == "vllm")
         assert vllm.effective_batch <= vllm.max_concurrent_seqs
 
+
+class TestVarianceGuard:
+    """0.6.0: high-variance (agent) workloads inflate the tail and warn."""
+
+    def _plan(self, models, cv2):
+        return enumerate_candidates(
+            models=models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=300,
+            avg_tokens=128,
+            context_length=2048,
+            workload_cv2=cv2,
+        )
+
+    def test_agent_workload_warns(self, bundled_models):
+        agent = self._plan(bundled_models, 8.0)
+        steady = self._plan(bundled_models, 0.0)
+        assert any("variance" in w for w in agent[0].warnings)
+        assert not any("variance" in w for w in steady[0].warnings)
+
+    def test_steady_default_unchanged(self, bundled_models):
+        # cv2=0 must leave candidate p95 identical to the pre-variance behaviour.
+        steady = self._plan(bundled_models, 0.0)
+        assert steady  # still plans; default path is the M/D/1 behaviour
+
     def test_native_legacy_quant_pinned_and_costed(self, bundled_models):
         # M-2: a q4_0 native tag must be evaluated at q4_0 (real bpw), not dropped.
         spec = ModelSpec(

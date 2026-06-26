@@ -14,6 +14,7 @@ from chimeraforge.planner.constants import (
     BACKENDS,
     DEFAULT_ARCH,
     DEFAULT_PROMPT_TOKENS,
+    HIGH_VARIANCE_CV2,
     MODEL_ARCH,
     MODEL_PARAMS_B,
     QUANT_BPW,
@@ -93,6 +94,7 @@ def enumerate_candidates(
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
+    workload_cv2: float = 0.0,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -241,6 +243,7 @@ def enumerate_candidates(
                             n1_tps=per_req,
                             ttft_ms=ttft_ms,
                             concurrent_per_agent=b,
+                            service_cv2=workload_cv2,
                         )
                         if lat["p95_ms"] <= latency_slo:
                             best = (n, b, per_gpu, per_req, lat)
@@ -298,6 +301,11 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if workload_cv2 >= HIGH_VARIANCE_CV2:
+                    warnings.append(
+                        "high service-time variance (agent/bursty): analytical p95 "
+                        "under-estimates the tail -- validate with a load test"
+                    )
                 if lat["saturated"]:
                     warnings.append("utilisation > 70% safety cap")
                 if quality_tier == "concerning":

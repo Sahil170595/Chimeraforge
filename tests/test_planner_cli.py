@@ -138,6 +138,22 @@ class TestCLIPlan:
         assert c["provenance"]["throughput"] == "estimated"
         assert c["provenance"]["safety"] == "unknown"
 
+    def test_plan_workload_agent_accepted(self):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        result = CliRunner().invoke(app, ["plan", "--workload", "agent", "--quality-target", "0"])
+        assert result.exit_code == 0
+
+    def test_plan_bad_workload_rejected(self):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        result = CliRunner().invoke(app, ["plan", "--workload", "bogus"])
+        assert result.exit_code == 1
+
     def test_plan_overrides_require_single_model(self):
         from typer.testing import CliRunner
         from chimeraforge.cli import app

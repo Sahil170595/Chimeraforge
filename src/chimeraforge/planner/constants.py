@@ -56,6 +56,21 @@ BACKEND_CONTINUOUS_BATCHING: dict[str, bool] = {
 # as a safety cap rarely reached on consumer GPUs.
 DECODE_COMPUTE_MFU = 0.5
 
+# Workload service-time variance (squared coefficient of variation, Cs^2) presets.
+# Analytical queueing is conservative for low-variance traffic but under-estimates
+# the tail for high-variance/agent workloads (heavy-tailed service: a few requests
+# run 100x longer and hold a slot). Cs^2=0 is deterministic (reproduces M/D/1).
+WORKLOAD_CV2: dict[str, float] = {
+    "steady": 0.0,  # fixed-length, deterministic
+    "chatbot": 1.0,  # variable output length (typical)
+    "bursty": 4.0,  # mixed short/long
+    "agent": 8.0,  # heavy-tailed (long tool calls / multi-turn)
+}
+
+# At/above this Cs^2 the analytical p95 is not trustworthy on its own -- warn and
+# advise a real load test / simulation (the head-of-line-blocking regime).
+HIGH_VARIANCE_CV2 = 4.0
+
 # Roofline throughput estimate for off-registry models. Decode is memory-bound:
 # each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
 # MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16

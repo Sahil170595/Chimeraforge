@@ -494,6 +494,7 @@ class LatencyModel:
         n1_tps: float | None = None,
         ttft_ms: float = 0.0,
         concurrent_per_agent: int = 1,
+        service_cv2: float = 0.0,
     ) -> dict:
         """Predict p95 latency and utilisation.
 
@@ -533,7 +534,11 @@ class LatencyModel:
         saturated = rho > self.safety_factor
 
         if rho < 1.0:
-            mean_wait_s = rho / (2 * total_capacity * (1 - rho))
+            # Two-moment (Allen-Cunneen) wait: (Ca^2 + Cs^2)/2 x M/M/1 wait, with
+            # Poisson arrivals (Ca^2=1). Cs^2=0 -> (1+0)/2 = M/D/1 (the prior
+            # behaviour); higher Cs^2 (agent/bursty) inflates the tail.
+            mm1_wait_s = rho / (total_capacity * (1 - rho))
+            mean_wait_s = (1.0 + service_cv2) / 2.0 * mm1_wait_s
             p95_ms = service_ms + mean_wait_s * 1000 * 3
         else:
             p95_ms = float("inf")
