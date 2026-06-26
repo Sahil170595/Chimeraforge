@@ -369,6 +369,35 @@ def enumerate_candidates(
     return candidates
 
 
+def pareto_frontier(candidates: list[Candidate]) -> list[Candidate]:
+    """Non-dominated configs on (cost down, p95 latency down, quality up).
+
+    For a fixed workload every candidate already meets the throughput + SLO gates,
+    so the remaining trade-offs are cost vs latency vs quality. A candidate is
+    dominated if another is no worse on all three and strictly better on one. The
+    frontier is the menu of real trade-offs (cheapest, lowest-latency, highest
+    quality, and the bends between) -- not a single cost-sorted point. Returned
+    sorted by monthly cost ascending.
+    """
+
+    def dominates(b: Candidate, a: Candidate) -> bool:
+        no_worse = (
+            b.monthly_cost <= a.monthly_cost
+            and b.p95_latency_ms <= a.p95_latency_ms
+            and b.quality >= a.quality
+        )
+        strictly_better = (
+            b.monthly_cost < a.monthly_cost
+            or b.p95_latency_ms < a.p95_latency_ms
+            or b.quality > a.quality
+        )
+        return no_worse and strictly_better
+
+    front = [a for a in candidates if not any(dominates(b, a) for b in candidates if b is not a)]
+    front.sort(key=lambda c: (c.monthly_cost, c.p95_latency_ms))
+    return front
+
+
 def _batch_grid(b_max: int) -> list[int]:
     """Batch sizes to try, 1..b_max on a log grid (cheap search, B can be large)."""
     if b_max <= 1:

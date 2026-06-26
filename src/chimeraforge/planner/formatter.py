@@ -250,6 +250,66 @@ def format_suggestions_json(
     )
 
 
+def format_pareto(frontier: list[Candidate], hardware: str) -> None:
+    """Render the Pareto frontier (cost / latency / quality trade-off menu)."""
+    if not frontier:
+        console.print(
+            Panel(
+                "[bold red]No viable configuration found.[/]",
+                title="ChimeraForge Pareto Frontier",
+                border_style="red",
+            )
+        )
+        return
+
+    cheapest = min(frontier, key=lambda c: c.monthly_cost)
+    fastest = min(frontier, key=lambda c: c.p95_latency_ms)
+    best_q = max(frontier, key=lambda c: c.quality)
+
+    table = Table(title=f"Pareto frontier for {hardware} (non-dominated trade-offs)")
+    table.add_column("Model")
+    table.add_column("Quant")
+    table.add_column("Backend")
+    table.add_column("N", justify="right")
+    table.add_column("Batch", justify="right")
+    table.add_column("$/mo", justify="right")
+    table.add_column("p95 ms", justify="right")
+    table.add_column("Quality", justify="right")
+    table.add_column("Pick", style="dim")
+
+    for c in frontier:
+        tags = []
+        if c is cheapest:
+            tags.append("cheapest")
+        if c is fastest:
+            tags.append("fastest")
+        if c is best_q:
+            tags.append("best-quality")
+        q_mark = "" if c.provenance.get("quality") == "measured" else "~"
+        table.add_row(
+            c.model,
+            c.quant,
+            c.backend,
+            str(c.n_agents),
+            str(c.effective_batch),
+            f"${c.monthly_cost}",
+            f"{c.p95_latency_ms}",
+            f"{q_mark}{c.quality}",
+            ", ".join(tags),
+        )
+    console.print()
+    console.print(table)
+    console.print(
+        f"  [dim]{len(frontier)} non-dominated configs. Each is best at *something* "
+        f"(cost / latency / quality); points off the frontier are strictly worse.[/]\n"
+    )
+
+
+def format_pareto_json(frontier: list[Candidate]) -> str:
+    """Pareto frontier as JSON."""
+    return json.dumps([asdict(c) for c in frontier], indent=2)
+
+
 def print_hardware_table() -> None:
     """Print GPU database as a Rich table."""
     table = Table(title="Available GPUs")

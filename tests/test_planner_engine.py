@@ -461,6 +461,59 @@ class TestVarianceGuard:
         steady = self._plan(bundled_models, 0.0)
         assert steady  # still plans; default path is the M/D/1 behaviour
 
+
+class TestParetoFrontier:
+    """0.6.0: non-dominated cost/latency/quality trade-off menu."""
+
+    def _cand(self, cost, p95, quality, model="m"):
+        from chimeraforge.planner.engine import Candidate
+
+        return Candidate(
+            model=model,
+            quant="Q4_K_M",
+            backend="vllm",
+            n_agents=1,
+            vram_gb=4.0,
+            quality=quality,
+            quality_tier="negligible",
+            throughput_tps=100.0,
+            total_throughput_tps=100.0,
+            eta=1.0,
+            p95_latency_ms=p95,
+            utilisation=0.3,
+            monthly_cost=cost,
+            cost_per_1m_tok=0.1,
+            safety_refusal=None,
+            rtsi_risk="UNKNOWN",
+            warnings=[],
+        )
+
+    def test_excludes_dominated(self):
+        from chimeraforge.planner.engine import pareto_frontier
+
+        a = self._cand(10, 1000, 0.5, "cheap")  # cheapest
+        b = self._cand(20, 500, 0.5, "fast")  # faster, pricier -> non-dominated
+        c = self._cand(30, 2000, 0.5, "dom")  # dominated by a (cheaper+faster, == q)
+        d = self._cand(40, 300, 0.7, "premium")  # fastest + best quality
+        front = pareto_frontier([a, b, c, d])
+        models = {x.model for x in front}
+        assert models == {"cheap", "fast", "premium"}  # 'dom' excluded
+        assert front[0].monthly_cost <= front[-1].monthly_cost  # sorted by cost
+
+    def test_frontier_has_the_three_extremes(self):
+        from chimeraforge.planner.engine import pareto_frontier
+
+        cs = [self._cand(10, 1000, 0.5), self._cand(40, 300, 0.7), self._cand(20, 500, 0.6)]
+        front = pareto_frontier(cs)
+        assert min(c.monthly_cost for c in cs) in {c.monthly_cost for c in front}
+        assert min(c.p95_latency_ms for c in cs) in {c.p95_latency_ms for c in front}
+        assert max(c.quality for c in cs) in {c.quality for c in front}
+
+    def test_empty(self):
+        from chimeraforge.planner.engine import pareto_frontier
+
+        assert pareto_frontier([]) == []
+
     def test_native_legacy_quant_pinned_and_costed(self, bundled_models):
         # M-2: a q4_0 native tag must be evaluated at q4_0 (real bpw), not dropped.
         spec = ModelSpec(

@@ -130,6 +130,12 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    pareto: bool = typer.Option(
+        False,
+        "--pareto",
+        help="Show the cost/latency/quality trade-off frontier (the menu of "
+        "non-dominated configs), not just the single cheapest pick.",
+    ),
     list_hardware: bool = typer.Option(
         False,
         "--list-hardware",
@@ -154,9 +160,15 @@ def plan(
     """
     import logging
 
-    from chimeraforge.planner.engine import enumerate_candidates, find_models_for_size
+    from chimeraforge.planner.engine import (
+        enumerate_candidates,
+        find_models_for_size,
+        pareto_frontier,
+    )
     from chimeraforge.planner.formatter import (
         format_json,
+        format_pareto,
+        format_pareto_json,
         format_recommendation,
         print_hardware_table,
         print_models_table,
@@ -308,11 +320,16 @@ def plan(
         workload_cv2=workload_cv2,
     )
 
+    frontier = pareto_frontier(candidates) if pareto else None
+
     if output_json:
         # highlight=False + soft_wrap: emit plain JSON so it stays valid (Rich
         # would otherwise reflow long string values and corrupt them) and pipes
         # cleanly to `jq`.
-        console.print(format_json(candidates), highlight=False, soft_wrap=True)
+        payload = format_pareto_json(frontier) if pareto else format_json(candidates)
+        console.print(payload, highlight=False, soft_wrap=True)
+    elif pareto:
+        format_pareto(frontier, hardware)
     else:
         format_recommendation(
             candidates,
@@ -323,9 +340,10 @@ def plan(
             budget=budget,
             safety_target=safety_target,
         )
-        if not candidates and trace:
-            from chimeraforge.planner.engine import summarize_trace
 
-            console.print("\n[bold]Why nothing fit:[/]")
-            for line in summarize_trace(trace):
-                console.print(f"  [yellow]-[/] {line}")
+    if not candidates and trace and not output_json:
+        from chimeraforge.planner.engine import summarize_trace
+
+        console.print("\n[bold]Why nothing fit:[/]")
+        for line in summarize_trace(trace):
+            console.print(f"  [yellow]-[/] {line}")
