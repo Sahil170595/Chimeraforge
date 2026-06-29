@@ -67,7 +67,10 @@ class VRAMModel:
 
         arch = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
         kv_gb = self.kv_cache_gb(arch, context_length, batch_size)
-        act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024) ** 2
+        # Linear in context: flash/paged attention never materialises the O(ctx^2)
+        # attention matrix, so activation memory is O(ctx). (A quadratic term
+        # diverges unphysically at long context -- 130 GB at 32k for a 3B model.)
+        act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024)
 
         return weight_gb * self.overhead_factor + kv_gb + act_gb
 
@@ -103,7 +106,9 @@ class VRAMModel:
         alone don't fit.
         """
         weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor
-        act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024) ** 2
+        act_gb = (
+            self.act_coeff * arch["n_layers"] * (context_length / 1024)
+        )  # O(ctx), see predict()
         free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
         per_seq_gb = self.kv_cache_gb(arch, context_length, batch_size=1)
         if per_seq_gb <= 0 or free_gb <= 0:
@@ -152,6 +157,11 @@ class ThroughputModel:
         bpw = QUANT_BPW.get(quant)
         if bpw is None:
             return 1.0
+        if bpw > 16.0:
+            # Above FP16 (e.g. FP32): no dequant speedup, pure bandwidth penalty
+            # (decode streams 2x the weight bytes). Nearest-bpw would wrongly pick
+            # FP16=1.0 and predict the full FP16 rate.
+            return 16.0 / bpw
         known = [
             (QUANT_BPW[q], mult) for q, mult in self.quant_multipliers.items() if q in QUANT_BPW
         ]
@@ -380,16 +390,34 @@ class QualityModel:
         delta = self.quant_deltas.get(quant, 0.0)
         return max(0.0, min(1.0, fp16 + delta)), "estimated"
 
-    def quality_tier(self, model: str, quant: str) -> str:
-        """Classify quality drop into a tier."""
+    def quality_tier(self, model: str, quant: str, family: str | None = None) -> str:
+        """Classify quality drop into a tier.
+
+        Family-aware, mirroring :meth:`estimate`: an off-registry model whose
+        family matches the registry derives its FP16 baseline (and predicted
+        quality) from the family mean, so the tier is consistent with the
+        reported quality instead of silently collapsing to ``unknown``.
+        """
         fp16 = self.fp16_baselines.get(model)
-        if fp16 is None:
-            fp16_key = f"{model}|FP16"
-            if fp16_key in self.lookup:
-                fp16 = self.lookup[fp16_key]
-        predicted = self.predict(model, quant)
+        if fp16 is None and f"{model}|FP16" in self.lookup:
+            fp16 = self.lookup[f"{model}|FP16"]
+        if fp16 is None and family is not None:
+            same_family = [
+                v for m, v in self.fp16_baselines.items() if MODEL_FAMILY.get(m) == family
+            ]
+            if same_family:
+                fp16 = sum(same_family) / len(same_family)
         if fp16 is None or fp16 <= 0:
             return "unknown"
+        # Predicted quality consistent with estimate(): direct lookup, else the
+        # FP16 baseline (+ quant delta) -- not predict(), which is not family-aware.
+        key = f"{model}|{quant}"
+        if key in self.lookup:
+            predicted = self.lookup[key]
+        elif quant == "FP16":
+            predicted = fp16
+        else:
+            predicted = max(0.0, min(1.0, fp16 + self.quant_deltas.get(quant, 0.0)))
         drop_pp = (predicted - fp16) * 100
         if drop_pp >= self.TIERS["negligible"]:
             return "negligible"
@@ -682,6 +710,23 @@ def load_effective_models(models_path: str | Path | None = None) -> PlannerModel
     corpus = measured_corpus_path()
     if corpus.is_file():
         try:
+            with open(corpus, encoding="utf-8") as f:
+                raw = json.load(f)
+            # The corpus embeds a snapshot of the bundled coefficients it was
+            # built on. Warn (don't silently shadow) if it predates the installed
+            # package, so an upgrade's improved coefficients aren't masked for
+            # models the user never re-measured. Re-run `measure` to refresh.
+            from chimeraforge import __version__
+
+            stamp = raw.get("_chimeraforge_version")
+            if stamp and stamp != __version__:
+                log.warning(
+                    "measured corpus %s was written by chimeraforge %s (installed: %s); "
+                    "re-run `measure` to pick up updated bundled coefficients",
+                    corpus,
+                    stamp,
+                    __version__,
+                )
             return load_models(corpus)
         except (ValueError, OSError) as exc:
             log.warning("ignoring unreadable measured corpus %s: %s", corpus, exc)

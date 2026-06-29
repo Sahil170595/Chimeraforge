@@ -69,7 +69,9 @@ def compare(
         raise typer.Exit(code=1)
 
     if output_json:
-        console.print(format_comparison_json(rows))
+        # highlight=False + soft_wrap: valid JSON for `--json | jq` (Rich otherwise
+        # reflows long values at width 79 when piped and corrupts them).
+        console.print(format_comparison_json(rows), highlight=False, soft_wrap=True)
     else:
         format_comparison_table(rows, console)
         format_comparison_summary(rows, console)

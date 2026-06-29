@@ -323,6 +323,14 @@ async def run_context_sweep(
             context_length=ctx,
             **kwargs,
         )
+        # Only Ollama accepts a per-request context override (num_ctx); vLLM/TGI
+        # serve at their startup-configured context, so the labelled ctx was NOT
+        # applied. Flag it so the differentiated rows aren't read as a ctx effect.
+        if backend_name != "ollama":
+            result.warnings.append(
+                f"context_length={ctx} recorded but NOT applied: the {backend_name} "
+                "completion API has no per-request context override (set it at server startup)"
+            )
         results.append(result)
     return results
 

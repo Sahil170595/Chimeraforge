@@ -296,10 +296,14 @@ class TestModelResolution:
 
         assert resolve_model(identifier) == expected
 
-    @pytest.mark.parametrize("identifier", ["gpt-4o", "mystery-model", "gemma2:9b", ""])
+    @pytest.mark.parametrize(
+        "identifier", ["gpt-4o", "mystery-model", "gemma2:9b", "", "qwen2.5-0b"]
+    )
     def test_unresolvable(self, identifier):
         from chimeraforge.planner.identity import resolve_model
 
+        # "qwen2.5-0b": a degenerate 0-param token must return None, not raise
+        # ZeroDivisionError on the relative-error division.
         assert resolve_model(identifier) is None
 
     @pytest.mark.parametrize(

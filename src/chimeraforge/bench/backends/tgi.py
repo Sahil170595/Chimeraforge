@@ -73,6 +73,10 @@ class TGIBackend(Backend):
             )
         except httpx.ConnectError:
             return False, f"TGI not running at {self.base_url}"
+        except httpx.TimeoutException:
+            return False, f"TGI timed out at {self.base_url}"
+        except httpx.HTTPError as exc:
+            return False, f"TGI model check failed at {self.base_url}: {exc}"
 
     async def generate(
         self,

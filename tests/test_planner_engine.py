@@ -457,9 +457,21 @@ class TestVarianceGuard:
         assert not any("variance" in w for w in steady[0].warnings)
 
     def test_steady_default_unchanged(self, bundled_models):
-        # cv2=0 must leave candidate p95 identical to the pre-variance behaviour.
-        steady = self._plan(bundled_models, 0.0)
-        assert steady  # still plans; default path is the M/D/1 behaviour
+        # cv2=0 must leave candidate p95 identical to the no-arg (default) behaviour.
+        default = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=300,
+            avg_tokens=128,
+            context_length=2048,
+        )
+        explicit = self._plan(bundled_models, 0.0)
+        assert default and explicit
+        assert explicit[0].p95_latency_ms == pytest.approx(default[0].p95_latency_ms)
 
 
 class TestParetoFrontier:
@@ -753,7 +765,7 @@ class TestPlannerExtended:
         assert candidates == []
 
     def test_n_search_tries_higher_n_for_latency(self, bundled_models):
-        """With tight latency SLO, engine should try N > min-throughput-N."""
+        """With a tight latency SLO, every returned config must actually meet it."""
         candidates = enumerate_candidates(
             models=bundled_models,
             target_models=["llama3.2-3b"],
@@ -765,5 +777,9 @@ class TestPlannerExtended:
             avg_tokens=128,
             context_length=2048,
         )
-        # The tight-latency N-search path should run and return a candidate list.
-        assert isinstance(candidates, list)
+        # The N-search must escalate replicas until the SLO holds -- so any
+        # candidate it returns has to satisfy the tight latency bound, not just
+        # be a list. (Empty is acceptable only if nothing can meet it.)
+        assert all(c.p95_latency_ms <= 3000 for c in candidates)
+        # At this rate a feasible config exists, so the search must find one.
+        assert candidates

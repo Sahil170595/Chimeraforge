@@ -101,10 +101,31 @@ def refit(
         except ImportError:
             out = Path.home() / ".chimeraforge" / "fitted_models.json"
 
+    # Validate BEFORE writing so --validate is a real gate, not advisory: invalid
+    # coefficients (e.g. a quant multiplier < FP16, non-positive throughput) must
+    # never be persisted with a misleading non-zero exit implying nothing was saved.
+    vresult = None
+    if validate:
+        from chimeraforge.refit.validator import (
+            format_validation_json,
+            format_validation_table,
+            validate_fitted_models,
+        )
+
+        vresult = validate_fitted_models(merged)
+        if not vresult.passed:
+            if output_json:
+                # highlight=False + soft_wrap: valid JSON for `--json | jq`.
+                console.print(format_validation_json(vresult), highlight=False, soft_wrap=True)
+            else:
+                format_validation_table(vresult, console)
+                console.print("[red]Validation failed -- refit NOT saved.[/]")
+            raise typer.Exit(code=1)
+
     saved = save_fitted_models(merged, out)
 
     if output_json:
-        console.print(json_mod.dumps(summary, indent=2))
+        console.print(json_mod.dumps(summary, indent=2), highlight=False, soft_wrap=True)
     else:
         lines = [
             f"Bench results loaded: {summary['bench_results_loaded']}",
@@ -120,17 +141,10 @@ def refit(
         console.print(Panel("\n".join(lines), title="Refit Summary", border_style="green"))
         console.print(f"[green]Saved to:[/] {saved}")
 
-    if validate:
-        from chimeraforge.refit.validator import (
-            format_validation_json,
-            format_validation_table,
-            validate_fitted_models,
-        )
+    if validate and vresult is not None:
+        from chimeraforge.refit.validator import format_validation_json, format_validation_table
 
-        vresult = validate_fitted_models(merged)
         if output_json:
-            console.print(format_validation_json(vresult))
+            console.print(format_validation_json(vresult), highlight=False, soft_wrap=True)
         else:
             format_validation_table(vresult, console)
-        if not vresult.passed:
-            raise typer.Exit(code=1)

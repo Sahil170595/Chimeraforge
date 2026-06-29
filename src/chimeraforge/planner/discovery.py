@@ -47,6 +47,8 @@ def fetch_ollama_tags(base_url: str = DEFAULT_OLLAMA_URL) -> list[str]:
         return [m["name"] for m in resp.json().get("models", []) if m.get("name")]
     except httpx.HTTPError as exc:
         raise ResolverError(f"could not list Ollama models at {base_url}: {exc}") from exc
+    except ValueError as exc:  # non-JSON 200 body
+        raise ResolverError(f"Ollama returned a non-JSON tag list at {base_url}: {exc}") from exc
 
 
 def fetch_hf_text_generation(
@@ -65,6 +67,8 @@ def fetch_hf_text_generation(
         return [m["id"] for m in resp.json() if m.get("id")]
     except httpx.HTTPError as exc:
         raise ResolverError(f"could not list HF models: {exc}") from exc
+    except ValueError as exc:  # malformed JSON in the model list
+        raise ResolverError(f"HF returned a non-JSON model list: {exc}") from exc
 
 
 def discover_identifiers(

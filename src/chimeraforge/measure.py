@@ -81,6 +81,12 @@ def fold_into_corpus(
         sf[serial_key] = serial_fraction
         scaling["fitted"] = True
 
+    # Stamp the package version so load_effective_models can warn when the corpus
+    # predates an upgrade (its embedded bundled-coefficient snapshot would
+    # otherwise silently shadow improved coefficients for un-measured models).
+    from chimeraforge import __version__
+
+    merged["_chimeraforge_version"] = __version__
     save_fitted_models(merged, corpus_path)
     return merged
 

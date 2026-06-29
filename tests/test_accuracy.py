@@ -52,8 +52,15 @@ class TestVRAMAccuracy:
         arch = {"n_layers": 28, "n_kv_heads": 8, "d_head": 128}  # llama3.2-3b
         weight = 3.21 * 16 / 8 * m.overhead_factor
         kv = m.kv_cache_gb(arch, 2048, 1)
-        act = m.act_coeff * arch["n_layers"] * (2048 / 1024) ** 2
+        act = m.act_coeff * arch["n_layers"] * (2048 / 1024)  # linear in ctx (flash attn)
         assert m.predict("llama3.2-3b", "FP16", 2048) == pytest.approx(weight + kv + act, rel=1e-3)
+
+    def test_long_context_activation_stays_physical(self, bundled_models):
+        # Regression: activation memory must be O(ctx), not O(ctx^2). A quadratic
+        # term blew up to ~130 GB at 32k for a 3B model and spuriously failed the
+        # VRAM gate. Linear keeps it bounded well under the weight footprint.
+        v = bundled_models.vram.predict("llama3.2-3b", "FP16", 32768)
+        assert v < 20.0, f"32k-ctx VRAM {v:.1f} GB is unphysically large -- activation not linear?"
 
     def test_absolute_band(self, bundled_models):
         # A 3.21B FP16 model at 2048 ctx must land in a physically sane VRAM band.

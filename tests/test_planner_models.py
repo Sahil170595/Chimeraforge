@@ -116,6 +116,15 @@ class TestThroughputModel:
         tps = bundled_models.throughput.predict("nonexistent-model", "ollama", "FP16")
         assert tps >= 0.1
 
+    def test_roofline_fp32_half_of_fp16(self, bundled_models):
+        # FP32 streams 2x the weight bytes per token with no dequant speedup, so
+        # its roofline decode rate must be ~half FP16 -- not equal (the bug: the
+        # nearest-bpw fallback wrongly picked FP16=1.0 for above-FP16 precision).
+        tp = bundled_models.throughput
+        f16 = tp.roofline_tps(7.0, "FP16", "RTX 4090 24GB")
+        f32 = tp.roofline_tps(7.0, "FP32", "RTX 4090 24GB")
+        assert f32 == pytest.approx(f16 * 0.5, rel=0.02)
+
 
 # -- Scaling Model ----------------------------------------------------
 
@@ -153,6 +162,20 @@ class TestQualityModel:
     def test_quality_tier_fp16(self, bundled_models):
         tier = bundled_models.quality.quality_tier("llama3.2-1b", "FP16")
         assert tier == "negligible"
+
+    def test_quality_tier_family_aware(self, bundled_models):
+        # An off-registry model whose family matches the registry must get a real
+        # tier (consistent with estimate()), not "unknown" -- so the engine's
+        # "concerning drop" advisory can actually fire for it.
+        q = bundled_models.quality
+        _, src = q.estimate("qwen2.5:7b", "Q3_K_S", "qwen2.5")
+        tier = q.quality_tier("qwen2.5:7b", "Q3_K_S", "qwen2.5")
+        assert src == "estimated"
+        assert tier != "unknown"
+
+    def test_quality_tier_unknown_without_family(self, bundled_models):
+        # No name match and no family -> honestly unknown.
+        assert bundled_models.quality.quality_tier("totally-novel-9000", "Q4_K_M") == "unknown"
 
     def test_unknown_model_returns_default(self):
         m = QualityModel()

@@ -46,10 +46,46 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 - Docs realigned to the planner product (research guides moved to an archive
   section); ASCII-only source.
 
+### Fixed
+- **Activation memory is now O(context), not O(context^2).** The quadratic term
+  diverged unphysically at long context (~130 GB at 32k for a 3B model), which
+  spuriously failed the VRAM gate and zeroed `max_concurrent_seqs` (killing
+  batching) at >=8k context. Flash/paged attention never materialises the
+  attention matrix, so it scales linearly; coefficient re-pinned to preserve the
+  calibrated 2k value. (Found by a blind code audit.)
+- **`--json` is now valid when piped** for `bench`, `refit`, `compare`, and
+  `report` (added `highlight=False, soft_wrap=True`, matching the other six
+  commands). Rich previously reflowed long string values at width 79 and produced
+  invalid JSON for `... --json | jq`.
+- **`refit --validate` is a real gate**: validation runs *before* the write, so
+  invalid coefficients are no longer persisted ahead of the failing exit.
+- **Quality tier is family-aware** for off-registry models (consistent with the
+  reported quality), so the "concerning drop" advisory can fire instead of the
+  tier silently collapsing to `unknown`.
+- **Per-key confidence weighting in `refit`**: each entry is blended by its own
+  successful-run count, not the global run total (which over-trusted
+  lightly-measured configs in a multi-config refit).
+- Measured-corpus staleness warning: `plan`/`suggest` now warn (instead of
+  silently shadowing) when the cached corpus predates the installed version.
+- Robust error handling: `measure` surfaces an unknown `--backend` cleanly;
+  backend `check_model` handles timeouts/HTTP errors (not just connect); the
+  resolver/discovery raise `ResolverError` (not a raw traceback) on a non-JSON
+  200 response; a degenerate `...0b` identifier no longer raises ZeroDivisionError.
+- `bench --context ... --quant Q` no longer drops the quant label; non-Ollama
+  context sweeps warn that the per-request context override was not applied.
+- Roofline throughput is bandwidth-correct above FP16 (e.g. FP32 ~ 0.5x FP16);
+  Ollama `F16`/`F32` native-quant strings are normalised to `FP16`/`FP32`.
+- `eval --fp16-baseline` exposes tier classification (previously always
+  `unknown` from the CLI). Build floor corrected to `setuptools>=77` (PEP 639).
+
 ### Notes
 - Per-backend MFU/MBU *calibration* is deferred: the `measure` loop already
   supersedes the roofline estimate with real measurements for any benchmarked
   model, which is stronger than tuning a global constant.
+- Known minor limitations (low impact, deferred): VRAM mixes decimal-GB weight
+  with binary-GiB KV (~7.4%, conservative); ambiguous partial GPU names (e.g.
+  "RTX 4080") resolve to the first DB match by VRAM; a genuine 0.0 BERTScore is
+  treated as "unavailable".
 
 ## [0.5.0] - 2026-06-24
 

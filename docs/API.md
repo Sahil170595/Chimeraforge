@@ -164,7 +164,8 @@ scores = evaluate_quality(
     references=["The capital of France is Paris."],
 )
 print(f"Composite: {scores.composite:.3f}")
-print(f"Tier: {classify_tier(scores.composite)}")
+# Tier needs the FP16 baseline composite to measure the drop against:
+print(f"Tier: {classify_tier(scores.composite, fp16_composite=0.85)}")
 ```
 
 ### Metrics
@@ -174,7 +175,7 @@ print(f"Tier: {classify_tier(scores.composite)}")
 - **`compute_bert_score(preds, refs)`** — BERTScore F1 (requires `evaluate` + `bert-score`)
 - **`compute_coherence(preds, refs)`** — length-ratio heuristic
 - **`compute_composite(scores)`** — weighted: 0.2*EM + 0.3*ROUGE + 0.3*BERT + 0.2*coherence
-- **`classify_tier(score)`** — negligible (>=-3pp), acceptable (>=-10pp), concerning, unacceptable
+- **`classify_tier(composite, fp16_composite)`** — negligible (>=-3pp), acceptable (>=-10pp), concerning, unacceptable
 
 ### Built-in tasks
 

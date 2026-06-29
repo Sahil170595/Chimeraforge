@@ -39,6 +39,12 @@ def eval_cmd(
         "-q",
         help="Quantization level (e.g., Q4_K_M).",
     ),
+    fp16_baseline: float = typer.Option(
+        None,
+        "--fp16-baseline",
+        help="FP16 composite score to classify the quality drop tier against "
+        "(e.g. from a prior FP16 eval run). Without it the tier stays 'unknown'.",
+    ),
     list_tasks_flag: bool = typer.Option(
         False,
         "--list-tasks",
@@ -119,6 +125,7 @@ def eval_cmd(
         model=model,
         quant=quant,
         task=task_name,
+        fp16_composite=fp16_baseline,
     )
 
     if output_json:

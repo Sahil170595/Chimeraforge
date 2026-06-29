@@ -22,7 +22,12 @@ from chimeraforge.planner.constants import (
 )
 from chimeraforge.planner.hardware import get_gpu
 from chimeraforge.planner.models import PlannerModels
-from chimeraforge.planner.resolver import SOURCE_REGISTRY, SOURCE_REGISTRY_APPROX, ModelSpec
+from chimeraforge.planner.resolver import (
+    SOURCE_MANUAL,
+    SOURCE_REGISTRY,
+    SOURCE_REGISTRY_APPROX,
+    ModelSpec,
+)
 
 
 @dataclass
@@ -128,10 +133,16 @@ def enumerate_candidates(
         spec = specs.get(model)
         if spec is None and model in MODEL_PARAMS_B:
             spec = ModelSpec.from_registry(model)
+        params_known = spec is not None or model in MODEL_PARAMS_B
         params_b = spec.params_b if spec else MODEL_PARAMS_B.get(model, 3.0)
         arch = spec.arch() if spec else None
         family = spec.family if spec else None
-        model_source = spec.source if spec else SOURCE_REGISTRY
+        # Don't mislabel an unknown model as "registry": only a real registry hit
+        # or a resolved spec has a trustworthy source. (CLI paths always populate
+        # specs; this guards direct enumerate_candidates() library callers.)
+        model_source = (
+            spec.source if spec else (SOURCE_REGISTRY if model in MODEL_PARAMS_B else SOURCE_MANUAL)
+        )
 
         # TTFT (prefill) is compute-bound: same for all quants/backends of a model
         # on this GPU and prompt length, so compute it once. 0.0 when GPU compute
@@ -174,7 +185,7 @@ def enumerate_candidates(
                 _reject(model, quant, "quality", f"{quality:.2f} < target {quality_target}")
                 continue
 
-            quality_tier = models.quality.quality_tier(lookup_name, quant)
+            quality_tier = models.quality.quality_tier(lookup_name, quant, family)
 
             # Safety gate (Gate 5): safety data is per (model, quant) and
             # backend-independent, so evaluate it here - before the backend/N
@@ -327,6 +338,11 @@ def enumerate_candidates(
                     warnings.append(
                         f"off-registry model ({model_source}): throughput is a roofline "
                         "estimate, not measured"
+                    )
+                if not params_known:
+                    warnings.append(
+                        f"params/architecture unknown; assumed {params_b:.1f}B -- "
+                        "pass a resolvable --model or manual overrides"
                     )
                 if quality_source == "unknown":
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
