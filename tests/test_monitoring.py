@@ -63,7 +63,14 @@ def test_performance_monitor_digest_smoke(monkeypatch):
         pm.aggregator.add_point(MetricPoint("cpu_percent", 1.0, "%"))
 
     pm.capture_snapshot = fake_capture  # type: ignore
+    # Lifecycle: the daemon loop must start and stop cleanly...
     pm.start()
     pm.stop()
+    # ...then drive capture deterministically so the assertion doesn't race the
+    # start/stop of the background thread (which may run fake_capture zero times).
+    for _ in range(3):
+        pm.capture_snapshot()
     digest = pm.build_digest()
     assert "summary" in digest and "digest" in digest and "suggestions" in digest
+    # The digest must actually reflect captured data, not merely have the keys.
+    assert digest["summary"]["cpu_percent"]["count"] >= 1

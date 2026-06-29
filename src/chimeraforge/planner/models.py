@@ -20,10 +20,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from chimeraforge.planner.constants import (
+    DEFAULT_ARCH,
+    FLOPS_PER_PARAM_PER_TOKEN,
+    KV_CACHE_UTILISATION,
+    KV_DTYPE_BYTES,
     MBU_DEFAULT,
     MODEL_ARCH,
     MODEL_FAMILY,
     MODEL_PARAMS_B,
+    PREFILL_MFU,
     QUANT_BPW,
 )
 from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
@@ -31,7 +36,7 @@ from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
 log = logging.getLogger("chimeraforge.planner.models")
 
 
-# ── 1. VRAM Model ─────────────────────────────────────────────────────
+# -- 1. VRAM Model -----------------------------------------------------
 
 
 @dataclass
@@ -60,8 +65,18 @@ class VRAMModel:
         bpw = QUANT_BPW.get(quant, 16.0)
         weight_gb = params * bpw / 8
 
-        arch = arch or MODEL_ARCH.get(model, {"n_layers": 32, "n_kv_heads": 8, "d_head": 128})
+        arch = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
+        kv_gb = self.kv_cache_gb(arch, context_length, batch_size)
+        # Linear in context: flash/paged attention never materialises the O(ctx^2)
+        # attention matrix, so activation memory is O(ctx). (A quadratic term
+        # diverges unphysically at long context -- 130 GB at 32k for a 3B model.)
+        act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024)
 
+        return weight_gb * self.overhead_factor + kv_gb + act_gb
+
+    @staticmethod
+    def kv_cache_gb(arch: dict[str, int], context_length: int, batch_size: int = 1) -> float:
+        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * dtype``."""
         kv_bytes = (
             2
             * arch["n_layers"]
@@ -69,13 +84,36 @@ class VRAMModel:
             * context_length
             * arch["n_kv_heads"]
             * arch["d_head"]
-            * 2
+            * KV_DTYPE_BYTES
         )
-        kv_gb = kv_bytes / (1024**3)
+        return kv_bytes / (1024**3)
 
-        act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024) ** 2
+    def max_concurrent_seqs(
+        self,
+        params_b: float,
+        quant: str,
+        arch: dict[str, int],
+        context_length: int,
+        hw_vram_gb: float,
+        utilisation: float = KV_CACHE_UTILISATION,
+    ) -> int:
+        """Max concurrent sequences a single GPU can hold, KV-cache bound.
 
-        return weight_gb * self.overhead_factor + kv_gb + act_gb
+        This is the real concurrency limiter for batched backends (vLLM/TGI):
+        after model weights + activations, the remaining VRAM divided by the
+        per-sequence KV-cache caps how many requests can be in flight at once.
+        First-principles memory arithmetic -- no fitting. Returns 0 if the weights
+        alone don't fit.
+        """
+        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor
+        act_gb = (
+            self.act_coeff * arch["n_layers"] * (context_length / 1024)
+        )  # O(ctx), see predict()
+        free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
+        per_seq_gb = self.kv_cache_gb(arch, context_length, batch_size=1)
+        if per_seq_gb <= 0 or free_gb <= 0:
+            return 0
+        return int(free_gb / per_seq_gb)
 
     def to_dict(self) -> dict:
         return {
@@ -94,7 +132,7 @@ class VRAMModel:
         return m
 
 
-# ── 2. Throughput Model ───────────────────────────────────────────────
+# -- 2. Throughput Model -----------------------------------------------
 
 
 @dataclass
@@ -119,6 +157,11 @@ class ThroughputModel:
         bpw = QUANT_BPW.get(quant)
         if bpw is None:
             return 1.0
+        if bpw > 16.0:
+            # Above FP16 (e.g. FP32): no dequant speedup, pure bandwidth penalty
+            # (decode streams 2x the weight bytes). Nearest-bpw would wrongly pick
+            # FP16=1.0 and predict the full FP16 rate.
+            return 16.0 / bpw
         known = [
             (QUANT_BPW[q], mult) for q, mult in self.quant_multipliers.items() if q in QUANT_BPW
         ]
@@ -183,6 +226,42 @@ class ThroughputModel:
         base_tps = mbu * bandwidth / fp16_weight_gb
         return max(base_tps * self.quant_multiplier(quant), 0.1)
 
+    def batched_decode_tps(
+        self,
+        n1_tps: float,
+        kv_per_seq_gb: float,
+        batch: int,
+        hardware: str | None = None,
+        params_b: float | None = None,
+        mbu: float = MBU_DEFAULT,
+    ) -> float:
+        """Aggregate decode tok/s for a continuous-batching backend at batch B.
+
+        Anchored to the single-stream ``n1_tps`` (measured or roofline, so it stays
+        quant-correct), then adds KV-amortization physics: at batch B the weights
+        are read once per step but each of the B sequences reads its own KV, so
+
+            aggregate(B) = B * bw*MBU / (weight_eff + B * kv_per_seq)
+
+        where ``weight_eff = bw*MBU / n1_tps`` backs the effective weight bytes out
+        of the calibrated single-stream rate. Rises ~linearly with B while weights
+        dominate, then saturates at ``bw*MBU / kv_per_seq`` (KV-bandwidth bound).
+        Capped by the decode compute ceiling. Returns ``n1_tps`` for batch <= 1.
+        """
+        if batch <= 1 or n1_tps <= 0:
+            return max(n1_tps, 0.1)
+        gpu = get_gpu(hardware) if hardware else None
+        bandwidth = gpu.bandwidth_gbps if gpu else 556.0
+        denom = bandwidth * mbu  # effective GB/s
+        weight_eff_gb = denom / n1_tps
+        agg = batch * denom / (weight_eff_gb + batch * kv_per_seq_gb)
+        if params_b and gpu and gpu.fp16_tflops > 0:
+            from chimeraforge.planner.constants import DECODE_COMPUTE_MFU
+
+            compute_ceiling = gpu.fp16_tflops * 1e12 * DECODE_COMPUTE_MFU / (2 * params_b * 1e9)
+            agg = min(agg, compute_ceiling)
+        return max(agg, n1_tps)
+
     def to_dict(self) -> dict:
         return {
             "lookup": self.lookup,
@@ -204,7 +283,7 @@ class ThroughputModel:
         return m
 
 
-# ── 3. Scaling Model ──────────────────────────────────────────────────
+# -- 3. Scaling Model --------------------------------------------------
 
 
 @dataclass
@@ -246,7 +325,7 @@ class ScalingModel:
         return m
 
 
-# ── 4. Quality Model ──────────────────────────────────────────────────
+# -- 4. Quality Model --------------------------------------------------
 
 
 @dataclass
@@ -311,16 +390,34 @@ class QualityModel:
         delta = self.quant_deltas.get(quant, 0.0)
         return max(0.0, min(1.0, fp16 + delta)), "estimated"
 
-    def quality_tier(self, model: str, quant: str) -> str:
-        """Classify quality drop into a tier."""
+    def quality_tier(self, model: str, quant: str, family: str | None = None) -> str:
+        """Classify quality drop into a tier.
+
+        Family-aware, mirroring :meth:`estimate`: an off-registry model whose
+        family matches the registry derives its FP16 baseline (and predicted
+        quality) from the family mean, so the tier is consistent with the
+        reported quality instead of silently collapsing to ``unknown``.
+        """
         fp16 = self.fp16_baselines.get(model)
-        if fp16 is None:
-            fp16_key = f"{model}|FP16"
-            if fp16_key in self.lookup:
-                fp16 = self.lookup[fp16_key]
-        predicted = self.predict(model, quant)
+        if fp16 is None and f"{model}|FP16" in self.lookup:
+            fp16 = self.lookup[f"{model}|FP16"]
+        if fp16 is None and family is not None:
+            same_family = [
+                v for m, v in self.fp16_baselines.items() if MODEL_FAMILY.get(m) == family
+            ]
+            if same_family:
+                fp16 = sum(same_family) / len(same_family)
         if fp16 is None or fp16 <= 0:
             return "unknown"
+        # Predicted quality consistent with estimate(): direct lookup, else the
+        # FP16 baseline (+ quant delta) -- not predict(), which is not family-aware.
+        key = f"{model}|{quant}"
+        if key in self.lookup:
+            predicted = self.lookup[key]
+        elif quant == "FP16":
+            predicted = fp16
+        else:
+            predicted = max(0.0, min(1.0, fp16 + self.quant_deltas.get(quant, 0.0)))
         drop_pp = (predicted - fp16) * 100
         if drop_pp >= self.TIERS["negligible"]:
             return "negligible"
@@ -349,7 +446,7 @@ class QualityModel:
         return m
 
 
-# ── 5. Cost Model ─────────────────────────────────────────────────────
+# -- 5. Cost Model -----------------------------------------------------
 
 
 @dataclass
@@ -379,16 +476,37 @@ class CostModel:
         return cls(hw_cost_per_hour=d.get("hw_cost_per_hour", 0.035))
 
 
-# ── 6. Latency Model ─────────────────────────────────────────────────
+# -- 6. Latency Model -------------------------------------------------
 
 
 @dataclass
 class LatencyModel:
-    """M/D/1 queueing approximation with 70% utilisation safety cap."""
+    """Latency: prefill (TTFT) + decode (TPOT), with M/D/1 queueing on top."""
 
     service_times: dict[str, float] = field(default_factory=dict)
     safety_factor: float = 0.70
     fitted: bool = False
+
+    @staticmethod
+    def predict_ttft_ms(
+        params_b: float,
+        prompt_tokens: int,
+        hardware: str | None = None,
+        mfu: float = PREFILL_MFU,
+    ) -> float:
+        """Time-to-first-token = prefill compute time (compute-bound, ms).
+
+        Prefill does ~2 FLOPs/param/token over the prompt; time = FLOPs /
+        (peak_TFLOPS * MFU). Returns 0.0 when the GPU's compute is unknown (so the
+        caller omits a prefill term rather than guessing). Decode/TPOT is modelled
+        separately via throughput (bandwidth-bound).
+        """
+        gpu = get_gpu(hardware) if hardware else None
+        tflops = gpu.fp16_tflops if gpu else 0.0
+        if tflops <= 0 or params_b <= 0 or prompt_tokens <= 0:
+            return 0.0
+        flops = FLOPS_PER_PARAM_PER_TOKEN * params_b * 1e9 * prompt_tokens
+        return flops / (tflops * 1e12 * mfu) * 1000.0
 
     def predict_p95(
         self,
@@ -402,22 +520,28 @@ class LatencyModel:
         scaling_model: ScalingModel | None = None,
         hardware: str | None = None,
         n1_tps: float | None = None,
+        ttft_ms: float = 0.0,
+        concurrent_per_agent: int = 1,
+        service_cv2: float = 0.0,
     ) -> dict:
         """Predict p95 latency and utilisation.
 
-        ``n1_tps`` lets the caller supply an already-computed N=1 throughput (e.g.
-        a roofline estimate for an off-registry model) so the service time stays
-        consistent with the engine's throughput choice instead of being
-        recomputed from the lookup/power-law default.
+        ``n1_tps`` is the rate a *single request* decodes at (slower at high batch
+        under contention), driving the in-service latency. ``concurrent_per_agent``
+        is how many requests one GPU serves at once (the batch size for a
+        continuous-batching backend; 1 for replicas), so system capacity is
+        ``n_agents * concurrent_per_agent / service_time`` -- this decouples
+        per-request latency from aggregate capacity. ``ttft_ms`` adds prefill, so
+        service time is the full request: TTFT + avg_tokens * decode-per-token.
         """
         service_ms = None
 
         if n1_tps is not None and n1_tps > 0:
-            service_ms = avg_tokens / n1_tps * 1000
+            service_ms = ttft_ms + avg_tokens / n1_tps * 1000
         elif throughput_model is not None:
             tps = throughput_model.predict(model, backend, quant, hardware)
             if tps > 0:
-                service_ms = avg_tokens / tps * 1000
+                service_ms = ttft_ms + avg_tokens / tps * 1000
 
         if service_ms is None:
             key = f"{model}|{backend}"
@@ -432,13 +556,17 @@ class LatencyModel:
         eta = 1.0
         if scaling_model and n_agents > 1:
             eta = scaling_model.predict_eta(model, backend, n_agents)
-        total_capacity = n_agents * mu * eta
+        total_capacity = n_agents * concurrent_per_agent * mu * eta
 
         rho = request_rate / total_capacity if total_capacity > 0 else 1.0
         saturated = rho > self.safety_factor
 
         if rho < 1.0:
-            mean_wait_s = rho / (2 * total_capacity * (1 - rho))
+            # Two-moment (Allen-Cunneen) wait: (Ca^2 + Cs^2)/2 x M/M/1 wait, with
+            # Poisson arrivals (Ca^2=1). Cs^2=0 -> (1+0)/2 = M/D/1 (the prior
+            # behaviour); higher Cs^2 (agent/bursty) inflates the tail.
+            mm1_wait_s = rho / (total_capacity * (1 - rho))
+            mean_wait_s = (1.0 + service_cv2) / 2.0 * mm1_wait_s
             p95_ms = service_ms + mean_wait_s * 1000 * 3
         else:
             p95_ms = float("inf")
@@ -468,7 +596,7 @@ class LatencyModel:
         return m
 
 
-# ── 7. Safety Model ───────────────────────────────────────────────────
+# -- 7. Safety Model ---------------------------------------------------
 
 
 @dataclass
@@ -526,7 +654,7 @@ class SafetyModel:
         return m
 
 
-# ── Aggregate model container ─────────────────────────────────────────
+# -- Aggregate model container -----------------------------------------
 
 
 @dataclass
@@ -582,6 +710,23 @@ def load_effective_models(models_path: str | Path | None = None) -> PlannerModel
     corpus = measured_corpus_path()
     if corpus.is_file():
         try:
+            with open(corpus, encoding="utf-8") as f:
+                raw = json.load(f)
+            # The corpus embeds a snapshot of the bundled coefficients it was
+            # built on. Warn (don't silently shadow) if it predates the installed
+            # package, so an upgrade's improved coefficients aren't masked for
+            # models the user never re-measured. Re-run `measure` to refresh.
+            from chimeraforge import __version__
+
+            stamp = raw.get("_chimeraforge_version")
+            if stamp and stamp != __version__:
+                log.warning(
+                    "measured corpus %s was written by chimeraforge %s (installed: %s); "
+                    "re-run `measure` to pick up updated bundled coefficients",
+                    corpus,
+                    stamp,
+                    __version__,
+                )
             return load_models(corpus)
         except (ValueError, OSError) as exc:
             log.warning("ignoring unreadable measured corpus %s: %s", corpus, exc)

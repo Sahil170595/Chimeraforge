@@ -217,7 +217,7 @@ See individual technical reports for citation information.
 
 ### Can I contribute benchmarks?
 
-Yes! See [Contributing Guide](contributing.md) for details.
+Yes! See [Contributing Guide](../CONTRIBUTING.md) for details.
 
 ## Still Have Questions?
 

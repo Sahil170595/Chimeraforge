@@ -1,4 +1,4 @@
-"""Constants — quant levels, model registry, backends.
+"""Constants - quant levels, model registry, backends.
 
 Extracted from TR133 research. No repo-specific paths or imports.
 """
@@ -42,6 +42,35 @@ QUANT_BPW: dict[str, float] = {
 # Supported serving backends
 BACKENDS = ["ollama", "vllm", "tgi"]
 
+# Which backends do continuous (in-flight) batching -- one GPU serves many
+# sequences concurrently, amortizing weight reads. Ollama (llama.cpp) effectively
+# serves one stream per slot, so it is modelled at batch=1 (replicas, not batch).
+BACKEND_CONTINUOUS_BATCHING: dict[str, bool] = {
+    "ollama": False,
+    "vllm": True,
+    "tgi": True,
+}
+
+# Decode compute-utilisation ceiling for batched decode (when large batches turn
+# the FC/MLP kernels compute-bound). Decode is mostly memory-bound, so this acts
+# as a safety cap rarely reached on consumer GPUs.
+DECODE_COMPUTE_MFU = 0.5
+
+# Workload service-time variance (squared coefficient of variation, Cs^2) presets.
+# Analytical queueing is conservative for low-variance traffic but under-estimates
+# the tail for high-variance/agent workloads (heavy-tailed service: a few requests
+# run 100x longer and hold a slot). Cs^2=0 is deterministic (reproduces M/D/1).
+WORKLOAD_CV2: dict[str, float] = {
+    "steady": 0.0,  # fixed-length, deterministic
+    "chatbot": 1.0,  # variable output length (typical)
+    "bursty": 4.0,  # mixed short/long
+    "agent": 8.0,  # heavy-tailed (long tool calls / multi-turn)
+}
+
+# At/above this Cs^2 the analytical p95 is not trustworthy on its own -- warn and
+# advise a real load test / simulation (the head-of-line-blocking regime).
+HIGH_VARIANCE_CV2 = 4.0
+
 # Roofline throughput estimate for off-registry models. Decode is memory-bound:
 # each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
 # MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16
@@ -51,6 +80,24 @@ MBU_DEFAULT = 0.65
 # Default architecture used only when a model's real config cannot be resolved.
 DEFAULT_ARCH: dict[str, int] = {"n_layers": 32, "n_kv_heads": 8, "d_head": 128}
 DEFAULT_PARAMS_B = 3.0
+
+# Fraction of VRAM a batched server can devote to KV-cache after weights +
+# activations + framework overhead. PagedAttention packs KV at block granularity,
+# so realised utilisation is high but not 1.0. Used to bound concurrent sequences.
+KV_CACHE_UTILISATION = 0.9
+
+# KV-cache element size in bytes. Backends keep KV in FP16 even when weights are
+# quantized (KV quantization is not yet modelled here).
+KV_DTYPE_BYTES = 2
+
+# Prefill is compute-bound: ~2 FLOPs per parameter per prompt token. MFU (model
+# FLOPs utilisation) discounts peak TFLOPS to realised; 0.3-0.5 is typical for a
+# single-stream forward pass. Calibratable later from measured TTFT.
+FLOPS_PER_PARAM_PER_TOKEN = 2
+PREFILL_MFU = 0.4
+
+# Default prompt (input) length in tokens for TTFT estimation when unspecified.
+DEFAULT_PROMPT_TOKENS = 512
 
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {

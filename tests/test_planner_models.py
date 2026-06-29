@@ -16,7 +16,7 @@ from chimeraforge.planner.models import (
 )
 
 
-# ── VRAM Model ───────────────────────────────────────────────────────
+# -- VRAM Model -------------------------------------------------------
 
 
 class TestVRAMModel:
@@ -47,7 +47,44 @@ class TestVRAMModel:
                 assert v > 0, f"VRAM should be positive for {model} {quant}"
 
 
-# ── Throughput Model ─────────────────────────────────────────────────
+# -- KV-cache-bound concurrency (0.6.0) -------------------------------
+
+
+class TestMaxConcurrentSeqs:
+    ARCH = {"n_layers": 28, "n_kv_heads": 8, "d_head": 128}  # llama3.2-3b
+
+    def test_kv_cache_scales_with_context_batch_and_heads(self):
+        base = VRAMModel.kv_cache_gb(self.ARCH, 2048, 1)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1) == pytest.approx(2 * base)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 2048, 4) == pytest.approx(4 * base)
+        wide = {**self.ARCH, "n_kv_heads": 16}
+        assert VRAMModel.kv_cache_gb(wide, 2048, 1) == pytest.approx(2 * base)
+
+    def test_bigger_gpu_holds_more_seqs(self):
+        m = VRAMModel()
+        small = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 12.0)
+        big = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 24.0)
+        assert big > small > 0
+
+    def test_longer_context_fewer_seqs(self):
+        m = VRAMModel()
+        short = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 1024, 24.0)
+        long = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 8192, 24.0)
+        assert short > long
+
+    def test_weights_dont_fit_returns_zero(self):
+        m = VRAMModel()
+        # 70B FP16 (~154 GB) cannot fit a 24 GB card.
+        assert m.max_concurrent_seqs(70.0, "FP16", self.ARCH, 2048, 24.0) == 0
+
+    def test_quantization_increases_capacity(self):
+        m = VRAMModel()
+        fp16 = m.max_concurrent_seqs(3.21, "FP16", self.ARCH, 2048, 24.0)
+        q4 = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 24.0)
+        assert q4 > fp16  # smaller weights leave more VRAM for KV
+
+
+# -- Throughput Model -------------------------------------------------
 
 
 class TestThroughputModel:
@@ -79,8 +116,17 @@ class TestThroughputModel:
         tps = bundled_models.throughput.predict("nonexistent-model", "ollama", "FP16")
         assert tps >= 0.1
 
+    def test_roofline_fp32_half_of_fp16(self, bundled_models):
+        # FP32 streams 2x the weight bytes per token with no dequant speedup, so
+        # its roofline decode rate must be ~half FP16 -- not equal (the bug: the
+        # nearest-bpw fallback wrongly picked FP16=1.0 for above-FP16 precision).
+        tp = bundled_models.throughput
+        f16 = tp.roofline_tps(7.0, "FP16", "RTX 4090 24GB")
+        f32 = tp.roofline_tps(7.0, "FP32", "RTX 4090 24GB")
+        assert f32 == pytest.approx(f16 * 0.5, rel=0.02)
 
-# ── Scaling Model ────────────────────────────────────────────────────
+
+# -- Scaling Model ----------------------------------------------------
 
 
 class TestScalingModel:
@@ -100,7 +146,7 @@ class TestScalingModel:
         assert 0 < eta < 1
 
 
-# ── Quality Model ────────────────────────────────────────────────────
+# -- Quality Model ----------------------------------------------------
 
 
 class TestQualityModel:
@@ -117,13 +163,27 @@ class TestQualityModel:
         tier = bundled_models.quality.quality_tier("llama3.2-1b", "FP16")
         assert tier == "negligible"
 
+    def test_quality_tier_family_aware(self, bundled_models):
+        # An off-registry model whose family matches the registry must get a real
+        # tier (consistent with estimate()), not "unknown" -- so the engine's
+        # "concerning drop" advisory can actually fire for it.
+        q = bundled_models.quality
+        _, src = q.estimate("qwen2.5:7b", "Q3_K_S", "qwen2.5")
+        tier = q.quality_tier("qwen2.5:7b", "Q3_K_S", "qwen2.5")
+        assert src == "estimated"
+        assert tier != "unknown"
+
+    def test_quality_tier_unknown_without_family(self, bundled_models):
+        # No name match and no family -> honestly unknown.
+        assert bundled_models.quality.quality_tier("totally-novel-9000", "Q4_K_M") == "unknown"
+
     def test_unknown_model_returns_default(self):
         m = QualityModel()
         q = m.predict("nonexistent", "FP16")
         assert q == 0.5
 
 
-# ── Safety Model ─────────────────────────────────────────────────────
+# -- Safety Model -----------------------------------------------------
 
 
 class TestSafetyModel:
@@ -136,7 +196,7 @@ class TestSafetyModel:
         assert q2k < fp16
 
     def test_refusal_safe_cell(self, bundled_models):
-        # Q4_K_M holds refusal high — should clear a 0.8 safety bar.
+        # Q4_K_M holds refusal high - should clear a 0.8 safety bar.
         q4 = bundled_models.safety.predict_refusal("llama3.2-1b", "Q4_K_M")
         assert q4 == pytest.approx(0.905, abs=0.01)
         assert q4 >= 0.8
@@ -195,7 +255,7 @@ class TestSafetyModel:
         assert m.fitted is False
 
 
-# ── Cost Model ───────────────────────────────────────────────────────
+# -- Cost Model -------------------------------------------------------
 
 
 class TestCostModel:
@@ -224,7 +284,7 @@ class TestCostModel:
         assert cost1 > cost2
 
 
-# ── Latency Model ────────────────────────────────────────────────────
+# -- Latency Model ----------------------------------------------------
 
 
 class TestLatencyModel:
@@ -258,6 +318,78 @@ class TestLatencyModel:
             request_rate=10.0,
         )
         assert result["saturated"]
+
+
+# -- Prefill / TTFT (0.6.0) ---------------------------------------------------
+
+
+class TestPrefillTTFT:
+    def test_ttft_scales_with_params(self):
+        m = LatencyModel()
+        small = m.predict_ttft_ms(7.0, 512, "RTX 4090 24GB")
+        big = m.predict_ttft_ms(14.0, 512, "RTX 4090 24GB")
+        assert big == pytest.approx(2 * small, rel=1e-3)  # linear in params
+
+    def test_ttft_scales_with_prompt_length(self):
+        m = LatencyModel()
+        short = m.predict_ttft_ms(7.0, 512, "RTX 4090 24GB")
+        long = m.predict_ttft_ms(7.0, 2048, "RTX 4090 24GB")
+        assert long == pytest.approx(4 * short, rel=1e-3)  # linear in prompt tokens
+
+    def test_faster_gpu_lower_ttft(self):
+        m = LatencyModel()
+        slow = m.predict_ttft_ms(7.0, 512, "T4 16GB")  # 65 TFLOPS
+        fast = m.predict_ttft_ms(7.0, 512, "H100 80GB")  # 989 TFLOPS
+        assert fast < slow
+
+    def test_unknown_gpu_returns_zero(self):
+        # No compute data -> 0.0 so the caller omits prefill rather than guessing.
+        assert LatencyModel().predict_ttft_ms(7.0, 512, "Some Unknown GPU") == 0.0
+
+    def test_zero_params_or_prompt_returns_zero(self):
+        m = LatencyModel()
+        assert m.predict_ttft_ms(0, 512, "RTX 4090 24GB") == 0.0
+        assert m.predict_ttft_ms(7.0, 0, "RTX 4090 24GB") == 0.0
+
+    def test_p95_includes_prefill(self, bundled_models):
+        # Same config, with vs without a prefill term -> prefill adds to service.
+        base = bundled_models.latency.predict_p95(
+            "llama3.2-3b", "ollama", request_rate=0.01, n1_tps=100.0, avg_tokens=128
+        )
+        with_prefill = bundled_models.latency.predict_p95(
+            "llama3.2-3b", "ollama", request_rate=0.01, n1_tps=100.0, avg_tokens=128, ttft_ms=200.0
+        )
+        assert with_prefill["service_ms"] == pytest.approx(base["service_ms"] + 200.0, rel=1e-3)
+
+
+# -- Variance-aware queueing (0.6.0) ------------------------------------------
+
+
+class TestVarianceQueueing:
+    def _p95(self, models, cv2):
+        return models.latency.predict_p95(
+            "llama3.2-3b",
+            "ollama",
+            request_rate=0.4,
+            n_agents=1,
+            avg_tokens=128,
+            n1_tps=100.0,
+            service_cv2=cv2,
+        )["p95_ms"]
+
+    def test_cv2_zero_is_the_md1_default(self, bundled_models):
+        # service_cv2=0 must reproduce the prior M/D/1 behaviour (no arg = 0).
+        explicit = self._p95(bundled_models, 0.0)
+        default = bundled_models.latency.predict_p95(
+            "llama3.2-3b", "ollama", request_rate=0.4, n_agents=1, avg_tokens=128, n1_tps=100.0
+        )["p95_ms"]
+        assert explicit == pytest.approx(default)
+
+    def test_higher_variance_raises_tail(self, bundled_models):
+        low = self._p95(bundled_models, 0.0)
+        chat = self._p95(bundled_models, 1.0)
+        agent = self._p95(bundled_models, 8.0)
+        assert agent > chat > low  # heavier tail with more service variance
 
 
 # -- Scaling Model Edge Cases -------------------------------------------------

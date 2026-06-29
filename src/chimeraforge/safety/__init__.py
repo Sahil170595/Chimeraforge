@@ -1,4 +1,4 @@
-"""Live safety screening — refusal-rate measurement against a running model.
+"""Live safety screening - refusal-rate measurement against a running model.
 
 The planner's safety gate (``chimeraforge.planner``) makes deployment
 *decisions* from bundled TR134/TR142 data. This package *measures*: it runs

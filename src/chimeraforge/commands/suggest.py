@@ -1,4 +1,4 @@
-"""`suggest` command — discover and rank deployable models for your hardware."""
+"""`suggest` command - discover and rank deployable models for your hardware."""
 
 from __future__ import annotations
 

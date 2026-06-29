@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.5.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.6.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (431 total; model-agnostic adds resolver/discovery/catalog/measure/diagnostics + specs)
+# Run tests (476 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy)
 pytest tests/ -v
 
 # Lint
@@ -53,7 +53,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.5.0"
+    __init__.py                       # Exports __version__ = "0.6.0"
     cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
     commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
@@ -153,6 +153,16 @@ resources/prompts/                    # Legacy banter_prompts.txt (not used in b
 - Never commit secrets (.env, credentials, API keys)
 
 ## Planner Architecture (src/chimeraforge/planner/)
+
+### Serving model (0.6.0)
+The planner models LLM serving as the literature describes it, not replicas-of-single-stream:
+- **Prefill vs decode:** TTFT = prefill (compute-bound, `2*params*prompt_tokens / (fp16_tflops*MFU)`); TPOT = decode (bandwidth-bound). End-to-end p95 = TTFT + decode + queueing. `GPUSpec.fp16_tflops` drives prefill; `--prompt-tokens` sets input length.
+- **Continuous batching:** vLLM/TGI serve B concurrent sequences per GPU; `ThroughputModel.batched_decode_tps()` = `B*bw*MBU / (weight_eff + B*kv_per_seq)`, `weight_eff = bw*MBU/n1_tps` (anchored to measured/roofline single-stream, quant-correct), capped by `max_concurrent_seqs` (KV-bound) and the decode compute ceiling. Ollama = B=1. The engine searches **(N replicas x B batch/GPU)** for the cheapest SLO-feasible config. `BACKEND_CONTINUOUS_BATCHING`, `Candidate.effective_batch`.
+- **Replicas scale linearly** (eta=1); the old Amdahl serial-fraction model was wrong for replica fan-out (capped throughput at ~1.8x; rejected >=7B) and is no longer applied.
+- **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
+- **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
+- **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
+- Numerical accuracy gates in `tests/test_accuracy.py` pin predictions to ground truth.
 
 The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th safety gate) over (model x quant x backend x N_agents):
 

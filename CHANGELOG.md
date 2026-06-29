@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-25
+
+State-of-the-art serving model: the planner now reflects how LLM inference
+actually behaves (per the literature - PagedAttention, continuous batching,
+prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
+
+### Added
+- **Continuous-batching throughput.** vLLM/TGI are modelled with per-GPU
+  continuous batching instead of single-stream replicas: aggregate decode
+  throughput rises with batch size up to the KV-cache cap, anchored to the
+  measured/roofline single-stream rate so it stays quant-correct. One GPU can now
+  replace several Ollama replicas (e.g. a 7B at 3 req/s on a 4090: Ollama 5 GPUs
+  vs vLLM 1 GPU at batch 8). `Candidate.effective_batch`.
+- **Prefill/decode split.** Separate **TTFT** (prefill, compute-bound, from GPU
+  FP16 TFLOPS) and **TPOT** (decode, bandwidth-bound); end-to-end p95 now includes
+  prefill. `GPUSpec.fp16_tflops` for all GPUs; `plan --prompt-tokens`.
+- **KV-cache-bound max concurrency** per GPU (`max_concurrent_seqs`), the real
+  concurrency limiter for batched backends.
+- **Pareto frontier** (`plan --pareto`): the non-dominated cost/latency/quality
+  trade-off menu (tags cheapest / fastest / best-quality), not a single pick.
+- **Variance-aware queueing** (`plan --workload steady|chatbot|bursty|agent`):
+  two-moment wait so high-variance/agent workloads inflate the tail and carry a
+  "validate with a load test" warning - analytical queueing otherwise silently
+  approves fleets that miss SLOs for heavy-tailed traffic.
+- Numerical accuracy tests pinning throughput, the roofline calibration anchor,
+  the VRAM formula, TTFT, and batching invariants to ground truth (falsifiability).
+
+### Changed
+- **Throughput scales linearly across GPU replicas** (replaced the Amdahl
+  serial-fraction model, which capped total throughput at ~1.8x regardless of
+  instance count and rejected models >=7B). Per-GPU batching is modelled
+  separately (above).
+- **`cost_per_1m_tok` no longer understated by the instance count** (uses N-GPU
+  cost with N-GPU throughput; $/token is invariant in replica count).
+- Broader quant support (legacy + i-quants: `Q4_0`, `Q5_1`, `IQ4_XS`, ...) with
+  effective bits-per-weight, so a model's native quant is costed correctly.
+- Docs realigned to the planner product (research guides moved to an archive
+  section); ASCII-only source.
+
+### Fixed
+- **Activation memory is now O(context), not O(context^2).** The quadratic term
+  diverged unphysically at long context (~130 GB at 32k for a 3B model), which
+  spuriously failed the VRAM gate and zeroed `max_concurrent_seqs` (killing
+  batching) at >=8k context. Flash/paged attention never materialises the
+  attention matrix, so it scales linearly; coefficient re-pinned to preserve the
+  calibrated 2k value. (Found by a blind code audit.)
+- **`--json` is now valid when piped** for `bench`, `refit`, `compare`, and
+  `report` (added `highlight=False, soft_wrap=True`, matching the other six
+  commands). Rich previously reflowed long string values at width 79 and produced
+  invalid JSON for `... --json | jq`.
+- **`refit --validate` is a real gate**: validation runs *before* the write, so
+  invalid coefficients are no longer persisted ahead of the failing exit.
+- **Quality tier is family-aware** for off-registry models (consistent with the
+  reported quality), so the "concerning drop" advisory can fire instead of the
+  tier silently collapsing to `unknown`.
+- **Per-key confidence weighting in `refit`**: each entry is blended by its own
+  successful-run count, not the global run total (which over-trusted
+  lightly-measured configs in a multi-config refit).
+- Measured-corpus staleness warning: `plan`/`suggest` now warn (instead of
+  silently shadowing) when the cached corpus predates the installed version.
+- Robust error handling: `measure` surfaces an unknown `--backend` cleanly;
+  backend `check_model` handles timeouts/HTTP errors (not just connect); the
+  resolver/discovery raise `ResolverError` (not a raw traceback) on a non-JSON
+  200 response; a degenerate `...0b` identifier no longer raises ZeroDivisionError.
+- `bench --context ... --quant Q` no longer drops the quant label; non-Ollama
+  context sweeps warn that the per-request context override was not applied.
+- Roofline throughput is bandwidth-correct above FP16 (e.g. FP32 ~ 0.5x FP16);
+  Ollama `F16`/`F32` native-quant strings are normalised to `FP16`/`FP32`.
+- `eval --fp16-baseline` exposes tier classification (previously always
+  `unknown` from the CLI). Build floor corrected to `setuptools>=77` (PEP 639).
+
+### Notes
+- Per-backend MFU/MBU *calibration* is deferred: the `measure` loop already
+  supersedes the roofline estimate with real measurements for any benchmarked
+  model, which is stronger than tuning a global constant.
+- Known minor limitations (low impact, deferred): VRAM mixes decimal-GB weight
+  with binary-GiB KV (~7.4%, conservative); ambiguous partial GPU names (e.g.
+  "RTX 4080") resolve to the first DB match by VRAM; a genuine 0.0 BERTScore is
+  treated as "unavailable".
+
 ## [0.5.0] - 2026-06-24
 
 ### Added

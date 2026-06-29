@@ -75,9 +75,16 @@ def format_recommendation(
     tp_color = "green" if tp_basis == "measured" else "yellow"
     perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis})[/]")
     perf.add_row("Total throughput", f"{best.total_throughput_tps} tok/s")
-    perf.add_row("Scaling eta(N)", str(best.eta))
-    perf.add_row("p95 latency", f"{best.p95_latency_ms} ms")
+    if best.effective_batch > 1:
+        perf.add_row("Batch per GPU", f"{best.effective_batch} concurrent (continuous batching)")
+    if best.ttft_ms:
+        perf.add_row("TTFT (prefill)", f"{best.ttft_ms} ms")
+    if best.tpot_ms:
+        perf.add_row("TPOT (per token)", f"{best.tpot_ms} ms")
+    perf.add_row("p95 latency", f"{best.p95_latency_ms} ms (end-to-end)")
     perf.add_row("Utilisation", f"{best.utilisation:.1%}")
+    if best.max_concurrent_seqs:
+        perf.add_row("Max concurrent/GPU", f"{best.max_concurrent_seqs} seqs (KV-cache bound)")
 
     # Quality + cost table
     cost_table = Table(show_header=False, box=None, padding=(0, 2))
@@ -241,6 +248,66 @@ def format_suggestions_json(
         },
         indent=2,
     )
+
+
+def format_pareto(frontier: list[Candidate], hardware: str) -> None:
+    """Render the Pareto frontier (cost / latency / quality trade-off menu)."""
+    if not frontier:
+        console.print(
+            Panel(
+                "[bold red]No viable configuration found.[/]",
+                title="ChimeraForge Pareto Frontier",
+                border_style="red",
+            )
+        )
+        return
+
+    cheapest = min(frontier, key=lambda c: c.monthly_cost)
+    fastest = min(frontier, key=lambda c: c.p95_latency_ms)
+    best_q = max(frontier, key=lambda c: c.quality)
+
+    table = Table(title=f"Pareto frontier for {hardware} (non-dominated trade-offs)")
+    table.add_column("Model")
+    table.add_column("Quant")
+    table.add_column("Backend")
+    table.add_column("N", justify="right")
+    table.add_column("Batch", justify="right")
+    table.add_column("$/mo", justify="right")
+    table.add_column("p95 ms", justify="right")
+    table.add_column("Quality", justify="right")
+    table.add_column("Pick", style="dim")
+
+    for c in frontier:
+        tags = []
+        if c is cheapest:
+            tags.append("cheapest")
+        if c is fastest:
+            tags.append("fastest")
+        if c is best_q:
+            tags.append("best-quality")
+        q_mark = "" if c.provenance.get("quality") == "measured" else "~"
+        table.add_row(
+            c.model,
+            c.quant,
+            c.backend,
+            str(c.n_agents),
+            str(c.effective_batch),
+            f"${c.monthly_cost}",
+            f"{c.p95_latency_ms}",
+            f"{q_mark}{c.quality}",
+            ", ".join(tags),
+        )
+    console.print()
+    console.print(table)
+    console.print(
+        f"  [dim]{len(frontier)} non-dominated configs. Each is best at *something* "
+        f"(cost / latency / quality); points off the frontier are strictly worse.[/]\n"
+    )
+
+
+def format_pareto_json(frontier: list[Candidate]) -> str:
+    """Pareto frontier as JSON."""
+    return json.dumps([asdict(c) for c in frontier], indent=2)
 
 
 def print_hardware_table() -> None:

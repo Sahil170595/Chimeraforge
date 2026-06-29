@@ -1,4 +1,4 @@
-"""`safety` command — measure a model's refusal rate against a live backend."""
+"""`safety` command - measure a model's refusal rate against a live backend."""
 
 from __future__ import annotations
 

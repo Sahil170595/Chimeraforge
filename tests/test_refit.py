@@ -1,4 +1,4 @@
-"""ChimeraForge Refit — unit tests.
+"""ChimeraForge Refit - unit tests.
 
 Tests the refit pipeline: loading bench results, extracting throughput
 lookups / quant multipliers / service times, fitting power law,
@@ -35,7 +35,7 @@ class TestSerialFractionFromEta:
 
 
 # ---------------------------------------------------------------------------
-# Helpers — synthetic bench result dicts
+# Helpers - synthetic bench result dicts
 # ---------------------------------------------------------------------------
 
 
@@ -504,6 +504,30 @@ class TestBayesianBlending:
         blended = bayesian_blend_throughput(existing, measured, n_total_runs=0)
         # w = 0 -> fully existing
         assert blended["a|b|FP16"] == pytest.approx(100.0)
+
+    def test_per_key_weight_uses_own_run_count(self):
+        # Each entry must be weighted by ITS OWN sample size, not the global total:
+        # a config measured with 50 runs gets full confidence; one with 5 stays
+        # near the prior -- even though both are in the same refit (global=55).
+        from chimeraforge.refit.fitter import bayesian_blend_throughput
+
+        existing = {"hi|b|FP16": 100.0, "lo|b|FP16": 100.0}
+        measured = {"hi|b|FP16": 200.0, "lo|b|FP16": 200.0}
+        blended = bayesian_blend_throughput(
+            existing, measured, n_total_runs=55, runs_per_key={"hi|b|FP16": 50, "lo|b|FP16": 5}
+        )
+        assert blended["hi|b|FP16"] == pytest.approx(200.0)  # w=1.0
+        assert blended["lo|b|FP16"] == pytest.approx(110.0)  # w=0.1 -> 0.9*100 + 0.1*200
+
+    def test_per_key_falls_back_to_global(self):
+        # Without a per-key map, behaviour is the prior global-weight blend.
+        from chimeraforge.refit.fitter import bayesian_blend_throughput
+
+        existing = {"a|b|FP16": 100.0}
+        measured = {"a|b|FP16": 200.0}
+        assert bayesian_blend_throughput(existing, measured, n_total_runs=25)[
+            "a|b|FP16"
+        ] == pytest.approx(150.0)
 
 
 # ---------------------------------------------------------------------------

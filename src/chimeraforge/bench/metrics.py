@@ -1,4 +1,4 @@
-"""Benchmark metrics — dataclasses and statistical helpers.
+"""Benchmark metrics - dataclasses and statistical helpers.
 
 Defines the core data model for benchmark results: individual run
 metrics, statistical summaries, environment metadata, and the

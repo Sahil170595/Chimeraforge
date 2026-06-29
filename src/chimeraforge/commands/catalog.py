@@ -1,4 +1,4 @@
-"""`catalog` command — build and inspect the local model catalog.
+"""`catalog` command - build and inspect the local model catalog.
 
 The catalog is a persisted set of resolved ModelSpecs (params + architecture)
 covering a curated seed of popular models plus, optionally, the models installed
@@ -28,12 +28,12 @@ def catalog(
     output_json: bool = typer.Option(False, "--json", help="Output as JSON."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging."),
 ) -> None:
-    """Show the local model catalog, or rebuild it with ``--build``.
+    """Show the local model catalog, or rebuild it with --build.
 
-    Without ``--build`` this lists what is already cached. ``--build`` resolves
-    the bundled curated seed (and, with ``--with-ollama``, your installed models)
-    against the live HF/Ollama metadata APIs and persists the result so
-    ``suggest --source catalog`` works offline afterwards.
+    Without --build this lists what is already cached. --build resolves the
+    bundled curated seed (and, with --with-ollama, your installed models) against
+    the live HF/Ollama metadata APIs and persists the result so
+    'suggest --source catalog' works offline afterwards.
     """
     import json as json_mod
     import logging

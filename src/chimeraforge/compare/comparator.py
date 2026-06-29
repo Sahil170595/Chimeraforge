@@ -1,4 +1,4 @@
-"""Compare benchmark result files — load, match, delta, format.
+"""Compare benchmark result files - load, match, delta, format.
 
 Loads two or more bench result JSON files, matches configurations by
 (model, backend, quant, workload, context_length), computes deltas,
