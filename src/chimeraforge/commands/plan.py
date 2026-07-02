@@ -1,4 +1,4 @@
-"""`plan` command — predictive capacity planner."""
+"""`plan` command - predictive capacity planner."""
 
 from __future__ import annotations
 
@@ -66,7 +66,18 @@ def plan(
     avg_tokens: int = typer.Option(
         128,
         "--avg-tokens",
-        help="Average output tokens per request.",
+        help="Average output tokens per request (decode length).",
+    ),
+    prompt_tokens: int = typer.Option(
+        512,
+        "--prompt-tokens",
+        help="Average input prompt length in tokens (drives prefill / TTFT).",
+    ),
+    workload: str = typer.Option(
+        "steady",
+        "--workload",
+        help="Service-time variance preset: steady, chatbot, bursty, agent. "
+        "High-variance (agent) inflates the tail estimate and warns.",
     ),
     models_path: str = typer.Option(
         None,
@@ -119,6 +130,12 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    pareto: bool = typer.Option(
+        False,
+        "--pareto",
+        help="Show the cost/latency/quality trade-off frontier (the menu of "
+        "non-dominated configs), not just the single cheapest pick.",
+    ),
     list_hardware: bool = typer.Option(
         False,
         "--list-hardware",
@@ -138,14 +155,20 @@ def plan(
 ) -> None:
     """Recommend optimal LLM deployment configuration.
 
-    Searches model × quantization × backend × instance-count space,
+    Searches model x quantization x backend x instance-count space,
     filtering through VRAM, quality, latency, and budget gates.
     """
     import logging
 
-    from chimeraforge.planner.engine import enumerate_candidates, find_models_for_size
+    from chimeraforge.planner.engine import (
+        enumerate_candidates,
+        find_models_for_size,
+        pareto_frontier,
+    )
     from chimeraforge.planner.formatter import (
         format_json,
+        format_pareto,
+        format_pareto_json,
         format_recommendation,
         print_hardware_table,
         print_models_table,
@@ -188,6 +211,13 @@ def plan(
     if safety_target is not None and not 0.0 <= safety_target <= 1.0:
         console.print("[red]Error:[/] --safety-target must be between 0.0 and 1.0.")
         raise typer.Exit(code=1)
+
+    from chimeraforge.planner.constants import WORKLOAD_CV2
+
+    if workload not in WORKLOAD_CV2:
+        console.print(f"[red]Error:[/] --workload must be one of: {', '.join(WORKLOAD_CV2)}.")
+        raise typer.Exit(code=1)
+    workload_cv2 = WORKLOAD_CV2[workload]
     if measure_first and not model:
         console.print("[red]Error:[/] --measure requires --model.")
         raise typer.Exit(code=1)
@@ -286,13 +316,20 @@ def plan(
         safety_target=safety_target,
         specs=specs,
         trace=trace,
+        prompt_tokens=prompt_tokens,
+        workload_cv2=workload_cv2,
     )
+
+    frontier = pareto_frontier(candidates) if pareto else None
 
     if output_json:
         # highlight=False + soft_wrap: emit plain JSON so it stays valid (Rich
         # would otherwise reflow long string values and corrupt them) and pipes
         # cleanly to `jq`.
-        console.print(format_json(candidates), highlight=False, soft_wrap=True)
+        payload = format_pareto_json(frontier) if pareto else format_json(candidates)
+        console.print(payload, highlight=False, soft_wrap=True)
+    elif pareto:
+        format_pareto(frontier, hardware)
     else:
         format_recommendation(
             candidates,
@@ -303,9 +340,10 @@ def plan(
             budget=budget,
             safety_target=safety_target,
         )
-        if not candidates and trace:
-            from chimeraforge.planner.engine import summarize_trace
 
-            console.print("\n[bold]Why nothing fit:[/]")
-            for line in summarize_trace(trace):
-                console.print(f"  [yellow]-[/] {line}")
+    if not candidates and trace and not output_json:
+        from chimeraforge.planner.engine import summarize_trace
+
+        console.print("\n[bold]Why nothing fit:[/]")
+        for line in summarize_trace(trace):
+            console.print(f"  [yellow]-[/] {line}")

@@ -1,4 +1,4 @@
-"""ChimeraForge Compare — unit tests.
+"""ChimeraForge Compare - unit tests.
 
 Tests the compare pipeline: key generation, grouping, delta calculation,
 Rich table formatting, JSON output, and CLI integration.

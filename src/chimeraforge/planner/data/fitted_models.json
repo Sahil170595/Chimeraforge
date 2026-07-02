@@ -1,7 +1,7 @@
 {
   "vram": {
     "overhead_factor": 1.058047797687617,
-    "act_coeff": 0.00454768594328633,
+    "act_coeff": 0.00909537188657266,
     "fitted": true
   },
   "throughput": {

@@ -1,4 +1,4 @@
-"""`bench` command — live LLM inference benchmarking."""
+"""`bench` command - live LLM inference benchmarking."""
 
 from __future__ import annotations
 
@@ -160,6 +160,7 @@ def bench(
                         model=model,
                         backend_name=backend,
                         context_lengths=ctx_lengths,
+                        quant=quant,
                         runs=runs,
                         workload=workload,
                         rate=rate,
@@ -188,7 +189,9 @@ def bench(
 
         if output_json:
             data = [result_to_dict(r) for r in results]
-            console.print(json_mod.dumps(data, indent=2))
+            # highlight=False + soft_wrap: emit valid JSON for `--json | jq`; Rich
+            # otherwise reflows long string values (width 79 when piped) and corrupts them.
+            console.print(json_mod.dumps(data, indent=2), highlight=False, soft_wrap=True)
         else:
             for r in results:
                 agg = r.aggregate

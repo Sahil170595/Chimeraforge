@@ -1,4 +1,4 @@
-"""`report` command — generate benchmark reports from result files."""
+"""`report` command - generate benchmark reports from result files."""
 
 from __future__ import annotations
 
@@ -119,6 +119,7 @@ def report(
             "n_results": rpt.n_results,
             "timestamp": rpt.timestamp,
         }
-        console.print(json_mod.dumps(meta, indent=2))
+        # highlight=False + soft_wrap: valid JSON for `--json | jq`.
+        console.print(json_mod.dumps(meta, indent=2), highlight=False, soft_wrap=True)
     else:
         format_report_rich(results, console)

@@ -1,8 +1,8 @@
-"""Safety screen runner — runs refusal probes against a live backend.
+"""Safety screen runner - runs refusal probes against a live backend.
 
 Where the planner's safety gate makes a *decision* from bundled TR134/TR142
 data, this *measures*: it sends each prompt to a running model, classifies the
-response as a refusal or not, and aggregates a refusal rate — so a (model,
+response as a refusal or not, and aggregates a refusal rate - so a (model,
 quant) the bundled table does not cover can still be screened.
 """
 

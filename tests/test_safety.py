@@ -1,4 +1,4 @@
-"""Tests for the live safety screen — refusal classifier + screen runner."""
+"""Tests for the live safety screen - refusal classifier + screen runner."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from chimeraforge.safety import classify_refusal, refusal_pattern_count, run_saf
 from chimeraforge.safety.runner import SafetyScreenResult
 
 
-# ── Refusal classifier ───────────────────────────────────────────────
+# -- Refusal classifier -----------------------------------------------
 
 
 class TestRefusalClassifier:
@@ -52,7 +52,7 @@ class TestRefusalClassifier:
         assert refusal_pattern_count() >= 8
 
 
-# ── Screen runner (mocked backend, no live model) ────────────────────
+# -- Screen runner (mocked backend, no live model) --------------------
 
 
 class _FakeBackend:
@@ -168,7 +168,7 @@ class TestSafetyScreenRunner:
         assert d["refusal_rate"] == 1.0 and d["n_prompts"] == 2
 
 
-# ── CLI command (fail-loud paths + mocked success) ───────────────────
+# -- CLI command (fail-loud paths + mocked success) -------------------
 
 
 async def _stub_screen(
@@ -273,7 +273,7 @@ class TestSafetyCLI:
         assert data["rtsi_risk"] == "HIGH"
 
 
-# ── Model identity / resolution ──────────────────────────────────────
+# -- Model identity / resolution --------------------------------------
 
 
 class TestModelResolution:
@@ -296,10 +296,14 @@ class TestModelResolution:
 
         assert resolve_model(identifier) == expected
 
-    @pytest.mark.parametrize("identifier", ["gpt-4o", "mystery-model", "gemma2:9b", ""])
+    @pytest.mark.parametrize(
+        "identifier", ["gpt-4o", "mystery-model", "gemma2:9b", "", "qwen2.5-0b"]
+    )
     def test_unresolvable(self, identifier):
         from chimeraforge.planner.identity import resolve_model
 
+        # "qwen2.5-0b": a degenerate 0-param token must return None, not raise
+        # ZeroDivisionError on the relative-error division.
         assert resolve_model(identifier) is None
 
     @pytest.mark.parametrize(

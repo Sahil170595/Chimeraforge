@@ -117,7 +117,7 @@ def resolve_model(identifier: str) -> str | None:
     if len(candidates) == 1:
         return candidates[0]
     params = parse_params_b(identifier)
-    if params is None:
+    if params is None or params <= 0:  # e.g. a degenerate "...0b" token -> no division
         return None
     best = min(candidates, key=lambda m: abs(MODEL_PARAMS_B[m] - params))
     return best if abs(MODEL_PARAMS_B[best] - params) / params <= _PARAMS_TOLERANCE else None

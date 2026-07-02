@@ -1,4 +1,4 @@
-"""Eval orchestrator — run quality evaluation on model outputs.
+"""Eval orchestrator - run quality evaluation on model outputs.
 
 Provides functions to evaluate predictions against references,
 load from files, and format results as Rich tables or JSON.

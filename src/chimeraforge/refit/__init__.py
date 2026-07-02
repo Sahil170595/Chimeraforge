@@ -1,4 +1,4 @@
-"""Refit — update planner coefficients from benchmark results."""
+"""Refit - update planner coefficients from benchmark results."""
 
 from chimeraforge.refit.fitter import (
     bayesian_blend_throughput,

@@ -1,4 +1,4 @@
-"""`measure` command — benchmark a live model and fold it into the planner corpus."""
+"""`measure` command - benchmark a live model and fold it into the planner corpus."""
 
 from __future__ import annotations
 
@@ -83,7 +83,8 @@ def measure(
                     on_progress=_on_progress,
                 )
             )
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError) as exc:
+        # RuntimeError: backend/model pre-flight failure; ValueError: unknown --backend.
         console.print(f"[red]Error:[/] {exc}")
         console.print(
             "[dim]The model must be served by the backend "

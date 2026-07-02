@@ -273,14 +273,53 @@ def count_total_runs(results: list[dict]) -> int:
     return total
 
 
+def _successful_runs(r: dict) -> int:
+    """Count SUCCESSFUL runs for a result (recorded samples), not attempted.
+
+    ``individual_runs`` holds only the runs that produced metrics; the ``runs``
+    field is the attempted count, which over-credits confidence when some failed.
+    """
+    runs = r.get("individual_runs")
+    if runs is not None:
+        return len(runs)
+    n = r.get("runs")
+    return n if n is not None else 0
+
+
+def runs_per_throughput_key(results: list[dict]) -> dict[str, int]:
+    """Successful-run count per ``'{model}|{backend}|{quant}'`` throughput key."""
+    counts: dict[str, int] = defaultdict(int)
+    for r in results:
+        agg = r.get("aggregate", {})
+        if (agg.get("throughput_tps", {}).get("mean") or 0) > 0:
+            quant = r.get("quant") or "FP16"
+            counts[f"{r.get('model', '')}|{r.get('backend', '')}|{quant}"] += _successful_runs(r)
+    return dict(counts)
+
+
+def runs_per_service_key(results: list[dict]) -> dict[str, int]:
+    """Successful-run count per ``'{model}|{backend}'`` service-time key."""
+    counts: dict[str, int] = defaultdict(int)
+    for r in results:
+        agg = r.get("aggregate", {})
+        if (agg.get("total_duration_ms", {}).get("mean") or 0) > 0:
+            counts[f"{r.get('model', '')}|{r.get('backend', '')}"] += _successful_runs(r)
+    return dict(counts)
+
+
 def bayesian_blend_throughput(
     existing_lookup: dict[str, float],
     measured_lookup: dict[str, float],
     n_total_runs: int,
+    runs_per_key: dict[str, int] | None = None,
 ) -> dict[str, float]:
-    """Blend measured throughputs with existing (global prior) using confidence weighting.
+    """Blend measured throughputs with existing (prior) using confidence weighting.
 
-    Confidence weight: ``w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)``.
+    Confidence weight per key: ``w = min(1.0, runs_for_key / CONFIDENCE_RUN_THRESHOLD)``
+    when *runs_per_key* is supplied, so each entry is weighted by ITS OWN sample
+    size -- not the global run total, which would over-trust a lightly-measured
+    config merely because other configs were also benchmarked. Falls back to the
+    global ``n_total_runs`` weight when *runs_per_key* is None.
 
     For each key in *measured_lookup*:
       - If the key exists in *existing_lookup*:
@@ -292,17 +331,22 @@ def bayesian_blend_throughput(
     Args:
         existing_lookup: The current throughput lookup from fitted_models.
         measured_lookup: Newly measured throughput entries.
-        n_total_runs: Total number of individual benchmark runs (drives confidence).
+        n_total_runs: Global run total (fallback confidence when no per-key map).
+        runs_per_key: Optional per-key successful-run counts (preferred).
 
     Returns:
         Blended throughput lookup dict.
     """
-    w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)
+    global_w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)
 
     blended = dict(existing_lookup)  # preserve all existing entries
     for key, measured_val in measured_lookup.items():
         existing_val = existing_lookup.get(key)
         if existing_val is not None:
+            if runs_per_key is not None:
+                w = min(1.0, runs_per_key.get(key, 0) / CONFIDENCE_RUN_THRESHOLD)
+            else:
+                w = global_w
             blended[key] = (1 - w) * existing_val + w * measured_val
         else:
             blended[key] = measured_val
@@ -313,25 +357,31 @@ def _bayesian_blend_service_times(
     existing_st: dict[str, float],
     measured_st: dict[str, float],
     n_total_runs: int,
+    runs_per_key: dict[str, int] | None = None,
 ) -> dict[str, float]:
     """Blend measured service times with existing using confidence weighting.
 
-    Same formula as :func:`bayesian_blend_throughput` but for service times.
+    Same per-key weighting as :func:`bayesian_blend_throughput`.
 
     Args:
         existing_st: Current service_times from fitted_models.
         measured_st: Newly measured service times.
-        n_total_runs: Total number of individual benchmark runs.
+        n_total_runs: Global run total (fallback when no per-key map).
+        runs_per_key: Optional per-key successful-run counts (preferred).
 
     Returns:
         Blended service times dict.
     """
-    w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)
+    global_w = min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD)
 
     blended = dict(existing_st)
     for key, measured_val in measured_st.items():
         existing_val = existing_st.get(key)
         if existing_val is not None:
+            if runs_per_key is not None:
+                w = min(1.0, runs_per_key.get(key, 0) / CONFIDENCE_RUN_THRESHOLD)
+            else:
+                w = global_w
             blended[key] = (1 - w) * existing_val + w * measured_val
         else:
             blended[key] = measured_val
@@ -432,12 +482,17 @@ def refit_from_bench(
     st = extract_service_times(results)
     pl = fit_power_law(tp_lookup)
 
-    # Bayesian-blend throughput and service times with existing
+    # Bayesian-blend throughput and service times with existing, weighting each
+    # entry by its OWN successful-run count (not the global total).
     existing_tp_lookup = existing.get("throughput", {}).get("lookup", {})
-    blended_tp = bayesian_blend_throughput(existing_tp_lookup, tp_lookup, n_total_runs)
+    blended_tp = bayesian_blend_throughput(
+        existing_tp_lookup, tp_lookup, n_total_runs, runs_per_throughput_key(results)
+    )
 
     existing_st = existing.get("latency", {}).get("service_times", {})
-    blended_st = _bayesian_blend_service_times(existing_st, st, n_total_runs)
+    blended_st = _bayesian_blend_service_times(
+        existing_st, st, n_total_runs, runs_per_service_key(results)
+    )
 
     # Compute hardware offsets (measured / predicted ratios)
     hw_offsets = compute_hardware_offsets(results, existing)

@@ -1,4 +1,4 @@
-"""ChimeraForge Capacity Planner — predict-only models and search engine."""
+"""ChimeraForge Capacity Planner - predict-only models and search engine."""
 
 from chimeraforge.planner.engine import Candidate, enumerate_candidates, find_models_for_size
 from chimeraforge.planner.models import (

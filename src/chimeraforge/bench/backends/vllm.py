@@ -66,6 +66,10 @@ class VLLMBackend(Backend):
             )
         except httpx.ConnectError:
             return False, f"vLLM not running at {self.base_url}"
+        except httpx.TimeoutException:
+            return False, f"vLLM timed out at {self.base_url}"
+        except httpx.HTTPError as exc:
+            return False, f"vLLM model check failed at {self.base_url}: {exc}"
 
     async def generate(
         self,

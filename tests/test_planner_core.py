@@ -21,7 +21,7 @@ from chimeraforge.planner.hardware import (
 from chimeraforge.planner.models import load_models
 
 
-# ── Constants & Registry ─────────────────────────────────────────────
+# -- Constants & Registry ---------------------------------------------
 
 
 class TestConstants:
@@ -46,7 +46,7 @@ class TestConstants:
             assert arch["d_head"] > 0
 
 
-# ── Hardware DB ──────────────────────────────────────────────────────
+# -- Hardware DB ------------------------------------------------------
 
 
 class TestHardwareDB:
@@ -83,7 +83,7 @@ class TestHardwareDB:
         assert bandwidth_ratio("Unknown GPU") == 1.0
 
 
-# ── Serialization Round-Trip ─────────────────────────────────────────
+# -- Serialization Round-Trip -----------------------------------------
 
 
 class TestSerialization:

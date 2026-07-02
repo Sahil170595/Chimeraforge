@@ -15,7 +15,7 @@ from chimeraforge.planner.engine import (
 from chimeraforge.planner.resolver import ModelSpec
 
 
-# ── Planner Engine ───────────────────────────────────────────────────
+# -- Planner Engine ---------------------------------------------------
 
 
 class TestPlanner:
@@ -132,7 +132,7 @@ class TestPlanner:
         assert "monthly_cost" in data[0]
 
 
-# ── Model-Agnostic Specs ─────────────────────────────────────────────
+# -- Model-Agnostic Specs ---------------------------------------------
 
 
 class TestOffRegistrySpecs:
@@ -247,6 +247,47 @@ class TestOffRegistrySpecs:
         assert any("approximated" in w for w in cands[0].warnings)
 
 
+class TestPrefillDecodeFields:
+    """Candidates carry TTFT (prefill) and TPOT (decode) on a known GPU."""
+
+    def test_candidate_has_ttft_and_tpot(self, bundled_models):
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4090 24GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=200,
+            avg_tokens=128,
+            context_length=2048,
+            prompt_tokens=512,
+        )
+        c = cands[0]
+        assert c.ttft_ms > 0  # known GPU -> prefill computed
+        assert c.tpot_ms > 0  # decode per-token latency
+        # TPOT should be ~ 1000 / N=1 throughput.
+        assert c.tpot_ms == pytest.approx(1000.0 / c.throughput_tps, rel=0.05)
+
+    def test_longer_prompt_raises_ttft(self, bundled_models):
+        def ttft(pt):
+            cs = enumerate_candidates(
+                models=bundled_models,
+                target_models=["llama3.2-3b"],
+                hardware="RTX 4090 24GB",
+                request_rate=0.5,
+                latency_slo=10000,
+                quality_target=0.3,
+                budget=200,
+                avg_tokens=128,
+                context_length=2048,
+                prompt_tokens=pt,
+            )
+            return cs[0].ttft_ms
+
+        assert ttft(2048) > ttft(256)
+
+
 class TestRejectionTrace:
     """The optional trace explains why a search returned nothing."""
 
@@ -270,8 +311,8 @@ class TestRejectionTrace:
         assert "vram" in gates or "quality" in gates
 
     def test_summarize_trace_picks_binding_gate(self, bundled_models):
-        # 14B off-registry at an extreme rate even 16 linear replicas can't serve
-        # -> throughput-bound (the fastest/smallest quant fits VRAM but not rate).
+        # 14B at an extreme rate that even 16 GPUs x max batch can't serve
+        # -> throughput-bound (the smallest quant fits VRAM but not the rate).
         spec = ModelSpec(
             name="big/m", params_b=14.0, n_layers=40, n_kv_heads=8, d_head=128, source="hf"
         )
@@ -280,10 +321,10 @@ class TestRejectionTrace:
             models=bundled_models,
             target_models=["big/m"],
             hardware="RTX 4090 24GB",
-            request_rate=30.0,  # 30*128=3840 tok/s; 16 replicas of a 14B can't reach it
+            request_rate=500.0,  # 64000 tok/s; beyond 16 GPUs even with batching
             latency_slo=10000,
             quality_target=0.0,
-            budget=100000,
+            budget=1_000_000,
             avg_tokens=128,
             context_length=2048,
             specs={"big/m": spec},
@@ -294,9 +335,9 @@ class TestRejectionTrace:
         assert any("big/m" in ln and "throughput" in ln for ln in lines)
 
     def test_linear_replica_scaling_unblocks_large_models(self, bundled_models):
-        # C-1: N independent GPUs scale linearly, so a 7B that one GPU can't serve
-        # at the rate now plans with multiple replicas (used to be rejected when
-        # Amdahl capped total throughput at ~1.8x regardless of N).
+        # C-1: a 7B that one single-stream GPU can't serve at the rate now plans
+        # (was rejected when Amdahl capped total throughput at ~1.8x). On the
+        # non-batching Ollama path that means linear replicas (eta=1).
         spec = ModelSpec(
             name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
         )
@@ -304,7 +345,7 @@ class TestRejectionTrace:
             models=bundled_models,
             target_models=["mistral/7b"],
             hardware="RTX 4080 12GB",
-            request_rate=1.0,  # 128 tok/s; one 7B replica can't, several can
+            request_rate=1.0,
             latency_slo=10000,
             quality_target=0.0,
             budget=1000,
@@ -312,21 +353,22 @@ class TestRejectionTrace:
             context_length=2048,
             specs={"mistral/7b": spec},
         )
-        assert cands, "linear replica scaling should let a 7B meet 1 req/s with N>1"
-        c = cands[0]
-        assert c.n_agents > 1
-        assert c.eta == 1.0  # replicas, not Amdahl
-        # Linear: total throughput is exactly N * per-replica.
-        assert c.total_throughput_tps == pytest.approx(c.n_agents * c.throughput_tps, rel=1e-3)
+        assert cands, "a 7B should now plan at 1 req/s (not rejected)"
+        ollama = next(c for c in cands if c.backend == "ollama")
+        assert ollama.effective_batch == 1  # Ollama = single-stream replicas
+        assert ollama.n_agents > 1  # needs several replicas at this rate
+        assert ollama.total_throughput_tps == pytest.approx(
+            ollama.n_agents * ollama.throughput_tps, rel=1e-3
+        )
 
     def test_cost_per_1m_invariant_in_replica_count(self, bundled_models):
-        # C-2: adding identical replicas must not change $/token (cost and tokens
-        # both scale by N). Previously cost_per_1m was understated by N.
+        # C-2: adding identical (single-stream) replicas must not change $/token.
+        # Use the Ollama path, where higher rate genuinely adds replicas.
         spec = ModelSpec(
             name="mistral/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
         )
 
-        def best(rate):
+        def ollama_q4(rate):
             cs = enumerate_candidates(
                 models=bundled_models,
                 target_models=["mistral/7b"],
@@ -339,11 +381,150 @@ class TestRejectionTrace:
                 context_length=2048,
                 specs={"mistral/7b": spec},
             )
-            return next(c for c in cs if c.quant == "Q4_K_M")
+            return next(c for c in cs if c.backend == "ollama" and c.quant == "Q4_K_M")
 
-        low, high = best(1.0), best(3.0)
+        low, high = ollama_q4(1.0), ollama_q4(3.0)
         assert high.n_agents > low.n_agents  # more replicas at higher rate
         assert high.cost_per_1m_tok == pytest.approx(low.cost_per_1m_tok, rel=1e-3)
+
+
+class TestContinuousBatching:
+    """0.6.0: batched backends serve concurrent requests on one GPU (vLLM/TGI)."""
+
+    def _spec(self):
+        return ModelSpec(
+            name="m/7b", params_b=7.0, n_layers=32, n_kv_heads=8, d_head=128, source="hf"
+        )
+
+    def _plan(self, models, rate):
+        return enumerate_candidates(
+            models=models,
+            target_models=["m/7b"],
+            hardware="RTX 4090 24GB",
+            request_rate=rate,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=10000,
+            avg_tokens=128,
+            context_length=2048,
+            specs={"m/7b": self._spec()},
+        )
+
+    def test_vllm_batches_ollama_does_not(self, bundled_models):
+        cands = self._plan(bundled_models, rate=2.0)
+        vllm = next(c for c in cands if c.backend == "vllm")
+        ollama = next(c for c in cands if c.backend == "ollama")
+        assert vllm.effective_batch > 1  # continuous batching
+        assert ollama.effective_batch == 1  # single-stream
+
+    def test_batching_needs_fewer_gpus_than_replicas(self, bundled_models):
+        # At a rate one single-stream GPU can't serve, vLLM should meet it with
+        # fewer GPUs than Ollama (batching replaces replicas).
+        cands = self._plan(bundled_models, rate=3.0)
+        vllm = next(c for c in cands if c.backend == "vllm")
+        ollama = next(c for c in cands if c.backend == "ollama")
+        assert vllm.n_agents <= ollama.n_agents
+        # vLLM aggregate per the batch is well above single-stream.
+        assert vllm.total_throughput_tps >= ollama.total_throughput_tps
+
+    def test_batch_bounded_by_kv_cache(self, bundled_models):
+        cands = self._plan(bundled_models, rate=5.0)
+        vllm = next(c for c in cands if c.backend == "vllm")
+        assert vllm.effective_batch <= vllm.max_concurrent_seqs
+
+
+class TestVarianceGuard:
+    """0.6.0: high-variance (agent) workloads inflate the tail and warn."""
+
+    def _plan(self, models, cv2):
+        return enumerate_candidates(
+            models=models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=300,
+            avg_tokens=128,
+            context_length=2048,
+            workload_cv2=cv2,
+        )
+
+    def test_agent_workload_warns(self, bundled_models):
+        agent = self._plan(bundled_models, 8.0)
+        steady = self._plan(bundled_models, 0.0)
+        assert any("variance" in w for w in agent[0].warnings)
+        assert not any("variance" in w for w in steady[0].warnings)
+
+    def test_steady_default_unchanged(self, bundled_models):
+        # cv2=0 must leave candidate p95 identical to the no-arg (default) behaviour.
+        default = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.2-3b"],
+            hardware="RTX 4080 12GB",
+            request_rate=0.5,
+            latency_slo=10000,
+            quality_target=0.3,
+            budget=300,
+            avg_tokens=128,
+            context_length=2048,
+        )
+        explicit = self._plan(bundled_models, 0.0)
+        assert default and explicit
+        assert explicit[0].p95_latency_ms == pytest.approx(default[0].p95_latency_ms)
+
+
+class TestParetoFrontier:
+    """0.6.0: non-dominated cost/latency/quality trade-off menu."""
+
+    def _cand(self, cost, p95, quality, model="m"):
+        from chimeraforge.planner.engine import Candidate
+
+        return Candidate(
+            model=model,
+            quant="Q4_K_M",
+            backend="vllm",
+            n_agents=1,
+            vram_gb=4.0,
+            quality=quality,
+            quality_tier="negligible",
+            throughput_tps=100.0,
+            total_throughput_tps=100.0,
+            eta=1.0,
+            p95_latency_ms=p95,
+            utilisation=0.3,
+            monthly_cost=cost,
+            cost_per_1m_tok=0.1,
+            safety_refusal=None,
+            rtsi_risk="UNKNOWN",
+            warnings=[],
+        )
+
+    def test_excludes_dominated(self):
+        from chimeraforge.planner.engine import pareto_frontier
+
+        a = self._cand(10, 1000, 0.5, "cheap")  # cheapest
+        b = self._cand(20, 500, 0.5, "fast")  # faster, pricier -> non-dominated
+        c = self._cand(30, 2000, 0.5, "dom")  # dominated by a (cheaper+faster, == q)
+        d = self._cand(40, 300, 0.7, "premium")  # fastest + best quality
+        front = pareto_frontier([a, b, c, d])
+        models = {x.model for x in front}
+        assert models == {"cheap", "fast", "premium"}  # 'dom' excluded
+        assert front[0].monthly_cost <= front[-1].monthly_cost  # sorted by cost
+
+    def test_frontier_has_the_three_extremes(self):
+        from chimeraforge.planner.engine import pareto_frontier
+
+        cs = [self._cand(10, 1000, 0.5), self._cand(40, 300, 0.7), self._cand(20, 500, 0.6)]
+        front = pareto_frontier(cs)
+        assert min(c.monthly_cost for c in cs) in {c.monthly_cost for c in front}
+        assert min(c.p95_latency_ms for c in cs) in {c.p95_latency_ms for c in front}
+        assert max(c.quality for c in cs) in {c.quality for c in front}
+
+    def test_empty(self):
+        from chimeraforge.planner.engine import pareto_frontier
+
+        assert pareto_frontier([]) == []
 
     def test_native_legacy_quant_pinned_and_costed(self, bundled_models):
         # M-2: a q4_0 native tag must be evaluated at q4_0 (real bpw), not dropped.
@@ -390,7 +571,7 @@ class TestRejectionTrace:
         assert cands
 
 
-# ── Safety Gate (Gate 5) ─────────────────────────────────────────────
+# -- Safety Gate (Gate 5) ---------------------------------------------
 
 
 class TestSafetyGate:
@@ -444,7 +625,7 @@ class TestSafetyGate:
 
     def test_unknown_safety_passes_with_warning(self, bundled_models):
         # qwen2.5-0.5b is in the planner registry but has no safety data.
-        # The gate blocks only KNOWN-unsafe cells, so it passes — with a warning.
+        # The gate blocks only KNOWN-unsafe cells, so it passes - with a warning.
         cands = self._plan(bundled_models, "qwen2.5-0.5b", safety_target=0.8)
         assert cands
         for c in cands:
@@ -460,7 +641,7 @@ class TestSafetyGate:
         assert any("RTSI" in w and "HIGH" in w for w in q2k[0].warnings)
 
 
-# ── Spot Checks (Real Data Validation) ───────────────────────────────
+# -- Spot Checks (Real Data Validation) -------------------------------
 
 
 class TestSpotChecks:
@@ -584,7 +765,7 @@ class TestPlannerExtended:
         assert candidates == []
 
     def test_n_search_tries_higher_n_for_latency(self, bundled_models):
-        """With tight latency SLO, engine should try N > min-throughput-N."""
+        """With a tight latency SLO, every returned config must actually meet it."""
         candidates = enumerate_candidates(
             models=bundled_models,
             target_models=["llama3.2-3b"],
@@ -596,5 +777,9 @@ class TestPlannerExtended:
             avg_tokens=128,
             context_length=2048,
         )
-        # The tight-latency N-search path should run and return a candidate list.
-        assert isinstance(candidates, list)
+        # The N-search must escalate replicas until the SLO holds -- so any
+        # candidate it returns has to satisfy the tight latency bound, not just
+        # be a list. (Empty is acceptable only if nothing can meet it.)
+        assert all(c.p95_latency_ms <= 3000 for c in candidates)
+        # At this rate a feasible config exists, so the search must find one.
+        assert candidates

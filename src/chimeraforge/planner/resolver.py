@@ -35,7 +35,7 @@ from chimeraforge.planner.constants import (
     MODEL_PARAMS_B,
     QUANT_BPW,
 )
-from chimeraforge.planner.identity import parse_identity, resolve_model
+from chimeraforge.planner.identity import parse_identity, parse_quant, resolve_model
 
 log = logging.getLogger("chimeraforge.planner.resolver")
 
@@ -132,7 +132,7 @@ class ModelSpec:
         )
 
 
-# ── Pure parsers (dict -> ModelSpec) ──────────────────────────────────
+# -- Pure parsers (dict -> ModelSpec) ----------------------------------
 
 
 def parse_param_size(label: str | None) -> float | None:
@@ -200,7 +200,7 @@ def spec_from_ollama_show(name: str, payload: dict) -> ModelSpec:
         n_kv_heads=n_kv_heads,
         d_head=d_head,
         hidden_size=hidden,
-        native_quant=ident.quant or details.get("quantization_level"),
+        native_quant=ident.quant or parse_quant(details.get("quantization_level") or ""),
         family=ident.family or (arch or None),
         variant=ident.variant,
         source=SOURCE_OLLAMA,
@@ -277,7 +277,7 @@ def spec_from_overrides(name: str, overrides: dict) -> ModelSpec | None:
     )
 
 
-# ── Spec cache ────────────────────────────────────────────────────────
+# -- Spec cache --------------------------------------------------------
 
 
 def _cache_dir() -> Path:
@@ -325,7 +325,7 @@ def _cache_store(identifier: str, spec: ModelSpec) -> None:
         log.warning("could not write spec cache for %s: %s", identifier, exc)
 
 
-# ── Network fetchers (network -> dict) ────────────────────────────────
+# -- Network fetchers (network -> dict) --------------------------------
 
 
 def _httpx():
@@ -350,6 +350,8 @@ def fetch_ollama_show(tag: str, base_url: str = DEFAULT_OLLAMA_URL) -> dict:
         raise ResolverError(f"Ollama has no model '{tag}' (pull it first): {exc}") from exc
     except httpx.HTTPError as exc:
         raise ResolverError(f"could not reach Ollama at {base_url}: {exc}") from exc
+    except ValueError as exc:  # non-JSON 200 body (captive portal / proxy)
+        raise ResolverError(f"Ollama returned a non-JSON response at {base_url}: {exc}") from exc
 
 
 def fetch_hf(repo: str, hf_token: str | None = None) -> tuple[dict, float | None]:
@@ -389,9 +391,11 @@ def fetch_hf(repo: str, hf_token: str | None = None) -> tuple[dict, float | None
         return config, params_b
     except httpx.HTTPError as exc:
         raise ResolverError(f"could not fetch HF metadata for '{repo}': {exc}") from exc
+    except ValueError as exc:  # malformed JSON in config.json / model_info
+        raise ResolverError(f"HF returned a non-JSON response for '{repo}': {exc}") from exc
 
 
-# ── Top-level resolver ────────────────────────────────────────────────
+# -- Top-level resolver ------------------------------------------------
 
 
 def resolve_spec(

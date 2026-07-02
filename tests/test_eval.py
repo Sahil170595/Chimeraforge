@@ -1,4 +1,4 @@
-"""ChimeraForge Eval — unit tests.
+"""ChimeraForge Eval - unit tests.
 
 Tests quality metrics (exact match, ROUGE-L, BERTScore, coherence,
 composite, tiers), built-in tasks, runner, and CLI integration.
@@ -442,7 +442,7 @@ class TestCLIEval:
         # progress bar. In a real shell that goes to stderr (stdout stays clean
         # JSON), but typer's CliRunner merges the streams into result.output, and
         # the JSON "[" lands mid-line after the bar's carriage return. Locate the
-        # array start ("[" followed by a newline — tqdm's "[00:00" is not) and
+        # array start ("[" followed by a newline - tqdm's "[00:00" is not) and
         # raw_decode so any trailing noise is ignored.
         import re
 

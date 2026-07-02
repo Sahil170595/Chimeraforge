@@ -1,144 +1,71 @@
 # Documentation Index
 
-Comprehensive documentation for Chimeraforge, a benchmarking and research repository for LLM performance optimization.
+ChimeraForge is a model-agnostic **LLM deployment / capacity-planning CLI**: given
+your hardware, workload, latency SLO, quality target, and budget, it recommends
+the best (model x quantization x backend x GPU-instance-count) configuration --
+backed by real benchmarks, with honest per-prediction provenance. It also bundles
+the research harness (agent benchmarking, Rust vs Python, the TR series) that the
+planner's data came from; those guides are archived below.
 
-## Quick Start
+## The Planner CLI (start here)
 
-- **[Quick Start Guide](quick_start.md)** - Get up and running in minutes with your first benchmark
-- **[Installation Guide](installation.md)** - OS-specific setup instructions and prerequisites
+- **[Installation](installation.md)** - install from PyPI, optional extras
+- **[Quick Start](quick_start.md)** - first run in minutes
+- **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
+- **[API Reference](API.md)** - the public Python API (`chimeraforge.planner`, resolver, discovery, measure)
 
-## Core Documentation
-
-### Setup & Configuration
-- **[Installation](installation.md)** - Complete installation guide for all platforms
-- **[Dual Ollama Setup](dual_ollama_setup.md)** - Setting up dual Ollama instances for true concurrency
-- **[Architecture](ARCHITECTURE.md)** - System architecture and design principles
-
-### Running Benchmarks
-- **[Benchmarking Guide](benchmarking.md)** - Comprehensive guide to running all benchmark types
-- **[Multi-Agent Guide](multi_agent.md)** - Multi-agent concurrent execution scenarios
-- **[Python Agents](python_agents.md)** - Python agent implementation details
-- **[Rust Agents](rust_agents.md)** - Rust agent implementation details
-
-### Optimization & Tuning
-- **[Chimera Optimization](chimera_optimization.md)** - Configuration optimization strategies
-- **[Performance Tuning](performance_tuning.md)** - Performance tuning techniques and best practices
-
-### Analysis & Reporting
-- **[Statistical Analysis](statistical_analysis.md)** - Statistical rigor, sample sizes, and analysis methods
-- **[Rust vs Python](rust_vs_python.md)** - Cross-language performance comparison
-- **[Technical Reports](technical_reports.md)** - Complete index of all technical reports (TR108+)
-- **[Methodology](methodology.md)** - Research methodology and experimental design
-
-### Reference
-- **[FAQ](faq.md)** - Frequently asked questions and troubleshooting
-- **[Benchmarks README](../benchmarks/README.md)** - Directory map for stored benchmark artifacts
-
-## Project Documentation
-
-### Contributing
-- **[Contributing Guide](../CONTRIBUTING.md)** - How to contribute to the project
-- **[Code of Conduct](../CODE_OF_CONDUCT.md)** - Community standards and expectations
-
-### Project Information
-- **[Changelog](../CHANGELOG.md)** - Version history and changes
-- **[Security Policy](../SECURITY.md)** - Security reporting and best practices
-- **[Architecture](ARCHITECTURE.md)** - System architecture documentation
-
-## Documentation Structure
-
-### By User Type
-
-**New Users**:
-1. Start with [Quick Start](quick_start.md)
-2. Follow [Installation](installation.md)
-3. Run your first benchmark
-4. Read [Benchmarking Guide](benchmarking.md) for details
-
-**Researchers**:
-1. Review [Methodology](methodology.md)
-2. Study [Technical Reports](technical_reports.md)
-3. Understand [Statistical Analysis](statistical_analysis.md)
-4. Review [Architecture](ARCHITECTURE.md)
-
-**Developers**:
-1. Read [Architecture](ARCHITECTURE.md)
-2. Review [Contributing Guide](../CONTRIBUTING.md)
-3. Study agent implementations ([Python](python_agents.md) / [Rust](rust_agents.md))
-4. Understand benchmarking framework
-
-**Operators**:
-1. Follow [Installation](installation.md)
-2. Set up [Dual Ollama](dual_ollama_setup.md)
-3. Run benchmarks using [Benchmarking Guide](benchmarking.md)
-4. Troubleshoot using [FAQ](faq.md)
-
-### By Topic
-
-**Performance Optimization**:
-- [Chimera Optimization](chimera_optimization.md)
-- [Performance Tuning](performance_tuning.md)
-- [Rust vs Python](rust_vs_python.md)
-
-**Multi-Agent Systems**:
-- [Multi-Agent Guide](multi_agent.md)
-- [Dual Ollama Setup](dual_ollama_setup.md)
-- Technical Reports: TR110, TR113, TR114
-
-**Language-Specific**:
-- [Python Agents](python_agents.md)
-- [Rust Agents](rust_agents.md)
-- [Rust vs Python](rust_vs_python.md)
-
-**Research & Analysis**:
-- [Methodology](methodology.md)
-- [Statistical Analysis](statistical_analysis.md)
-- [Technical Reports](technical_reports.md)
-
-## Technical Reports
-
-The canonical technical report archive is `outputs/publish_ready/reports/`.
-
-Current coverage:
-
-- Phase 1: `TR108-TR122`
-- Phase 2: `TR123-TR133`
-- Phase 3: `TR134-TR137`
-- Conclusive synthesis sets: `108-116`, `117-122`, `123-133`, `134-137`
-
-See [Technical Reports](technical_reports.md) for the current linked index.
-
-## Repository Structure
-```
-Chimeraforge/
-├── src/              # Source code (Python & Rust)
-├── experiments/      # Research experiments (TR series)
-├── data/             # Data files (baselines, CSV, research)
-├── outputs/          # Generated outputs (artifacts, reports, runs)
-├── benchmarks/       # Benchmark results
-├── scripts/          # Utility scripts
-├── docs/             # Documentation (this directory)
-└── logs/             # Log files
+```bash
+pip install chimeraforge
+chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --request-rate 2
+chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
+chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-See [Architecture](ARCHITECTURE.md) for detailed structure documentation.
+Ten commands: `plan`, `suggest`, `measure`, `catalog`, `safety`, `bench`, `eval`,
+`refit`, `compare`, `report`. Run `chimeraforge --help` or `chimeraforge <cmd> --help`.
 
-## Getting Help
+## Project Information
 
-- **FAQ**: Check [FAQ](faq.md) for common questions
-- **Issues**: Open an issue on GitHub
-- **Discussions**: Use GitHub Discussions
-- **Contributing**: See [Contributing Guide](../CONTRIBUTING.md)
-
-## Documentation Standards
-
-- All documentation is ASCII-only for universal compatibility
-- Commands assume execution from repository root unless noted
-- Code examples are tested and verified
-- Links are relative to documentation structure
-- Last updated dates are maintained
+- **[Changelog](../CHANGELOG.md)** - version history
+- **[Contributing](../CONTRIBUTING.md)** | **[Security](../SECURITY.md)** | **[Code of Conduct](../CODE_OF_CONDUCT.md)**
 
 ---
 
-**Last Updated**: January 2025
+## Research Archive
 
+ChimeraForge began as the public breakout of the Banterhearts performance-research
+program (~204,000 measurements across TR108-TR137). These guides document that
+research -- the agent-benchmarking harness, the language/runtime studies, and the
+methodology behind the bundled data. They describe the code under
+`src/python/banterhearts/` and `src/rust/`, **not** the planner CLI.
+
+### Benchmarking & methodology
+- **[Benchmarking Guide](benchmarking.md)** - running the benchmark harness
+- **[Methodology](methodology.md)** - experimental design, isolation, cold starts
+- **[Statistical Analysis](statistical_analysis.md)** - sample sizes, CIs, rigor
+- **[Technical Reports](technical_reports.md)** - index of the TR series (TR108+)
+
+### Agent research (Rust vs Python, multi-agent)
+- **[Rust vs Python](rust_vs_python.md)** - cross-language comparison (TR111-TR116)
+- **[Rust Agents](rust_agents.md)** / **[Python Agents](python_agents.md)** - implementations
+- **[Multi-Agent Guide](multi_agent.md)** - concurrent execution scenarios
+- **[Dual Ollama Setup](dual_ollama_setup.md)** - required for the multi-agent experiments
+
+### Optimization & structure
+- **[Chimera Optimization](chimera_optimization.md)** - config optimization (TR108)
+- **[Performance Tuning](performance_tuning.md)** - tuning techniques
+- **[Architecture](ARCHITECTURE.md)** - the agent/research subsystem architecture
+- **[Repository Structure](repo_structure.md)** - folder layout & data governance
+- **[FAQ](faq.md)** - common questions
+
+The canonical technical-report archive lives in `outputs/publish_ready/reports/`.
+
+---
+
+## Documentation Standards
+
+- ASCII-only for universal compatibility
+- Commands assume execution from the repository root unless noted
+- Links are relative to this `docs/` directory
+
+**Last Updated:** June 2026 (v0.5.0)

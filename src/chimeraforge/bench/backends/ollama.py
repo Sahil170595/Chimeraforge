@@ -59,6 +59,10 @@ class OllamaBackend(Backend):
             return False, f"Model not found. Run: ollama pull {model}"
         except httpx.ConnectError:
             return False, f"Ollama not running at {self.base_url}"
+        except httpx.TimeoutException:
+            return False, f"Ollama timed out at {self.base_url}"
+        except httpx.HTTPError as exc:
+            return False, f"Ollama model check failed at {self.base_url}: {exc}"
 
     async def generate(
         self,

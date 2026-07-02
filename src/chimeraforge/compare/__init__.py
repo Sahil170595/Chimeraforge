@@ -1,4 +1,4 @@
-"""Compare — diff benchmark result files side by side."""
+"""Compare - diff benchmark result files side by side."""
 
 from chimeraforge.compare.comparator import (
     ComparisonRow,
