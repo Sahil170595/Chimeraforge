@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "typer>=0.9,<1.0",
     "rich>=13.0,<14.0",
+    "httpx>=0.25",
 ]
 
 [project.scripts]
