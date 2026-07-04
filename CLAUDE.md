@@ -36,7 +36,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (476 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy)
+# Run tests (483 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
