@@ -99,7 +99,7 @@ Superseded drafts are retained under `historical/`:
   Exploratory and legacy report outputs.
 - `../docs/README.md`
   Publish-ready benchmark writeups and supporting notes.
-- `../../../docs/technical_reports.md`
+- `../../../docs/archive/technical_reports.md`
   Cross-linked index used by the docs site.
 
 ## Guidance

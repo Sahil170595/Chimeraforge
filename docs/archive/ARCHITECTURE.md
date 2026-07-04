@@ -4,7 +4,7 @@
 > (`src/python/banterhearts/`, `src/rust/`) that produced the TR-series data. For
 > the **planner CLI** (`src/chimeraforge/` -- the shipping product), see the
 > "Planner Architecture" section of the top-level `CLAUDE.md` and
-> [Using the Planner](planning.md).
+> [Using the Planner](../planning.md).
 
 ## Overview
 

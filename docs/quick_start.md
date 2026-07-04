@@ -139,17 +139,17 @@ cd ../../..
 ## Next Steps
 
 1. **Read Technical Reports**: [outputs/publish_ready/reports/](../outputs/publish_ready/reports/)
-2. **Explore Configuration Options**: [Chimera Optimization Guide](chimera_optimization.md)
-3. **Run Comprehensive Benchmarks**: [Benchmarking Guide](benchmarking.md)
-4. **Compare Languages**: [Rust vs Python](rust_vs_python.md)
+2. **Explore Configuration Options**: [Chimera Optimization Guide](archive/chimera_optimization.md)
+3. **Run Comprehensive Benchmarks**: [Benchmarking Guide](archive/benchmarking.md)
+4. **Compare Languages**: [Rust vs Python](archive/rust_vs_python.md)
 
 ## Need Help?
 
-- **FAQ**: [Frequently Asked Questions](faq.md)
-- **Benchmarking Guide**: [Deep Dive](benchmarking.md)
+- **FAQ**: [Frequently Asked Questions](archive/faq.md)
+- **Benchmarking Guide**: [Deep Dive](archive/benchmarking.md)
 - **Issues**: [GitHub Issues](https://github.com/your-org/Chimeraforge/issues)
 
 ---
 
-**Ready to benchmark?** Start with [Benchmarking Guide](benchmarking.md) for detailed instructions.
+**Ready to benchmark?** Start with [Benchmarking Guide](archive/benchmarking.md) for detailed instructions.
 

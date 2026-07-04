@@ -13,7 +13,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 - Python 3.11+
 - Rust 1.70+ (for Rust contributions)
 - Git
-- Familiarity with the project structure (see [ARCHITECTURE.md](docs/ARCHITECTURE.md))
+- Familiarity with the project structure (see [ARCHITECTURE.md](docs/archive/ARCHITECTURE.md))
 
 ### Development Setup
 
@@ -197,7 +197,7 @@ python src/python/banterhearts/demo_agent/run_demo.py --runs 3
 cd src/rust/demo_agent && cargo run --release -- --runs 3
 
 # Multi-agent (requires dual Ollama setup)
-# See docs/dual_ollama_setup.md
+# See docs/archive/dual_ollama_setup.md
 ```
 
 ## Pull Request Guidelines

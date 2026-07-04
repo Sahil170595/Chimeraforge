@@ -435,10 +435,10 @@ let config = Config {
 
 ## References
 
-- [TR110: Python Multi-Agent](../outputs/publish_ready/reports/Technical_Report_110.md)
-- [TR113: Rust Multi-Agent (Single Ollama)](../outputs/publish_ready/reports/Technical_Report_113.md)
-- [TR114_v2: Rust Multi-Agent (Dual Ollama)](../outputs/publish_ready/reports/Technical_Report_114_v2.md)
-- [TR115_v2: Rust Runtime Optimization](../outputs/publish_ready/reports/Technical_Report_115_v2.md)
+- [TR110: Python Multi-Agent](../../outputs/publish_ready/reports/Technical_Report_110.md)
+- [TR113: Rust Multi-Agent (Single Ollama)](../../outputs/publish_ready/reports/Technical_Report_113.md)
+- [TR114_v2: Rust Multi-Agent (Dual Ollama)](../../outputs/publish_ready/reports/Technical_Report_114_v2.md)
+- [TR115_v2: Rust Runtime Optimization](../../outputs/publish_ready/reports/Technical_Report_115_v2.md)
 - [Dual Ollama Setup](dual_ollama_setup.md)
 - [Chimera Optimization](chimera_optimization.md)
 

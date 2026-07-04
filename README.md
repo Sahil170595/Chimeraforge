@@ -180,7 +180,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **Serving stack at scale:** vLLM's continuous batching gives a **2.25x** edge at N=8; the real bottleneck is GPU memory bandwidth, not the stack -- TR130-TR132.
 - **Quantization:** Q4_K_M is the universal sweet spot (-4.1pp max quality drop); Q2_K is unacceptable -- TR125 (26k samples, real MMLU+ARC).
 
-**Full research:** [`docs/technical_reports.md`](docs/technical_reports.md) indexes all 32 reports (one question + outcome each); the full archive with methodology and raw-data references lives in [`outputs/publish_ready/reports/`](outputs/publish_ready/reports/).
+**Full research:** [`docs/archive/technical_reports.md`](docs/archive/technical_reports.md) indexes all 32 reports (one question + outcome each); the full archive with methodology and raw-data references lives in [`outputs/publish_ready/reports/`](outputs/publish_ready/reports/).
 
 ---
 
@@ -190,7 +190,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
 
-Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/methodology.md`](docs/methodology.md).
+Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
 ## Repository layout
 
@@ -208,9 +208,9 @@ Reproduce any number: find the claim in a report under `outputs/publish_ready/re
 - **[`docs/README.md`](docs/README.md)** -- documentation index and navigation
 - **[`docs/quick_start.md`](docs/quick_start.md)** -- first benchmark run (Python + Rust)
 - **[`docs/API.md`](docs/API.md)** -- Python API reference for the package
-- **[`docs/technical_reports.md`](docs/technical_reports.md)** -- index of all 32 technical reports
-- **[`docs/dual_ollama_setup.md`](docs/dual_ollama_setup.md)** -- required for reproducing multi-agent results
-- **[`docs/methodology.md`](docs/methodology.md)** / **[`docs/rust_vs_python.md`](docs/rust_vs_python.md)** -- methodology and the full language comparison
+- **[`docs/archive/technical_reports.md`](docs/archive/technical_reports.md)** -- index of all 32 technical reports
+- **[`docs/archive/dual_ollama_setup.md`](docs/archive/dual_ollama_setup.md)** -- required for reproducing multi-agent results
+- **[`docs/archive/methodology.md`](docs/archive/methodology.md)** / **[`docs/archive/rust_vs_python.md`](docs/archive/rust_vs_python.md)** -- methodology and the full language comparison
 
 ## Contributing
 

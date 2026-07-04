@@ -202,7 +202,7 @@ Where:
 
 ### Where can I find the research?
 
-All technical reports are in [outputs/publish_ready/reports/](../outputs/publish_ready/reports/):
+All technical reports are in [outputs/publish_ready/reports/](../../outputs/publish_ready/reports/):
 - TR108: Single-inference optimization
 - TR109: Python agent workflows
 - TR110: Python multi-agent concurrent
@@ -217,11 +217,11 @@ See individual technical reports for citation information.
 
 ### Can I contribute benchmarks?
 
-Yes! See [Contributing Guide](../CONTRIBUTING.md) for details.
+Yes! See [Contributing Guide](../../CONTRIBUTING.md) for details.
 
 ## Still Have Questions?
 
-- **Documentation**: [Full Documentation Index](README.md)
+- **Documentation**: [Full Documentation Index](../README.md)
 - **Issues**: [GitHub Issues](https://github.com/your-org/Chimeraforge/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-org/Chimeraforge/discussions)
 

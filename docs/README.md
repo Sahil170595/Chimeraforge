@@ -40,23 +40,23 @@ methodology behind the bundled data. They describe the code under
 `src/python/banterhearts/` and `src/rust/`, **not** the planner CLI.
 
 ### Benchmarking & methodology
-- **[Benchmarking Guide](benchmarking.md)** - running the benchmark harness
-- **[Methodology](methodology.md)** - experimental design, isolation, cold starts
-- **[Statistical Analysis](statistical_analysis.md)** - sample sizes, CIs, rigor
-- **[Technical Reports](technical_reports.md)** - index of the TR series (TR108+)
+- **[Benchmarking Guide](archive/benchmarking.md)** - running the benchmark harness
+- **[Methodology](archive/methodology.md)** - experimental design, isolation, cold starts
+- **[Statistical Analysis](archive/statistical_analysis.md)** - sample sizes, CIs, rigor
+- **[Technical Reports](archive/technical_reports.md)** - index of the TR series (TR108+)
 
 ### Agent research (Rust vs Python, multi-agent)
-- **[Rust vs Python](rust_vs_python.md)** - cross-language comparison (TR111-TR116)
-- **[Rust Agents](rust_agents.md)** / **[Python Agents](python_agents.md)** - implementations
-- **[Multi-Agent Guide](multi_agent.md)** - concurrent execution scenarios
-- **[Dual Ollama Setup](dual_ollama_setup.md)** - required for the multi-agent experiments
+- **[Rust vs Python](archive/rust_vs_python.md)** - cross-language comparison (TR111-TR116)
+- **[Rust Agents](archive/rust_agents.md)** / **[Python Agents](archive/python_agents.md)** - implementations
+- **[Multi-Agent Guide](archive/multi_agent.md)** - concurrent execution scenarios
+- **[Dual Ollama Setup](archive/dual_ollama_setup.md)** - required for the multi-agent experiments
 
 ### Optimization & structure
-- **[Chimera Optimization](chimera_optimization.md)** - config optimization (TR108)
-- **[Performance Tuning](performance_tuning.md)** - tuning techniques
-- **[Architecture](ARCHITECTURE.md)** - the agent/research subsystem architecture
-- **[Repository Structure](repo_structure.md)** - folder layout & data governance
-- **[FAQ](faq.md)** - common questions
+- **[Chimera Optimization](archive/chimera_optimization.md)** - config optimization (TR108)
+- **[Performance Tuning](archive/performance_tuning.md)** - tuning techniques
+- **[Architecture](archive/ARCHITECTURE.md)** - the agent/research subsystem architecture
+- **[Repository Structure](archive/repo_structure.md)** - folder layout & data governance
+- **[FAQ](archive/faq.md)** - common questions
 
 The canonical technical-report archive lives in `outputs/publish_ready/reports/`.
 

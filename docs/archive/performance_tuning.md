@@ -305,7 +305,7 @@ async def batch_generate(prompts: List[str]):
 
 - [Chimera Optimization Guide](chimera_optimization.md)
 - [Benchmarking Guide](benchmarking.md)
-- [TR108: Single-Inference Optimization](../outputs/publish_ready/reports/Technical_Report_108.md)
+- [TR108: Single-Inference Optimization](../../outputs/publish_ready/reports/Technical_Report_108.md)
 
 ---
 

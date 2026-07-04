@@ -465,8 +465,8 @@ async fn run_multiagent() -> Result<()> {
 
 - [Chimera Optimization Guide](chimera_optimization.md)
 - [Benchmarking Guide](benchmarking.md)
-- [TR111_v2: Rust Single-Agent](../outputs/publish_ready/reports/Technical_Report_111_v2.md)
-- [TR114_v2: Rust Multi-Agent](../outputs/publish_ready/reports/Technical_Report_114_v2.md)
+- [TR111_v2: Rust Single-Agent](../../outputs/publish_ready/reports/Technical_Report_111_v2.md)
+- [TR114_v2: Rust Multi-Agent](../../outputs/publish_ready/reports/Technical_Report_114_v2.md)
 
 ---
 

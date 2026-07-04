@@ -303,8 +303,8 @@ else:
 
 - [Methodology Guide](methodology.md)
 - [Benchmarking Guide](benchmarking.md)
-- [TR108: Single-Inference Optimization](../outputs/publish_ready/reports/Technical_Report_108.md)
-- [TR110: Python Multi-Agent](../outputs/publish_ready/reports/Technical_Report_110.md)
+- [TR108: Single-Inference Optimization](../../outputs/publish_ready/reports/Technical_Report_108.md)
+- [TR110: Python Multi-Agent](../../outputs/publish_ready/reports/Technical_Report_110.md)
 
 ---
 

@@ -389,8 +389,8 @@ WantedBy=multi-user.target
 
 - [Chimera Optimization Guide](chimera_optimization.md)
 - [Benchmarking Guide](benchmarking.md)
-- [TR109: Python Agent Workflows](../outputs/publish_ready/reports/Technical_Report_109.md)
-- [TR110: Python Multi-Agent](../outputs/publish_ready/reports/Technical_Report_110.md)
+- [TR109: Python Agent Workflows](../../outputs/publish_ready/reports/Technical_Report_109.md)
+- [TR110: Python Multi-Agent](../../outputs/publish_ready/reports/Technical_Report_110.md)
 
 ---
 

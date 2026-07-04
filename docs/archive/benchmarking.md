@@ -228,7 +228,7 @@ python run_tr115_sweep.py
 cd ../../..
 ```
 
-**Note**: This is a comprehensive study comparing async runtime performance. See [TR115_v2](../outputs/publish_ready/reports/Technical_Report_115_v2.md) for detailed analysis.
+**Note**: This is a comprehensive study comparing async runtime performance. See [TR115_v2](../../outputs/publish_ready/reports/Technical_Report_115_v2.md) for detailed analysis.
 
 ## Analyzing Results
 
@@ -379,7 +379,7 @@ RUST_LOG=trace cargo run --release -- ...
 
 ## Related Documentation
 
-- [Technical Reports](../outputs/publish_ready/reports/) - Detailed analysis
+- [Technical Reports](../../outputs/publish_ready/reports/) - Detailed analysis
 - [Chimera Optimization Guide](chimera_optimization.md) - Configuration tuning
 - [Multi-Agent Architecture](multi_agent.md) - Concurrent execution
 - [Rust vs Python Comparison](rust_vs_python.md) - Cross-language analysis

@@ -285,10 +285,10 @@ Comprehensive cross-language performance analysis based on Technical Reports 112
 
 ## Related Documentation
 
-- [TR112_v2: Rust vs Python Single-Agent](../outputs/publish_ready/reports/Technical_Report_112_v2.md)
-- [TR110: Python Multi-Agent](../outputs/publish_ready/reports/Technical_Report_110.md)
-- [TR114_v2: Rust Multi-Agent](../outputs/publish_ready/reports/Technical_Report_114_v2.md)
-- [TR115_v2: Rust Runtime Optimization](../outputs/publish_ready/reports/Technical_Report_115_v2.md)
+- [TR112_v2: Rust vs Python Single-Agent](../../outputs/publish_ready/reports/Technical_Report_112_v2.md)
+- [TR110: Python Multi-Agent](../../outputs/publish_ready/reports/Technical_Report_110.md)
+- [TR114_v2: Rust Multi-Agent](../../outputs/publish_ready/reports/Technical_Report_114_v2.md)
+- [TR115_v2: Rust Runtime Optimization](../../outputs/publish_ready/reports/Technical_Report_115_v2.md)
 - [Chimera Optimization Guide](chimera_optimization.md)
 
 ---
