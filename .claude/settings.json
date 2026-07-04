@@ -18,5 +18,20 @@
       "Bash(npm test:*)",
       "Bash(npx tsc:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/lint_on_edit.py",
+            "timeout": 60,
+            "statusMessage": "Linting edited file"
+          }
+        ]
+      }
+    ]
   }
 }

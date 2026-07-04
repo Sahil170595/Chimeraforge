@@ -142,6 +142,8 @@ experiments/research/tr114/data/
 local.env
 .claude/*
 !.claude/settings.json
+!.claude/hooks/
+!.claude/skills/
 experiments/TR118/models/
 PRODUCT_SPEC.md
 VISION.md
