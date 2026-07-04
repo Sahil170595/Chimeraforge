@@ -68,4 +68,4 @@ The canonical technical-report archive lives in `outputs/publish_ready/reports/`
 - Commands assume execution from the repository root unless noted
 - Links are relative to this `docs/` directory
 
-**Last Updated:** June 2026 (v0.5.0)
+**Documents ChimeraForge v0.6.0.** See the [Changelog](../CHANGELOG.md) for version history.
