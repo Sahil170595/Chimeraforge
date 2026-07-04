@@ -140,7 +140,8 @@ experiments/research/tr112/data/
 experiments/research/tr114/data/
 
 local.env
-.claude/
+.claude/*
+!.claude/settings.json
 experiments/TR118/models/
 PRODUCT_SPEC.md
 VISION.md
