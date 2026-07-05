@@ -20,11 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Corrected optional-dependency groups.** `[bench]` dropped `psutil`, `pyyaml`,
-  and `structlog` (none are imported by the shipped package) and added `pynvml`
-  (used for GPU environment metadata, previously undeclared, so `[bench]` silently
-  lacked it). `[refit]` added `platformdirs` (used by its output-path resolution).
-  `[all]` no longer pulls the `dev` tools (pytest/ruff) onto end users; CI installs
-  `.[all,dev]`.
+  and `structlog` (none are imported by the shipped `chimeraforge` package) and
+  added `pynvml` (used for GPU environment metadata, previously undeclared, so
+  `[bench]` silently lacked it). `psutil` and `structlog` moved to `[dev]` (they
+  are test-only, for the `banterhearts` monitoring subsystem the suite exercises);
+  `pyyaml` removed entirely (unused). `[refit]` added `platformdirs` (used by its
+  output-path resolution). `[all]` no longer pulls the `dev` tools (pytest/ruff)
+  onto end users; CI installs `.[all,dev]`.
 
 ## [0.6.0] - 2026-06-25
 
