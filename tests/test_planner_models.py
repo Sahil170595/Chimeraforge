@@ -177,6 +177,14 @@ class TestQualityModel:
         # No name match and no family -> honestly unknown.
         assert bundled_models.quality.quality_tier("totally-novel-9000", "Q4_K_M") == "unknown"
 
+    def test_quality_tier_no_fp16_anchors_to_best_quant(self, bundled_models):
+        # Regression (#4): llama3.1-8b has no FP16 (8B doesn't fit 12GB); TR125
+        # uses Q8_0 as the baseline. The tier must be a real class, never "unknown".
+        q = bundled_models.quality
+        assert q.quality_tier("llama3.1-8b", "Q8_0") == "negligible"  # vs itself -> 0 drop
+        assert q.quality_tier("llama3.1-8b", "Q4_K_M") != "unknown"
+        assert q.quality_tier("llama3.1-8b", "Q2_K") != "unknown"
+
     def test_unknown_model_returns_default(self):
         m = QualityModel()
         q = m.predict("nonexistent", "FP16")

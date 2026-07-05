@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Install-hint error messages no longer have their `[extra]` swallowed by Rich
   markup (the resolver hint rendered as `pip install chimeraforge`, dropping
   `[resolve]`); dynamic error text is now escaped.
+- **`quality_tier` no longer returns `unknown` for `llama3.1-8b`** (#4). Its FP16
+  was never measured (16 GB exceeds the RTX 4080), so TR125 used Q8_0 as the
+  baseline; `quality_tier` now mirrors that, anchoring to the model's
+  highest-precision measured quant when no FP16 baseline exists.
+- **Quick-start install fixed** (#5): `docs/quick_start.md` used
+  `pip install -r requirements.txt` (a comment-only stub that installs nothing),
+  so the agent demo failed with `ModuleNotFoundError: httpx`. It now installs
+  `-e ".[bench]"` (which provides `httpx`) and points the clone at the real repo.
 
 ### Changed
 - **Corrected optional-dependency groups.** `[bench]` dropped `psutil`, `pyyaml`,
