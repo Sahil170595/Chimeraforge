@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 console = Console()
 
@@ -227,6 +228,10 @@ def plan(
     if measure_first and model:
         import asyncio
 
+        from chimeraforge.commands._deps import require_extra
+
+        require_extra("bench", "httpx")  # --measure runs the bench backends (httpx)
+
         from chimeraforge.measure import measure_model
 
         for ident in model:
@@ -234,7 +239,7 @@ def plan(
             try:
                 mres = asyncio.run(measure_model(ident, backend="ollama", ollama_url=ollama_url))
             except RuntimeError as exc:
-                console.print(f"[red]Error measuring '{ident}':[/] {exc}")
+                console.print(f"[red]Error measuring '{escape(ident)}':[/] {escape(str(exc))}")
                 raise typer.Exit(code=1)
             console.print(
                 f"[green]Measured[/] {ident}: {mres.tps_n1} tok/s"
@@ -279,7 +284,7 @@ def plan(
                     allow_network=not no_network,
                 )
             except ResolverError as exc:
-                console.print(f"[red]Error resolving '{ident}':[/] {exc}")
+                console.print(f"[red]Error resolving '{escape(ident)}':[/] {escape(str(exc))}")
                 raise typer.Exit(code=1)
             specs[ident] = spec
             if not output_json:

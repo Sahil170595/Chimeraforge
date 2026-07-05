@@ -89,6 +89,10 @@ def safety(
         console.print(f"[red]Error:[/] prompts file '{prompts_file}' has no non-empty lines.")
         raise typer.Exit(code=1)
 
+    from chimeraforge.commands._deps import require_extra
+
+    require_extra("safety", "httpx")  # backends import httpx at module load
+
     from chimeraforge.safety import run_safety_screen
 
     try:

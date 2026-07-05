@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-04
+
+### Fixed
+- **Clean errors for missing extras.** `bench` / `measure` / `safety` (and
+  `plan --measure`) now fail with a clear `install "chimeraforge[bench|safety]"`
+  message instead of a raw `ModuleNotFoundError` traceback when the serving
+  backends' `httpx` dependency is absent (the backends import it at module load).
+- Install-hint error messages no longer have their `[extra]` swallowed by Rich
+  markup (the resolver hint rendered as `pip install chimeraforge`, dropping
+  `[resolve]`); dynamic error text is now escaped.
+
+### Changed
+- **Corrected optional-dependency groups.** `[bench]` dropped `psutil`, `pyyaml`,
+  and `structlog` (none are imported by the shipped package) and added `pynvml`
+  (used for GPU environment metadata, previously undeclared, so `[bench]` silently
+  lacked it). `[refit]` added `platformdirs` (used by its output-path resolution).
+  `[all]` no longer pulls the `dev` tools (pytest/ruff) onto end users; CI installs
+  `.[all,dev]`.
+
 ## [0.6.0] - 2026-06-25
 
 State-of-the-art serving model: the planner now reflects how LLM inference

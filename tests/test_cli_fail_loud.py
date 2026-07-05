@@ -8,8 +8,13 @@ the unknown-backend path in bench.
 
 from __future__ import annotations
 
+import importlib.util
+import io
 from pathlib import Path
 
+import pytest
+import typer
+from rich.console import Console
 from typer.testing import CliRunner
 
 from chimeraforge.cli import app
@@ -80,3 +85,35 @@ class TestBenchFailLoud:
         r = runner.invoke(app, ["bench", "--model", "x", "--backend", "nope"])
         assert r.exit_code == 1
         assert not isinstance(r.exception, LEAKED)
+
+
+class TestRequireExtra:
+    """A missing optional extra must fail loud (exit 1) with a clean hint --
+    not a raw ModuleNotFoundError from a backend's module-level `import httpx`."""
+
+    def test_missing_dep_exits_clean(self):
+        from chimeraforge.commands._deps import require_extra
+
+        with pytest.raises(typer.Exit) as ei:
+            require_extra("bench", "a_module_that_does_not_exist_xyz")
+        assert ei.value.exit_code == 1
+
+    def test_present_dep_passes(self):
+        from chimeraforge.commands._deps import require_extra
+
+        require_extra("bench", "typer")  # always installed -> no raise
+
+    def test_hint_shows_bracketed_extra(self, monkeypatch):
+        # The install hint must contain the literal 'chimeraforge[bench]' --
+        # Rich must not swallow the [bench] as a style tag.
+        from chimeraforge.commands import _deps
+
+        buf = io.StringIO()
+        monkeypatch.setattr(_deps, "_console", Console(file=buf, width=200))
+        real = importlib.util.find_spec
+        monkeypatch.setattr(
+            importlib.util, "find_spec", lambda m: None if m == "httpx" else real(m)
+        )
+        with pytest.raises(typer.Exit):
+            _deps.require_extra("bench", "httpx")
+        assert "chimeraforge[bench]" in buf.getvalue()
