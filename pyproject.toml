@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "typer>=0.9,<1.0",
     "rich>=13.0,<14.0",
+    "httpx>=0.25",
 ]
 
 [project.scripts]
@@ -35,11 +36,13 @@ Homepage = "https://github.com/Sahil170595/Chimeraforge"
 Repository = "https://github.com/Sahil170595/Chimeraforge"
 
 [project.optional-dependencies]
-bench = ["httpx>=0.25", "platformdirs>=4.0,<5.0", "pynvml>=11.0"]
+bench = ["platformdirs>=4.0,<5.0", "pynvml>=11.0"]
 eval = ["evaluate>=0.4"]
 refit = ["numpy>=1.24,<3.0", "scipy>=1.11,<2.0", "platformdirs>=4.0,<5.0"]
-safety = ["httpx>=0.25"]
-resolve = ["httpx>=0.25"]
+# httpx is a core dependency now, so these are kept only for back-compat
+# (existing `pip install "chimeraforge[resolve|safety]"` stays a valid no-op).
+safety = []
+resolve = []
 dev = ["pytest>=7.4,<9.0", "pytest-cov>=4.1,<6.0", "pytest-asyncio>=0.21,<1.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0"]
 all = ["chimeraforge[bench,eval,refit,safety,resolve]"]
 
