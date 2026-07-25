@@ -105,7 +105,9 @@ def suggest(
                     live_sources, ollama_url=eff_ollama_url, hf_token=hf_token, hf_limit=hf_limit
                 )
         except ResolverError as exc:
-            console.print(f"[red]Error:[/] {exc}")
+            from rich.markup import escape
+
+            console.print(f"[red]Error:[/] {escape(str(exc))}")
             raise typer.Exit(code=1)
         if identifiers:
             with console.status(f"Resolving {len(identifiers)} models..."):

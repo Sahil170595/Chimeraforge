@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-04
+
+### Fixed
+- **Clean errors for missing extras.** `bench` / `measure` / `safety` (and
+  `plan --measure`) now fail with a clear `install "chimeraforge[bench|safety]"`
+  message instead of a raw `ModuleNotFoundError` traceback when the serving
+  backends' `httpx` dependency is absent (the backends import it at module load).
+- Install-hint error messages no longer have their `[extra]` swallowed by Rich
+  markup (the resolver hint rendered as `pip install chimeraforge`, dropping
+  `[resolve]`); dynamic error text is now escaped.
+- **`quality_tier` no longer returns `unknown` for `llama3.1-8b`** (#4). Its FP16
+  was never measured (16 GB exceeds the RTX 4080), so TR125 used Q8_0 as the
+  baseline; `quality_tier` now mirrors that, anchoring to the model's
+  highest-precision measured quant when no FP16 baseline exists.
+- **Quick-start install fixed** (#5): `docs/quick_start.md` used
+  `pip install -r requirements.txt` (a comment-only stub that installs nothing),
+  so the agent demo failed with `ModuleNotFoundError: httpx`. It now installs
+  `-e ".[bench]"` (which provides `httpx`) and points the clone at the real repo.
+
+### Changed
+- **`httpx` is now a core dependency**, so the network-facing commands
+  (model-agnostic `plan --model`, `suggest`, `catalog`, `measure`, `safety`,
+  `bench`) work on a plain `pip install chimeraforge` instead of erroring until an
+  extra is added. The `[resolve]`/`[safety]` extras are kept as no-op back-compat
+  aliases. Thanks @sumaiya1303 (#6).
+- **Corrected optional-dependency groups.** `[bench]` dropped `psutil`, `pyyaml`,
+  and `structlog` (none are imported by the shipped `chimeraforge` package) and
+  added `pynvml` (used for GPU environment metadata, previously undeclared, so
+  `[bench]` silently lacked it). `psutil` and `structlog` moved to `[dev]` (they
+  are test-only, for the `banterhearts` monitoring subsystem the suite exercises);
+  `pyyaml` removed entirely (unused). `[refit]` added `platformdirs` (used by its
+  output-path resolution). `[all]` no longer pulls the `dev` tools (pytest/ruff)
+  onto end users; CI installs `.[all,dev]`.
+
 ## [0.6.0] - 2026-06-25
 
 State-of-the-art serving model: the planner now reflects how LLM inference

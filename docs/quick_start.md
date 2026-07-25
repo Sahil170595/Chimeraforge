@@ -21,13 +21,14 @@ ollama --version
 ### 2. Clone and Install
 
 ```bash
-git clone https://github.com/your-org/Chimeraforge.git
+git clone https://github.com/Sahil170595/Chimeraforge.git
 cd Chimeraforge
 
-# Python dependencies
+# Python dependencies (editable install with the bench extra: the agent demos
+# and benchmark harness need httpx, which the [bench] extra provides).
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+pip install -e ".[bench]"
 
 # Rust agents (optional)
 cd src/rust/demo_agent && cargo build --release

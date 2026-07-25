@@ -86,6 +86,10 @@ def bench(
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.table import Table
 
+    from chimeraforge.commands._deps import require_extra
+
+    require_extra("bench", "httpx")  # backends import httpx at module load
+
     from chimeraforge.bench.metrics import result_to_dict
     from chimeraforge.bench.runner import (
         run_benchmark as _run_benchmark,

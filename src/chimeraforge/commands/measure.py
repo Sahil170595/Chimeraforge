@@ -46,6 +46,10 @@ def measure(
 
     from rich.progress import Progress, SpinnerColumn, TextColumn
 
+    from chimeraforge.commands._deps import require_extra
+
+    require_extra("bench", "httpx")  # measure runs through the bench backends (httpx)
+
     from chimeraforge.measure import measure_model
 
     logging.basicConfig(
