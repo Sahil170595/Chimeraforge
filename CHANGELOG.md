@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `-e ".[bench]"` (which provides `httpx`) and points the clone at the real repo.
 
 ### Changed
+- **`httpx` is now a core dependency**, so the network-facing commands
+  (model-agnostic `plan --model`, `suggest`, `catalog`, `measure`, `safety`,
+  `bench`) work on a plain `pip install chimeraforge` instead of erroring until an
+  extra is added. The `[resolve]`/`[safety]` extras are kept as no-op back-compat
+  aliases. Thanks @sumaiya1303 (#6).
 - **Corrected optional-dependency groups.** `[bench]` dropped `psutil`, `pyyaml`,
   and `structlog` (none are imported by the shipped `chimeraforge` package) and
   added `pynvml` (used for GPU environment metadata, previously undeclared, so

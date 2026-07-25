@@ -22,16 +22,14 @@ Give `chimeraforge` a model -- a size class, a Hugging Face repo, or an Ollama t
 ## Install
 
 ```bash
-pip install chimeraforge            # core: plan (registry size classes)
-pip install chimeraforge[resolve]   # + plan any HF repo / Ollama tag (metadata resolution)
-pip install chimeraforge[bench]     # + live benchmarking
+pip install chimeraforge            # planner + model resolution (HF/Ollama) + suggest/measure/safety/bench
+pip install chimeraforge[bench]     # + GPU environment metadata for benchmarks (pynvml)
 pip install chimeraforge[eval]      # + quality evaluation (BERTScore, ROUGE-L)
-pip install chimeraforge[safety]    # + live refusal screen
 pip install chimeraforge[refit]     # + coefficient refitting (numpy, scipy)
-pip install chimeraforge[all]       # everything + dev tools
+pip install chimeraforge[all]       # everything
 ```
 
-Python 3.10+. `plan` works fully offline; `resolve` adds HF/Ollama metadata lookup; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, or TGI). Windows / macOS / Linux.
+Python 3.10+. The core install covers the planner and the network-facing commands (`httpx` is a core dep); only `eval` and `refit` need extras. `plan` runs fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, or TGI). Windows / macOS / Linux.
 
 ## Quickstart
 
@@ -39,7 +37,7 @@ Python 3.10+. `plan` works fully offline; `resolve` adds HF/Ollama metadata look
 # Plan a registry size class on your GPU
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
 
-# Plan ANY model -- a Hugging Face repo or an Ollama tag (needs [resolve])
+# Plan ANY model -- a Hugging Face repo or an Ollama tag
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"
 chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434
 
@@ -108,7 +106,7 @@ Persists resolved specs so `suggest --source catalog` ranks a known-good set ful
 chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --safety-target 0.85
 ```
 
-Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs `chimeraforge[safety]` + a running Ollama.
+Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs a running Ollama.
 
 ### `bench` -- live inference benchmarking
 
