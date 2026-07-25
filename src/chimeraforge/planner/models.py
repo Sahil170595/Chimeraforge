@@ -401,6 +401,18 @@ class QualityModel:
         fp16 = self.fp16_baselines.get(model)
         if fp16 is None and f"{model}|FP16" in self.lookup:
             fp16 = self.lookup[f"{model}|FP16"]
+        if fp16 is None:
+            # No FP16 measurement (e.g. an 8B model whose FP16 weights don't fit
+            # the test GPU) -- anchor to the model's own highest-precision measured
+            # quant, matching TR125 (Q8_0 baseline for llama3.1-8b). More specific
+            # than a family mean, so it takes precedence.
+            prefix = f"{model}|"
+            best_bpw = -1.0
+            for lk, val in self.lookup.items():
+                if lk.startswith(prefix):
+                    bpw = QUANT_BPW.get(lk[len(prefix) :], 0.0)
+                    if bpw > best_bpw:
+                        best_bpw, fp16 = bpw, val
         if fp16 is None and family is not None:
             same_family = [
                 v for m, v in self.fp16_baselines.items() if MODEL_FAMILY.get(m) == family
