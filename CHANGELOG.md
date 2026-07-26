@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-07-25
+
+### Fixed
+- **`quality_tier` and the quality float now agree for `llama3.1-8b` FP16**
+  (#4 follow-up). 0.6.1 fixed `quality_tier` but left `estimate()` / `predict()`
+  on the old baseline chain, so the FP16 config reported quality `0.5` with
+  provenance `unknown` -- ranking the *highest-precision* option below `Q2_K`
+  (`0.59`) -- while its tier said `negligible`. All three methods now share one
+  `_fp16_baseline` resolver (measured FP16 -> the model's highest measured quant
+  -> family mean), so quality, provenance, and tier can never diverge. FP16 now
+  reports `0.635` (estimated), consistent with its `negligible` tier.
+
 ## [0.6.1] - 2026-07-04
 
 ### Fixed

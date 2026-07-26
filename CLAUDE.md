@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.6.1 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.6.2 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (483 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (488 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -53,7 +53,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.6.1"
+    __init__.py                       # Exports __version__ = "0.6.2"
     cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
     commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
@@ -119,7 +119,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 19 files, 483 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 19 files, 488 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -261,17 +261,18 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 483 total tests
+pytest tests/ -v                    # 488 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (483 tests, 19 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (488 tests, 19 files -- planner/bench split per-concern after 0.3.0):
 
-- **Planner** (161): test_planner_models.py (58 - 7 predictive models: VRAM/throughput/
-  quality/latency/scaling/cost/safety, incl. roofline + KV-batch concurrency),
-  test_planner_engine.py (55 - gate search, N-replica x B-batch, Pareto, variance guard,
-  provenance), test_planner_cli.py (18), test_planner_core.py (17 - serialization,
-  find_models_for_size), test_accuracy.py (13 - numerical falsifiability gates)
+- **Planner** (163): test_planner_models.py (60 - 7 predictive models: VRAM/throughput/
+  quality/latency/scaling/cost/safety, incl. roofline + KV-batch concurrency +
+  shared FP16-baseline resolver), test_planner_engine.py (55 - gate search,
+  N-replica x B-batch, Pareto, variance guard, provenance), test_planner_cli.py (18),
+  test_planner_core.py (17 - serialization, find_models_for_size), test_accuracy.py
+  (13 - numerical falsifiability gates)
 - **Model-agnostic** (43): test_resolver.py (25 - ModelSpec, registry/Ollama/HF/manual +
   cache), test_discovery.py (12 - suggest/catalog), test_measure.py (6 - measure-on-demand)
 - **Safety** (54): test_safety.py - refusal lookup, RTSI tiers, identity resolution
@@ -279,7 +280,7 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
-- **CLI hardening** (9): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **CLI hardening** (12): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
 

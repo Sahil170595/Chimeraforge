@@ -185,6 +185,20 @@ class TestQualityModel:
         assert q.quality_tier("llama3.1-8b", "Q4_K_M") != "unknown"
         assert q.quality_tier("llama3.1-8b", "Q2_K") != "unknown"
 
+    def test_estimate_and_tier_share_baseline(self, bundled_models):
+        # Regression (#4 follow-up): estimate() and quality_tier() must resolve
+        # the SAME FP16 baseline. llama3.1-8b has no measured FP16 row, so both
+        # anchor to the highest measured quant (Q8_0). estimate() must then report
+        # 'estimated' -- not the 0.5/'unknown' prior, which wrongly ranked FP16
+        # (highest precision) below Q2_K -- and the tier must be a real class
+        # consistent with that quality.
+        q = bundled_models.quality
+        val, src = q.estimate("llama3.1-8b", "FP16")
+        assert src == "estimated"
+        assert val == pytest.approx(q.predict("llama3.1-8b", "FP16"))
+        assert val >= q.estimate("llama3.1-8b", "Q2_K")[0]
+        assert q.quality_tier("llama3.1-8b", "FP16") != "unknown"
+
     def test_unknown_model_returns_default(self):
         m = QualityModel()
         q = m.predict("nonexistent", "FP16")
