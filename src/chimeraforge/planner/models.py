@@ -343,69 +343,22 @@ class QualityModel:
         "concerning": -15.0,
     }
 
-    def predict(self, model: str, quant: str) -> float:
-        """Predict composite quality [0, 1]."""
-        key = f"{model}|{quant}"
-        if key in self.lookup:
-            return self.lookup[key]
-        fp16 = self.fp16_baselines.get(model)
-        if fp16 is None:
-            # Infer FP16 baseline from lookup if available
-            fp16_key = f"{model}|FP16"
-            if fp16_key in self.lookup:
-                fp16 = self.lookup[fp16_key]
-        if fp16 is not None:
-            if quant == "FP16":
-                return fp16
-            delta = self.quant_deltas.get(quant, 0.0)
-            return max(0.0, min(1.0, fp16 + delta))
-        return 0.5
+    def _fp16_baseline(self, model: str, family: str | None = None) -> float | None:
+        """Resolve an FP16-equivalent quality baseline, or None if unanchored.
 
-    def estimate(self, model: str, quant: str, family: str | None = None) -> tuple[float, str]:
-        """Predict quality and report provenance: measured | estimated | unknown.
-
-        - ``measured``: a direct (model, quant) lookup hit (TR-backed).
-        - ``estimated``: derived from the model's own FP16 baseline + quant delta,
-          or, for an off-registry model, the mean FP16 baseline of its family.
-        - ``unknown``: no basis -- returns the neutral 0.5 prior, flagged so the
-          caller never mistakes a guess for data.
-        """
-        if f"{model}|{quant}" in self.lookup:
-            return self.lookup[f"{model}|{quant}"], "measured"
-
-        fp16 = self.fp16_baselines.get(model)
-        if fp16 is None and f"{model}|FP16" in self.lookup:
-            fp16 = self.lookup[f"{model}|FP16"]
-        if fp16 is None and family is not None:
-            same_family = [
-                v for m, v in self.fp16_baselines.items() if MODEL_FAMILY.get(m) == family
-            ]
-            if same_family:
-                fp16 = sum(same_family) / len(same_family)
-
-        if fp16 is None:
-            return 0.5, "unknown"
-        if quant == "FP16":
-            return fp16, "estimated"
-        delta = self.quant_deltas.get(quant, 0.0)
-        return max(0.0, min(1.0, fp16 + delta)), "estimated"
-
-    def quality_tier(self, model: str, quant: str, family: str | None = None) -> str:
-        """Classify quality drop into a tier.
-
-        Family-aware, mirroring :meth:`estimate`: an off-registry model whose
-        family matches the registry derives its FP16 baseline (and predicted
-        quality) from the family mean, so the tier is consistent with the
-        reported quality instead of silently collapsing to ``unknown``.
+        One chain, shared by predict()/estimate()/quality_tier() so the reported
+        quality, its provenance, and the tier can never diverge:
+          1. measured FP16 baseline (``fp16_baselines``)
+          2. an explicit ``model|FP16`` lookup entry
+          3. the model's own highest-precision measured quant -- TR125 uses Q8_0
+             as the llama3.1-8b baseline (8B FP16 weights don't fit the test GPU,
+             so no FP16 row exists); more specific than a family mean, so it wins
+          4. the family's mean FP16 baseline (off-registry models)
         """
         fp16 = self.fp16_baselines.get(model)
         if fp16 is None and f"{model}|FP16" in self.lookup:
             fp16 = self.lookup[f"{model}|FP16"]
         if fp16 is None:
-            # No FP16 measurement (e.g. an 8B model whose FP16 weights don't fit
-            # the test GPU) -- anchor to the model's own highest-precision measured
-            # quant, matching TR125 (Q8_0 baseline for llama3.1-8b). More specific
-            # than a family mean, so it takes precedence.
             prefix = f"{model}|"
             best_bpw = -1.0
             for lk, val in self.lookup.items():
@@ -419,6 +372,54 @@ class QualityModel:
             ]
             if same_family:
                 fp16 = sum(same_family) / len(same_family)
+        return fp16
+
+    def predict(self, model: str, quant: str, family: str | None = None) -> float:
+        """Predict composite quality [0, 1]."""
+        key = f"{model}|{quant}"
+        if key in self.lookup:
+            return self.lookup[key]
+        fp16 = self._fp16_baseline(model, family)
+        if fp16 is None:
+            return 0.5
+        if quant == "FP16":
+            return fp16
+        delta = self.quant_deltas.get(quant, 0.0)
+        return max(0.0, min(1.0, fp16 + delta))
+
+    def estimate(self, model: str, quant: str, family: str | None = None) -> tuple[float, str]:
+        """Predict quality and report provenance: measured | estimated | unknown.
+
+        - ``measured``: a direct (model, quant) lookup hit (TR-backed).
+        - ``estimated``: derived from an FP16-equivalent baseline (:meth:`_fp16_baseline`)
+          + quant delta -- the model's own FP16 row, its highest measured quant, or
+          its family mean, in that priority.
+        - ``unknown``: no basis -- returns the neutral 0.5 prior, flagged so the
+          caller never mistakes a guess for data.
+
+        Shares :meth:`_fp16_baseline` with :meth:`quality_tier`, so the reported
+        quality and its tier are always computed off the same baseline.
+        """
+        if f"{model}|{quant}" in self.lookup:
+            return self.lookup[f"{model}|{quant}"], "measured"
+
+        fp16 = self._fp16_baseline(model, family)
+        if fp16 is None:
+            return 0.5, "unknown"
+        if quant == "FP16":
+            return fp16, "estimated"
+        delta = self.quant_deltas.get(quant, 0.0)
+        return max(0.0, min(1.0, fp16 + delta)), "estimated"
+
+    def quality_tier(self, model: str, quant: str, family: str | None = None) -> str:
+        """Classify quality drop into a tier.
+
+        Uses the same :meth:`_fp16_baseline` chain as :meth:`estimate` (measured
+        FP16 -> highest measured quant -> family mean), so the tier is always
+        consistent with the reported quality instead of one collapsing to
+        ``unknown`` while the other resolves a baseline.
+        """
+        fp16 = self._fp16_baseline(model, family)
         if fp16 is None or fp16 <= 0:
             return "unknown"
         # Predicted quality consistent with estimate(): direct lookup, else the
