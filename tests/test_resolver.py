@@ -230,3 +230,35 @@ class TestRouting:
         spec = resolver.resolve_spec("llama3.2:3b", ollama_url="http://x", use_cache=False)
         assert spec.source == SOURCE_REGISTRY_APPROX
         assert spec.registry_alias == "llama3.2-3b"
+
+
+class TestFamilyRecognition:
+    """Newer generation families (0.7.0) parse without capturing older ones."""
+
+    @pytest.mark.parametrize(
+        "identifier, family",
+        [
+            ("qwen3:8b", "qwen3"),
+            ("Qwen/Qwen3-14B", "qwen3"),
+            ("llama3.3:70b", "llama3.3"),
+            ("google/gemma-3-4b-it", "gemma3"),
+            ("gemma-2-9b", "gemma2"),
+            ("HuggingFaceTB/SmolLM3-3B", "smollm"),
+            # Older families must NOT be captured by the new generations.
+            ("qwen2.5:7b", "qwen2.5"),
+            ("llama3.2:3b", "llama3.2"),
+            ("llama3.1:8b", "llama3.1"),
+        ],
+    )
+    def test_parse_family(self, identifier, family):
+        from chimeraforge.planner.identity import parse_family
+
+        assert parse_family(identifier) == family
+
+    def test_new_family_does_not_fake_registry_offline(self):
+        # A newer family with no bundled measurements must NOT resolve offline to a
+        # registry alias (which would reuse another model's *measured* data). Honest
+        # behaviour: unresolvable offline -> ResolverError telling the user to use a
+        # live backend or manual overrides, never a silent measured masquerade.
+        with pytest.raises(ResolverError):
+            resolve_spec("qwen3:8b", use_cache=False, allow_network=False)

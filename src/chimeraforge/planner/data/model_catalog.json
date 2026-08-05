@@ -1,15 +1,24 @@
 {
-  "_comment": "Curated seed of popular, openly-licensed text-generation models spanning a size ladder. `chimeraforge catalog build` resolves these to real specs (HF config.json) and caches them so `suggest --source catalog` works offline. Ids route by shape: org/name -> HF, colon-tag -> Ollama.",
+  "_comment": "Curated seed of popular, openly-licensed, publicly-ungated text-generation models spanning a size ladder (0.36B-14B) and several families. `chimeraforge catalog build` resolves these to real specs (HF config.json, tokenless) and caches them so `suggest --source catalog` works offline. Ids route by shape: org/name -> HF, colon-tag -> Ollama. Gated repos (Gemma, Llama) are deliberately excluded so a tokenless build never 401s.",
   "models": [
     "Qwen/Qwen2.5-0.5B-Instruct",
     "Qwen/Qwen2.5-1.5B-Instruct",
     "Qwen/Qwen2.5-3B-Instruct",
     "Qwen/Qwen2.5-7B-Instruct",
     "Qwen/Qwen2.5-14B-Instruct",
+    "Qwen/Qwen3-0.6B",
+    "Qwen/Qwen3-1.7B",
+    "Qwen/Qwen3-4B",
+    "Qwen/Qwen3-8B",
+    "Qwen/Qwen3-14B",
     "microsoft/Phi-3-mini-4k-instruct",
     "microsoft/Phi-3.5-mini-instruct",
+    "microsoft/Phi-4-mini-instruct",
+    "microsoft/phi-4",
+    "mistralai/Mistral-7B-Instruct-v0.3",
     "HuggingFaceTB/SmolLM2-360M-Instruct",
     "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+    "HuggingFaceTB/SmolLM3-3B",
     "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
   ]
 }

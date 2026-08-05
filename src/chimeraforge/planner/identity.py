@@ -18,10 +18,20 @@ from dataclasses import dataclass
 from chimeraforge.planner.constants import MODEL_FAMILY, MODEL_PARAMS_B, QUANT_BPW
 
 # Family generations recognised in identifiers. Derived from the registry so the
-# two can't drift, plus extras we can parse even without registry coverage.
+# two can't drift, plus extras we can parse even without registry coverage (no
+# bundled measurements -> these resolve to estimated/roofline, never "measured").
 # Ordered longest-first so a specific generation ("llama3.2") is matched before a
-# prefix of it ("llama3.1" / "llama3").
-_EXTRA_FAMILIES = ("mistral", "gemma2", "gemma", "phi")
+# prefix of it ("llama3.1" / "llama3"); "gemma3"/"gemma2" before "gemma".
+_EXTRA_FAMILIES = (
+    "qwen3",
+    "llama3.3",
+    "gemma3",
+    "gemma2",
+    "gemma",
+    "mistral",
+    "smollm",
+    "phi",
+)
 _FAMILIES = tuple(sorted(set(MODEL_FAMILY.values()) | set(_EXTRA_FAMILIES), key=len, reverse=True))
 
 _PARAMS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*b\b", re.IGNORECASE)
