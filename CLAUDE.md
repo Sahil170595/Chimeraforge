@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.6.2 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.7.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (488 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (501 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -53,7 +53,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.6.2"
+    __init__.py                       # Exports __version__ = "0.7.0"
     cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
     commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
@@ -63,7 +63,7 @@ src/
       resolver.py                     # ModelSpec + resolve_spec(): any id -> params/arch (registry/Ollama /api/show/HF config.json/manual). Model-agnostic core.
       discovery.py                    # suggest(): enumerate models from Ollama /api/tags + HF Hub, resolve, rank
       identity.py                     # parse_identity()/resolve_model(): family+param matching; _FAMILIES derived from registry
-      hardware.py                     # GPUSpec dataclass, GPU_DB (15 GPUs), bandwidth_ratio()
+      hardware.py                     # GPUSpec dataclass, GPU_DB (22 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
       formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
       data/fitted_models.json         # Pre-fitted coefficients from TR133 (loaded via importlib.resources)
@@ -119,7 +119,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 19 files, 488 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 19 files, 501 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -261,20 +261,21 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 488 total tests
+pytest tests/ -v                    # 501 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (488 tests, 19 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (501 tests, 19 files -- planner/bench split per-concern after 0.3.0):
 
-- **Planner** (163): test_planner_models.py (60 - 7 predictive models: VRAM/throughput/
+- **Planner** (166): test_planner_models.py (60 - 7 predictive models: VRAM/throughput/
   quality/latency/scaling/cost/safety, incl. roofline + KV-batch concurrency +
   shared FP16-baseline resolver), test_planner_engine.py (55 - gate search,
   N-replica x B-batch, Pareto, variance guard, provenance), test_planner_cli.py (18),
-  test_planner_core.py (17 - serialization, find_models_for_size), test_accuracy.py
-  (13 - numerical falsifiability gates)
-- **Model-agnostic** (43): test_resolver.py (25 - ModelSpec, registry/Ollama/HF/manual +
-  cache), test_discovery.py (12 - suggest/catalog), test_measure.py (6 - measure-on-demand)
+  test_planner_core.py (20 - serialization, find_models_for_size, GPU_DB coverage),
+  test_accuracy.py (13 - numerical falsifiability gates)
+- **Model-agnostic** (53): test_resolver.py (35 - ModelSpec, registry/Ollama/HF/manual +
+  cache + newer-family recognition), test_discovery.py (12 - suggest/catalog),
+  test_measure.py (6 - measure-on-demand)
 - **Safety** (54): test_safety.py - refusal lookup, RTSI tiers, identity resolution
 - **Bench** (70): test_bench_metrics.py (28), test_bench_backends.py (20 - Ollama/vLLM/TGI),
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
@@ -330,7 +331,7 @@ type: short description
 ## Hardware Context
 
 Primary test rig: RTX 4080 12GB, i9-13900HX, 64GB RAM, Windows 11.
-GPU database (hardware.py): 15 GPUs — RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, A100 (40/80GB), H100, L4, T4. Reference GPU: RTX 4080 12GB (bandwidth ratio baseline).
+GPU database (hardware.py): 22 GPUs — RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, RTX 5070/5070Ti/5080/5090 (Blackwell), A100 (40/80GB), H100, H200, B200, L4, T4, and AMD MI300X. Reference GPU: RTX 4080 12GB (bandwidth ratio baseline).
 
 ---
 

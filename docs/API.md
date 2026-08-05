@@ -54,7 +54,7 @@ gpu = get_gpu("4080")  # Case-insensitive substring match
 print(gpu.name, gpu.vram_gb, gpu.bandwidth_gbps)
 ```
 
-15 GPUs: RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, A100 (40/80GB), H100, L4, T4.
+22 GPUs: RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, RTX 5070/5070Ti/5080/5090 (Blackwell), A100 (40/80GB), H100, H200, B200, L4, T4, and AMD MI300X.
 
 ---
 

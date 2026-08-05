@@ -82,6 +82,27 @@ class TestHardwareDB:
     def test_bandwidth_ratio_unknown(self):
         assert bandwidth_ratio("Unknown GPU") == 1.0
 
+    def test_current_gen_gpus_present(self):
+        # 0.7.0 coverage: Blackwell consumer + datacenter + first AMD entry, each
+        # with a positive dense-FP16 TFLOPS figure (drives prefill/TTFT).
+        for name in ("RTX 5090 32GB", "RTX 5080 16GB", "H200 141GB", "B200 180GB", "MI300X 192GB"):
+            assert name in GPU_DB
+            assert GPU_DB[name].fp16_tflops > 0
+            assert GPU_DB[name].bandwidth_gbps > 0
+
+    def test_new_gpu_partial_match_prefers_base_over_ti(self):
+        # Bare "5070" must resolve to the base card, not the Ti (dict order).
+        assert get_gpu("5070").name == "RTX 5070 12GB"
+        assert get_gpu("5070 Ti").name == "RTX 5070 Ti 16GB"
+        assert get_gpu("B200").name == "B200 180GB"
+        assert get_gpu("MI300X").name == "MI300X 192GB"
+
+    def test_datacenter_gpu_extrapolates_higher(self):
+        # B200 (7.7 TB/s) extrapolates to a much higher throughput ratio than the
+        # RTX 4080 reference; H200 shares H100 compute but has far more bandwidth.
+        assert bandwidth_ratio("B200 180GB") > bandwidth_ratio("H100 80GB") > 1.0
+        assert bandwidth_ratio("H200 141GB") > bandwidth_ratio("H100 80GB")
+
 
 # -- Serialization Round-Trip -----------------------------------------
 

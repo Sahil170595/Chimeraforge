@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-05
+
+### Added
+- **7 current-generation GPUs in `GPU_DB` (15 -> 22).** Consumer Blackwell
+  (RTX 5070 / 5070 Ti / 5080 / 5090, GDDR7), datacenter NVIDIA (H200 141 GB,
+  B200 180 GB), and the first AMD entry (Instinct MI300X 192 GB). Every VRAM /
+  bandwidth / `fp16_tflops` figure is sourced from vendor datasheets on the
+  table's existing basis (dense FP16 Tensor Core, FP32-accumulate, non-sparse):
+  consumer Blackwell = 2x FP32 shader (= the whitepaper's FP32-accumulate row);
+  H200 shares H100's GH100 compute (989); B200 dense = datasheet 4500-with-
+  sparsity / 2; MI300X 1307 from AMD's dense-FP16 figure. This also sharpens the
+  roofline throughput path for *any* off-registry model on the new hardware.
+- **Newer model families recognised** in identifier parsing: `qwen3`,
+  `llama3.3`, `gemma3`, `smollm` (joining `qwen2.5` / `llama3.x` / `phi` /
+  `gemma2` / `mistral`), so tags like `qwen3:8b` parse their family correctly
+  when resolved via a live backend. No bundled measurements exist for these, so
+  they resolve to **estimated / roofline** numbers with honest provenance -- never
+  a "measured" masquerade (a regression test locks this in).
+- **9 newer models in the offline catalog seed** (`model_catalog.json`, 10 -> 19):
+  Qwen3 (0.6B-14B), Phi-4 + Phi-4-mini, SmolLM3-3B, Mistral-7B-Instruct-v0.3.
+  All verified publicly ungated so `catalog build` resolves them to real specs
+  tokenless; gated repos (Gemma, Llama) are deliberately excluded.
+
 ## [0.6.2] - 2026-07-25
 
 ### Fixed
