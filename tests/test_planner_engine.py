@@ -783,3 +783,38 @@ class TestPlannerExtended:
         assert all(c.p95_latency_ms <= 3000 for c in candidates)
         # At this rate a feasible config exists, so the search must find one.
         assert candidates
+
+
+class TestEnergyCost:
+    """0.8.0: board power -> energy cost + perf/watt, reported apart from the budget."""
+
+    def _plan(self, models, rate=0.12):
+        return enumerate_candidates(
+            models=models,
+            target_models=["llama3.1-8b"],
+            hardware="H100 80GB",
+            request_rate=5.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=2048,
+            electricity_rate=rate,
+        )
+
+    def test_energy_fields_populated_on_known_tdp_gpu(self, bundled_models):
+        c = self._plan(bundled_models)[0]
+        assert c.tdp_watts == 700.0  # H100 SXM board power
+        assert c.energy_cost_month > 0
+        assert c.perf_per_watt > 0
+        assert c.energy_cost_per_1m_tok > 0
+
+    def test_electricity_rate_moves_energy_not_hardware_cost(self, bundled_models):
+        # Rate must NOT change monthly_cost or cost_per_1m_tok (cloud $/hr already
+        # bundles power) -- it only scales the separate energy figures, and it must
+        # never enter the budget gate (same config selected at both rates).
+        cheap = self._plan(bundled_models, rate=0.05)[0]
+        pricey = self._plan(bundled_models, rate=0.50)[0]
+        assert cheap.monthly_cost == pricey.monthly_cost
+        assert cheap.cost_per_1m_tok == pricey.cost_per_1m_tok
+        assert pricey.energy_cost_month > cheap.energy_cost_month

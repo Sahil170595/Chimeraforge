@@ -6,6 +6,10 @@ import typer
 from rich.console import Console
 from rich.markup import escape
 
+# constants is pure-stdlib (no heavy deps), so this module-level import is safe for
+# the `--version` fast path; it supplies the --electricity-rate flag's default.
+from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE
+
 console = Console()
 
 
@@ -79,6 +83,12 @@ def plan(
         "--workload",
         help="Service-time variance preset: steady, chatbot, bursty, agent. "
         "High-variance (agent) inflates the tail estimate and warns.",
+    ),
+    electricity_rate: float = typer.Option(
+        DEFAULT_ELECTRICITY_RATE,
+        "--electricity-rate",
+        help="Electricity price in $/kWh for the energy estimate (default US "
+        "commercial avg). Reported separately; cloud $/hr rates already include power.",
     ),
     models_path: str = typer.Option(
         None,
@@ -196,6 +206,9 @@ def plan(
         raise typer.Exit(code=1)
     if avg_tokens <= 0:
         console.print("[red]Error:[/] --avg-tokens must be positive.")
+        raise typer.Exit(code=1)
+    if electricity_rate < 0:
+        console.print("[red]Error:[/] --electricity-rate must be non-negative.")
         raise typer.Exit(code=1)
     if context_length <= 0:
         console.print("[red]Error:[/] --context-length must be positive.")
@@ -323,6 +336,7 @@ def plan(
         trace=trace,
         prompt_tokens=prompt_tokens,
         workload_cv2=workload_cv2,
+        electricity_rate=electricity_rate,
     )
 
     frontier = pareto_frontier(candidates) if pareto else None

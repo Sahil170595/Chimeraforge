@@ -13,6 +13,7 @@ from chimeraforge.planner.constants import (
     BACKEND_CONTINUOUS_BATCHING,
     BACKENDS,
     DEFAULT_ARCH,
+    DEFAULT_ELECTRICITY_RATE,
     DEFAULT_PROMPT_TOKENS,
     HIGH_VARIANCE_CV2,
     MODEL_ARCH,
@@ -60,6 +61,13 @@ class Candidate:
     tpot_ms: float = 0.0
     # Continuous-batching: requests served concurrently per GPU (B; 1 = single-stream).
     effective_batch: int = 1
+    # Energy (0.8.0): board TDP, monthly electricity cost, per-token energy cost, and
+    # throughput efficiency. All 0.0 when the GPU's TDP is unknown. Reported alongside
+    # -- not inside -- monthly_cost/cost_per_1m_tok (cloud $/hr already bundles power).
+    tdp_watts: float = 0.0
+    energy_cost_month: float = 0.0
+    energy_cost_per_1m_tok: float = 0.0
+    perf_per_watt: float = 0.0
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -100,6 +108,7 @@ def enumerate_candidates(
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
     workload_cv2: float = 0.0,
+    electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -300,6 +309,17 @@ def enumerate_candidates(
                 # leave $/token unchanged -- which is the correct invariant.
                 cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * best_n)
 
+                # Energy (0.8.0): reported alongside the hardware cost, not summed into
+                # the budget gate (cloud $/hr already bundles power). 0.0 when TDP unknown.
+                tdp_watts = gpu.tdp_watts if gpu else 0.0
+                energy_month = models.cost.energy_cost_per_month(
+                    tdp_watts, best_n, electricity_rate
+                )
+                energy_1m = models.cost.energy_cost_per_1m(
+                    total_tps, tdp_watts, best_n, electricity_rate
+                )
+                ppw = models.cost.perf_per_watt(total_tps, tdp_watts, best_n)
+
                 safety_source = "measured" if safety_refusal is not None else "unknown"
                 # VRAM is first-principles either way; it's "measured" when arch
                 # came from the registry, "estimated" when from a resolved spec.
@@ -377,6 +397,10 @@ def enumerate_candidates(
                         ttft_ms=round(ttft_ms, 1),
                         tpot_ms=round(tpot_ms, 1),
                         effective_batch=best_b,
+                        tdp_watts=round(tdp_watts, 1),
+                        energy_cost_month=round(energy_month, 2),
+                        energy_cost_per_1m_tok=round(energy_1m, 4),
+                        perf_per_watt=round(ppw, 4),
                     )
                 )
 

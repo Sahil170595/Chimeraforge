@@ -103,6 +103,11 @@ class TestHardwareDB:
         assert bandwidth_ratio("B200 180GB") > bandwidth_ratio("H100 80GB") > 1.0
         assert bandwidth_ratio("H200 141GB") > bandwidth_ratio("H100 80GB")
 
+    def test_all_gpus_have_tdp(self):
+        # 0.8.0: every GPU carries a board-power (TDP) figure for the energy model.
+        for name, spec in GPU_DB.items():
+            assert spec.tdp_watts > 0, f"{name} missing tdp_watts"
+
 
 # -- Serialization Round-Trip -----------------------------------------
 

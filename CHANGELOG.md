@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-05
+
+### Added
+- **Energy & power cost modeling.** `GPUSpec` gains `tdp_watts` (board power, from
+  vendor datasheets) for all 22 GPUs, and `plan` now reports, per configuration:
+  monthly electricity cost, a `$/1M-tok (+energy)` figure, and throughput
+  efficiency (**tok/s per watt**). New `--electricity-rate` flag ($/kWh, default
+  the US commercial average). Power draw is modelled as `tdp_watts x 0.85`
+  (sustained decode rarely holds full TDP; the factor is the named constant
+  `POWER_UTILISATION`).
+  - Energy is reported as a **separate** line, deliberately NOT folded into the
+    hardware cost or the budget gate: a cloud `$/hr` rate already bundles power
+    (folding it in would double-count), while an amortised consumer-card cost
+    does not -- so the energy figure is most meaningful for self-hosted hardware.
+  - `perf_per_watt` and the per-token energy cost are invariant in replica count
+    (both the aggregate throughput and the total power scale with N).
+
 ## [0.7.0] - 2026-08-05
 
 ### Added

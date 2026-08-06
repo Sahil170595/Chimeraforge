@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.7.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.8.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (501 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (508 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -53,7 +53,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.7.0"
+    __init__.py                       # Exports __version__ = "0.8.0"
     cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
     commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
@@ -63,7 +63,7 @@ src/
       resolver.py                     # ModelSpec + resolve_spec(): any id -> params/arch (registry/Ollama /api/show/HF config.json/manual). Model-agnostic core.
       discovery.py                    # suggest(): enumerate models from Ollama /api/tags + HF Hub, resolve, rank
       identity.py                     # parse_identity()/resolve_model(): family+param matching; _FAMILIES derived from registry
-      hardware.py                     # GPUSpec dataclass, GPU_DB (22 GPUs), bandwidth_ratio()
+      hardware.py                     # GPUSpec dataclass (+ tdp_watts), GPU_DB (22 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
       formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
       data/fitted_models.json         # Pre-fitted coefficients from TR133 (loaded via importlib.resources)
@@ -119,7 +119,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 19 files, 501 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 19 files, 508 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -183,6 +183,7 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th 
 
 **Gate 4 — Cost:** `monthly_cost <= budget`
 - Monthly = `hw_cost_per_hour * 720 * N_agents`
+- **Energy (0.8.0):** `GPUSpec.tdp_watts` drives a *separate* energy dimension — monthly kWh cost, `$/1M-tok (+energy)`, and `tok/s per watt` (`--electricity-rate`, default `DEFAULT_ELECTRICITY_RATE`; draw = `tdp_watts * POWER_UTILISATION`). Reported alongside, **not summed into**, `monthly_cost`/the budget gate: cloud `$/hr` already bundles power (double-count) while amortised consumer cost does not. `perf_per_watt` and per-token energy are replica-invariant.
 
 **Gate 5 — Safety (opt-in):** `refusal_rate >= safety_target` (only when `--safety-target` is set)
 - Lookup table (model|quant) of TR134 refusal rate + TR142 RTSI risk tier; GGUF quants only
@@ -261,17 +262,17 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 501 total tests
+pytest tests/ -v                    # 508 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (501 tests, 19 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (508 tests, 19 files -- planner/bench split per-concern after 0.3.0):
 
-- **Planner** (166): test_planner_models.py (60 - 7 predictive models: VRAM/throughput/
-  quality/latency/scaling/cost/safety, incl. roofline + KV-batch concurrency +
-  shared FP16-baseline resolver), test_planner_engine.py (55 - gate search,
-  N-replica x B-batch, Pareto, variance guard, provenance), test_planner_cli.py (18),
-  test_planner_core.py (20 - serialization, find_models_for_size, GPU_DB coverage),
+- **Planner** (173): test_planner_models.py (64 - 7 predictive models: VRAM/throughput/
+  quality/latency/scaling/cost+energy/safety, incl. roofline + KV-batch concurrency +
+  shared FP16-baseline resolver), test_planner_engine.py (57 - gate search,
+  N-replica x B-batch, Pareto, variance guard, provenance, energy), test_planner_cli.py (18),
+  test_planner_core.py (21 - serialization, find_models_for_size, GPU_DB + TDP coverage),
   test_accuracy.py (13 - numerical falsifiability gates)
 - **Model-agnostic** (53): test_resolver.py (35 - ModelSpec, registry/Ollama/HF/manual +
   cache + newer-family recognition), test_discovery.py (12 - suggest/catalog),
