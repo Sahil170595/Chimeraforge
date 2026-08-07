@@ -58,18 +58,21 @@ class VRAMModel:
         batch_size: int = 1,
         params_b: float | None = None,
         arch: dict[str, int] | None = None,
+        kv_bytes: float = KV_DTYPE_BYTES,
     ) -> float:
         """Predict VRAM in GB.
 
         ``params_b``/``arch`` override the bundled registry, letting a resolved
         off-registry ModelSpec drive an exact weight + KV-cache estimate.
+        ``kv_bytes`` is the KV-cache element size (see ``KV_QUANT_BYTES``); the
+        default keeps the FP16 cache.
         """
         params = params_b if params_b is not None else MODEL_PARAMS_B.get(model, 3.0)
         bpw = QUANT_BPW.get(quant, 16.0)
         weight_gb = params * bpw / 8
 
         arch = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
-        kv_gb = self.kv_cache_gb(arch, context_length, batch_size)
+        kv_gb = self.kv_cache_gb(arch, context_length, batch_size, kv_bytes)
         # Linear in context: flash/paged attention never materialises the O(ctx^2)
         # attention matrix, so activation memory is O(ctx). (A quadratic term
         # diverges unphysically at long context -- 130 GB at 32k for a 3B model.)
@@ -78,18 +81,27 @@ class VRAMModel:
         return weight_gb * self.overhead_factor + kv_gb + act_gb
 
     @staticmethod
-    def kv_cache_gb(arch: dict[str, int], context_length: int, batch_size: int = 1) -> float:
-        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * dtype``."""
-        kv_bytes = (
+    def kv_cache_gb(
+        arch: dict[str, int],
+        context_length: int,
+        batch_size: int = 1,
+        kv_bytes: float = KV_DTYPE_BYTES,
+    ) -> float:
+        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * kv_bytes``.
+
+        ``kv_bytes`` is the per-element cache size (2 = FP16 default; see
+        ``KV_QUANT_BYTES`` for q8/q4).
+        """
+        total_bytes = (
             2
             * arch["n_layers"]
             * batch_size
             * context_length
             * arch["n_kv_heads"]
             * arch["d_head"]
-            * KV_DTYPE_BYTES
+            * kv_bytes
         )
-        return kv_bytes / (1024**3)
+        return total_bytes / (1024**3)
 
     def max_concurrent_seqs(
         self,
@@ -99,6 +111,7 @@ class VRAMModel:
         context_length: int,
         hw_vram_gb: float,
         utilisation: float = KV_CACHE_UTILISATION,
+        kv_bytes: float = KV_DTYPE_BYTES,
     ) -> int:
         """Max concurrent sequences a single GPU can hold, KV-cache bound.
 
@@ -106,14 +119,15 @@ class VRAMModel:
         after model weights + activations, the remaining VRAM divided by the
         per-sequence KV-cache caps how many requests can be in flight at once.
         First-principles memory arithmetic -- no fitting. Returns 0 if the weights
-        alone don't fit.
+        alone don't fit. A quantized KV cache (``kv_bytes`` < 2) frees VRAM, so
+        more sequences fit.
         """
         weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor
         act_gb = (
             self.act_coeff * arch["n_layers"] * (context_length / 1024)
         )  # O(ctx), see predict()
         free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
-        per_seq_gb = self.kv_cache_gb(arch, context_length, batch_size=1)
+        per_seq_gb = self.kv_cache_gb(arch, context_length, batch_size=1, kv_bytes=kv_bytes)
         if per_seq_gb <= 0 or free_gb <= 0:
             return 0
         return int(free_gb / per_seq_gb)

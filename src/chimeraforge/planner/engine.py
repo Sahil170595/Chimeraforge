@@ -14,8 +14,11 @@ from chimeraforge.planner.constants import (
     BACKENDS,
     DEFAULT_ARCH,
     DEFAULT_ELECTRICITY_RATE,
+    DEFAULT_KV_QUANT,
     DEFAULT_PROMPT_TOKENS,
     HIGH_VARIANCE_CV2,
+    KV_DTYPE_BYTES,
+    KV_QUANT_BYTES,
     MODEL_ARCH,
     MODEL_PARAMS_B,
     QUANT_BPW,
@@ -109,6 +112,7 @@ def enumerate_candidates(
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
+    kv_quant: str = DEFAULT_KV_QUANT,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -135,6 +139,10 @@ def enumerate_candidates(
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
     hw_cost_hr = gpu.cost_per_hour if gpu else 0.035
+    # KV-cache element size: a quantized cache (q8/q4) shrinks KV VRAM and lifts the
+    # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
+    kv_bytes = KV_QUANT_BYTES.get(kv_quant, KV_DTYPE_BYTES)
+    kv_quantized = kv_bytes != KV_DTYPE_BYTES
 
     candidates: list[Candidate] = []
 
@@ -175,7 +183,9 @@ def enumerate_candidates(
 
         for quant in quants:
             # Gate 1: VRAM (exact for off-registry models via resolved arch)
-            vram = models.vram.predict(model, quant, context_length, params_b=params_b, arch=arch)
+            vram = models.vram.predict(
+                model, quant, context_length, params_b=params_b, arch=arch, kv_bytes=kv_bytes
+            )
             if vram > hw_vram:
                 _reject(model, quant, "vram", f"{vram:.1f}GB > {hw_vram:.0f}GB capacity")
                 continue
@@ -184,9 +194,9 @@ def enumerate_candidates(
             # size; both feed the batched-throughput model (0.6.0).
             arch_eff = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
             max_seqs = models.vram.max_concurrent_seqs(
-                params_b, quant, arch_eff, context_length, hw_vram
+                params_b, quant, arch_eff, context_length, hw_vram, kv_bytes=kv_bytes
             )
-            kv_per_seq_gb = models.vram.kv_cache_gb(arch_eff, context_length, 1)
+            kv_per_seq_gb = models.vram.kv_cache_gb(arch_eff, context_length, 1, kv_bytes=kv_bytes)
 
             # Gate 2: Quality (with provenance: measured | estimated | unknown)
             quality, quality_source = models.quality.estimate(lookup_name, quant, family)
@@ -332,6 +342,11 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if kv_quantized:
+                    warnings.append(
+                        f"KV cache quantized ({kv_quant}): VRAM/concurrency reflect it, but "
+                        "the (small) quality impact of KV-quant is not screened here"
+                    )
                 if workload_cv2 >= HIGH_VARIANCE_CV2:
                     warnings.append(
                         "high service-time variance (agent/bursty): analytical p95 "

@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.8.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.9.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -36,7 +36,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (508 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (515 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -53,7 +53,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.8.0"
+    __init__.py                       # Exports __version__ = "0.9.0"
     cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
     commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
@@ -119,7 +119,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 19 files, 508 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 19 files, 515 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -168,7 +168,8 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th 
 
 **Gate 1 — VRAM:** `weight_gb + kv_cache_gb + activations_gb <= hw_vram`
 - Weight: `params_B * bits_per_weight / 8 * overhead_factor`
-- KV-cache: `2 * n_layers * batch * context * n_kv_heads * d_head * 2 bytes`
+- KV-cache: `2 * n_layers * batch * context * n_kv_heads * d_head * kv_bytes`
+- **KV-quant (0.9.0):** `plan --kv-quant {fp16,q8,q4}` sets `kv_bytes` (2/1/0.5 via `KV_QUANT_BYTES`), shrinking KV VRAM and lifting `max_concurrent_seqs` — biggest at long context. VRAM/concurrency only; KV-quant's quality impact is unscreened (warns). `kv_bytes` defaults to FP16, so pre-0.9.0 results are byte-identical.
 
 **Gate 2 — Quality:** `quality_score >= quality_target`
 - Lookup table (model|quant), fallback: fp16_baseline + quant_delta, default: 0.5
@@ -262,16 +263,16 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 508 total tests
+pytest tests/ -v                    # 515 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (508 tests, 19 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (515 tests, 19 files -- planner/bench split per-concern after 0.3.0):
 
-- **Planner** (173): test_planner_models.py (64 - 7 predictive models: VRAM/throughput/
+- **Planner** (178): test_planner_models.py (66 - 7 predictive models: VRAM (+KV-quant)/throughput/
   quality/latency/scaling/cost+energy/safety, incl. roofline + KV-batch concurrency +
-  shared FP16-baseline resolver), test_planner_engine.py (57 - gate search,
-  N-replica x B-batch, Pareto, variance guard, provenance, energy), test_planner_cli.py (18),
+  shared FP16-baseline resolver), test_planner_engine.py (60 - gate search,
+  N-replica x B-batch, Pareto, variance guard, provenance, energy, KV-quant), test_planner_cli.py (18),
   test_planner_core.py (21 - serialization, find_models_for_size, GPU_DB + TDP coverage),
   test_accuracy.py (13 - numerical falsifiability gates)
 - **Model-agnostic** (53): test_resolver.py (35 - ModelSpec, registry/Ollama/HF/manual +
@@ -282,7 +283,7 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
-- **CLI hardening** (12): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **CLI hardening** (14): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
 

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-08-05
+
+### Added
+- **KV-cache quantization modeling.** New `plan --kv-quant {fp16,q8,q4}`. Backends
+  can quantize the KV cache independently of the weights (llama.cpp
+  `--cache-type-k`, vLLM fp8 KV); the planner now models it (q8 = 1 byte, q4 = 0.5
+  byte per element vs FP16's 2). A quantized cache **lowers VRAM and raises the
+  KV-bound concurrency cap** — largest at long context, where KV dominates.
+  `VRAMModel.predict` / `kv_cache_gb` / `max_concurrent_seqs` take a `kv_bytes`
+  argument (default FP16, so existing results are byte-identical).
+  - Only VRAM/concurrency are modelled; KV-quant's (small) **quality impact is NOT
+    screened** (no bundled measurements) — `plan` warns when it is enabled and
+    never reports a fabricated quality delta.
+
+### Changed
+- **Dependency ranges refreshed** against verified-passing versions (the full
+  suite runs green on all of these): runtime `rich` cap widened `<14.0` → `<16.0`
+  (the old cap force-downgraded rich in users' environments); dev tools
+  `pytest` → `<10.0`, `pytest-cov` → `<8.0`, `pytest-asyncio` → `<2.0`.
+
 ## [0.8.0] - 2026-08-05
 
 ### Added

@@ -7,8 +7,12 @@ from rich.console import Console
 from rich.markup import escape
 
 # constants is pure-stdlib (no heavy deps), so this module-level import is safe for
-# the `--version` fast path; it supplies the --electricity-rate flag's default.
-from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE
+# the `--version` fast path; it supplies flag defaults/choices.
+from chimeraforge.planner.constants import (
+    DEFAULT_ELECTRICITY_RATE,
+    DEFAULT_KV_QUANT,
+    KV_QUANT_BYTES,
+)
 
 console = Console()
 
@@ -89,6 +93,12 @@ def plan(
         "--electricity-rate",
         help="Electricity price in $/kWh for the energy estimate (default US "
         "commercial avg). Reported separately; cloud $/hr rates already include power.",
+    ),
+    kv_quant: str = typer.Option(
+        DEFAULT_KV_QUANT,
+        "--kv-quant",
+        help="KV-cache dtype: fp16 (default), q8, or q4. A quantized cache lowers "
+        "VRAM and raises the concurrency cap; its quality impact is not screened.",
     ),
     models_path: str = typer.Option(
         None,
@@ -209,6 +219,10 @@ def plan(
         raise typer.Exit(code=1)
     if electricity_rate < 0:
         console.print("[red]Error:[/] --electricity-rate must be non-negative.")
+        raise typer.Exit(code=1)
+    kv_quant = kv_quant.lower()
+    if kv_quant not in KV_QUANT_BYTES:
+        console.print(f"[red]Error:[/] --kv-quant must be one of: {', '.join(KV_QUANT_BYTES)}.")
         raise typer.Exit(code=1)
     if context_length <= 0:
         console.print("[red]Error:[/] --context-length must be positive.")
@@ -337,6 +351,7 @@ def plan(
         prompt_tokens=prompt_tokens,
         workload_cv2=workload_cv2,
         electricity_rate=electricity_rate,
+        kv_quant=kv_quant,
     )
 
     frontier = pareto_frontier(candidates) if pareto else None
