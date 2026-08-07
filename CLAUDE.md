@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.9.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.10.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -19,6 +19,9 @@ chimeraforge plan --model-size 3b --request-rate 1.0 --hardware "RTX 4080 12GB"
 chimeraforge plan --model ollama:qwen2.5:7b --ollama-url http://localhost:11434
 chimeraforge plan --model Qwen/Qwen2.5-1.5B-Instruct --hardware "RTX 4090 24GB"
 chimeraforge plan --model my/unreleased-7b --params-b 7 --n-layers 32 --n-kv-heads 8 --d-head 128 --no-network
+
+# Tensor parallelism: size a model too big for one GPU across several (or --tp auto)
+chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4
 
 # Discover + rank deployable models for your hardware (Ollama install / HF Hub)
 chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
@@ -36,7 +39,7 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (515 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (528 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -53,7 +56,7 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.9.0"
+    __init__.py                       # Exports __version__ = "0.10.0"
     cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
     commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
     planner/
@@ -63,7 +66,7 @@ src/
       resolver.py                     # ModelSpec + resolve_spec(): any id -> params/arch (registry/Ollama /api/show/HF config.json/manual). Model-agnostic core.
       discovery.py                    # suggest(): enumerate models from Ollama /api/tags + HF Hub, resolve, rank
       identity.py                     # parse_identity()/resolve_model(): family+param matching; _FAMILIES derived from registry
-      hardware.py                     # GPUSpec dataclass (+ tdp_watts), GPU_DB (22 GPUs), bandwidth_ratio()
+      hardware.py                     # GPUSpec dataclass (+ tdp_watts, interconnect_gbps), GPU_DB (22 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
       formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
       data/fitted_models.json         # Pre-fitted coefficients from TR133 (loaded via importlib.resources)
@@ -119,7 +122,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 19 files, 515 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 19 files, 528 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -159,6 +162,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Prefill vs decode:** TTFT = prefill (compute-bound, `2*params*prompt_tokens / (fp16_tflops*MFU)`); TPOT = decode (bandwidth-bound). End-to-end p95 = TTFT + decode + queueing. `GPUSpec.fp16_tflops` drives prefill; `--prompt-tokens` sets input length.
 - **Continuous batching:** vLLM/TGI serve B concurrent sequences per GPU; `ThroughputModel.batched_decode_tps()` = `B*bw*MBU / (weight_eff + B*kv_per_seq)`, `weight_eff = bw*MBU/n1_tps` (anchored to measured/roofline single-stream, quant-correct), capped by `max_concurrent_seqs` (KV-bound) and the decode compute ceiling. Ollama = B=1. The engine searches **(N replicas x B batch/GPU)** for the cheapest SLO-feasible config. `BACKEND_CONTINUOUS_BATCHING`, `Candidate.effective_batch`.
 - **Replicas scale linearly** (eta=1); the old Amdahl serial-fraction model was wrong for replica fan-out (capped throughput at ~1.8x; rejected >=7B) and is no longer applied.
+- **Tensor parallelism (0.10.0):** `plan --tensor-parallel {N|auto}` (alias `--tp`) splits ONE model across N GPUs — weights /N, KV across heads (`VRAMModel...tp=`), so a model too big for one GPU fits (70B FP16 on 4x H100). `ThroughputModel.tp_decode_tps` gives ~Nx aggregate bandwidth minus Megatron all-reduce comms (2/layer, scaled by `GPUSpec.interconnect_gbps`): near-ideal on NVLink, erodes on PCIe/high batch. TP throughput is an **estimate** (comms modelled, not measured — warns; `INTERCONNECT_EFFICIENCY` calibratable). Fleet = N replicas x TP GPUs (cost/energy scale with `gpus_total`); `auto` = smallest TP that fits. `tp=1` reproduces pre-0.10.0 exactly.
 - **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
@@ -263,18 +267,18 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 515 total tests
+pytest tests/ -v                    # 528 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (515 tests, 19 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (528 tests, 19 files -- planner/bench split per-concern after 0.3.0):
 
-- **Planner** (178): test_planner_models.py (66 - 7 predictive models: VRAM (+KV-quant)/throughput/
-  quality/latency/scaling/cost+energy/safety, incl. roofline + KV-batch concurrency +
-  shared FP16-baseline resolver), test_planner_engine.py (60 - gate search,
-  N-replica x B-batch, Pareto, variance guard, provenance, energy, KV-quant), test_planner_cli.py (18),
-  test_planner_core.py (21 - serialization, find_models_for_size, GPU_DB + TDP coverage),
-  test_accuracy.py (13 - numerical falsifiability gates)
+- **Planner** (189): test_planner_models.py (72 - 7 predictive models: VRAM (+KV-quant +TP)/
+  throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
+  KV-batch concurrency + shared FP16-baseline resolver), test_planner_engine.py (64 - gate
+  search, N-replica x B-batch, Pareto, variance guard, provenance, energy, KV-quant, TP),
+  test_planner_cli.py (18), test_planner_core.py (22 - serialization, find_models_for_size,
+  GPU_DB + TDP + interconnect coverage), test_accuracy.py (13 - numerical falsifiability gates)
 - **Model-agnostic** (53): test_resolver.py (35 - ModelSpec, registry/Ollama/HF/manual +
   cache + newer-family recognition), test_discovery.py (12 - suggest/catalog),
   test_measure.py (6 - measure-on-demand)
@@ -283,7 +287,7 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
-- **CLI hardening** (14): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **CLI hardening** (16): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
 

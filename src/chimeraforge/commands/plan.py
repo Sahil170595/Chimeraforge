@@ -100,6 +100,14 @@ def plan(
         help="KV-cache dtype: fp16 (default), q8, or q4. A quantized cache lowers "
         "VRAM and raises the concurrency cap; its quality impact is not screened.",
     ),
+    tensor_parallel: str = typer.Option(
+        "1",
+        "--tensor-parallel",
+        "--tp",
+        help="Tensor-parallel degree: 1 (single GPU), an integer to split a model "
+        "across N GPUs, or 'auto' (smallest TP that fits). Lets a model too big for "
+        "one GPU be planned across several; TP throughput is a comms-modelled estimate.",
+    ),
     models_path: str = typer.Option(
         None,
         "--models-path",
@@ -224,6 +232,18 @@ def plan(
     if kv_quant not in KV_QUANT_BYTES:
         console.print(f"[red]Error:[/] --kv-quant must be one of: {', '.join(KV_QUANT_BYTES)}.")
         raise typer.Exit(code=1)
+    tp_raw = tensor_parallel.strip().lower()
+    if tp_raw == "auto":
+        tp_val: int | None = None
+    else:
+        try:
+            tp_val = int(tp_raw)
+        except ValueError:
+            console.print("[red]Error:[/] --tensor-parallel must be a positive integer or 'auto'.")
+            raise typer.Exit(code=1)
+        if tp_val < 1:
+            console.print("[red]Error:[/] --tensor-parallel must be >= 1.")
+            raise typer.Exit(code=1)
     if context_length <= 0:
         console.print("[red]Error:[/] --context-length must be positive.")
         raise typer.Exit(code=1)
@@ -352,6 +372,7 @@ def plan(
         workload_cv2=workload_cv2,
         electricity_rate=electricity_rate,
         kv_quant=kv_quant,
+        tensor_parallel=tp_val,
     )
 
     frontier = pareto_frontier(candidates) if pareto else None

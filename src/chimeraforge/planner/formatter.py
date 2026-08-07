@@ -63,7 +63,13 @@ def format_recommendation(
     bpw_str = f"{QUANT_BPW.get(best.quant, '?')} bpw"
     rec.add_row("Quantization", f"{best.quant} ({bpw_str})")
     rec.add_row("Backend", best.backend)
-    rec.add_row("Instances", str(best.n_agents))
+    if best.tensor_parallel > 1:
+        rec.add_row(
+            "Instances",
+            f"{best.n_agents} x TP={best.tensor_parallel}  ({best.gpus_total} GPUs total)",
+        )
+    else:
+        rec.add_row("Instances", str(best.n_agents))
     if best.model_source != "registry":
         rec.add_row("Source", f"[yellow]{best.model_source}[/] (off-registry)")
 

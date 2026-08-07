@@ -108,6 +108,14 @@ class TestHardwareDB:
         for name, spec in GPU_DB.items():
             assert spec.tdp_watts > 0, f"{name} missing tdp_watts"
 
+    def test_all_gpus_have_interconnect(self):
+        # 0.10.0: every GPU carries a TP interconnect bandwidth; datacenter NVLink
+        # is far faster than consumer PCIe, and NVLink 5 (B200) tops NVLink 4 (H100).
+        for name, spec in GPU_DB.items():
+            assert spec.interconnect_gbps > 0, f"{name} missing interconnect_gbps"
+        assert GPU_DB["H100 80GB"].interconnect_gbps > GPU_DB["RTX 4090 24GB"].interconnect_gbps
+        assert GPU_DB["B200 180GB"].interconnect_gbps > GPU_DB["H100 80GB"].interconnect_gbps
+
 
 # -- Serialization Round-Trip -----------------------------------------
 

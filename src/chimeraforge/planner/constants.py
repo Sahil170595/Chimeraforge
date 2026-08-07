@@ -120,6 +120,23 @@ DEFAULT_ELECTRICITY_RATE = 0.12
 # Hours per month for cost/energy accrual (matches CostModel.predict_monthly's 24*30).
 HOURS_PER_MONTH = 720
 
+# Tensor parallelism (0.10.0). A model is sharded across `tp` GPUs: weights /tp,
+# KV across heads. Decode gets ~tp x aggregate HBM bandwidth, minus Megatron
+# all-reduce comms (2 per layer) whose cost scales with batch and shrinks with
+# interconnect bandwidth (GPUSpec.interconnect_gbps) -- so TP erodes on slow PCIe
+# or at high batch (Pope et al. 2022; Narayanan et al. 2021; vLLM docs).
+ACT_DTYPE_BYTES = 2  # activations stay FP16 for the all-reduce, regardless of weight quant
+# Realized fraction of peak interconnect bandwidth for ring all-reduce (NCCL rarely
+# hits peak; PCIe contends with the host root complex). A calibration constant, not
+# a datasheet figure -- the `measure` path can refine it. Literature gives no clean
+# %-of-peak number, so this is deliberately conservative.
+INTERCONNECT_EFFICIENCY = 0.75
+# GPUs inside one non-blocking NVLink domain (HGX baseboard). TP beyond this crosses
+# a slower node boundary and collapses; Blackwell GB200 NVL72 extends it to 72.
+NVLINK_DOMAIN_SIZE = 8
+# TP degrees the planner searches in `auto` mode (powers of two up to the domain).
+TP_SEARCH_DEGREES = [1, 2, 4, 8]
+
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {
     "qwen2.5-0.5b": 0.49,

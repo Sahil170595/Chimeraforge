@@ -21,8 +21,10 @@ from chimeraforge.planner.constants import (
     KV_QUANT_BYTES,
     MODEL_ARCH,
     MODEL_PARAMS_B,
+    NVLINK_DOMAIN_SIZE,
     QUANT_BPW,
     QUANT_LEVELS,
+    TP_SEARCH_DEGREES,
 )
 from chimeraforge.planner.hardware import get_gpu
 from chimeraforge.planner.models import PlannerModels
@@ -71,6 +73,9 @@ class Candidate:
     energy_cost_month: float = 0.0
     energy_cost_per_1m_tok: float = 0.0
     perf_per_watt: float = 0.0
+    # Tensor parallelism (0.10.0): TP degree per replica, and total fleet GPUs (N*tp).
+    tensor_parallel: int = 1
+    gpus_total: int = 0
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -113,6 +118,7 @@ def enumerate_candidates(
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
     kv_quant: str = DEFAULT_KV_QUANT,
+    tensor_parallel: int | None = 1,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -143,6 +149,26 @@ def enumerate_candidates(
     # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
     kv_bytes = KV_QUANT_BYTES.get(kv_quant, KV_DTYPE_BYTES)
     kv_quantized = kv_bytes != KV_DTYPE_BYTES
+    # Tensor-parallel interconnect for the selected GPU (NVLink/PCIe). tensor_parallel
+    # is an explicit degree, or None = auto (smallest TP that makes the model fit).
+    interconnect_gbps = gpu.interconnect_gbps if gpu else 0.0
+    tp_auto = tensor_parallel is None
+
+    def _min_tp_to_fit(model_id: str, quant_id: str, params: float, arch_dict: dict | None) -> int:
+        """Smallest TP degree in the search grid whose per-GPU VRAM fits; 0 if none."""
+        for tp_try in TP_SEARCH_DEGREES:
+            per_gpu = models.vram.predict(
+                model_id,
+                quant_id,
+                context_length,
+                params_b=params,
+                arch=arch_dict,
+                kv_bytes=kv_bytes,
+                tp=tp_try,
+            )
+            if per_gpu <= hw_vram:
+                return tp_try
+        return 0
 
     candidates: list[Candidate] = []
 
@@ -159,6 +185,13 @@ def enumerate_candidates(
         # specs; this guards direct enumerate_candidates() library callers.)
         model_source = (
             spec.source if spec else (SOURCE_REGISTRY if model in MODEL_PARAMS_B else SOURCE_MANUAL)
+        )
+
+        # Hidden size drives the TP all-reduce volume: from the resolved spec, else
+        # the standard params ~= 12 * n_layers * hidden^2 transformer estimate.
+        arch_model = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
+        hidden_size = (spec.hidden_size if (spec and spec.hidden_size) else 0) or int(
+            round((params_b * 1e9 / (12 * max(arch_model["n_layers"], 1))) ** 0.5)
         )
 
         # TTFT (prefill) is compute-bound: same for all quants/backends of a model
@@ -182,19 +215,37 @@ def enumerate_candidates(
         quants = [spec.native_quant] if (spec and spec.native_quant in QUANT_BPW) else QUANT_LEVELS
 
         for quant in quants:
-            # Gate 1: VRAM (exact for off-registry models via resolved arch)
+            # Tensor-parallel degree: explicit, or auto = smallest TP that fits VRAM.
+            if tp_auto:
+                tp = _min_tp_to_fit(model, quant, params_b, arch)
+                if tp == 0:
+                    _reject(
+                        model, quant, "vram", f"exceeds VRAM even at TP={TP_SEARCH_DEGREES[-1]}"
+                    )
+                    continue
+            else:
+                tp = max(int(tensor_parallel), 1)
+
+            # Gate 1: VRAM per GPU (weights shard 1/TP; exact off-registry via arch)
             vram = models.vram.predict(
-                model, quant, context_length, params_b=params_b, arch=arch, kv_bytes=kv_bytes
+                model,
+                quant,
+                context_length,
+                params_b=params_b,
+                arch=arch,
+                kv_bytes=kv_bytes,
+                tp=tp,
             )
             if vram > hw_vram:
-                _reject(model, quant, "vram", f"{vram:.1f}GB > {hw_vram:.0f}GB capacity")
+                detail = f"{vram:.1f}GB/GPU > {hw_vram:.0f}GB"
+                _reject(model, quant, "vram", detail + (f" (TP={tp})" if tp > 1 else ""))
                 continue
 
-            # KV-cache-bound concurrency a single GPU can hold + per-sequence KV
-            # size; both feed the batched-throughput model (0.6.0).
+            # KV-cache-bound concurrency one GPU of the TP group holds + per-sequence
+            # (unsharded) KV size; both feed the batched/TP throughput models.
             arch_eff = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
             max_seqs = models.vram.max_concurrent_seqs(
-                params_b, quant, arch_eff, context_length, hw_vram, kv_bytes=kv_bytes
+                params_b, quant, arch_eff, context_length, hw_vram, kv_bytes=kv_bytes, tp=tp
             )
             kv_per_seq_gb = models.vram.kv_cache_gb(arch_eff, context_length, 1, kv_bytes=kv_bytes)
 
@@ -253,12 +304,29 @@ def enumerate_candidates(
                 b_max = max_seqs if (batched and max_seqs > 1) else 1
                 batch_grid = _batch_grid(b_max)
 
+                # Under TP a "unit" is a group of `tp` GPUs (per_gpu is the group's
+                # aggregate); N such groups run in parallel, so total GPUs = N * tp.
+                def _unit_tps(b: int) -> float:
+                    if tp > 1:
+                        return models.throughput.tp_decode_tps(
+                            n1_tps,
+                            kv_per_seq_gb,
+                            b,
+                            tp,
+                            hidden_size,
+                            arch_eff["n_layers"],
+                            interconnect_gbps,
+                            hardware,
+                            params_b,
+                        )
+                    return models.throughput.batched_decode_tps(
+                        n1_tps, kv_per_seq_gb, b, hardware, params_b
+                    )
+
                 best = None  # (n, b, per_gpu_tps, per_req_tps, lat)
                 for n in range(1, 17):
                     for b in batch_grid:
-                        per_gpu = models.throughput.batched_decode_tps(
-                            n1_tps, kv_per_seq_gb, b, hardware, params_b
-                        )
+                        per_gpu = _unit_tps(b)
                         if n * per_gpu < required_tps:
                             continue
                         per_req = per_gpu / b
@@ -282,9 +350,7 @@ def enumerate_candidates(
                         break
 
                 if best is None:
-                    cap_tps = 16 * models.throughput.batched_decode_tps(
-                        n1_tps, kv_per_seq_gb, b_max, hardware, params_b
-                    )
+                    cap_tps = 16 * _unit_tps(b_max)
                     if cap_tps < required_tps:
                         _reject(
                             model,
@@ -302,33 +368,37 @@ def enumerate_candidates(
                 best_n, best_b, per_gpu_tps, per_req_tps, lat = best
                 total_tps = best_n * per_gpu_tps
                 tpot_ms = 1000.0 / per_req_tps if per_req_tps > 0 else 0.0
+                # Each of the N replicas is a TP group of `tp` GPUs, so the fleet is
+                # N*tp GPUs -- cost and energy scale with the total, not just N.
+                total_gpus = best_n * tp
 
-                # Gate 4: Cost
-                monthly = models.cost.predict_monthly(hw_cost_hr) * best_n
+                # Gate 4: Cost (N replicas x TP GPUs each)
+                monthly = models.cost.predict_monthly(hw_cost_hr) * total_gpus
                 if monthly > budget:
+                    tp_note = f" x TP={tp}" if tp > 1 else ""
                     _reject(
                         model,
                         quant,
                         "budget",
-                        f"{backend}: ${monthly:.0f}/mo (N={best_n}) > ${budget:.0f}",
+                        f"{backend}: ${monthly:.0f}/mo (N={best_n}{tp_note}) > ${budget:.0f}",
                     )
                     continue
 
-                # Cost per 1M tokens: total_tps is N GPUs' throughput, so the rate
-                # must be N GPUs' cost (else understated by N). N identical replicas
-                # leave $/token unchanged -- which is the correct invariant.
-                cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * best_n)
+                # Cost per 1M tokens: total_tps is the fleet throughput, so the rate
+                # must be the fleet's (N*tp) GPU cost (else understated). Identical
+                # replicas leave $/token unchanged -- the correct invariant.
+                cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * total_gpus)
 
                 # Energy (0.8.0): reported alongside the hardware cost, not summed into
                 # the budget gate (cloud $/hr already bundles power). 0.0 when TDP unknown.
                 tdp_watts = gpu.tdp_watts if gpu else 0.0
                 energy_month = models.cost.energy_cost_per_month(
-                    tdp_watts, best_n, electricity_rate
+                    tdp_watts, total_gpus, electricity_rate
                 )
                 energy_1m = models.cost.energy_cost_per_1m(
-                    total_tps, tdp_watts, best_n, electricity_rate
+                    total_tps, tdp_watts, total_gpus, electricity_rate
                 )
-                ppw = models.cost.perf_per_watt(total_tps, tdp_watts, best_n)
+                ppw = models.cost.perf_per_watt(total_tps, tdp_watts, total_gpus)
 
                 safety_source = "measured" if safety_refusal is not None else "unknown"
                 # VRAM is first-principles either way; it's "measured" when arch
@@ -347,6 +417,22 @@ def enumerate_candidates(
                         f"KV cache quantized ({kv_quant}): VRAM/concurrency reflect it, but "
                         "the (small) quality impact of KV-quant is not screened here"
                     )
+                if tp > 1:
+                    warnings.append(
+                        f"tensor-parallel TP={tp} ({total_gpus} GPUs total): throughput is a "
+                        "first-principles estimate (all-reduce comms modelled, not measured)"
+                    )
+                    # PCIe links (<=128 GB/s) vs NVLink (>=600): TP comms is far costlier.
+                    if 0 < interconnect_gbps < 200:
+                        warnings.append(
+                            f"TP over PCIe (~{interconnect_gbps:.0f} GB/s): high comms overhead -- "
+                            "prefer an NVLink GPU or pipeline parallelism (per vLLM guidance)"
+                        )
+                    if tp > NVLINK_DOMAIN_SIZE:
+                        warnings.append(
+                            f"TP={tp} exceeds the {NVLINK_DOMAIN_SIZE}-GPU NVLink domain -- "
+                            "crossing a node boundary collapses TP throughput"
+                        )
                 if workload_cv2 >= HIGH_VARIANCE_CV2:
                     warnings.append(
                         "high service-time variance (agent/bursty): analytical p95 "
@@ -416,6 +502,8 @@ def enumerate_candidates(
                         energy_cost_month=round(energy_month, 2),
                         energy_cost_per_1m_tok=round(energy_1m, 4),
                         perf_per_watt=round(ppw, 4),
+                        tensor_parallel=tp,
+                        gpus_total=total_gpus,
                     )
                 )
 

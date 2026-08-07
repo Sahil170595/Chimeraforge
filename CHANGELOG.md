@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-07
+
+### Added
+- **Multi-GPU tensor parallelism.** New `plan --tensor-parallel {N|auto}` (alias
+  `--tp`): the planner can now size a model that does not fit one GPU by splitting
+  it across `N` GPUs. Weights shard 1/N and KV shards across attention heads
+  (`VRAMModel.predict`/`max_concurrent_seqs` gained a `tp` arg), so e.g. a 70B FP16
+  fits on 4x H100 or 2x B200. `auto` picks the smallest TP degree that fits.
+  - **Comms-modelled throughput** (`ThroughputModel.tp_decode_tps`): a TP group of
+    `N` GPUs gets ~N x aggregate HBM bandwidth, minus Megatron all-reduce overhead
+    (2 per layer, ring `2(N-1)/N` bytes, FP16 activations) scaled by the GPU's
+    interconnect bandwidth. So TP is near-ideal on NVLink at low batch but erodes on
+    PCIe or at high batch, matching the literature (Pope et al. 2022; vLLM docs).
+    Throughput is a first-principles **estimate** (comms modelled, not measured) and
+    is flagged as such; PCIe interconnects and crossing the NVLink domain also warn.
+  - `GPUSpec` gains `interconnect_gbps` for all 22 GPUs (NVLink 3/4/5, AMD Infinity
+    Fabric, or PCIe 4/5). Cost and energy scale with the full fleet (`N replicas x
+    TP GPUs`); `Candidate` carries `tensor_parallel` and `gpus_total`.
+  - `tp=1` (the default) reproduces the pre-0.10.0 single-GPU results exactly.
+
 ## [0.9.0] - 2026-08-05
 
 ### Added
