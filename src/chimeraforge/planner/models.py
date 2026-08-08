@@ -20,14 +20,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from chimeraforge.planner.constants import (
+    ACT_DTYPE_BYTES,
     DEFAULT_ARCH,
+    DEFAULT_ELECTRICITY_RATE,
     FLOPS_PER_PARAM_PER_TOKEN,
+    HOURS_PER_MONTH,
+    INTERCONNECT_EFFICIENCY,
     KV_CACHE_UTILISATION,
     KV_DTYPE_BYTES,
     MBU_DEFAULT,
     MODEL_ARCH,
     MODEL_FAMILY,
     MODEL_PARAMS_B,
+    POWER_UTILISATION,
     PREFILL_MFU,
     QUANT_BPW,
 )
@@ -55,38 +60,60 @@ class VRAMModel:
         batch_size: int = 1,
         params_b: float | None = None,
         arch: dict[str, int] | None = None,
+        kv_bytes: float = KV_DTYPE_BYTES,
+        tp: int = 1,
+        pp: int = 1,
     ) -> float:
-        """Predict VRAM in GB.
+        """Predict per-GPU VRAM in GB.
 
         ``params_b``/``arch`` override the bundled registry, letting a resolved
         off-registry ModelSpec drive an exact weight + KV-cache estimate.
+        ``kv_bytes`` is the KV-cache element size (see ``KV_QUANT_BYTES``); the
+        default keeps the FP16 cache. ``tp`` is the tensor-parallel degree (weights
+        shard 1/tp, KV across attention heads -- one head/GPU floor) and ``pp`` the
+        pipeline-parallel degree (the model's layers split into pp stages, so weights
+        and that stage's KV shard 1/pp with no head constraint). Both >1 combine
+        (weights /(tp*pp)); ``tp=pp=1`` reproduces the single-GPU footprint exactly.
         """
         params = params_b if params_b is not None else MODEL_PARAMS_B.get(model, 3.0)
         bpw = QUANT_BPW.get(quant, 16.0)
-        weight_gb = params * bpw / 8
+        weight_gb = params * bpw / 8 / (max(tp, 1) * max(pp, 1))
 
         arch = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
-        kv_gb = self.kv_cache_gb(arch, context_length, batch_size)
+        # KV shards across kv_heads (TP, one-head floor) and across layers (PP).
+        kv_shard = min(max(tp, 1), max(arch["n_kv_heads"], 1)) * max(pp, 1)
+        kv_gb = self.kv_cache_gb(arch, context_length, batch_size, kv_bytes) / kv_shard
         # Linear in context: flash/paged attention never materialises the O(ctx^2)
         # attention matrix, so activation memory is O(ctx). (A quadratic term
         # diverges unphysically at long context -- 130 GB at 32k for a 3B model.)
+        # Activations (the replicated residual stream at decode) are small; left
+        # un-sharded as a conservative bound.
         act_gb = self.act_coeff * arch["n_layers"] * (context_length / 1024)
 
         return weight_gb * self.overhead_factor + kv_gb + act_gb
 
     @staticmethod
-    def kv_cache_gb(arch: dict[str, int], context_length: int, batch_size: int = 1) -> float:
-        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * dtype``."""
-        kv_bytes = (
+    def kv_cache_gb(
+        arch: dict[str, int],
+        context_length: int,
+        batch_size: int = 1,
+        kv_bytes: float = KV_DTYPE_BYTES,
+    ) -> float:
+        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * kv_bytes``.
+
+        ``kv_bytes`` is the per-element cache size (2 = FP16 default; see
+        ``KV_QUANT_BYTES`` for q8/q4).
+        """
+        total_bytes = (
             2
             * arch["n_layers"]
             * batch_size
             * context_length
             * arch["n_kv_heads"]
             * arch["d_head"]
-            * KV_DTYPE_BYTES
+            * kv_bytes
         )
-        return kv_bytes / (1024**3)
+        return total_bytes / (1024**3)
 
     def max_concurrent_seqs(
         self,
@@ -96,21 +123,30 @@ class VRAMModel:
         context_length: int,
         hw_vram_gb: float,
         utilisation: float = KV_CACHE_UTILISATION,
+        kv_bytes: float = KV_DTYPE_BYTES,
+        tp: int = 1,
+        pp: int = 1,
     ) -> int:
-        """Max concurrent sequences a single GPU can hold, KV-cache bound.
+        """Max concurrent sequences one GPU (of a ``tp*pp``-way group) can hold.
 
         This is the real concurrency limiter for batched backends (vLLM/TGI):
         after model weights + activations, the remaining VRAM divided by the
         per-sequence KV-cache caps how many requests can be in flight at once.
         First-principles memory arithmetic -- no fitting. Returns 0 if the weights
-        alone don't fit.
+        alone don't fit. A quantized KV cache (``kv_bytes`` < 2) frees VRAM, so
+        more sequences fit; ``tp`` shards weights (1/tp) and per-seq KV across
+        heads, ``pp`` shards weights and KV across layers -- both free room per GPU.
         """
-        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor
+        parallel = max(tp, 1) * max(pp, 1)
+        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor / parallel
         act_gb = (
             self.act_coeff * arch["n_layers"] * (context_length / 1024)
         )  # O(ctx), see predict()
         free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
-        per_seq_gb = self.kv_cache_gb(arch, context_length, batch_size=1)
+        kv_shard = min(max(tp, 1), max(arch["n_kv_heads"], 1)) * max(pp, 1)
+        per_seq_gb = (
+            self.kv_cache_gb(arch, context_length, batch_size=1, kv_bytes=kv_bytes) / kv_shard
+        )
         if per_seq_gb <= 0 or free_gb <= 0:
             return 0
         return int(free_gb / per_seq_gb)
@@ -261,6 +297,111 @@ class ThroughputModel:
             compute_ceiling = gpu.fp16_tflops * 1e12 * DECODE_COMPUTE_MFU / (2 * params_b * 1e9)
             agg = min(agg, compute_ceiling)
         return max(agg, n1_tps)
+
+    def tp_decode_tps(
+        self,
+        n1_tps: float,
+        kv_per_seq_gb: float,
+        batch: int,
+        tp: int,
+        hidden_size: int,
+        n_layers: int,
+        interconnect_gbps: float,
+        hardware: str | None = None,
+        params_b: float | None = None,
+        mbu: float = MBU_DEFAULT,
+    ) -> float:
+        """Aggregate decode tok/s for a ``tp``-way tensor-parallel group at batch B.
+
+        The group's ``tp`` GPUs give ``tp`` x aggregate HBM bandwidth, over which the
+        full-model weights (backed out of the single-GPU anchor ``n1_tps``) plus each
+        sequence's KV are read -- so ideal decode is ~tp x a single GPU holding the
+        whole model. Megatron all-reduce (2 per layer, ring ``2(tp-1)/tp`` bytes/GPU,
+        FP16 activations) adds a per-step comms cost that scales with batch and shrinks
+        with ``interconnect_gbps`` -- eroding the speedup on slow PCIe or at high batch
+        (Pope et al. 2022). Falls back to the single-GPU batched model at ``tp<=1``.
+        First-principles estimate; the `measure` path can refine INTERCONNECT_EFFICIENCY.
+        """
+        if tp <= 1:
+            return self.batched_decode_tps(n1_tps, kv_per_seq_gb, batch, hardware, params_b, mbu)
+        if n1_tps <= 0:
+            return 0.1
+        gpu = get_gpu(hardware) if hardware else None
+        bw = gpu.bandwidth_gbps if gpu else 556.0
+        group_bw = tp * bw * mbu  # GB/s aggregate over the group
+        weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
+        b = max(batch, 1)
+        # Memory read per decode step (s): full weights once + B per-seq KV, over group bw.
+        mem_time = (weight_eff_gb + b * kv_per_seq_gb) / group_bw
+        # All-reduce comms per step (s): 2/layer, ring 2(tp-1)/tp bytes/GPU, FP16 acts.
+        comms_gb = n_layers * 2 * (2 * (tp - 1) / tp) * b * hidden_size * ACT_DTYPE_BYTES / 1e9
+        ic_bw = max(interconnect_gbps, 1.0) * INTERCONNECT_EFFICIENCY  # realized GB/s
+        comms_time = comms_gb / ic_bw
+        step_time = mem_time + comms_time
+        if step_time <= 0:
+            return tp * n1_tps
+        agg = b / step_time
+        # Decode compute ceiling across the group's tp GPUs.
+        if params_b and gpu and gpu.fp16_tflops > 0:
+            from chimeraforge.planner.constants import DECODE_COMPUTE_MFU
+
+            compute_ceiling = (
+                tp * gpu.fp16_tflops * 1e12 * DECODE_COMPUTE_MFU / (2 * params_b * 1e9)
+            )
+            agg = min(agg, compute_ceiling)
+        return max(agg, 0.1)
+
+    def pp_decode_tps(
+        self,
+        n1_tps: float,
+        kv_per_seq_gb: float,
+        batch: int,
+        pp: int,
+        hidden_size: int,
+        interconnect_gbps: float,
+        hardware: str | None = None,
+        params_b: float | None = None,
+        mbu: float = MBU_DEFAULT,
+    ) -> float:
+        """Aggregate decode tok/s for a ``pp``-way pipeline-parallel group at batch B.
+
+        The model's layers split into ``pp`` sequential stages (one per GPU), so the
+        group has ~pp x aggregate HBM bandwidth for the full model. Unlike TP, only a
+        small activation is passed point-to-point across the pp-1 stage boundaries (no
+        all-reduce), so PP is far cheaper on slow interconnects -- but a decode step
+        must traverse every stage, so throughput needs enough in-flight sequences to
+        keep the pipeline full: the GPipe bubble caps efficiency at batch/(batch+pp-1).
+        Near-ideal at batch >> pp, poor at batch=1. Falls back to the single-GPU
+        batched model at pp<=1. First-principles estimate.
+        """
+        if pp <= 1:
+            return self.batched_decode_tps(n1_tps, kv_per_seq_gb, batch, hardware, params_b, mbu)
+        if n1_tps <= 0:
+            return 0.1
+        gpu = get_gpu(hardware) if hardware else None
+        bw = gpu.bandwidth_gbps if gpu else 556.0
+        group_bw = pp * bw * mbu  # GB/s aggregate over the pp stages
+        weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
+        b = max(batch, 1)
+        mem_time = (weight_eff_gb + b * kv_per_seq_gb) / group_bw
+        # Point-to-point activation pass at pp-1 boundaries (cheap vs TP all-reduce).
+        comms_gb = (pp - 1) * b * hidden_size * ACT_DTYPE_BYTES / 1e9
+        ic_bw = max(interconnect_gbps, 1.0) * INTERCONNECT_EFFICIENCY  # realized GB/s
+        comms_time = comms_gb / ic_bw
+        step_time = mem_time + comms_time
+        if step_time <= 0:
+            return pp * n1_tps
+        # GPipe pipeline bubble: with b in-flight microbatches over pp stages, pp-1
+        # slots are idle during fill/drain -> efficiency b/(b+pp-1).
+        agg = (b / step_time) * (b / (b + pp - 1))
+        if params_b and gpu and gpu.fp16_tflops > 0:
+            from chimeraforge.planner.constants import DECODE_COMPUTE_MFU
+
+            compute_ceiling = (
+                pp * gpu.fp16_tflops * 1e12 * DECODE_COMPUTE_MFU / (2 * params_b * 1e9)
+            )
+            agg = min(agg, compute_ceiling)
+        return max(agg, 0.1)
 
     def to_dict(self) -> dict:
         return {
@@ -480,6 +621,62 @@ class CostModel:
         """Monthly hardware cost = hw_cost_per_hour * 24 * 30."""
         rate = hw_cost_hr if hw_cost_hr is not None else self.hw_cost_per_hour
         return rate * 24 * 30
+
+    # -- Energy (0.8.0) --------------------------------------------------
+    # Power draw is modelled as tdp_watts * POWER_UTILISATION (sustained decode
+    # rarely holds 100% TDP). All three return 0.0 when TDP is unknown so callers
+    # degrade silently to the pre-energy behaviour. Reported separately from the
+    # hardware cost (see constants: cloud $/hr already bundles power).
+
+    def energy_cost_per_month(
+        self,
+        tdp_watts: float,
+        n_gpus: int = 1,
+        rate: float = DEFAULT_ELECTRICITY_RATE,
+        utilisation: float = POWER_UTILISATION,
+    ) -> float:
+        """Monthly electricity cost for ``n_gpus`` boards at ``rate`` $/kWh."""
+        if tdp_watts <= 0:
+            return 0.0
+        kw = tdp_watts / 1000.0 * utilisation
+        return kw * HOURS_PER_MONTH * n_gpus * rate
+
+    def perf_per_watt(
+        self,
+        tok_per_s: float,
+        tdp_watts: float,
+        n_gpus: int = 1,
+        utilisation: float = POWER_UTILISATION,
+    ) -> float:
+        """Throughput efficiency in tok/s per watt of board power.
+
+        ``tok_per_s`` is the aggregate (n-GPU) throughput and the power is
+        ``n_gpus * tdp * util``, so the ratio is per-GPU efficiency -- invariant
+        in replica count. 0.0 when TDP is unknown.
+        """
+        total_watts = tdp_watts * n_gpus * utilisation
+        if total_watts <= 0 or tok_per_s <= 0:
+            return 0.0
+        return tok_per_s / total_watts
+
+    def energy_cost_per_1m(
+        self,
+        tok_per_s: float,
+        tdp_watts: float,
+        n_gpus: int = 1,
+        rate: float = DEFAULT_ELECTRICITY_RATE,
+        utilisation: float = POWER_UTILISATION,
+    ) -> float:
+        """$/1M tokens from electricity alone (adds to the hardware $/1M-tok).
+
+        Invariant in replica count: both the monthly energy and the token
+        throughput scale with ``n_gpus``, so it cancels. 0.0 when TDP unknown.
+        """
+        if tdp_watts <= 0 or tok_per_s <= 0:
+            return 0.0
+        tokens_per_month = tok_per_s * 3600 * HOURS_PER_MONTH
+        energy_month = self.energy_cost_per_month(tdp_watts, n_gpus, rate, utilisation)
+        return energy_month / tokens_per_month * 1_000_000
 
     def to_dict(self) -> dict:
         return {"hw_cost_per_hour": self.hw_cost_per_hour}

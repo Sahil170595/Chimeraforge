@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from chimeraforge.planner.constants import QUANT_LEVELS, MODEL_PARAMS_B
+from chimeraforge.planner.constants import (
+    HOURS_PER_MONTH,
+    MODEL_PARAMS_B,
+    POWER_UTILISATION,
+    QUANT_LEVELS,
+)
 from chimeraforge.planner.models import (
     CostModel,
     LatencyModel,
@@ -59,6 +64,66 @@ class TestMaxConcurrentSeqs:
         assert VRAMModel.kv_cache_gb(self.ARCH, 2048, 4) == pytest.approx(4 * base)
         wide = {**self.ARCH, "n_kv_heads": 16}
         assert VRAMModel.kv_cache_gb(wide, 2048, 1) == pytest.approx(2 * base)
+
+    def test_kv_quant_shrinks_kv_cache(self):
+        # 0.9.0: KV-quant lowers per-element bytes -> proportionally smaller cache.
+        fp16 = VRAMModel.kv_cache_gb(self.ARCH, 4096, 1, kv_bytes=2.0)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1, kv_bytes=1.0) == pytest.approx(fp16 / 2)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1, kv_bytes=0.5) == pytest.approx(fp16 / 4)
+        # Default (no kv_bytes) keeps the FP16 cache -- backward compatible.
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1) == pytest.approx(fp16)
+
+    def test_kv_quant_lowers_vram_and_lifts_concurrency(self):
+        m = VRAMModel()
+        # Long context makes the KV term dominant, so quantizing it cuts VRAM.
+        assert m.predict("llama3.1-8b", "Q4_K_M", 16384, kv_bytes=0.5) < m.predict(
+            "llama3.1-8b", "Q4_K_M", 16384, kv_bytes=2.0
+        )
+        # Smaller per-seq KV -> more concurrent sequences fit the same GPU.
+        fp16_seqs = m.max_concurrent_seqs(8.03, "Q4_K_M", self.ARCH, 8192, 80.0, kv_bytes=2.0)
+        q4_seqs = m.max_concurrent_seqs(8.03, "Q4_K_M", self.ARCH, 8192, 80.0, kv_bytes=0.5)
+        assert q4_seqs > fp16_seqs > 0
+
+    def test_tp_shards_weights_lowers_per_gpu_vram(self):
+        # 0.10.0: tensor parallelism shards weights 1/tp -> less VRAM per GPU.
+        m = VRAMModel()
+        base = m.predict("llama3.1-8b", "FP16", 4096)
+        assert m.predict("llama3.1-8b", "FP16", 4096, tp=1) == pytest.approx(base)  # backward-compat
+        assert base > m.predict("llama3.1-8b", "FP16", 4096, tp=2) > m.predict(
+            "llama3.1-8b", "FP16", 4096, tp=4
+        )
+
+    def test_tp_lets_oversized_model_fit(self):
+        # A 70B FP16 model (~156 GB/GPU) exceeds an 80 GB card at tp=1 but fits at tp=4.
+        m = VRAMModel()
+        arch = {"n_layers": 80, "n_kv_heads": 8, "d_head": 128}
+        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, tp=1) > 80
+        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, tp=4) < 80
+
+    def test_tp_kv_shard_capped_at_kv_heads(self):
+        # KV cannot split finer than one head per GPU: for a 2-KV-head model, tp=2
+        # and tp=8 leave the KV term identical; only the weight term keeps shrinking,
+        # so the whole delta must be the weight delta (weight/2 - weight/8).
+        m = VRAMModel(overhead_factor=1.0, act_coeff=0.0)
+        arch = {"n_layers": 32, "n_kv_heads": 2, "d_head": 128}
+        p2 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=2)
+        p8 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=8)
+        weight_gb = 4.0 * 8.0 / 8  # Q8_0 = 8 bpw
+        assert (p2 - p8) == pytest.approx(weight_gb / 2 - weight_gb / 8)
+
+    def test_pp_shards_weights_no_head_constraint(self):
+        # 0.11.0: PP splits layers, so weights AND KV shard 1/pp with NO kv-head cap
+        # (unlike TP). A 2-KV-head model still shrinks its KV term at pp=8.
+        m = VRAMModel()
+        arch = {"n_layers": 80, "n_kv_heads": 2, "d_head": 128}
+        base = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1)
+        pp8 = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=8)
+        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1) == base  # backward-compat
+        assert pp8 < base
+        # TP=8 on the same 2-KV-head model can't shard KV past 2 heads, so at equal
+        # degree PP frees at least as much (KV shards fully under PP).
+        tp8 = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, tp=8)
+        assert pp8 <= tp8 + 1e-6
 
     def test_bigger_gpu_holds_more_seqs(self):
         m = VRAMModel()
@@ -124,6 +189,59 @@ class TestThroughputModel:
         f16 = tp.roofline_tps(7.0, "FP16", "RTX 4090 24GB")
         f32 = tp.roofline_tps(7.0, "FP32", "RTX 4090 24GB")
         assert f32 == pytest.approx(f16 * 0.5, rel=0.02)
+
+    def test_tp_decode_tp1_equals_batched(self, bundled_models):
+        # 0.10.0: tp=1 must reproduce the single-GPU batched model exactly.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(7.0, "FP16", "H100 80GB")
+        assert t.tp_decode_tps(
+            n1, 0.02, 16, 1, 4096, 32, 900.0, "H100 80GB", 7.0
+        ) == t.batched_decode_tps(n1, 0.02, 16, "H100 80GB", 7.0)
+
+    def test_tp_nvlink_near_ideal_single_stream(self, bundled_models):
+        # At batch=1 over NVLink, all-reduce comms is negligible -> ~tp x speedup.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        assert t.tp_decode_tps(n1, 0.02, 1, 4, 8192, 80, 900.0, "H100 80GB", 70.0) == pytest.approx(
+            4 * n1, rel=0.05
+        )
+
+    def test_tp_pcie_slower_than_nvlink(self, bundled_models):
+        # Same config, slower interconnect -> higher comms cost -> less throughput.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        pcie = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 64.0, "H100 80GB", 70.0)
+        nvlink = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 900.0, "H100 80GB", 70.0)
+        assert pcie < nvlink
+
+    def test_pp_decode_pp1_equals_batched(self, bundled_models):
+        # 0.11.0: pp=1 must reproduce the single-GPU batched model exactly.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(7.0, "FP16", "H100 80GB")
+        assert t.pp_decode_tps(n1, 0.02, 16, 1, 4096, 900.0, "H100 80GB", 7.0) == (
+            t.batched_decode_tps(n1, 0.02, 16, "H100 80GB", 7.0)
+        )
+
+    def test_pp_bubble_needs_batching(self, bundled_models):
+        # The GPipe pipeline bubble means PP is poor at batch=1 and improves with
+        # batch: efficiency batch/(batch+pp-1). So high-batch >> low-batch per GPU.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        lo = t.pp_decode_tps(n1, 0.02, 1, 4, 8192, 900.0, "H100 80GB", 70.0)
+        hi = t.pp_decode_tps(n1, 0.02, 64, 4, 8192, 900.0, "H100 80GB", 70.0)
+        assert hi / 64 > lo / 1  # per-sequence rate far better once the pipe is full
+
+    def test_pp_barely_affected_by_pcie(self, bundled_models):
+        # PP's only comms is a small point-to-point activation pass, so PCIe vs
+        # NVLink barely differ -- unlike TP (all-reduce). This is PP's raison d'etre.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        pcie = t.pp_decode_tps(n1, 0.02, 64, 4, 8192, 64.0, "H100 80GB", 70.0)
+        nvlink = t.pp_decode_tps(n1, 0.02, 64, 4, 8192, 900.0, "H100 80GB", 70.0)
+        tp_pcie = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 64.0, "H100 80GB", 70.0)
+        tp_nvlink = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 900.0, "H100 80GB", 70.0)
+        # PP keeps far more of its NVLink throughput on PCIe than TP does.
+        assert pcie / nvlink > tp_pcie / tp_nvlink
 
 
 # -- Scaling Model ----------------------------------------------------
@@ -304,6 +422,40 @@ class TestCostModel:
         cost1 = m.predict_cost_per_1m(50.0, hw_cost_hr=1.0)
         cost2 = m.predict_cost_per_1m(50.0, hw_cost_hr=0.035)
         assert cost1 > cost2
+
+    # -- Energy (0.8.0) --
+
+    def test_energy_cost_per_month_formula(self):
+        m = CostModel()
+        # 700 W * 0.85 util / 1000 * 720 h * 1 GPU * $0.12/kWh.
+        got = m.energy_cost_per_month(700.0, n_gpus=1, rate=0.12)
+        expected = 700.0 / 1000 * POWER_UTILISATION * HOURS_PER_MONTH * 0.12
+        assert got == pytest.approx(expected)
+
+    def test_energy_scales_with_gpus_and_rate(self):
+        m = CostModel()
+        assert m.energy_cost_per_month(450.0, 4, 0.12) == pytest.approx(
+            4 * m.energy_cost_per_month(450.0, 1, 0.12)
+        )
+        assert m.energy_cost_per_month(450.0, 1, 0.24) == pytest.approx(
+            2 * m.energy_cost_per_month(450.0, 1, 0.12)
+        )
+
+    def test_perf_per_watt_and_energy_per_1m_are_replica_invariant(self):
+        # Both are per-GPU efficiencies: numerator (total tok/s) and denominator
+        # (n * power) scale with n, so replica count must cancel.
+        m = CostModel()
+        assert m.perf_per_watt(2000.0, 700.0, 1) == pytest.approx(m.perf_per_watt(8000.0, 700.0, 4))
+        assert m.energy_cost_per_1m(2000.0, 700.0, 1, 0.12) == pytest.approx(
+            m.energy_cost_per_1m(8000.0, 700.0, 4, 0.12)
+        )
+
+    def test_energy_inert_when_tdp_unknown(self):
+        # TDP 0 (unknown) must produce zero energy everywhere -- pre-energy behaviour.
+        m = CostModel()
+        assert m.energy_cost_per_month(0.0, 4, 0.12) == 0.0
+        assert m.perf_per_watt(2000.0, 0.0, 4) == 0.0
+        assert m.energy_cost_per_1m(2000.0, 0.0, 4, 0.12) == 0.0
 
 
 # -- Latency Model ----------------------------------------------------

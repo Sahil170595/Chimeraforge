@@ -18,6 +18,10 @@ class GPUSpec:
     bandwidth_gbps: float  # Memory bandwidth in GB/s (decode/TPOT is bound by this)
     cost_per_hour: float  # $/hr (cloud rental or amortised consumer)
     fp16_tflops: float = 0.0  # Dense FP16 Tensor TFLOPS, FP32 accumulate (prefill/TTFT)
+    tdp_watts: float = 0.0  # Board TDP in watts (energy cost + perf/watt; 0 = unknown)
+    # Per-GPU interconnect bandwidth in GB/s (bidirectional aggregate) for tensor-
+    # parallel all-reduce: NVLink on datacenter SXM, PCIe on consumer. 0 = unknown.
+    interconnect_gbps: float = 0.0
 
 
 # Reference GPU - all TR measurements collected on this card
@@ -34,35 +38,40 @@ REFERENCE_GPU = "RTX 4080 12GB"
 # figure) to stay on one basis. Datacenter $/hr are approximate on-demand cloud
 # rates; consumer $/hr are amortised card cost. B200 uses NVIDIA's HGX B200
 # per-GPU datasheet figures (180 GB / 7.7 TB/s), not the 192 GB raw-stack number.
-# Approximate; prefill MFU and the `measure` path absorb the slack.
+# tdp_watts are vendor board-power figures (NVIDIA product pages / AMD datasheet);
+# datacenter SXM uses the max-configurable envelope (H100/H200 700W, B200 1000W,
+# MI300X 750W). interconnect_gbps is the per-GPU tensor-parallel link (bidirectional
+# aggregate): NVLink 3 (A100 600), NVLink 4 (H100/H200 900), NVLink 5 (B200 1800),
+# AMD Infinity Fabric (MI300X 896); consumer cards fall back to PCIe (gen4 64, gen5
+# 128 on RTX 50). Approximate; prefill MFU and the `measure` path absorb the slack.
 GPU_DB: dict[str, GPUSpec] = {
-    # Consumer - NVIDIA Ada
-    "RTX 4060 8GB": GPUSpec("RTX 4060 8GB", 8.0, 272.0, 0.020, 30.2),
-    "RTX 4060 Ti 8GB": GPUSpec("RTX 4060 Ti 8GB", 8.0, 288.0, 0.025, 44.1),
-    "RTX 4060 Ti 16GB": GPUSpec("RTX 4060 Ti 16GB", 16.0, 288.0, 0.030, 44.1),
-    "RTX 4070 12GB": GPUSpec("RTX 4070 12GB", 12.0, 504.0, 0.030, 58.4),
-    "RTX 4070 Ti 12GB": GPUSpec("RTX 4070 Ti 12GB", 12.0, 504.0, 0.035, 80.2),
-    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 556.0, 0.035, 80.2),
-    "RTX 4080 16GB": GPUSpec("RTX 4080 16GB", 16.0, 717.0, 0.045, 97.5),
-    "RTX 4090 24GB": GPUSpec("RTX 4090 24GB", 24.0, 1008.0, 0.060, 165.2),
-    # Consumer - NVIDIA Blackwell (GDDR7)
-    "RTX 5070 12GB": GPUSpec("RTX 5070 12GB", 12.0, 672.0, 0.030, 61.7),
-    "RTX 5070 Ti 16GB": GPUSpec("RTX 5070 Ti 16GB", 16.0, 896.0, 0.038, 87.9),
-    "RTX 5080 16GB": GPUSpec("RTX 5080 16GB", 16.0, 960.0, 0.045, 112.6),
-    "RTX 5090 32GB": GPUSpec("RTX 5090 32GB", 32.0, 1792.0, 0.075, 209.5),
-    # Consumer - NVIDIA Ampere
-    "RTX 3090 24GB": GPUSpec("RTX 3090 24GB", 24.0, 936.0, 0.040, 71.0),
-    "RTX 3080 10GB": GPUSpec("RTX 3080 10GB", 10.0, 760.0, 0.025, 59.5),
-    # Data-center - NVIDIA
-    "A100 40GB": GPUSpec("A100 40GB", 40.0, 1555.0, 1.10, 312.0),
-    "A100 80GB": GPUSpec("A100 80GB", 80.0, 2039.0, 1.60, 312.0),
-    "H100 80GB": GPUSpec("H100 80GB", 80.0, 3352.0, 2.50, 989.0),
-    "H200 141GB": GPUSpec("H200 141GB", 141.0, 4800.0, 3.50, 989.0),
-    "B200 180GB": GPUSpec("B200 180GB", 180.0, 7700.0, 5.50, 2250.0),
-    "L4 24GB": GPUSpec("L4 24GB", 24.0, 300.0, 0.50, 121.0),
-    "T4 16GB": GPUSpec("T4 16GB", 16.0, 320.0, 0.35, 65.0),
-    # Data-center - AMD
-    "MI300X 192GB": GPUSpec("MI300X 192GB", 192.0, 5300.0, 2.00, 1307.0),
+    # Consumer - NVIDIA Ada (PCIe 4.0 = 64 GB/s)
+    "RTX 4060 8GB": GPUSpec("RTX 4060 8GB", 8.0, 272.0, 0.020, 30.2, 115.0, 64.0),
+    "RTX 4060 Ti 8GB": GPUSpec("RTX 4060 Ti 8GB", 8.0, 288.0, 0.025, 44.1, 160.0, 64.0),
+    "RTX 4060 Ti 16GB": GPUSpec("RTX 4060 Ti 16GB", 16.0, 288.0, 0.030, 44.1, 165.0, 64.0),
+    "RTX 4070 12GB": GPUSpec("RTX 4070 12GB", 12.0, 504.0, 0.030, 58.4, 200.0, 64.0),
+    "RTX 4070 Ti 12GB": GPUSpec("RTX 4070 Ti 12GB", 12.0, 504.0, 0.035, 80.2, 285.0, 64.0),
+    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 556.0, 0.035, 80.2, 285.0, 64.0),
+    "RTX 4080 16GB": GPUSpec("RTX 4080 16GB", 16.0, 717.0, 0.045, 97.5, 320.0, 64.0),
+    "RTX 4090 24GB": GPUSpec("RTX 4090 24GB", 24.0, 1008.0, 0.060, 165.2, 450.0, 64.0),
+    # Consumer - NVIDIA Blackwell (GDDR7, PCIe 5.0 = 128 GB/s)
+    "RTX 5070 12GB": GPUSpec("RTX 5070 12GB", 12.0, 672.0, 0.030, 61.7, 250.0, 128.0),
+    "RTX 5070 Ti 16GB": GPUSpec("RTX 5070 Ti 16GB", 16.0, 896.0, 0.038, 87.9, 300.0, 128.0),
+    "RTX 5080 16GB": GPUSpec("RTX 5080 16GB", 16.0, 960.0, 0.045, 112.6, 360.0, 128.0),
+    "RTX 5090 32GB": GPUSpec("RTX 5090 32GB", 32.0, 1792.0, 0.075, 209.5, 575.0, 128.0),
+    # Consumer - NVIDIA Ampere (PCIe 4.0)
+    "RTX 3090 24GB": GPUSpec("RTX 3090 24GB", 24.0, 936.0, 0.040, 71.0, 350.0, 64.0),
+    "RTX 3080 10GB": GPUSpec("RTX 3080 10GB", 10.0, 760.0, 0.025, 59.5, 320.0, 64.0),
+    # Data-center - NVIDIA (NVLink)
+    "A100 40GB": GPUSpec("A100 40GB", 40.0, 1555.0, 1.10, 312.0, 400.0, 600.0),
+    "A100 80GB": GPUSpec("A100 80GB", 80.0, 2039.0, 1.60, 312.0, 400.0, 600.0),
+    "H100 80GB": GPUSpec("H100 80GB", 80.0, 3352.0, 2.50, 989.0, 700.0, 900.0),
+    "H200 141GB": GPUSpec("H200 141GB", 141.0, 4800.0, 3.50, 989.0, 700.0, 900.0),
+    "B200 180GB": GPUSpec("B200 180GB", 180.0, 7700.0, 5.50, 2250.0, 1000.0, 1800.0),
+    "L4 24GB": GPUSpec("L4 24GB", 24.0, 300.0, 0.50, 121.0, 72.0, 64.0),
+    "T4 16GB": GPUSpec("T4 16GB", 16.0, 320.0, 0.35, 65.0, 70.0, 64.0),
+    # Data-center - AMD (Infinity Fabric)
+    "MI300X 192GB": GPUSpec("MI300X 192GB", 192.0, 5300.0, 2.00, 1307.0, 750.0, 896.0),
 }
 
 

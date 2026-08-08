@@ -86,9 +86,17 @@ DEFAULT_PARAMS_B = 3.0
 # so realised utilisation is high but not 1.0. Used to bound concurrent sequences.
 KV_CACHE_UTILISATION = 0.9
 
-# KV-cache element size in bytes. Backends keep KV in FP16 even when weights are
-# quantized (KV quantization is not yet modelled here).
+# KV-cache element size in bytes for the default (FP16) cache.
 KV_DTYPE_BYTES = 2
+
+# KV-cache element size (bytes per K or V element) by cache dtype. Backends can
+# quantize the KV cache independently of the weights -- llama.cpp `--cache-type-k`,
+# vLLM fp8 KV -- roughly halving (q8) or quartering (q4) KV VRAM, which matters most
+# at long context. Only the VRAM/concurrency effect is modelled; KV-quant's (small)
+# quality impact is NOT screened here (no bundled measurements), so `plan --kv-quant`
+# warns when it is enabled. fp16 stays tied to KV_DTYPE_BYTES.
+KV_QUANT_BYTES: dict[str, float] = {"fp16": float(KV_DTYPE_BYTES), "q8": 1.0, "q4": 0.5}
+DEFAULT_KV_QUANT = "fp16"
 
 # Prefill is compute-bound: ~2 FLOPs per parameter per prompt token. MFU (model
 # FLOPs utilisation) discounts peak TFLOPS to realised; 0.3-0.5 is typical for a
@@ -98,6 +106,36 @@ PREFILL_MFU = 0.4
 
 # Default prompt (input) length in tokens for TTFT estimation when unspecified.
 DEFAULT_PROMPT_TOKENS = 512
+
+# Energy modeling (0.8.0). Sustained LLM decode rarely holds 100% of board TDP;
+# steady serving typically draws ~80-90%. Named so the assumption is explicit and
+# tunable, not a magic number buried in the cost math.
+POWER_UTILISATION = 0.85
+# Default electricity price ($/kWh) -- roughly the US commercial average; override
+# per run with `plan --electricity-rate`. Energy is reported as a SEPARATE line,
+# not folded into the hardware cost or the budget gate, because a cloud `$/hr`
+# rate already bundles power (double-count) while an amortised consumer card cost
+# does not -- so the energy figure is most meaningful for self-hosted hardware.
+DEFAULT_ELECTRICITY_RATE = 0.12
+# Hours per month for cost/energy accrual (matches CostModel.predict_monthly's 24*30).
+HOURS_PER_MONTH = 720
+
+# Tensor parallelism (0.10.0). A model is sharded across `tp` GPUs: weights /tp,
+# KV across heads. Decode gets ~tp x aggregate HBM bandwidth, minus Megatron
+# all-reduce comms (2 per layer) whose cost scales with batch and shrinks with
+# interconnect bandwidth (GPUSpec.interconnect_gbps) -- so TP erodes on slow PCIe
+# or at high batch (Pope et al. 2022; Narayanan et al. 2021; vLLM docs).
+ACT_DTYPE_BYTES = 2  # activations stay FP16 for the all-reduce, regardless of weight quant
+# Realized fraction of peak interconnect bandwidth for ring all-reduce (NCCL rarely
+# hits peak; PCIe contends with the host root complex). A calibration constant, not
+# a datasheet figure -- the `measure` path can refine it. Literature gives no clean
+# %-of-peak number, so this is deliberately conservative.
+INTERCONNECT_EFFICIENCY = 0.75
+# GPUs inside one non-blocking NVLink domain (HGX baseboard). TP beyond this crosses
+# a slower node boundary and collapses; Blackwell GB200 NVL72 extends it to 72.
+NVLINK_DOMAIN_SIZE = 8
+# TP degrees the planner searches in `auto` mode (powers of two up to the domain).
+TP_SEARCH_DEGREES = [1, 2, 4, 8]
 
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {

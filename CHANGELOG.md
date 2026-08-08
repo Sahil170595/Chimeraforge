@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-07
+
+### Added
+- **MCP server — ChimeraForge is now callable by Claude / GPT / Cursor and any MCP
+  client.** `chimeraforge mcp` runs a stdio server (new `mcp` extra:
+  `pip install "chimeraforge[mcp]"`) exposing three tools: `chimeraforge_plan`
+  (the full gate search), `chimeraforge_resolve_model` (grounds a model's real
+  params/architecture), and `chimeraforge_list_hardware`. GPU-sizing is exactly
+  where assistants fail — stale training-cutoff prices/specs plus error-prone KV/
+  batching arithmetic — so the tools let an assistant answer "what GPU do I need /
+  will it fit / how much will it cost" from measured data instead of guessing.
+  Every result surfaces the `provenance` (measured/estimated/unknown) contract, and
+  the tool descriptions tell the model to prefer the tool over its own knowledge.
+- **Shared planning core (`planner/service.py: run_plan`).** The CLI and the MCP
+  server now go through one presentation-free orchestration path (load → resolve →
+  gate search → pareto) instead of duplicating logic — the MCP tools call it
+  in-process, not by shelling out to the CLI.
+
+### Fixed
+- **`plan --json` now emits `{"error": ...}` on failure paths** instead of
+  Rich-styled text, so an automated consumer parsing stdout gets valid JSON on
+  errors too (previously validation/resolution errors printed markup regardless of
+  `--json`, breaking `json.loads`).
+
+## [0.11.0] - 2026-08-07
+
+### Added
+- **Pipeline parallelism.** New `plan --pipeline-parallel {N|auto}` (alias `--pp`):
+  split a model's *layers* into N sequential stages across N GPUs — another way to
+  fit a model too big for one GPU. Complements 0.10.0's tensor parallelism; the two
+  suit different interconnects.
+  - **VRAM**: weights and each stage's KV shard 1/N with **no attention-head cap**
+    (unlike TP), so PP scales past `n_kv_heads` for GQA models.
+  - **Throughput** (`ThroughputModel.pp_decode_tps`): N stages give ~N× aggregate
+    HBM bandwidth, and PP's only comms is a **small point-to-point activation pass**
+    (no all-reduce) — so PP barely degrades on slow PCIe where TP collapses (per
+    vLLM's own guidance). The cost is the **GPipe pipeline bubble**: a decode step
+    traverses every stage, so PP needs enough in-flight sequences to stay full
+    (efficiency `batch/(batch+pp-1)`) — near-ideal at high batch, poor at batch 1.
+    Warns when under-filled. First-principles **estimate** (bubble modelled, not
+    measured).
+  - `auto` picks the smallest PP degree that *fits* (fewest GPUs); a high-throughput
+    load may need a higher explicit degree. `Candidate` gains `pipeline_parallel`.
+  - **TP and PP cannot be combined yet** (MVP) — setting both above 1 errors cleanly.
+  - `pp=1` (the default) reproduces the pre-0.11.0 single-GPU results exactly.
+
+## [0.10.0] - 2026-08-07
+
+### Added
+- **Multi-GPU tensor parallelism.** New `plan --tensor-parallel {N|auto}` (alias
+  `--tp`): the planner can now size a model that does not fit one GPU by splitting
+  it across `N` GPUs. Weights shard 1/N and KV shards across attention heads
+  (`VRAMModel.predict`/`max_concurrent_seqs` gained a `tp` arg), so e.g. a 70B FP16
+  fits on 4x H100 or 2x B200. `auto` picks the smallest TP degree that fits.
+  - **Comms-modelled throughput** (`ThroughputModel.tp_decode_tps`): a TP group of
+    `N` GPUs gets ~N x aggregate HBM bandwidth, minus Megatron all-reduce overhead
+    (2 per layer, ring `2(N-1)/N` bytes, FP16 activations) scaled by the GPU's
+    interconnect bandwidth. So TP is near-ideal on NVLink at low batch but erodes on
+    PCIe or at high batch, matching the literature (Pope et al. 2022; vLLM docs).
+    Throughput is a first-principles **estimate** (comms modelled, not measured) and
+    is flagged as such; PCIe interconnects and crossing the NVLink domain also warn.
+  - `GPUSpec` gains `interconnect_gbps` for all 22 GPUs (NVLink 3/4/5, AMD Infinity
+    Fabric, or PCIe 4/5). Cost and energy scale with the full fleet (`N replicas x
+    TP GPUs`); `Candidate` carries `tensor_parallel` and `gpus_total`.
+  - `tp=1` (the default) reproduces the pre-0.10.0 single-GPU results exactly.
+
+## [0.9.0] - 2026-08-05
+
+### Added
+- **KV-cache quantization modeling.** New `plan --kv-quant {fp16,q8,q4}`. Backends
+  can quantize the KV cache independently of the weights (llama.cpp
+  `--cache-type-k`, vLLM fp8 KV); the planner now models it (q8 = 1 byte, q4 = 0.5
+  byte per element vs FP16's 2). A quantized cache **lowers VRAM and raises the
+  KV-bound concurrency cap** — largest at long context, where KV dominates.
+  `VRAMModel.predict` / `kv_cache_gb` / `max_concurrent_seqs` take a `kv_bytes`
+  argument (default FP16, so existing results are byte-identical).
+  - Only VRAM/concurrency are modelled; KV-quant's (small) **quality impact is NOT
+    screened** (no bundled measurements) — `plan` warns when it is enabled and
+    never reports a fabricated quality delta.
+
+### Changed
+- **Dependency ranges refreshed** against verified-passing versions (the full
+  suite runs green on all of these): runtime `rich` cap widened `<14.0` → `<16.0`
+  (the old cap force-downgraded rich in users' environments); dev tools
+  `pytest` → `<10.0`, `pytest-cov` → `<8.0`, `pytest-asyncio` → `<2.0`.
+
+## [0.8.0] - 2026-08-05
+
+### Added
+- **Energy & power cost modeling.** `GPUSpec` gains `tdp_watts` (board power, from
+  vendor datasheets) for all 22 GPUs, and `plan` now reports, per configuration:
+  monthly electricity cost, a `$/1M-tok (+energy)` figure, and throughput
+  efficiency (**tok/s per watt**). New `--electricity-rate` flag ($/kWh, default
+  the US commercial average). Power draw is modelled as `tdp_watts x 0.85`
+  (sustained decode rarely holds full TDP; the factor is the named constant
+  `POWER_UTILISATION`).
+  - Energy is reported as a **separate** line, deliberately NOT folded into the
+    hardware cost or the budget gate: a cloud `$/hr` rate already bundles power
+    (folding it in would double-count), while an amortised consumer-card cost
+    does not -- so the energy figure is most meaningful for self-hosted hardware.
+  - `perf_per_watt` and the per-token energy cost are invariant in replica count
+    (both the aggregate throughput and the total power scale with N).
+
 ## [0.7.0] - 2026-08-05
 
 ### Added

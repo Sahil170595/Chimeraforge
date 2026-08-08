@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.7.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.12.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -19,6 +19,9 @@ chimeraforge plan --model-size 3b --request-rate 1.0 --hardware "RTX 4080 12GB"
 chimeraforge plan --model ollama:qwen2.5:7b --ollama-url http://localhost:11434
 chimeraforge plan --model Qwen/Qwen2.5-1.5B-Instruct --hardware "RTX 4090 24GB"
 chimeraforge plan --model my/unreleased-7b --params-b 7 --n-layers 32 --n-kv-heads 8 --d-head 128 --no-network
+
+# Tensor parallelism: size a model too big for one GPU across several (or --tp auto)
+chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4
 
 # Discover + rank deployable models for your hardware (Ollama install / HF Hub)
 chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
@@ -36,7 +39,10 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
-# Run tests (501 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
+pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
+
+# Run tests (549 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -53,17 +59,19 @@ cd src/rust/demo_multiagent && cargo build --release
 ```
 src/
   chimeraforge/                       # CLI tool + capacity planner (pip-installable)
-    __init__.py                       # Exports __version__ = "0.7.0"
-    cli.py                            # Typer entry point, registers plan/suggest/safety/... (lazy imports)
-    commands/                         # One module per CLI command (plan.py, suggest.py, safety.py, ...)
+    __init__.py                       # Exports __version__ = "0.12.0"
+    cli.py                            # Typer entry point, registers plan/suggest/safety/mcp/... (lazy imports)
+    commands/                         # One module per CLI command (plan.py, suggest.py, mcp.py, ...)
+    mcp_server.py                     # MCP server (FastMCP): plan/resolve/list-hardware tools for Claude/GPT/Cursor
     planner/
       __init__.py                     # Re-exports Candidate, all models, load_models
+      service.py                      # run_plan(): shared presentation-free planning core (CLI + MCP)
       engine.py                       # 5-gate search (4 + opt-in safety): Candidate (w/ params_b, model_source, provenance), enumerate_candidates(specs=...)
       models.py                       # 7 predict-only dataclass models; ThroughputModel.roofline_tps(), QualityModel.estimate() (provenance)
       resolver.py                     # ModelSpec + resolve_spec(): any id -> params/arch (registry/Ollama /api/show/HF config.json/manual). Model-agnostic core.
       discovery.py                    # suggest(): enumerate models from Ollama /api/tags + HF Hub, resolve, rank
       identity.py                     # parse_identity()/resolve_model(): family+param matching; _FAMILIES derived from registry
-      hardware.py                     # GPUSpec dataclass, GPU_DB (22 GPUs), bandwidth_ratio()
+      hardware.py                     # GPUSpec dataclass (+ tdp_watts, interconnect_gbps), GPU_DB (22 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
       formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
       data/fitted_models.json         # Pre-fitted coefficients from TR133 (loaded via importlib.resources)
@@ -119,7 +127,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 19 files, 501 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 20 files, 549 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -159,6 +167,8 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Prefill vs decode:** TTFT = prefill (compute-bound, `2*params*prompt_tokens / (fp16_tflops*MFU)`); TPOT = decode (bandwidth-bound). End-to-end p95 = TTFT + decode + queueing. `GPUSpec.fp16_tflops` drives prefill; `--prompt-tokens` sets input length.
 - **Continuous batching:** vLLM/TGI serve B concurrent sequences per GPU; `ThroughputModel.batched_decode_tps()` = `B*bw*MBU / (weight_eff + B*kv_per_seq)`, `weight_eff = bw*MBU/n1_tps` (anchored to measured/roofline single-stream, quant-correct), capped by `max_concurrent_seqs` (KV-bound) and the decode compute ceiling. Ollama = B=1. The engine searches **(N replicas x B batch/GPU)** for the cheapest SLO-feasible config. `BACKEND_CONTINUOUS_BATCHING`, `Candidate.effective_batch`.
 - **Replicas scale linearly** (eta=1); the old Amdahl serial-fraction model was wrong for replica fan-out (capped throughput at ~1.8x; rejected >=7B) and is no longer applied.
+- **Tensor parallelism (0.10.0):** `plan --tensor-parallel {N|auto}` (alias `--tp`) splits ONE model across N GPUs — weights /N, KV across heads (`VRAMModel...tp=`), so a model too big for one GPU fits (70B FP16 on 4x H100). `ThroughputModel.tp_decode_tps` gives ~Nx aggregate bandwidth minus Megatron all-reduce comms (2/layer, scaled by `GPUSpec.interconnect_gbps`): near-ideal on NVLink, erodes on PCIe/high batch. TP throughput is an **estimate** (comms modelled, not measured — warns; `INTERCONNECT_EFFICIENCY` calibratable). Fleet = N replicas x TP GPUs (cost/energy scale with `gpus_total`); `auto` = smallest TP that fits. `tp=1` reproduces pre-0.10.0 exactly.
+- **Pipeline parallelism (0.11.0):** `plan --pipeline-parallel {N|auto}` (alias `--pp`) splits a model's *layers* into N stages (`VRAMModel...pp=`) — weights + each stage's KV /N with **no head cap** (scales past `n_kv_heads`, unlike TP). `ThroughputModel.pp_decode_tps`: ~Nx bandwidth, only a small point-to-point activation pass (no all-reduce) so **barely degrades on PCIe where TP collapses** — but the GPipe **pipeline bubble** (`batch/(batch+pp-1)`) means PP needs batching (poor at batch 1, warns when under-filled). Estimate (bubble modelled). **TP and PP can't combine yet** (errors); `auto`=smallest PP that fits (may need higher for throughput); `pp=1` reproduces pre-0.11.0 exactly.
 - **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
@@ -168,7 +178,8 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th 
 
 **Gate 1 — VRAM:** `weight_gb + kv_cache_gb + activations_gb <= hw_vram`
 - Weight: `params_B * bits_per_weight / 8 * overhead_factor`
-- KV-cache: `2 * n_layers * batch * context * n_kv_heads * d_head * 2 bytes`
+- KV-cache: `2 * n_layers * batch * context * n_kv_heads * d_head * kv_bytes`
+- **KV-quant (0.9.0):** `plan --kv-quant {fp16,q8,q4}` sets `kv_bytes` (2/1/0.5 via `KV_QUANT_BYTES`), shrinking KV VRAM and lifting `max_concurrent_seqs` — biggest at long context. VRAM/concurrency only; KV-quant's quality impact is unscreened (warns). `kv_bytes` defaults to FP16, so pre-0.9.0 results are byte-identical.
 
 **Gate 2 — Quality:** `quality_score >= quality_target`
 - Lookup table (model|quant), fallback: fp16_baseline + quant_delta, default: 0.5
@@ -183,6 +194,7 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th 
 
 **Gate 4 — Cost:** `monthly_cost <= budget`
 - Monthly = `hw_cost_per_hour * 720 * N_agents`
+- **Energy (0.8.0):** `GPUSpec.tdp_watts` drives a *separate* energy dimension — monthly kWh cost, `$/1M-tok (+energy)`, and `tok/s per watt` (`--electricity-rate`, default `DEFAULT_ELECTRICITY_RATE`; draw = `tdp_watts * POWER_UTILISATION`). Reported alongside, **not summed into**, `monthly_cost`/the budget gate: cloud `$/hr` already bundles power (double-count) while amortised consumer cost does not. `perf_per_watt` and per-token energy are replica-invariant.
 
 **Gate 5 — Safety (opt-in):** `refusal_rate >= safety_target` (only when `--safety-target` is set)
 - Lookup table (model|quant) of TR134 refusal rate + TR142 RTSI risk tier; GGUF quants only
@@ -261,18 +273,18 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 501 total tests
+pytest tests/ -v                    # 549 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (501 tests, 19 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (549 tests, 20 files -- planner/bench split per-concern after 0.3.0):
 
-- **Planner** (166): test_planner_models.py (60 - 7 predictive models: VRAM/throughput/
-  quality/latency/scaling/cost/safety, incl. roofline + KV-batch concurrency +
-  shared FP16-baseline resolver), test_planner_engine.py (55 - gate search,
-  N-replica x B-batch, Pareto, variance guard, provenance), test_planner_cli.py (18),
-  test_planner_core.py (20 - serialization, find_models_for_size, GPU_DB coverage),
-  test_accuracy.py (13 - numerical falsifiability gates)
+- **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
+  throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
+  KV-batch concurrency + shared FP16-baseline resolver), test_planner_engine.py (67 - gate
+  search, N-replica x B-batch, Pareto, variance guard, provenance, energy, KV-quant, TP, PP),
+  test_planner_cli.py (18), test_planner_core.py (22 - serialization, find_models_for_size,
+  GPU_DB + TDP + interconnect coverage), test_accuracy.py (13 - numerical falsifiability gates)
 - **Model-agnostic** (53): test_resolver.py (35 - ModelSpec, registry/Ollama/HF/manual +
   cache + newer-family recognition), test_discovery.py (12 - suggest/catalog),
   test_measure.py (6 - measure-on-demand)
@@ -281,9 +293,11 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
-- **CLI hardening** (12): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
+- **MCP/service** (12): test_mcp.py - run_plan shared core + MCP tool layer
+  (plan/resolve/list-hardware, actionable errors); build_server guarded by importorskip
 
 **Pattern:** No mocks for planner (uses real fitted_models.json); monkeypatch for monitoring (avoids psutil). Session-scoped `bundled_models` fixture. Async tests use pytest-asyncio strict mode.
 
@@ -310,6 +324,7 @@ pytest tests/ --cov=src             # With coverage
 - **Lookup tables over ML:** Planner uses empirical lookups + first-principles interpolation, no ML (TR133)
 - **Feature-gated Rust runtimes:** 5 async runtimes compile-time selectable for benchmarking (TR115)
 - **Lazy imports in CLI:** Heavy modules imported inside `plan()` to keep `chimeraforge --version` fast
+- **MCP server (0.12.0):** `chimeraforge mcp` (stdio; `mcp` extra) exposes plan/resolve/list-hardware to Claude/GPT/Cursor. Tool logic in `mcp_server.py` is plain + unit-testable (no `mcp` import); it calls the shared `planner/service.py:run_plan` core in-process (same path as the CLI), so CLI and MCP never diverge. Tool descriptions tell the model to prefer the tool over its parametric guess; results surface `provenance`. `plan --json` now emits `{"error": ...}` on failures (was Rich text)
 
 ## Experiments & Technical Reports
 

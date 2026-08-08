@@ -783,3 +783,249 @@ class TestPlannerExtended:
         assert all(c.p95_latency_ms <= 3000 for c in candidates)
         # At this rate a feasible config exists, so the search must find one.
         assert candidates
+
+
+class TestEnergyCost:
+    """0.8.0: board power -> energy cost + perf/watt, reported apart from the budget."""
+
+    def _plan(self, models, rate=0.12):
+        return enumerate_candidates(
+            models=models,
+            target_models=["llama3.1-8b"],
+            hardware="H100 80GB",
+            request_rate=5.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=2048,
+            electricity_rate=rate,
+        )
+
+    def test_energy_fields_populated_on_known_tdp_gpu(self, bundled_models):
+        c = self._plan(bundled_models)[0]
+        assert c.tdp_watts == 700.0  # H100 SXM board power
+        assert c.energy_cost_month > 0
+        assert c.perf_per_watt > 0
+        assert c.energy_cost_per_1m_tok > 0
+
+    def test_electricity_rate_moves_energy_not_hardware_cost(self, bundled_models):
+        # Rate must NOT change monthly_cost or cost_per_1m_tok (cloud $/hr already
+        # bundles power) -- it only scales the separate energy figures, and it must
+        # never enter the budget gate (same config selected at both rates).
+        cheap = self._plan(bundled_models, rate=0.05)[0]
+        pricey = self._plan(bundled_models, rate=0.50)[0]
+        assert cheap.monthly_cost == pricey.monthly_cost
+        assert cheap.cost_per_1m_tok == pricey.cost_per_1m_tok
+        assert pricey.energy_cost_month > cheap.energy_cost_month
+
+
+class TestKvQuant:
+    """0.9.0: --kv-quant shrinks KV VRAM/lifts concurrency and warns on quality."""
+
+    def _plan(self, models, kv_quant, ctx=16384):
+        return enumerate_candidates(
+            models=models,
+            target_models=["llama3.1-8b"],
+            hardware="A100 80GB",
+            request_rate=1.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=ctx,
+            kv_quant=kv_quant,
+        )
+
+    def test_kv_quant_lowers_vram_per_quant(self, bundled_models):
+        fp16 = {c.quant: c.vram_gb for c in self._plan(bundled_models, "fp16")}
+        q4 = {c.quant: c.vram_gb for c in self._plan(bundled_models, "q4")}
+        common = set(fp16) & set(q4)
+        assert common
+        assert all(q4[k] < fp16[k] for k in common)
+
+    def test_kv_quant_warns_quality_unscreened(self, bundled_models):
+        c = self._plan(bundled_models, "q8")[0]
+        assert any("KV cache quantized" in w for w in c.warnings)
+
+    def test_default_kv_matches_explicit_fp16(self, bundled_models):
+        # The default (no kv_quant) must equal an explicit fp16 request -- no drift.
+        default = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.1-8b"],
+            hardware="A100 80GB",
+            request_rate=1.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=16384,
+        )
+        explicit = self._plan(bundled_models, "fp16")
+        assert [c.vram_gb for c in default] == [c.vram_gb for c in explicit]
+
+
+class TestTensorParallel:
+    """0.10.0: TP splits an oversized model across GPUs; cost scales with N*tp."""
+
+    def _spec(self, native_quant=None):
+        return ModelSpec(
+            name="big/llama-70b",
+            params_b=70.0,
+            n_layers=80,
+            n_kv_heads=8,
+            d_head=128,
+            hidden_size=8192,
+            native_quant=native_quant,
+            source="manual",
+        )
+
+    def _plan(self, models, tp, native_quant=None):
+        s = self._spec(native_quant)
+        return enumerate_candidates(
+            models=models,
+            target_models=[s.name],
+            hardware="H100 80GB",
+            request_rate=2.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=4096,
+            specs={s.name: s},
+            tensor_parallel=tp,
+        )
+
+    def test_tp_fits_oversized_model(self, bundled_models):
+        # 70B FP16 (~140 GB) can't run at tp=1 on an 80 GB GPU, but fits at tp=4.
+        tp1_fp16 = [c for c in self._plan(bundled_models, 1) if c.quant == "FP16"]
+        tp4_fp16 = [c for c in self._plan(bundled_models, 4) if c.quant == "FP16"]
+        assert not tp1_fp16  # FP16 rejected at tp=1 (doesn't fit one GPU)
+        assert tp4_fp16  # fits at tp=4
+        c = tp4_fp16[0]
+        assert c.tensor_parallel == 4
+        assert c.gpus_total == c.n_agents * 4
+        assert c.vram_gb <= 80
+
+    def test_tp_cost_and_provenance(self, bundled_models):
+        c = [x for x in self._plan(bundled_models, 4) if x.quant == "FP16"][0]
+        assert c.gpus_total == c.n_agents * 4  # fleet = N replicas x 4 GPUs
+        assert c.monthly_cost > 0
+        assert c.provenance["throughput"] == "estimated"  # TP throughput is modelled
+        assert any("tensor-parallel" in w for w in c.warnings)
+
+    def test_auto_tp_fits_with_minimum_degree(self, bundled_models):
+        # native_quant=FP16 forces FP16-only, so auto must pick the smallest TP that
+        # makes a 70B fit an 80 GB card (tp=1 can't; it lands on tp>1 and fits).
+        cands = self._plan(bundled_models, None, native_quant="FP16")
+        assert cands
+        assert all(c.tensor_parallel > 1 for c in cands)
+        assert all(c.vram_gb <= 80 for c in cands)
+
+    def test_tp1_default_unchanged(self, bundled_models):
+        # A model that fits one GPU: tp=1 explicit and default must be identical.
+        s = ModelSpec(
+            name="x/13b", params_b=13.0, n_layers=40, n_kv_heads=8, d_head=128, source="manual"
+        )
+        common = dict(
+            models=bundled_models,
+            target_models=[s.name],
+            hardware="H100 80GB",
+            request_rate=1.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=2048,
+            specs={s.name: s},
+        )
+        default = enumerate_candidates(**common)
+        explicit1 = enumerate_candidates(**common, tensor_parallel=1)
+        assert [(c.quant, c.monthly_cost, c.total_throughput_tps) for c in default] == [
+            (c.quant, c.monthly_cost, c.total_throughput_tps) for c in explicit1
+        ]
+        assert all(c.tensor_parallel == 1 and c.gpus_total == c.n_agents for c in default)
+
+
+class TestPipelineParallel:
+    """0.11.0: PP splits a model's layers across GPUs; PCIe-friendly, needs batching."""
+
+    def _spec(self, native_quant=None):
+        return ModelSpec(
+            name="big/llama-70b",
+            params_b=70.0,
+            n_layers=80,
+            n_kv_heads=8,
+            d_head=128,
+            hidden_size=8192,
+            native_quant=native_quant,
+            source="manual",
+        )
+
+    def _plan(self, models, pp, hardware="H100 80GB"):
+        s = self._spec()
+        return enumerate_candidates(
+            models=models,
+            target_models=[s.name],
+            hardware=hardware,
+            request_rate=20.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=4096,
+            specs={s.name: s},
+            pipeline_parallel=pp,
+        )
+
+    def test_pp_fits_oversized_model(self, bundled_models):
+        tp1_fp16 = [c for c in self._plan(bundled_models, 1) if c.quant == "FP16"]
+        pp4_fp16 = [c for c in self._plan(bundled_models, 4) if c.quant == "FP16"]
+        assert not tp1_fp16  # 70B FP16 doesn't fit one 80 GB GPU
+        assert pp4_fp16
+        c = pp4_fp16[0]
+        assert c.pipeline_parallel == 4
+        assert c.tensor_parallel == 1
+        assert c.gpus_total == c.n_agents * 4
+        assert c.vram_gb <= 80
+        assert c.provenance["throughput"] == "estimated"
+        assert any("pipeline-parallel" in w for w in c.warnings)
+
+    def test_tp_and_pp_cannot_combine(self, bundled_models):
+        s = self._spec()
+        with pytest.raises(ValueError, match="cannot be combined"):
+            enumerate_candidates(
+                models=bundled_models,
+                target_models=[s.name],
+                hardware="H100 80GB",
+                request_rate=2.0,
+                latency_slo=20000,
+                quality_target=0.0,
+                budget=1e9,
+                avg_tokens=128,
+                context_length=4096,
+                specs={s.name: s},
+                tensor_parallel=2,
+                pipeline_parallel=2,
+            )
+
+    def test_auto_pp_fits_with_minimum_degree(self, bundled_models):
+        # auto = smallest PP that FITS (fewest GPUs). At a modest request rate the
+        # min-fit degree is serviceable; a high-throughput PP load may need a higher
+        # explicit degree (the min-fit one can leave no KV room to batch).
+        s = self._spec(native_quant="FP16")
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=[s.name],
+            hardware="H100 80GB",
+            request_rate=1.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=4096,
+            specs={s.name: s},
+            pipeline_parallel=None,
+        )
+        assert cands
+        assert all(c.pipeline_parallel > 1 and c.vram_gb <= 80 for c in cands)

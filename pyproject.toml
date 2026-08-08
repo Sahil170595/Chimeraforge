@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chimeraforge"
-version = "0.7.0"
+version = "0.12.0"
 description = "LLM deployment optimizer (performance, cost, and safety) — backed by ~204,000 real measurements on consumer GPUs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,7 +24,7 @@ classifiers = [
 ]
 dependencies = [
     "typer>=0.9,<1.0",
-    "rich>=13.0,<14.0",
+    "rich>=13.0,<16.0",
     "httpx>=0.25",
 ]
 
@@ -43,8 +43,9 @@ refit = ["numpy>=1.24,<3.0", "scipy>=1.11,<2.0", "platformdirs>=4.0,<5.0"]
 # (existing `pip install "chimeraforge[resolve|safety]"` stays a valid no-op).
 safety = []
 resolve = []
-dev = ["pytest>=7.4,<9.0", "pytest-cov>=4.1,<6.0", "pytest-asyncio>=0.21,<1.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0"]
-all = ["chimeraforge[bench,eval,refit,safety,resolve]"]
+mcp = ["mcp>=1.0"]
+dev = ["pytest>=7.4,<10.0", "pytest-cov>=4.1,<8.0", "pytest-asyncio>=0.21,<2.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0", "mcp>=1.0"]
+all = ["chimeraforge[bench,eval,refit,safety,resolve,mcp]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -50,6 +50,35 @@ class TestPlanFailLoud:
         assert r.exit_code == 1
         assert not isinstance(r.exception, LEAKED)
 
+    def test_invalid_kv_quant_rejected(self):
+        r = runner.invoke(app, ["plan", "--model-size", "3b", "--kv-quant", "q3"])
+        assert r.exit_code == 1
+        assert "kv-quant" in r.output
+
+    def test_negative_electricity_rate_rejected(self):
+        assert (
+            runner.invoke(app, ["plan", "--model-size", "3b", "--electricity-rate", "-1"]).exit_code
+            == 1
+        )
+
+    def test_invalid_tensor_parallel_rejected(self):
+        r = runner.invoke(app, ["plan", "--model-size", "3b", "--tp", "banana"])
+        assert r.exit_code == 1
+        assert "tensor-parallel" in r.output
+
+    def test_zero_tensor_parallel_rejected(self):
+        assert runner.invoke(app, ["plan", "--model-size", "3b", "--tp", "0"]).exit_code == 1
+
+    def test_invalid_pipeline_parallel_rejected(self):
+        r = runner.invoke(app, ["plan", "--model-size", "3b", "--pp", "banana"])
+        assert r.exit_code == 1
+        assert "pipeline-parallel" in r.output
+
+    def test_tp_and_pp_combined_rejected(self):
+        r = runner.invoke(app, ["plan", "--model-size", "3b", "--tp", "2", "--pp", "2"])
+        assert r.exit_code == 1
+        assert "cannot be combined" in r.output
+
 
 class TestReportFailLoud:
     def test_malformed_json_fails_clean(self, tmp_path: Path):
