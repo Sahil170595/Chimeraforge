@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-08-08
+
+### Changed
+- **README rewritten as the PyPI/GitHub shopfront** for the current 0.12.0 feature
+  set: leads with the provenance/trust principle (`measured`/`estimated`/`unknown`
+  on every number), documents all 11 commands including `mcp`, tensor/pipeline
+  parallelism, KV-cache quantization, and energy modeling, and adds zero-install
+  `uvx`/`pipx run` quickstarts plus an MCP setup section (Claude Code one-liner and
+  a Claude Desktop / Cursor config snippet).
+- **PyPI metadata refreshed**: `keywords` expanded (vram, gpu-sizing, quantization,
+  ollama, vllm, llama-cpp, gguf, capacity-planning, mcp), classifier moved from
+  `Development Status :: 3 - Alpha` to `4 - Beta`, and a `Documentation` URL added
+  under `[project.urls]`. No functional/code changes.
+
 ## [0.12.0] - 2026-08-07
 
 ### Added

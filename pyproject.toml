@@ -4,15 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chimeraforge"
-version = "0.12.0"
+version = "0.12.1"
 description = "LLM deployment optimizer (performance, cost, and safety) — backed by ~204,000 real measurements on consumer GPUs"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "ChimeraForge Team" }]
-keywords = ["llm", "inference", "benchmark", "deployment", "gpu", "optimization"]
+keywords = [
+    "llm", "inference", "benchmark", "deployment", "gpu", "optimization",
+    "vram", "gpu-sizing", "quantization", "ollama", "vllm", "llama-cpp", "gguf",
+    "capacity-planning", "mcp",
+]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -34,6 +38,7 @@ chimeraforge = "chimeraforge.cli:app"
 [project.urls]
 Homepage = "https://github.com/Sahil170595/Chimeraforge"
 Repository = "https://github.com/Sahil170595/Chimeraforge"
+Documentation = "https://github.com/Sahil170595/Chimeraforge#readme"
 
 [project.optional-dependencies]
 bench = ["platformdirs>=4.0,<5.0", "pynvml>=11.0"]
