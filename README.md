@@ -5,6 +5,8 @@
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+<!-- mcp-name: io.github.Sahil170595/chimeraforge -->
+
 **A local-first, model-agnostic LLM deployment planner.** It turns "which model, quantization, GPU, and backend -- how many, will it fit, will it hit my SLO, what will it cost" into a fast, honest, measured answer, from your shell, your Python, or your AI assistant.
 
 ```bash
