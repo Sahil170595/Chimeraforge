@@ -50,6 +50,17 @@ class TestPlanFailLoud:
         assert r.exit_code == 1
         assert not isinstance(r.exception, LEAKED)
 
+    def test_invalid_kv_quant_rejected(self):
+        r = runner.invoke(app, ["plan", "--model-size", "3b", "--kv-quant", "q3"])
+        assert r.exit_code == 1
+        assert "kv-quant" in r.output
+
+    def test_negative_electricity_rate_rejected(self):
+        assert (
+            runner.invoke(app, ["plan", "--model-size", "3b", "--electricity-rate", "-1"]).exit_code
+            == 1
+        )
+
 
 class TestReportFailLoud:
     def test_malformed_json_fails_clean(self, tmp_path: Path):

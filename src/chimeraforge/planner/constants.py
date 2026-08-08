@@ -86,9 +86,17 @@ DEFAULT_PARAMS_B = 3.0
 # so realised utilisation is high but not 1.0. Used to bound concurrent sequences.
 KV_CACHE_UTILISATION = 0.9
 
-# KV-cache element size in bytes. Backends keep KV in FP16 even when weights are
-# quantized (KV quantization is not yet modelled here).
+# KV-cache element size in bytes for the default (FP16) cache.
 KV_DTYPE_BYTES = 2
+
+# KV-cache element size (bytes per K or V element) by cache dtype. Backends can
+# quantize the KV cache independently of the weights -- llama.cpp `--cache-type-k`,
+# vLLM fp8 KV -- roughly halving (q8) or quartering (q4) KV VRAM, which matters most
+# at long context. Only the VRAM/concurrency effect is modelled; KV-quant's (small)
+# quality impact is NOT screened here (no bundled measurements), so `plan --kv-quant`
+# warns when it is enabled. fp16 stays tied to KV_DTYPE_BYTES.
+KV_QUANT_BYTES: dict[str, float] = {"fp16": float(KV_DTYPE_BYTES), "q8": 1.0, "q4": 0.5}
+DEFAULT_KV_QUANT = "fp16"
 
 # Prefill is compute-bound: ~2 FLOPs per parameter per prompt token. MFU (model
 # FLOPs utilisation) discounts peak TFLOPS to realised; 0.3-0.5 is typical for a

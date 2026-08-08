@@ -65,6 +65,25 @@ class TestMaxConcurrentSeqs:
         wide = {**self.ARCH, "n_kv_heads": 16}
         assert VRAMModel.kv_cache_gb(wide, 2048, 1) == pytest.approx(2 * base)
 
+    def test_kv_quant_shrinks_kv_cache(self):
+        # 0.9.0: KV-quant lowers per-element bytes -> proportionally smaller cache.
+        fp16 = VRAMModel.kv_cache_gb(self.ARCH, 4096, 1, kv_bytes=2.0)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1, kv_bytes=1.0) == pytest.approx(fp16 / 2)
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1, kv_bytes=0.5) == pytest.approx(fp16 / 4)
+        # Default (no kv_bytes) keeps the FP16 cache -- backward compatible.
+        assert VRAMModel.kv_cache_gb(self.ARCH, 4096, 1) == pytest.approx(fp16)
+
+    def test_kv_quant_lowers_vram_and_lifts_concurrency(self):
+        m = VRAMModel()
+        # Long context makes the KV term dominant, so quantizing it cuts VRAM.
+        assert m.predict("llama3.1-8b", "Q4_K_M", 16384, kv_bytes=0.5) < m.predict(
+            "llama3.1-8b", "Q4_K_M", 16384, kv_bytes=2.0
+        )
+        # Smaller per-seq KV -> more concurrent sequences fit the same GPU.
+        fp16_seqs = m.max_concurrent_seqs(8.03, "Q4_K_M", self.ARCH, 8192, 80.0, kv_bytes=2.0)
+        q4_seqs = m.max_concurrent_seqs(8.03, "Q4_K_M", self.ARCH, 8192, 80.0, kv_bytes=0.5)
+        assert q4_seqs > fp16_seqs > 0
+
     def test_bigger_gpu_holds_more_seqs(self):
         m = VRAMModel()
         small = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 12.0)

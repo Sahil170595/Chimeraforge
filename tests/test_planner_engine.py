@@ -818,3 +818,48 @@ class TestEnergyCost:
         assert cheap.monthly_cost == pricey.monthly_cost
         assert cheap.cost_per_1m_tok == pricey.cost_per_1m_tok
         assert pricey.energy_cost_month > cheap.energy_cost_month
+
+
+class TestKvQuant:
+    """0.9.0: --kv-quant shrinks KV VRAM/lifts concurrency and warns on quality."""
+
+    def _plan(self, models, kv_quant, ctx=16384):
+        return enumerate_candidates(
+            models=models,
+            target_models=["llama3.1-8b"],
+            hardware="A100 80GB",
+            request_rate=1.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=ctx,
+            kv_quant=kv_quant,
+        )
+
+    def test_kv_quant_lowers_vram_per_quant(self, bundled_models):
+        fp16 = {c.quant: c.vram_gb for c in self._plan(bundled_models, "fp16")}
+        q4 = {c.quant: c.vram_gb for c in self._plan(bundled_models, "q4")}
+        common = set(fp16) & set(q4)
+        assert common
+        assert all(q4[k] < fp16[k] for k in common)
+
+    def test_kv_quant_warns_quality_unscreened(self, bundled_models):
+        c = self._plan(bundled_models, "q8")[0]
+        assert any("KV cache quantized" in w for w in c.warnings)
+
+    def test_default_kv_matches_explicit_fp16(self, bundled_models):
+        # The default (no kv_quant) must equal an explicit fp16 request -- no drift.
+        default = enumerate_candidates(
+            models=bundled_models,
+            target_models=["llama3.1-8b"],
+            hardware="A100 80GB",
+            request_rate=1.0,
+            latency_slo=10000,
+            quality_target=0.0,
+            budget=100000,
+            avg_tokens=128,
+            context_length=16384,
+        )
+        explicit = self._plan(bundled_models, "fp16")
+        assert [c.vram_gb for c in default] == [c.vram_gb for c in explicit]
