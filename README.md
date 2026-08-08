@@ -5,31 +5,45 @@
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**A model-agnostic LLM deployment planner. Pick the backend, quantization, GPU count, and context budget for any model -- backed by ~204,000 real measurements on consumer GPUs.**
+**A local-first, model-agnostic LLM deployment planner.** It turns "which model, quantization, GPU, and backend -- how many, will it fit, will it hit my SLO, what will it cost" into a fast, honest, measured answer, from your shell, your Python, or your AI assistant.
 
 ```bash
-pip install chimeraforge
+uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 ```
 
-Give `chimeraforge` a model -- a size class, a Hugging Face repo, or an Ollama tag -- and it searches the (model x quantization x backend x GPU count) space against VRAM, quality, latency, cost, and an opt-in safety gate, then hands back the cheapest config that meets your SLO in under a second. Every prediction is labeled `measured` / `estimated` / `unknown`, so you never mistake a guess for data, and the empirical corpus traces to Technical Reports TR108-TR137.
+## The trust principle
 
-**10 commands, one tool:** `plan` - `suggest` - `measure` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report`.
+**Every number is labeled `measured`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are computed from a model's real architecture (exact). Throughput is a measured lookup when available, otherwise an explicit bandwidth-roofline estimate -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
 
-> **New in v0.6.0 -- a serving model that matches the literature.** vLLM/TGI are now modelled with **continuous batching** (one GPU can replace several single-stream Ollama replicas), latency splits into **prefill/TTFT + decode/TPOT**, `plan --pareto` prints the non-dominated cost/latency/quality menu instead of a single pick, and `plan --workload {steady,chatbot,bursty,agent}` inflates the tail for variance-heavy traffic. Built on v0.5.0's **model-agnostic planning** (`plan --model <hf-repo|ollama-tag>`, plus `suggest` / `catalog` / `measure`). See the [CHANGELOG](CHANGELOG.md).
+Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
+
+**11 commands, one tool:** `plan` - `suggest` - `measure` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+
+The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
 ---
 
 ## Install
 
+Try it with no install:
+
+```bash
+uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
+pipx run chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
+```
+
+Install for real:
+
 ```bash
 pip install chimeraforge            # planner + model resolution (HF/Ollama) + suggest/measure/safety/bench
 pip install chimeraforge[bench]     # + GPU environment metadata for benchmarks (pynvml)
+pip install chimeraforge[mcp]       # + MCP server so Claude/GPT/Cursor can call the planner
 pip install chimeraforge[eval]      # + quality evaluation (BERTScore, ROUGE-L)
 pip install chimeraforge[refit]     # + coefficient refitting (numpy, scipy)
 pip install chimeraforge[all]       # everything
 ```
 
-Python 3.10+. The core install covers the planner and the network-facing commands (`httpx` is a core dep); only `eval` and `refit` need extras. `plan` runs fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, or TGI). Windows / macOS / Linux.
+Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). `plan` / `suggest` / `catalog` run fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, or TGI). Windows / macOS / Linux.
 
 ## Quickstart
 
@@ -41,8 +55,11 @@ chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"
 chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434
 
-# Print the cost/latency/quality trade-off menu, not just one pick
-chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --pareto
+# Split a model too big for one GPU across several (tensor parallelism)
+chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4
+
+# Shrink the KV-cache, print the cost/latency/quality trade-off menu
+chimeraforge plan --model-size 8b --hardware "RTX 4080 12GB" --kv-quant q8 --pareto
 
 # Benchmark a live model and plan on the MEASURED numbers
 chimeraforge plan --model qwen3:14b --measure
@@ -50,6 +67,37 @@ chimeraforge plan --model qwen3:14b --measure
 # Discover + rank what fits your GPU and budget
 chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 ```
+
+---
+
+## MCP server -- give Claude / GPT / Cursor the same numbers
+
+GPU sizing is exactly where assistants fail: training-cutoff hardware prices and specs, plus error-prone KV-cache/batching arithmetic done from memory. `chimeraforge mcp` runs a stdio MCP server so an assistant calls the real planner against measured data instead of guessing.
+
+```bash
+pip install "chimeraforge[mcp]"
+```
+
+Claude Code:
+
+```bash
+claude mcp add --transport stdio chimeraforge -- uvx chimeraforge mcp
+```
+
+Claude Desktop / Cursor (add to your MCP config file):
+
+```json
+{
+  "mcpServers": {
+    "chimeraforge": {
+      "command": "uvx",
+      "args": ["chimeraforge", "mcp"]
+    }
+  }
+}
+```
+
+Exposes three tools: `chimeraforge_plan` (the full gate search), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge.
 
 ---
 
@@ -61,14 +109,17 @@ chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"   # any HF repo
 chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434  # any Ollama tag
-chimeraforge plan --model qwen3:14b --measure                                   # bench live, plan on real numbers
-chimeraforge plan --model-size 3b --pareto                                      # trade-off menu
+chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4   # multi-GPU
+chimeraforge plan --model-size 3b --kv-quant q4 --pareto                       # smaller KV cache, trade-off menu
 chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 ```
 
 - Plans **any** model: registry size class, HF repo (`org/name`), Ollama tag, or manual overrides (`--params-b/--n-layers/...`).
 - Searches (model x quantization x backend x N-replicas x batch/GPU) through a 5-gate pipeline: VRAM -> quality -> safety (opt-in) -> latency -> budget.
-- Models real serving physics: continuous batching (vLLM/TGI), prefill/decode split (TTFT + TPOT), KV-cache-bound concurrency, and variance-aware queueing.
+- Models real serving physics: continuous batching (vLLM/TGI), prefill/decode split (TTFT + TPOT), KV-cache-bound concurrency, and variance-aware queueing (`--workload`).
+- **Fits models too big for one GPU:** `--tensor-parallel/--tp {N|auto}` shards weights + KV across N GPUs (Megatron-style, comms-modelled); `--pipeline-parallel/--pp {N|auto}` splits layers across N stages instead (cheaper on slow interconnects, needs batching to fill the pipeline). Not combinable yet.
+- **KV-cache quantization** (`--kv-quant {fp16,q8,q4}`) shrinks the cache and raises max concurrency -- biggest win at long context.
+- **Energy** (`--electricity-rate`): monthly kWh cost, `$/1M-tok (+energy)`, and tok/s-per-watt, reported alongside (not folded into) the budget gate.
 - Per-prediction provenance (`measured` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
 
@@ -112,9 +163,7 @@ Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *
 
 ```bash
 chimeraforge bench --model llama3.2-3b --runs 5
-chimeraforge bench --model llama3.2-3b --all-quants --json
-chimeraforge bench --model llama3.2-3b --context 512,1024,2048,4096
-chimeraforge bench --model llama3.2-3b --workload server --rate 2.0
+chimeraforge bench --model llama3.2-3b --all-quants --context 512,1024,2048,4096 --json
 chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhost:8000
 ```
 
@@ -125,7 +174,6 @@ Three workload profiles (single / batch / server-Poisson); measures throughput, 
 ```bash
 chimeraforge eval --task general_knowledge --json
 chimeraforge eval --predictions preds.txt --references refs.txt --model llama3.2-3b
-chimeraforge eval --list-tasks
 ```
 
 Metrics: exact match, ROUGE-L (LCS fallback), BERTScore, coherence -> composite (`0.2*EM + 0.3*ROUGE + 0.3*BERT + 0.2*coherence`). Quality tiers from TR125; 3 built-in tasks (general_knowledge, summarization, code). Pass `--fp16-baseline` to classify the drop tier.
@@ -150,10 +198,36 @@ Bayesian blending (per-key confidence weighting), hardware offsets, power-law re
 
 ```bash
 chimeraforge report --results-dir ./results/ --format markdown --output report.md
-chimeraforge report --results-files run1.json,run2.json --format html --output report.html
 ```
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
+
+### `mcp` -- serve the planner to AI assistants
+
+```bash
+chimeraforge mcp
+```
+
+Runs the stdio MCP server described above. Requires `pip install "chimeraforge[mcp]"`.
+
+---
+
+## What's modeled
+
+| Dimension | How it's computed | Provenance |
+|-----------|-------------------|------------|
+| VRAM / KV-cache | First-principles from real model architecture; KV-quant and TP/PP-aware sharding | exact |
+| Max concurrency | KV-cache-bound sequences per GPU | exact |
+| Throughput (decode) | Measured lookup, else bandwidth roofline; continuous-batching curve; TP comms / PP bubble | measured / estimated |
+| TTFT (prefill) | Compute-bound, GPU FP16 TFLOPS x MFU | estimated |
+| Quality | Measured composite lookup, family-prior estimate, or unknown | measured / estimated / unknown |
+| Cost | GPU $/hr x fleet size ($/1M-tok invariant in replica count) | exact |
+| Energy | TDP-driven monthly kWh, $/1M-tok (+energy), tok/s-per-watt | estimated |
+| Safety | TR134/TR142 refusal-rate lookup (opt-in gate) | measured / unknown |
+
+**Hardware:** 22 GPUs -- consumer Ada + Blackwell (RTX 30/40/50-series), datacenter (A100 40/80GB, H100, H200, B200, L4, T4), and AMD MI300X -- each with VRAM, bandwidth, FP16 TFLOPS, TDP, and interconnect (NVLink/Infinity Fabric/PCIe).
+
+**Known limits (honest):** MoE active-vs-total-param divergence, reasoning/thinking tokens, speculative decoding, and prefix caching are not yet modeled. Quant coverage for vLLM/TGI is GGUF-only (no FP8/AWQ/GPTQ yet). TP and PP throughput are comms-modelled *estimates*, not measured, and can't be combined in one plan. Queueing is analytical (variance-aware), not a discrete-event simulator. The bundled corpus is fit primarily on one rig (RTX 4080 12GB); other GPUs scale from bandwidth/compute until you `measure` on yours. The MCP server is stdio-only (Claude Code/Desktop, local Cursor) -- no hosted remote transport yet.
 
 ---
 
@@ -171,14 +245,9 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 | **Capacity planning** | `chimeraforge plan` | Validated R^2>=0.859; beats M/D/1 by 20.4x (TR133) |
 | **Safety screening** | `plan --safety-target` (opt-in) | Refusal-rate + RTSI risk per config; rejects safety-collapsing cells (TR134/TR142) |
 
-**Headline findings** (full data in the TRs):
-- **Rust vs Python (single-agent):** Rust +15.2% throughput, -58% TTFT, -67% memory, more consistent (2.6% vs 4.8% CV) -- TR112.
-- **Multi-agent:** both reach near-perfect parallelism (~99% peak) *with dual Ollama*; a single instance caps efficiency at 82.2% -- TR110/TR113/TR114.
-- **Rust runtime:** ship **Tokio-default** (98.72% mean, 1.21pp sigma); async-std serializes, smol has pathological tails -- TR115.
-- **Serving stack at scale:** vLLM's continuous batching gives a **2.25x** edge at N=8; the real bottleneck is GPU memory bandwidth, not the stack -- TR130-TR132.
-- **Quantization:** Q4_K_M is the universal sweet spot (-4.1pp max quality drop); Q2_K is unacceptable -- TR125 (26k samples, real MMLU+ARC).
+**Headline findings** (full data in the TRs): Rust beats Python single-agent (+15.2% throughput, -58% TTFT, -67% memory -- TR112); dual Ollama reaches near-perfect multi-agent parallelism (~99%) vs 82.2% on one instance (TR110/TR113/TR114); vLLM's continuous batching gives a 2.25x edge at N=8, bottlenecked on GPU memory bandwidth, not the stack (TR130-TR132).
 
-**Full research:** [`docs/archive/technical_reports.md`](docs/archive/technical_reports.md) indexes all 32 reports (one question + outcome each); the full archive with methodology and raw-data references lives in [`outputs/publish_ready/reports/`](outputs/publish_ready/reports/).
+**Full research:** [`docs/archive/technical_reports.md`](docs/archive/technical_reports.md) indexes all 32 reports; the full archive with methodology and raw-data references lives in [`outputs/publish_ready/reports/`](outputs/publish_ready/reports/).
 
 ---
 
@@ -187,6 +256,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB). De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
+- **549 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
@@ -224,4 +294,4 @@ Conducted as part of the Banterhearts LLM Performance Research Program: Phase 1 
 
 ---
 
-**Repository:** https://github.com/Sahil170595/Chimeraforge - **PyPI:** https://pypi.org/project/chimeraforge/ - **Status:** Phases 1-3 complete, v0.6.0
+**Repository:** https://github.com/Sahil170595/Chimeraforge - **PyPI:** https://pypi.org/project/chimeraforge/ - **Status:** Beta, actively developed
