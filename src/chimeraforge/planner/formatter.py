@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from chimeraforge.planner.constants import MODEL_PARAMS_B, QUANT_BPW
+from chimeraforge.planner.constants import MODEL_PARAMS_B, POWER_UTILISATION, QUANT_BPW
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_DB
 
@@ -114,6 +114,18 @@ def format_recommendation(
     cost_table.add_row("VRAM per GPU", f"{best.vram_gb} GB")
     cost_table.add_row("Monthly cost", f"[bold green]${best.monthly_cost}[/]")
     cost_table.add_row("Cost per 1M tok", f"${best.cost_per_1m_tok}")
+    if best.tdp_watts > 0:
+        load_pct = int(POWER_UTILISATION * 100)
+        with_energy = best.cost_per_1m_tok + best.energy_cost_per_1m_tok
+        cost_table.add_row(
+            "Board power", f"{best.tdp_watts:.0f} W x{best.n_agents} (~{load_pct}% load)"
+        )
+        cost_table.add_row(
+            "Energy / mo",
+            f"${best.energy_cost_month}  [dim](self-hosted add-on; cloud $/hr bundles power)[/]",
+        )
+        cost_table.add_row("Cost/1M tok +energy", f"${with_energy:.4f}")
+        cost_table.add_row("Perf per watt", f"{best.perf_per_watt} tok/s/W")
 
     # Assemble main panel
     console.print()

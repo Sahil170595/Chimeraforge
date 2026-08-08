@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from chimeraforge.planner.constants import QUANT_LEVELS, MODEL_PARAMS_B
+from chimeraforge.planner.constants import (
+    HOURS_PER_MONTH,
+    MODEL_PARAMS_B,
+    POWER_UTILISATION,
+    QUANT_LEVELS,
+)
 from chimeraforge.planner.models import (
     CostModel,
     LatencyModel,
@@ -304,6 +309,40 @@ class TestCostModel:
         cost1 = m.predict_cost_per_1m(50.0, hw_cost_hr=1.0)
         cost2 = m.predict_cost_per_1m(50.0, hw_cost_hr=0.035)
         assert cost1 > cost2
+
+    # -- Energy (0.8.0) --
+
+    def test_energy_cost_per_month_formula(self):
+        m = CostModel()
+        # 700 W * 0.85 util / 1000 * 720 h * 1 GPU * $0.12/kWh.
+        got = m.energy_cost_per_month(700.0, n_gpus=1, rate=0.12)
+        expected = 700.0 / 1000 * POWER_UTILISATION * HOURS_PER_MONTH * 0.12
+        assert got == pytest.approx(expected)
+
+    def test_energy_scales_with_gpus_and_rate(self):
+        m = CostModel()
+        assert m.energy_cost_per_month(450.0, 4, 0.12) == pytest.approx(
+            4 * m.energy_cost_per_month(450.0, 1, 0.12)
+        )
+        assert m.energy_cost_per_month(450.0, 1, 0.24) == pytest.approx(
+            2 * m.energy_cost_per_month(450.0, 1, 0.12)
+        )
+
+    def test_perf_per_watt_and_energy_per_1m_are_replica_invariant(self):
+        # Both are per-GPU efficiencies: numerator (total tok/s) and denominator
+        # (n * power) scale with n, so replica count must cancel.
+        m = CostModel()
+        assert m.perf_per_watt(2000.0, 700.0, 1) == pytest.approx(m.perf_per_watt(8000.0, 700.0, 4))
+        assert m.energy_cost_per_1m(2000.0, 700.0, 1, 0.12) == pytest.approx(
+            m.energy_cost_per_1m(8000.0, 700.0, 4, 0.12)
+        )
+
+    def test_energy_inert_when_tdp_unknown(self):
+        # TDP 0 (unknown) must produce zero energy everywhere -- pre-energy behaviour.
+        m = CostModel()
+        assert m.energy_cost_per_month(0.0, 4, 0.12) == 0.0
+        assert m.perf_per_watt(2000.0, 0.0, 4) == 0.0
+        assert m.energy_cost_per_1m(2000.0, 0.0, 4, 0.12) == 0.0
 
 
 # -- Latency Model ----------------------------------------------------

@@ -21,13 +21,16 @@ from pathlib import Path
 
 from chimeraforge.planner.constants import (
     DEFAULT_ARCH,
+    DEFAULT_ELECTRICITY_RATE,
     FLOPS_PER_PARAM_PER_TOKEN,
+    HOURS_PER_MONTH,
     KV_CACHE_UTILISATION,
     KV_DTYPE_BYTES,
     MBU_DEFAULT,
     MODEL_ARCH,
     MODEL_FAMILY,
     MODEL_PARAMS_B,
+    POWER_UTILISATION,
     PREFILL_MFU,
     QUANT_BPW,
 )
@@ -480,6 +483,62 @@ class CostModel:
         """Monthly hardware cost = hw_cost_per_hour * 24 * 30."""
         rate = hw_cost_hr if hw_cost_hr is not None else self.hw_cost_per_hour
         return rate * 24 * 30
+
+    # -- Energy (0.8.0) --------------------------------------------------
+    # Power draw is modelled as tdp_watts * POWER_UTILISATION (sustained decode
+    # rarely holds 100% TDP). All three return 0.0 when TDP is unknown so callers
+    # degrade silently to the pre-energy behaviour. Reported separately from the
+    # hardware cost (see constants: cloud $/hr already bundles power).
+
+    def energy_cost_per_month(
+        self,
+        tdp_watts: float,
+        n_gpus: int = 1,
+        rate: float = DEFAULT_ELECTRICITY_RATE,
+        utilisation: float = POWER_UTILISATION,
+    ) -> float:
+        """Monthly electricity cost for ``n_gpus`` boards at ``rate`` $/kWh."""
+        if tdp_watts <= 0:
+            return 0.0
+        kw = tdp_watts / 1000.0 * utilisation
+        return kw * HOURS_PER_MONTH * n_gpus * rate
+
+    def perf_per_watt(
+        self,
+        tok_per_s: float,
+        tdp_watts: float,
+        n_gpus: int = 1,
+        utilisation: float = POWER_UTILISATION,
+    ) -> float:
+        """Throughput efficiency in tok/s per watt of board power.
+
+        ``tok_per_s`` is the aggregate (n-GPU) throughput and the power is
+        ``n_gpus * tdp * util``, so the ratio is per-GPU efficiency -- invariant
+        in replica count. 0.0 when TDP is unknown.
+        """
+        total_watts = tdp_watts * n_gpus * utilisation
+        if total_watts <= 0 or tok_per_s <= 0:
+            return 0.0
+        return tok_per_s / total_watts
+
+    def energy_cost_per_1m(
+        self,
+        tok_per_s: float,
+        tdp_watts: float,
+        n_gpus: int = 1,
+        rate: float = DEFAULT_ELECTRICITY_RATE,
+        utilisation: float = POWER_UTILISATION,
+    ) -> float:
+        """$/1M tokens from electricity alone (adds to the hardware $/1M-tok).
+
+        Invariant in replica count: both the monthly energy and the token
+        throughput scale with ``n_gpus``, so it cancels. 0.0 when TDP unknown.
+        """
+        if tdp_watts <= 0 or tok_per_s <= 0:
+            return 0.0
+        tokens_per_month = tok_per_s * 3600 * HOURS_PER_MONTH
+        energy_month = self.energy_cost_per_month(tdp_watts, n_gpus, rate, utilisation)
+        return energy_month / tokens_per_month * 1_000_000
 
     def to_dict(self) -> dict:
         return {"hw_cost_per_hour": self.hw_cost_per_hour}

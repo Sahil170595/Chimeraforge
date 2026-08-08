@@ -41,9 +41,9 @@ for c in candidates:
 
 ### Key types
 
-- **`Candidate`** — dataclass: model, quant, backend, n_agents, vram_gb, quality, throughput_tps, p95_latency_ms, monthly_cost, cost_per_1m_tok, safety_refusal, rtsi_risk, warnings, plus model-agnostic fields `params_b`, `model_source`, and `provenance` (per-prediction `measured`/`estimated`/`unknown`)
+- **`Candidate`** — dataclass: model, quant, backend, n_agents, vram_gb, quality, throughput_tps, p95_latency_ms, monthly_cost, cost_per_1m_tok, safety_refusal, rtsi_risk, warnings, plus model-agnostic fields `params_b`, `model_source`, and `provenance` (per-prediction `measured`/`estimated`/`unknown`), and the 0.8.0 energy fields `tdp_watts`, `energy_cost_month`, `energy_cost_per_1m_tok`, `perf_per_watt`
 - **`PlannerModels`** — container for 7 model objects (VRAM, Throughput, Scaling, Quality, Cost, Latency, Safety)
-- **`GPUSpec`** — frozen dataclass: name, vram_gb, bandwidth_gbps, cost_per_hour
+- **`GPUSpec`** — frozen dataclass: name, vram_gb, bandwidth_gbps, cost_per_hour, fp16_tflops, tdp_watts (board power, drives the 0.8.0 energy estimate)
 
 ### Hardware DB
 

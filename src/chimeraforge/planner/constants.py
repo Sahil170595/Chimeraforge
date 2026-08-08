@@ -99,6 +99,19 @@ PREFILL_MFU = 0.4
 # Default prompt (input) length in tokens for TTFT estimation when unspecified.
 DEFAULT_PROMPT_TOKENS = 512
 
+# Energy modeling (0.8.0). Sustained LLM decode rarely holds 100% of board TDP;
+# steady serving typically draws ~80-90%. Named so the assumption is explicit and
+# tunable, not a magic number buried in the cost math.
+POWER_UTILISATION = 0.85
+# Default electricity price ($/kWh) -- roughly the US commercial average; override
+# per run with `plan --electricity-rate`. Energy is reported as a SEPARATE line,
+# not folded into the hardware cost or the budget gate, because a cloud `$/hr`
+# rate already bundles power (double-count) while an amortised consumer card cost
+# does not -- so the energy figure is most meaningful for self-hosted hardware.
+DEFAULT_ELECTRICITY_RATE = 0.12
+# Hours per month for cost/energy accrual (matches CostModel.predict_monthly's 24*30).
+HOURS_PER_MONTH = 720
+
 # Model registry: params in billions
 MODEL_PARAMS_B: dict[str, float] = {
     "qwen2.5-0.5b": 0.49,
