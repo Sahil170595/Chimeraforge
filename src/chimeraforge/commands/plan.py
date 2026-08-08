@@ -108,6 +108,14 @@ def plan(
         "across N GPUs, or 'auto' (smallest TP that fits). Lets a model too big for "
         "one GPU be planned across several; TP throughput is a comms-modelled estimate.",
     ),
+    pipeline_parallel: str = typer.Option(
+        "1",
+        "--pipeline-parallel",
+        "--pp",
+        help="Pipeline-parallel degree: 1, an integer to split a model's layers "
+        "across N GPUs, or 'auto'. Cheaper interconnect use than TP (good on PCIe) "
+        "but needs batching to fill the pipeline. Cannot be combined with --tp yet.",
+    ),
     models_path: str = typer.Option(
         None,
         "--models-path",
@@ -232,18 +240,31 @@ def plan(
     if kv_quant not in KV_QUANT_BYTES:
         console.print(f"[red]Error:[/] --kv-quant must be one of: {', '.join(KV_QUANT_BYTES)}.")
         raise typer.Exit(code=1)
-    tp_raw = tensor_parallel.strip().lower()
-    if tp_raw == "auto":
-        tp_val: int | None = None
-    else:
+
+    def _parse_degree(raw: str, flag: str) -> int | None:
+        raw = raw.strip().lower()
+        if raw == "auto":
+            return None
         try:
-            tp_val = int(tp_raw)
+            val = int(raw)
         except ValueError:
-            console.print("[red]Error:[/] --tensor-parallel must be a positive integer or 'auto'.")
+            console.print(f"[red]Error:[/] {flag} must be a positive integer or 'auto'.")
             raise typer.Exit(code=1)
-        if tp_val < 1:
-            console.print("[red]Error:[/] --tensor-parallel must be >= 1.")
+        if val < 1:
+            console.print(f"[red]Error:[/] {flag} must be >= 1.")
             raise typer.Exit(code=1)
+        return val
+
+    tp_val = _parse_degree(tensor_parallel, "--tensor-parallel")
+    pp_val = _parse_degree(pipeline_parallel, "--pipeline-parallel")
+    tp_on = tp_val is None or tp_val > 1
+    pp_on = pp_val is None or pp_val > 1
+    if tp_on and pp_on:
+        console.print(
+            "[red]Error:[/] --tensor-parallel and --pipeline-parallel cannot be combined yet; "
+            "set only one above 1."
+        )
+        raise typer.Exit(code=1)
     if context_length <= 0:
         console.print("[red]Error:[/] --context-length must be positive.")
         raise typer.Exit(code=1)
@@ -373,6 +394,7 @@ def plan(
         electricity_rate=electricity_rate,
         kv_quant=kv_quant,
         tensor_parallel=tp_val,
+        pipeline_parallel=pp_val,
     )
 
     frontier = pareto_frontier(candidates) if pareto else None

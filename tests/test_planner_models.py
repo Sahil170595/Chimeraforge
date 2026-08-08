@@ -111,6 +111,20 @@ class TestMaxConcurrentSeqs:
         weight_gb = 4.0 * 8.0 / 8  # Q8_0 = 8 bpw
         assert (p2 - p8) == pytest.approx(weight_gb / 2 - weight_gb / 8)
 
+    def test_pp_shards_weights_no_head_constraint(self):
+        # 0.11.0: PP splits layers, so weights AND KV shard 1/pp with NO kv-head cap
+        # (unlike TP). A 2-KV-head model still shrinks its KV term at pp=8.
+        m = VRAMModel()
+        arch = {"n_layers": 80, "n_kv_heads": 2, "d_head": 128}
+        base = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1)
+        pp8 = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=8)
+        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1) == base  # backward-compat
+        assert pp8 < base
+        # TP=8 on the same 2-KV-head model can't shard KV past 2 heads, so at equal
+        # degree PP frees at least as much (KV shards fully under PP).
+        tp8 = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, tp=8)
+        assert pp8 <= tp8 + 1e-6
+
     def test_bigger_gpu_holds_more_seqs(self):
         m = VRAMModel()
         small = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 12.0)
@@ -199,6 +213,35 @@ class TestThroughputModel:
         pcie = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 64.0, "H100 80GB", 70.0)
         nvlink = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 900.0, "H100 80GB", 70.0)
         assert pcie < nvlink
+
+    def test_pp_decode_pp1_equals_batched(self, bundled_models):
+        # 0.11.0: pp=1 must reproduce the single-GPU batched model exactly.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(7.0, "FP16", "H100 80GB")
+        assert t.pp_decode_tps(n1, 0.02, 16, 1, 4096, 900.0, "H100 80GB", 7.0) == (
+            t.batched_decode_tps(n1, 0.02, 16, "H100 80GB", 7.0)
+        )
+
+    def test_pp_bubble_needs_batching(self, bundled_models):
+        # The GPipe pipeline bubble means PP is poor at batch=1 and improves with
+        # batch: efficiency batch/(batch+pp-1). So high-batch >> low-batch per GPU.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        lo = t.pp_decode_tps(n1, 0.02, 1, 4, 8192, 900.0, "H100 80GB", 70.0)
+        hi = t.pp_decode_tps(n1, 0.02, 64, 4, 8192, 900.0, "H100 80GB", 70.0)
+        assert hi / 64 > lo / 1  # per-sequence rate far better once the pipe is full
+
+    def test_pp_barely_affected_by_pcie(self, bundled_models):
+        # PP's only comms is a small point-to-point activation pass, so PCIe vs
+        # NVLink barely differ -- unlike TP (all-reduce). This is PP's raison d'etre.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        pcie = t.pp_decode_tps(n1, 0.02, 64, 4, 8192, 64.0, "H100 80GB", 70.0)
+        nvlink = t.pp_decode_tps(n1, 0.02, 64, 4, 8192, 900.0, "H100 80GB", 70.0)
+        tp_pcie = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 64.0, "H100 80GB", 70.0)
+        tp_nvlink = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 900.0, "H100 80GB", 70.0)
+        # PP keeps far more of its NVLink throughput on PCIe than TP does.
+        assert pcie / nvlink > tp_pcie / tp_nvlink
 
 
 # -- Scaling Model ----------------------------------------------------

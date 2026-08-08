@@ -945,3 +945,87 @@ class TestTensorParallel:
             (c.quant, c.monthly_cost, c.total_throughput_tps) for c in explicit1
         ]
         assert all(c.tensor_parallel == 1 and c.gpus_total == c.n_agents for c in default)
+
+
+class TestPipelineParallel:
+    """0.11.0: PP splits a model's layers across GPUs; PCIe-friendly, needs batching."""
+
+    def _spec(self, native_quant=None):
+        return ModelSpec(
+            name="big/llama-70b",
+            params_b=70.0,
+            n_layers=80,
+            n_kv_heads=8,
+            d_head=128,
+            hidden_size=8192,
+            native_quant=native_quant,
+            source="manual",
+        )
+
+    def _plan(self, models, pp, hardware="H100 80GB"):
+        s = self._spec()
+        return enumerate_candidates(
+            models=models,
+            target_models=[s.name],
+            hardware=hardware,
+            request_rate=20.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=4096,
+            specs={s.name: s},
+            pipeline_parallel=pp,
+        )
+
+    def test_pp_fits_oversized_model(self, bundled_models):
+        tp1_fp16 = [c for c in self._plan(bundled_models, 1) if c.quant == "FP16"]
+        pp4_fp16 = [c for c in self._plan(bundled_models, 4) if c.quant == "FP16"]
+        assert not tp1_fp16  # 70B FP16 doesn't fit one 80 GB GPU
+        assert pp4_fp16
+        c = pp4_fp16[0]
+        assert c.pipeline_parallel == 4
+        assert c.tensor_parallel == 1
+        assert c.gpus_total == c.n_agents * 4
+        assert c.vram_gb <= 80
+        assert c.provenance["throughput"] == "estimated"
+        assert any("pipeline-parallel" in w for w in c.warnings)
+
+    def test_tp_and_pp_cannot_combine(self, bundled_models):
+        s = self._spec()
+        with pytest.raises(ValueError, match="cannot be combined"):
+            enumerate_candidates(
+                models=bundled_models,
+                target_models=[s.name],
+                hardware="H100 80GB",
+                request_rate=2.0,
+                latency_slo=20000,
+                quality_target=0.0,
+                budget=1e9,
+                avg_tokens=128,
+                context_length=4096,
+                specs={s.name: s},
+                tensor_parallel=2,
+                pipeline_parallel=2,
+            )
+
+    def test_auto_pp_fits_with_minimum_degree(self, bundled_models):
+        # auto = smallest PP that FITS (fewest GPUs). At a modest request rate the
+        # min-fit degree is serviceable; a high-throughput PP load may need a higher
+        # explicit degree (the min-fit one can leave no KV room to batch).
+        s = self._spec(native_quant="FP16")
+        cands = enumerate_candidates(
+            models=bundled_models,
+            target_models=[s.name],
+            hardware="H100 80GB",
+            request_rate=1.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=4096,
+            specs={s.name: s},
+            pipeline_parallel=None,
+        )
+        assert cands
+        assert all(c.pipeline_parallel > 1 and c.vram_gb <= 80 for c in cands)
