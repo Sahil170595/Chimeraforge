@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-08-07
+
+### Added
+- **Pipeline parallelism.** New `plan --pipeline-parallel {N|auto}` (alias `--pp`):
+  split a model's *layers* into N sequential stages across N GPUs — another way to
+  fit a model too big for one GPU. Complements 0.10.0's tensor parallelism; the two
+  suit different interconnects.
+  - **VRAM**: weights and each stage's KV shard 1/N with **no attention-head cap**
+    (unlike TP), so PP scales past `n_kv_heads` for GQA models.
+  - **Throughput** (`ThroughputModel.pp_decode_tps`): N stages give ~N× aggregate
+    HBM bandwidth, and PP's only comms is a **small point-to-point activation pass**
+    (no all-reduce) — so PP barely degrades on slow PCIe where TP collapses (per
+    vLLM's own guidance). The cost is the **GPipe pipeline bubble**: a decode step
+    traverses every stage, so PP needs enough in-flight sequences to stay full
+    (efficiency `batch/(batch+pp-1)`) — near-ideal at high batch, poor at batch 1.
+    Warns when under-filled. First-principles **estimate** (bubble modelled, not
+    measured).
+  - `auto` picks the smallest PP degree that *fits* (fewest GPUs); a high-throughput
+    load may need a higher explicit degree. `Candidate` gains `pipeline_parallel`.
+  - **TP and PP cannot be combined yet** (MVP) — setting both above 1 errors cleanly.
+  - `pp=1` (the default) reproduces the pre-0.11.0 single-GPU results exactly.
+
 ## [0.10.0] - 2026-08-07
 
 ### Added

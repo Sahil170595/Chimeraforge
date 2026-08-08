@@ -63,10 +63,15 @@ def format_recommendation(
     bpw_str = f"{QUANT_BPW.get(best.quant, '?')} bpw"
     rec.add_row("Quantization", f"{best.quant} ({bpw_str})")
     rec.add_row("Backend", best.backend)
-    if best.tensor_parallel > 1:
+    if best.tensor_parallel > 1 or best.pipeline_parallel > 1:
+        par = (
+            f"TP={best.tensor_parallel}"
+            if best.tensor_parallel > 1
+            else f"PP={best.pipeline_parallel}"
+        )
         rec.add_row(
             "Instances",
-            f"{best.n_agents} x TP={best.tensor_parallel}  ({best.gpus_total} GPUs total)",
+            f"{best.n_agents} x {par}  ({best.gpus_total} GPUs total)",
         )
     else:
         rec.add_row("Instances", str(best.n_agents))
