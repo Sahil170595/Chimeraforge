@@ -33,6 +33,7 @@ from chimeraforge.planner.resolver import (
     SOURCE_REGISTRY,
     SOURCE_REGISTRY_APPROX,
     ModelSpec,
+    ResolverError,
 )
 
 
@@ -81,26 +82,58 @@ class Candidate:
 
 
 def find_models_for_size(target_size: str) -> list[str]:
-    """Map size class (1b, 3b, 8b, etc.) to available models."""
-    target = target_size.lower().replace("b", "")
+    """Map a size class (1b, 3b, 8b) to registry models, or refuse.
+
+    Refusing matters more than matching here. This used to substitute silently in two
+    ways, and both produced a confident answer about a model the registry does not hold:
+
+      - an unparseable class ("banana") returned EVERY model, so nonsense planned fine;
+      - a class outside the registry's span returned the single nearest model, so
+        `--model-size 70b` answered with llama3.1-8b's 8.03B parameters and 4.55 GB of
+        VRAM, with nothing in the output saying the request had been changed.
+
+    The registry tops out near 8B, so every request above roughly 12B took that second
+    path. A planner's only product is a number someone trusts, and a wrong one wearing
+    the right shape is worse than a refusal — so the caller is now told what the registry
+    can model and how to plan for anything else.
+    """
+    target = target_size.strip().lower().removesuffix("b")
     try:
         target_val = float(target)
     except ValueError:
-        return list(MODEL_PARAMS_B.keys())
+        raise ResolverError(
+            f"unrecognised --model-size {target_size!r}. {_size_class_hint()}"
+        ) from None
 
     if target_val <= 0:
-        return list(MODEL_PARAMS_B.keys())
+        raise ResolverError(
+            f"--model-size must be positive, got {target_size!r}. {_size_class_hint()}"
+        )
 
-    matches = []
-    for model, params in MODEL_PARAMS_B.items():
-        if abs(params - target_val) / target_val < 0.5:
-            matches.append(model)
+    matches = [
+        model
+        for model, params in MODEL_PARAMS_B.items()
+        if abs(params - target_val) / target_val < 0.5
+    ]
 
     if not matches:
-        closest = min(MODEL_PARAMS_B, key=lambda m: abs(MODEL_PARAMS_B[m] - target_val))
-        matches = [closest]
+        span = f"{min(MODEL_PARAMS_B.values())}B-{max(MODEL_PARAMS_B.values())}B"
+        raise ResolverError(
+            f"no registry model is within 50% of {target_size!r} "
+            f"(the registry spans {span}). {_size_class_hint()}"
+        )
 
     return matches
+
+
+def _size_class_hint() -> str:
+    """What the caller can do instead — named, rather than left to guess."""
+    spans = ", ".join(f"{params}B" for params in sorted(MODEL_PARAMS_B.values()))
+    return (
+        f"The registry holds: {spans}. For anything it does not carry, pass "
+        "--model <hf-repo or ollama:tag> so real parameters are resolved from the source, "
+        "or --params-b <n> with a single --model to override."
+    )
 
 
 def enumerate_candidates(

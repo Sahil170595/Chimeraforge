@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json as json_mod
+
 import typer
 from rich.console import Console
 from rich.markup import escape
@@ -15,6 +17,9 @@ from chimeraforge.planner.constants import (
 )
 
 console = Console()
+# Diagnostics go here so `--json` output on stdout stays exactly one document. A caller
+# that has to strip lines before parsing does not have a contract.
+err_console = Console(stderr=True)
 
 
 def plan(
@@ -214,12 +219,39 @@ def plan(
         format="%(asctime)s %(name)s %(levelname)s  %(message)s",
     )
 
+    # These two honour --json. `--list-hardware` is the only way to discover a valid
+    # --hardware value, so it is the listing an automated caller most needs to read; it
+    # used to ignore --json and print a box-drawing table regardless.
     if list_hardware:
-        print_hardware_table()
+        if output_json:
+            from chimeraforge.planner.hardware import GPU_DB
+
+            payload = [
+                {
+                    "name": spec.name,
+                    "vram_gb": spec.vram_gb,
+                    "bandwidth_gbps": spec.bandwidth_gbps,
+                    "cost_per_hour": spec.cost_per_hour,
+                    "fp16_tflops": spec.fp16_tflops,
+                }
+                for _, spec in sorted(GPU_DB.items())
+            ]
+            console.print(json_mod.dumps(payload, indent=2), highlight=False, soft_wrap=True)
+        else:
+            print_hardware_table()
         raise typer.Exit()
 
     if list_models:
-        print_models_table()
+        if output_json:
+            from chimeraforge.planner.engine import MODEL_PARAMS_B
+
+            payload = [
+                {"model": name, "params_b": params}
+                for name, params in sorted(MODEL_PARAMS_B.items())
+            ]
+            console.print(json_mod.dumps(payload, indent=2), highlight=False, soft_wrap=True)
+        else:
+            print_models_table()
         raise typer.Exit()
 
     # Fail loud with a clean message. Under --json, emit {"error": ...} so an
@@ -318,9 +350,16 @@ def plan(
         _fail("manual overrides require exactly one --model.")
 
     if get_gpu(hardware) is None:
-        console.print(
-            f"[yellow]Warning:[/] '{hardware}' not in hardware DB, "
-            "using default RTX 4080 12GB specs."
+        # Refused, not substituted. This used to warn and then plan on RTX 4080 12GB
+        # specs, returning a full result set about a GPU nobody asked for — and the
+        # warning went to STDOUT, so a caller stripping non-JSON lines to recover the
+        # payload got those rows with nothing in the JSON recording the substitution.
+        from chimeraforge.planner.hardware import GPU_DB
+
+        _fail(
+            f"'{hardware}' is not in the hardware DB, so there is nothing to plan against. "
+            f"Known GPUs: {', '.join(sorted(GPU_DB))}. "
+            "Run `chimeraforge plan --list-hardware` for the table."
         )
 
     # Core search runs through the shared service (same path the MCP server uses).
@@ -388,9 +427,23 @@ def plan(
             safety_target=safety_target,
         )
 
-    if not candidates and trace and not output_json:
+    if not candidates and trace:
         from chimeraforge.planner.engine import summarize_trace
 
-        console.print("\n[bold]Why nothing fit:[/]")
-        for line in summarize_trace(trace):
-            console.print(f"  [yellow]-[/] {line}")
+        # An empty result with no reason is indistinguishable from "you asked wrong".
+        # The commonest case is the default --budget of 100 USD/month silently excluding
+        # every datacenter GPU: an H100 at the DB's own $2.50/hr is ~$1,825/month, so the
+        # most obvious question anyone can ask came back as `[]` with nothing to read.
+        #
+        # Under --json this goes to STDERR, not stdout: the payload stays exactly one JSON
+        # array so `| jq` keeps working, and the diagnosis is still there for anyone who
+        # reads the stream a failure would normally be reported on.
+        lines = summarize_trace(trace)
+        if output_json:
+            err_console.print("Why nothing fit:", highlight=False)
+            for line in lines:
+                err_console.print(f"  - {line}", highlight=False)
+        else:
+            console.print("\n[bold]Why nothing fit:[/]")
+            for line in lines:
+                console.print(f"  [yellow]-[/] {line}")
