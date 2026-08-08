@@ -95,7 +95,9 @@ class TestMcpTools:
 
 
 def test_build_server_registers_tools():
-    pytest.importorskip("mcp")
+    # Guard on the exact submodule build_server needs -- mcp 2.0 restructured it, so
+    # `import mcp` succeeding is not enough (the pin keeps CI on a 1.x that has it).
+    pytest.importorskip("mcp.server.fastmcp")
     from chimeraforge.mcp_server import build_server
 
     server = build_server()

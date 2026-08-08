@@ -43,8 +43,10 @@ refit = ["numpy>=1.24,<3.0", "scipy>=1.11,<2.0", "platformdirs>=4.0,<5.0"]
 # (existing `pip install "chimeraforge[resolve|safety]"` stays a valid no-op).
 safety = []
 resolve = []
-mcp = ["mcp>=1.0"]
-dev = ["pytest>=7.4,<10.0", "pytest-cov>=4.1,<8.0", "pytest-asyncio>=0.21,<2.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0", "mcp>=1.0"]
+# Pinned to mcp 1.x: the server targets `mcp.server.fastmcp.FastMCP`, which mcp 2.0
+# restructured/moved. Bump deliberately after porting to the 2.0 API, not implicitly.
+mcp = ["mcp>=1.2,<2.0"]
+dev = ["pytest>=7.4,<10.0", "pytest-cov>=4.1,<8.0", "pytest-asyncio>=0.21,<2.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0", "mcp>=1.2,<2.0"]
 all = ["chimeraforge[bench,eval,refit,safety,resolve,mcp]"]
 
 [tool.setuptools.packages.find]
