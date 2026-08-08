@@ -36,9 +36,14 @@ dependencies = [
 chimeraforge = "chimeraforge.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/Sahil170595/Chimeraforge"
+# Homepage is the site, not the repo: PyPI renders it as the primary link, and the site
+# is where a reader who arrived from `pip install` can be sent somewhere built for them.
+# Nothing linked the package to chimeraforge.vercel.app before, in either direction.
+Homepage = "https://chimeraforge.vercel.app"
 Repository = "https://github.com/Sahil170595/Chimeraforge"
 Documentation = "https://github.com/Sahil170595/Chimeraforge#readme"
+Changelog = "https://github.com/Sahil170595/Chimeraforge/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Sahil170595/Chimeraforge/issues"
 
 [project.optional-dependencies]
 bench = ["platformdirs>=4.0,<5.0", "pynvml>=11.0"]
