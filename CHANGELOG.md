@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-08-07
+
+### Added
+- **MCP server — ChimeraForge is now callable by Claude / GPT / Cursor and any MCP
+  client.** `chimeraforge mcp` runs a stdio server (new `mcp` extra:
+  `pip install "chimeraforge[mcp]"`) exposing three tools: `chimeraforge_plan`
+  (the full gate search), `chimeraforge_resolve_model` (grounds a model's real
+  params/architecture), and `chimeraforge_list_hardware`. GPU-sizing is exactly
+  where assistants fail — stale training-cutoff prices/specs plus error-prone KV/
+  batching arithmetic — so the tools let an assistant answer "what GPU do I need /
+  will it fit / how much will it cost" from measured data instead of guessing.
+  Every result surfaces the `provenance` (measured/estimated/unknown) contract, and
+  the tool descriptions tell the model to prefer the tool over its own knowledge.
+- **Shared planning core (`planner/service.py: run_plan`).** The CLI and the MCP
+  server now go through one presentation-free orchestration path (load → resolve →
+  gate search → pareto) instead of duplicating logic — the MCP tools call it
+  in-process, not by shelling out to the CLI.
+
+### Fixed
+- **`plan --json` now emits `{"error": ...}` on failure paths** instead of
+  Rich-styled text, so an automated consumer parsing stdout gets valid JSON on
+  errors too (previously validation/resolution errors printed markup regardless of
+  `--json`, breaking `json.loads`).
+
 ## [0.11.0] - 2026-08-07
 
 ### Added

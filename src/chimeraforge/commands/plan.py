@@ -197,11 +197,6 @@ def plan(
     """
     import logging
 
-    from chimeraforge.planner.engine import (
-        enumerate_candidates,
-        find_models_for_size,
-        pareto_frontier,
-    )
     from chimeraforge.planner.formatter import (
         format_json,
         format_pareto,
@@ -211,7 +206,8 @@ def plan(
         print_models_table,
     )
     from chimeraforge.planner.hardware import get_gpu
-    from chimeraforge.planner.models import load_effective_models, load_models
+    from chimeraforge.planner.resolver import ResolverError
+    from chimeraforge.planner.service import run_plan
 
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.WARNING,
@@ -226,20 +222,27 @@ def plan(
         print_models_table()
         raise typer.Exit()
 
+    # Fail loud with a clean message. Under --json, emit {"error": ...} so an
+    # automated consumer parsing stdout gets JSON on failure, not Rich-styled text.
+    def _fail(msg: str) -> None:
+        if output_json:
+            import json as _json
+
+            console.print(_json.dumps({"error": msg}), highlight=False, soft_wrap=True)
+        else:
+            console.print(f"[red]Error:[/] {msg}")
+        raise typer.Exit(code=1)
+
     # Validate inputs
     if request_rate <= 0:
-        console.print("[red]Error:[/] --request-rate must be positive.")
-        raise typer.Exit(code=1)
+        _fail("--request-rate must be positive.")
     if avg_tokens <= 0:
-        console.print("[red]Error:[/] --avg-tokens must be positive.")
-        raise typer.Exit(code=1)
+        _fail("--avg-tokens must be positive.")
     if electricity_rate < 0:
-        console.print("[red]Error:[/] --electricity-rate must be non-negative.")
-        raise typer.Exit(code=1)
+        _fail("--electricity-rate must be non-negative.")
     kv_quant = kv_quant.lower()
     if kv_quant not in KV_QUANT_BYTES:
-        console.print(f"[red]Error:[/] --kv-quant must be one of: {', '.join(KV_QUANT_BYTES)}.")
-        raise typer.Exit(code=1)
+        _fail(f"--kv-quant must be one of: {', '.join(KV_QUANT_BYTES)}.")
 
     def _parse_degree(raw: str, flag: str) -> int | None:
         raw = raw.strip().lower()
@@ -248,11 +251,9 @@ def plan(
         try:
             val = int(raw)
         except ValueError:
-            console.print(f"[red]Error:[/] {flag} must be a positive integer or 'auto'.")
-            raise typer.Exit(code=1)
+            _fail(f"{flag} must be a positive integer or 'auto'.")
         if val < 1:
-            console.print(f"[red]Error:[/] {flag} must be >= 1.")
-            raise typer.Exit(code=1)
+            _fail(f"{flag} must be >= 1.")
         return val
 
     tp_val = _parse_degree(tensor_parallel, "--tensor-parallel")
@@ -260,36 +261,28 @@ def plan(
     tp_on = tp_val is None or tp_val > 1
     pp_on = pp_val is None or pp_val > 1
     if tp_on and pp_on:
-        console.print(
-            "[red]Error:[/] --tensor-parallel and --pipeline-parallel cannot be combined yet; "
+        _fail(
+            "--tensor-parallel and --pipeline-parallel cannot be combined yet; "
             "set only one above 1."
         )
-        raise typer.Exit(code=1)
     if context_length <= 0:
-        console.print("[red]Error:[/] --context-length must be positive.")
-        raise typer.Exit(code=1)
+        _fail("--context-length must be positive.")
     if budget <= 0:
-        console.print("[red]Error:[/] --budget must be positive.")
-        raise typer.Exit(code=1)
+        _fail("--budget must be positive.")
     if latency_slo <= 0:
-        console.print("[red]Error:[/] --latency-slo must be positive.")
-        raise typer.Exit(code=1)
+        _fail("--latency-slo must be positive.")
     if not 0.0 <= quality_target <= 1.0:
-        console.print("[red]Error:[/] --quality-target must be between 0.0 and 1.0.")
-        raise typer.Exit(code=1)
+        _fail("--quality-target must be between 0.0 and 1.0.")
     if safety_target is not None and not 0.0 <= safety_target <= 1.0:
-        console.print("[red]Error:[/] --safety-target must be between 0.0 and 1.0.")
-        raise typer.Exit(code=1)
+        _fail("--safety-target must be between 0.0 and 1.0.")
 
     from chimeraforge.planner.constants import WORKLOAD_CV2
 
     if workload not in WORKLOAD_CV2:
-        console.print(f"[red]Error:[/] --workload must be one of: {', '.join(WORKLOAD_CV2)}.")
-        raise typer.Exit(code=1)
+        _fail(f"--workload must be one of: {', '.join(WORKLOAD_CV2)}.")
     workload_cv2 = WORKLOAD_CV2[workload]
     if measure_first and not model:
-        console.print("[red]Error:[/] --measure requires --model.")
-        raise typer.Exit(code=1)
+        _fail("--measure requires --model.")
 
     # Optionally benchmark the model(s) live first, folding real throughput +
     # scaling into the local corpus so the plan below runs on measured numbers.
@@ -314,90 +307,67 @@ def plan(
                 + (f", eta(N={mres.n_concurrent})={mres.eta_at_n}" if mres.eta_at_n else "")
             )
 
-    # Load models (explicit path > measured corpus > bundled)
-    if models_path:
-        try:
-            planner_models = load_models(models_path)
-        except FileNotFoundError:
-            console.print(f"[red]Error:[/] models file not found: {models_path}")
-            raise typer.Exit(code=1)
-        except ValueError as exc:  # JSONDecodeError subclasses ValueError
-            console.print(f"[red]Error:[/] invalid models file '{models_path}': {exc}")
-            raise typer.Exit(code=1)
-    else:
-        planner_models = load_effective_models()
+    # Manual overrides need exactly one --model.
+    overrides = {
+        "params_b": params_b,
+        "n_layers": n_layers,
+        "n_kv_heads": n_kv_heads,
+        "d_head": d_head,
+    }
+    if model and any(v is not None for v in overrides.values()) and len(model) != 1:
+        _fail("manual overrides require exactly one --model.")
 
-    # Resolve explicit --model ids to concrete specs (registry / Ollama / HF /
-    # manual). When absent, fall back to the registry size-class search.
-    specs: dict = {}
-    if model:
-        from chimeraforge.planner.resolver import ResolverError, resolve_spec
-
-        overrides = {
-            "params_b": params_b,
-            "n_layers": n_layers,
-            "n_kv_heads": n_kv_heads,
-            "d_head": d_head,
-        }
-        if any(v is not None for v in overrides.values()) and len(model) != 1:
-            console.print("[red]Error:[/] manual overrides require exactly one --model.")
-            raise typer.Exit(code=1)
-        for ident in model:
-            try:
-                spec = resolve_spec(
-                    ident,
-                    ollama_url=ollama_url,
-                    hf_token=hf_token,
-                    overrides=overrides,
-                    allow_network=not no_network,
-                )
-            except ResolverError as exc:
-                console.print(f"[red]Error resolving '{escape(ident)}':[/] {escape(str(exc))}")
-                raise typer.Exit(code=1)
-            specs[ident] = spec
-            if not output_json:
-                console.print(
-                    f"[dim]Resolved[/] {ident} -> {spec.params_b}B "
-                    f"({spec.n_layers}L/{spec.n_kv_heads}kv/{spec.d_head}d) "
-                    f"[dim]source={spec.source}[/]"
-                )
-        target_models = list(specs.keys())
-    else:
-        target_models = find_models_for_size(model_size)
-
-    gpu = get_gpu(hardware)
-    if gpu is None:
+    if get_gpu(hardware) is None:
         console.print(
             f"[yellow]Warning:[/] '{hardware}' not in hardware DB, "
             "using default RTX 4080 12GB specs."
         )
 
-    # Trace rejections so a 0-result explains which gate was binding instead of
-    # a generic "nothing fit". Only summarised when the search returns empty.
-    trace: list = []
+    # Core search runs through the shared service (same path the MCP server uses).
+    try:
+        result = run_plan(
+            models=list(model) if model else None,
+            model_size=model_size,
+            hardware=hardware,
+            request_rate=request_rate,
+            latency_slo=latency_slo,
+            quality_target=quality_target,
+            budget=budget,
+            avg_tokens=avg_tokens,
+            context_length=context_length,
+            prompt_tokens=prompt_tokens,
+            safety_target=safety_target,
+            workload_cv2=workload_cv2,
+            electricity_rate=electricity_rate,
+            kv_quant=kv_quant,
+            tensor_parallel=tp_val,
+            pipeline_parallel=pp_val,
+            pareto=pareto,
+            models_path=models_path,
+            ollama_url=ollama_url,
+            hf_token=hf_token,
+            allow_network=not no_network,
+            overrides=overrides,
+        )
+    except FileNotFoundError:
+        _fail(f"models file not found: {models_path}")
+    except ResolverError as exc:
+        _fail(f"resolving model: {escape(str(exc))}")
+    except ValueError as exc:  # JSONDecodeError (bad models file) subclasses ValueError
+        _fail(f"invalid models file '{models_path}': {exc}" if models_path else escape(str(exc)))
 
-    candidates = enumerate_candidates(
-        models=planner_models,
-        target_models=target_models,
-        hardware=hardware,
-        request_rate=request_rate,
-        latency_slo=latency_slo,
-        quality_target=quality_target,
-        budget=budget,
-        avg_tokens=avg_tokens,
-        context_length=context_length,
-        safety_target=safety_target,
-        specs=specs,
-        trace=trace,
-        prompt_tokens=prompt_tokens,
-        workload_cv2=workload_cv2,
-        electricity_rate=electricity_rate,
-        kv_quant=kv_quant,
-        tensor_parallel=tp_val,
-        pipeline_parallel=pp_val,
-    )
+    candidates = result.candidates
+    trace = result.trace
+    frontier = result.frontier
 
-    frontier = pareto_frontier(candidates) if pareto else None
+    # Echo resolved specs (human mode only), after the search.
+    if model and not output_json:
+        for ident, spec in result.specs.items():
+            console.print(
+                f"[dim]Resolved[/] {ident} -> {spec.params_b}B "
+                f"({spec.n_layers}L/{spec.n_kv_heads}kv/{spec.d_head}d) "
+                f"[dim]source={spec.source}[/]"
+            )
 
     if output_json:
         # highlight=False + soft_wrap: emit plain JSON so it stays valid (Rich
