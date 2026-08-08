@@ -83,7 +83,7 @@ pip install "chimeraforge[mcp]"
 Claude Code:
 
 ```bash
-claude mcp add --transport stdio chimeraforge -- uvx chimeraforge mcp
+claude mcp add --transport stdio chimeraforge -- uvx --from "chimeraforge[mcp]" chimeraforge mcp
 ```
 
 Claude Desktop / Cursor (add to your MCP config file):
@@ -93,11 +93,13 @@ Claude Desktop / Cursor (add to your MCP config file):
   "mcpServers": {
     "chimeraforge": {
       "command": "uvx",
-      "args": ["chimeraforge", "mcp"]
+      "args": ["--from", "chimeraforge[mcp]", "chimeraforge", "mcp"]
     }
   }
 }
 ```
+
+The `--from "chimeraforge[mcp]"` pulls in the MCP SDK; `uvx` runs the server in a self-contained environment. If you have already `pip install "chimeraforge[mcp]"` into the environment your client launches, you can instead use `"command": "chimeraforge", "args": ["mcp"]`.
 
 Exposes three tools: `chimeraforge_plan` (the full gate search), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge.
 

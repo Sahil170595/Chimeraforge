@@ -18,6 +18,14 @@
       "transport": {
         "type": "stdio"
       },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "chimeraforge[mcp]",
+          "description": "Install ChimeraForge with the optional MCP server extra"
+        }
+      ],
       "packageArguments": [
         {
           "type": "positional",
