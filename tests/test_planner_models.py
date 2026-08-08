@@ -84,6 +84,33 @@ class TestMaxConcurrentSeqs:
         q4_seqs = m.max_concurrent_seqs(8.03, "Q4_K_M", self.ARCH, 8192, 80.0, kv_bytes=0.5)
         assert q4_seqs > fp16_seqs > 0
 
+    def test_tp_shards_weights_lowers_per_gpu_vram(self):
+        # 0.10.0: tensor parallelism shards weights 1/tp -> less VRAM per GPU.
+        m = VRAMModel()
+        base = m.predict("llama3.1-8b", "FP16", 4096)
+        assert m.predict("llama3.1-8b", "FP16", 4096, tp=1) == pytest.approx(base)  # backward-compat
+        assert base > m.predict("llama3.1-8b", "FP16", 4096, tp=2) > m.predict(
+            "llama3.1-8b", "FP16", 4096, tp=4
+        )
+
+    def test_tp_lets_oversized_model_fit(self):
+        # A 70B FP16 model (~156 GB/GPU) exceeds an 80 GB card at tp=1 but fits at tp=4.
+        m = VRAMModel()
+        arch = {"n_layers": 80, "n_kv_heads": 8, "d_head": 128}
+        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, tp=1) > 80
+        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, tp=4) < 80
+
+    def test_tp_kv_shard_capped_at_kv_heads(self):
+        # KV cannot split finer than one head per GPU: for a 2-KV-head model, tp=2
+        # and tp=8 leave the KV term identical; only the weight term keeps shrinking,
+        # so the whole delta must be the weight delta (weight/2 - weight/8).
+        m = VRAMModel(overhead_factor=1.0, act_coeff=0.0)
+        arch = {"n_layers": 32, "n_kv_heads": 2, "d_head": 128}
+        p2 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=2)
+        p8 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=8)
+        weight_gb = 4.0 * 8.0 / 8  # Q8_0 = 8 bpw
+        assert (p2 - p8) == pytest.approx(weight_gb / 2 - weight_gb / 8)
+
     def test_bigger_gpu_holds_more_seqs(self):
         m = VRAMModel()
         small = m.max_concurrent_seqs(3.21, "Q4_K_M", self.ARCH, 2048, 12.0)
@@ -148,6 +175,30 @@ class TestThroughputModel:
         f16 = tp.roofline_tps(7.0, "FP16", "RTX 4090 24GB")
         f32 = tp.roofline_tps(7.0, "FP32", "RTX 4090 24GB")
         assert f32 == pytest.approx(f16 * 0.5, rel=0.02)
+
+    def test_tp_decode_tp1_equals_batched(self, bundled_models):
+        # 0.10.0: tp=1 must reproduce the single-GPU batched model exactly.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(7.0, "FP16", "H100 80GB")
+        assert t.tp_decode_tps(
+            n1, 0.02, 16, 1, 4096, 32, 900.0, "H100 80GB", 7.0
+        ) == t.batched_decode_tps(n1, 0.02, 16, "H100 80GB", 7.0)
+
+    def test_tp_nvlink_near_ideal_single_stream(self, bundled_models):
+        # At batch=1 over NVLink, all-reduce comms is negligible -> ~tp x speedup.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        assert t.tp_decode_tps(n1, 0.02, 1, 4, 8192, 80, 900.0, "H100 80GB", 70.0) == pytest.approx(
+            4 * n1, rel=0.05
+        )
+
+    def test_tp_pcie_slower_than_nvlink(self, bundled_models):
+        # Same config, slower interconnect -> higher comms cost -> less throughput.
+        t = bundled_models.throughput
+        n1 = t.roofline_tps(70.0, "FP16", "H100 80GB")
+        pcie = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 64.0, "H100 80GB", 70.0)
+        nvlink = t.tp_decode_tps(n1, 0.02, 64, 4, 8192, 80, 900.0, "H100 80GB", 70.0)
+        assert pcie < nvlink
 
 
 # -- Scaling Model ----------------------------------------------------

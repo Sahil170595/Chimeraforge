@@ -863,3 +863,85 @@ class TestKvQuant:
         )
         explicit = self._plan(bundled_models, "fp16")
         assert [c.vram_gb for c in default] == [c.vram_gb for c in explicit]
+
+
+class TestTensorParallel:
+    """0.10.0: TP splits an oversized model across GPUs; cost scales with N*tp."""
+
+    def _spec(self, native_quant=None):
+        return ModelSpec(
+            name="big/llama-70b",
+            params_b=70.0,
+            n_layers=80,
+            n_kv_heads=8,
+            d_head=128,
+            hidden_size=8192,
+            native_quant=native_quant,
+            source="manual",
+        )
+
+    def _plan(self, models, tp, native_quant=None):
+        s = self._spec(native_quant)
+        return enumerate_candidates(
+            models=models,
+            target_models=[s.name],
+            hardware="H100 80GB",
+            request_rate=2.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=4096,
+            specs={s.name: s},
+            tensor_parallel=tp,
+        )
+
+    def test_tp_fits_oversized_model(self, bundled_models):
+        # 70B FP16 (~140 GB) can't run at tp=1 on an 80 GB GPU, but fits at tp=4.
+        tp1_fp16 = [c for c in self._plan(bundled_models, 1) if c.quant == "FP16"]
+        tp4_fp16 = [c for c in self._plan(bundled_models, 4) if c.quant == "FP16"]
+        assert not tp1_fp16  # FP16 rejected at tp=1 (doesn't fit one GPU)
+        assert tp4_fp16  # fits at tp=4
+        c = tp4_fp16[0]
+        assert c.tensor_parallel == 4
+        assert c.gpus_total == c.n_agents * 4
+        assert c.vram_gb <= 80
+
+    def test_tp_cost_and_provenance(self, bundled_models):
+        c = [x for x in self._plan(bundled_models, 4) if x.quant == "FP16"][0]
+        assert c.gpus_total == c.n_agents * 4  # fleet = N replicas x 4 GPUs
+        assert c.monthly_cost > 0
+        assert c.provenance["throughput"] == "estimated"  # TP throughput is modelled
+        assert any("tensor-parallel" in w for w in c.warnings)
+
+    def test_auto_tp_fits_with_minimum_degree(self, bundled_models):
+        # native_quant=FP16 forces FP16-only, so auto must pick the smallest TP that
+        # makes a 70B fit an 80 GB card (tp=1 can't; it lands on tp>1 and fits).
+        cands = self._plan(bundled_models, None, native_quant="FP16")
+        assert cands
+        assert all(c.tensor_parallel > 1 for c in cands)
+        assert all(c.vram_gb <= 80 for c in cands)
+
+    def test_tp1_default_unchanged(self, bundled_models):
+        # A model that fits one GPU: tp=1 explicit and default must be identical.
+        s = ModelSpec(
+            name="x/13b", params_b=13.0, n_layers=40, n_kv_heads=8, d_head=128, source="manual"
+        )
+        common = dict(
+            models=bundled_models,
+            target_models=[s.name],
+            hardware="H100 80GB",
+            request_rate=1.0,
+            latency_slo=20000,
+            quality_target=0.0,
+            budget=1e9,
+            avg_tokens=128,
+            context_length=2048,
+            specs={s.name: s},
+        )
+        default = enumerate_candidates(**common)
+        explicit1 = enumerate_candidates(**common, tensor_parallel=1)
+        assert [(c.quant, c.monthly_cost, c.total_throughput_tps) for c in default] == [
+            (c.quant, c.monthly_cost, c.total_throughput_tps) for c in explicit1
+        ]
+        assert all(c.tensor_parallel == 1 and c.gpus_total == c.n_agents for c in default)

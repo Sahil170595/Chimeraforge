@@ -61,6 +61,14 @@ class TestPlanFailLoud:
             == 1
         )
 
+    def test_invalid_tensor_parallel_rejected(self):
+        r = runner.invoke(app, ["plan", "--model-size", "3b", "--tp", "banana"])
+        assert r.exit_code == 1
+        assert "tensor-parallel" in r.output
+
+    def test_zero_tensor_parallel_rejected(self):
+        assert runner.invoke(app, ["plan", "--model-size", "3b", "--tp", "0"]).exit_code == 1
+
 
 class TestReportFailLoud:
     def test_malformed_json_fails_clean(self, tmp_path: Path):
