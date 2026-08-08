@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-08-08
+
+### Fixed
+- **MCP server launch via `uvx` now installs the `mcp` extra.** The documented
+  `uvx chimeraforge mcp` created an ephemeral environment with only the core
+  dependencies, so `build_server()`'s `from mcp.server.fastmcp import FastMCP`
+  raised and the server never started. The README client configs (Claude Code,
+  Claude Desktop / Cursor) and the MCP registry manifest now use
+  `uvx --from "chimeraforge[mcp]" chimeraforge mcp` — expressed in `server.json`
+  via `runtimeArguments` so registry clients compose the identical command.
+
 ## [0.12.1] - 2026-08-08
+
+### Added
+- **MCP registry manifest (`server.json`) and `mcp-name` ownership token** in the
+  README, so the package can be claimed and listed on
+  registry.modelcontextprotocol.io under `io.github.Sahil170595/chimeraforge`.
 
 ### Changed
 - **README rewritten as the PyPI/GitHub shopfront** for the current 0.12.0 feature
