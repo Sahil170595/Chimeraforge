@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-08-09
+
+Four correctness defects, found by probing the published package the way an outside
+user meets it rather than by reading the source. All four produced a confident answer
+that was wrong, or no answer with no reason — the two outcomes a planner can least
+afford, because neither looks like a failure. Full findings and reproductions in
+[`docs/ax-audit-2026-08.md`](docs/ax-audit-2026-08.md).
+
+### Fixed
+- **`--model-size` substituted silently instead of refusing.** `find_models_for_size`
+  fell back to the single *nearest* registry model when nothing matched within 50%,
+  and to *every* model when the string would not parse. The registry tops out at
+  8.03B, so every request above roughly 12B took the first path: `--model-size 70b`
+  answered with llama3.1-8b's 8.03B parameters and 4.55 GB of VRAM, and
+  `--model-size banana` planned happily across 129 rows. Nothing in the output said
+  the request had been changed. Both paths now raise `ResolverError`, and the message
+  names the registry's span and both escape hatches — `--model` for a real HF/Ollama
+  resolve, `--params-b` to override — because a refusal that does not say what would
+  work is a dead end.
+- **`--json` was not a contract.** Human-readable text went to the same stream as the
+  payload, so output stopped being JSON while the exit code still said success. Fixed
+  in four places: the unknown-hardware warning, `catalog`'s empty-state message, and
+  `--list-hardware` / `--list-models`, which ignored `--json` entirely and printed
+  box-drawing tables. `--list-hardware` mattered most — it is the only way to discover
+  a valid `--hardware` value, so it is the listing an automated caller most needs to
+  read. Diagnostics now go to a stderr console.
+- **An empty result did not explain itself.** `summarize_trace()` already existed and
+  already said why nothing fit; it was gated behind `not output_json`, so the
+  explanation was withheld from exactly the caller that cannot infer it. The commonest
+  case is the default `--budget` of 100 USD/month excluding every datacenter GPU — an
+  H100 at the DB's own $2.50/hr is about $1,825/month. It now prints to stderr under
+  `--json`, so stdout stays exactly one array and `| jq` keeps working:
+  `blocked at budget gate - ollama: $1800/mo (N=1) > $100`.
+- **An unknown `--hardware` was substituted, not refused.** It warned and then planned
+  on RTX 4080 12GB specs, returning a full result set about a GPU nobody asked for —
+  and because the warning went to stdout, a caller stripping non-JSON lines to recover
+  the payload got those rows with nothing recording the substitution. Now refused,
+  with the known GPUs listed.
+
+### Changed
+- `[project.urls]` `Homepage` now points at <https://chimeraforge.vercel.app> rather
+  than the repository, and `Changelog` and `Issues` were added. The site and the
+  package did not link to each other in either direction, so a reader arriving from
+  `pip install` had no way to find it.
+- Five tests were rewritten because they specified the defect: one asserted that
+  `"100b"` returns `llama3.1-8b`, another that `"abc"` returns every model. The
+  instinct behind them — "should not crash" — is right, and a clean refusal satisfies
+  it while a wrong number does not. The replacements assert the refusal, that the
+  message names the way forward, and that the size classes the registry *does* hold
+  still resolve.
+
 ## [0.12.2] - 2026-08-08
 
 ### Fixed
