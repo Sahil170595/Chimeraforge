@@ -12,7 +12,7 @@ from chimeraforge.planner.engine import (
     find_models_for_size,
     summarize_trace,
 )
-from chimeraforge.planner.resolver import ModelSpec
+from chimeraforge.planner.resolver import ModelSpec, ResolverError
 
 
 # -- Planner Engine ---------------------------------------------------
@@ -691,34 +691,54 @@ class TestSpotChecks:
 
 
 class TestFindModelsEdgeCases:
-    def test_zero_size(self):
-        """find_models_for_size('0b') should not crash."""
-        models = find_models_for_size("0b")
-        assert isinstance(models, list)
-        assert len(models) > 0
+    """A size class the registry cannot model is refused, not substituted.
 
-    def test_negative_size(self):
-        models = find_models_for_size("-1b")
-        assert isinstance(models, list)
-        assert len(models) > 0
+    These tests previously specified the opposite, and in doing so specified a defect:
+    `test_large_size_returns_closest` asserted that "100b" returns llama3.1-8b, and
+    `test_non_numeric` asserted that "abc" returns every model. Both behaviours were
+    real, and both made the planner answer a question it had not been asked — a
+    `--model-size 70b` plan reported 8.03B parameters and 4.55 GB of VRAM, with nothing
+    in the output saying the request had been changed.
 
-    def test_empty_string(self):
-        models = find_models_for_size("")
-        assert isinstance(models, list)
-        assert len(models) > 0
+    "Should not crash" was the right instinct. A clean refusal satisfies it; a wrong
+    number does not.
+    """
 
-    def test_non_numeric(self):
-        models = find_models_for_size("abc")
-        assert set(models) == set(MODEL_PARAMS_B.keys())
+    @pytest.mark.parametrize("size", ["0b", "0", "-1b"])
+    def test_non_positive_size_is_refused(self, size):
+        with pytest.raises(ResolverError, match="must be positive"):
+            find_models_for_size(size)
 
-    def test_large_size_returns_closest(self):
-        models = find_models_for_size("100b")
-        assert len(models) >= 1
-        assert "llama3.1-8b" in models  # closest to 100b
+    @pytest.mark.parametrize("size", ["", "abc", "banana"])
+    def test_unparseable_size_is_refused(self, size):
+        with pytest.raises(ResolverError, match="unrecognised"):
+            find_models_for_size(size)
+
+    @pytest.mark.parametrize("size", ["30b", "70b", "100b", "405b"])
+    def test_a_size_beyond_the_registry_is_refused_not_approximated(self, size):
+        with pytest.raises(ResolverError, match="within 50%"):
+            find_models_for_size(size)
+
+    def test_the_refusal_names_what_the_caller_can_do_instead(self):
+        """A refusal that does not say what would work is just a dead end."""
+        with pytest.raises(ResolverError) as excinfo:
+            find_models_for_size("70b")
+        message = str(excinfo.value)
+        assert "--model" in message, "the escape hatch for an off-registry model must be named"
+        assert "--params-b" in message, "the manual override must be named"
+        assert f"{max(MODEL_PARAMS_B.values())}B" in message, "the registry's span must be stated"
 
     def test_decimal_size(self):
         models = find_models_for_size("1.5b")
         assert "qwen2.5-1.5b" in models
+
+    @pytest.mark.parametrize(
+        ("size", "expected"),
+        [("1b", "llama3.2-1b"), ("3b", "llama3.2-3b"), ("8b", "llama3.1-8b")],
+    )
+    def test_sizes_the_registry_does_hold_still_resolve(self, size, expected):
+        """The other half: refusing must not have broken the classes that work."""
+        assert expected in find_models_for_size(size)
 
 
 # -- Quality Tier Tests -------------------------------------------------------

@@ -12,6 +12,8 @@ from rich.console import Console
 from rich.table import Table
 
 console = Console()
+# Diagnostics go here so `--json` output on stdout stays exactly one document.
+err_console = Console(stderr=True)
 
 
 def catalog(
@@ -60,10 +62,23 @@ def catalog(
     else:
         specs = load_catalog()
         if not specs:
-            console.print(
-                "[yellow]Catalog is empty.[/] Run [bold]chimeraforge catalog --build[/] "
-                "to populate it."
-            )
+            # Under --json the empty state still has to BE json. This printed prose to
+            # stdout and exited 0, so a caller got success plus an unparseable body: the
+            # emptiness was real, and unreadable by the thing that asked for data.
+            if output_json:
+                console.print(
+                    json_mod.dumps({"models": {}, "errors": []}, indent=2),
+                    highlight=False,
+                    soft_wrap=True,
+                )
+                err_console.print(
+                    "Catalog is empty. Run `chimeraforge catalog --build` to populate it."
+                )
+            else:
+                console.print(
+                    "[yellow]Catalog is empty.[/] Run [bold]chimeraforge catalog --build[/] "
+                    "to populate it."
+                )
             raise typer.Exit(code=0)
 
     if output_json:
