@@ -186,6 +186,24 @@ def format_json(candidates: list[Candidate]) -> str:
     return json.dumps([asdict(c) for c in candidates], indent=2)
 
 
+def format_launch(launch) -> None:
+    """Print the serve command for the recommended config, plus its caveats."""
+    body = launch.command
+    if launch.env:
+        exports = "\n".join(f"export {e}" for e in launch.env)
+        body = f"{exports}\n\n{body}"
+    console.print(
+        Panel(
+            body,
+            title=f"Launch command ({launch.backend})",
+            border_style="magenta",
+        )
+    )
+    if launch.notes:
+        note_text = "\n".join(f"  - {n}" for n in launch.notes)
+        console.print(Panel(note_text, title="Launch notes", border_style="dim"))
+
+
 def format_suggestions(
     ranked: list[Candidate],
     hardware: str,

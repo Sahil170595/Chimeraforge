@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-08-09
+
+### Added
+- **Launch-command export (`plan --launch`) — the plan now tells you how to run it.**
+  Emits a copy-paste `vllm serve` / `ollama run` / TGI `docker run` command for the
+  recommended config, with the flags *derived from the plan itself*: context length
+  (`--max-model-len` / `--max-total-tokens` / `num_ctx`), tensor-parallel degree
+  (`--tensor-parallel-size` / `--num-shard`), pipeline-parallel degree, concurrent
+  batch (`--max-num-seqs` / `--max-concurrent-requests` / `OLLAMA_NUM_PARALLEL`), and
+  KV-cache dtype. These are precisely the values that are error-prone to hand-compute
+  from a plan, and they are the last gap between "here's the config" and a running
+  server. New `planner/launch.py` (`build_launch_command`, `LaunchCommand`).
+- **The MCP `chimeraforge_plan` tool returns the same command** in a new `launch`
+  field, so an assistant answering "what GPU do I need" can also answer the
+  question that always follows it without inventing flags.
+
+### Changed
+- `plan --json --launch` emits one document, `{"candidates": [...], "launch": {...}}`.
+  Without `--launch`, `--json` still emits the bare candidate array exactly as before,
+  so the 0.12.3 JSON contract is unchanged for every existing consumer.
+
+### Notes
+- The exporter refuses to fake what it cannot derive, matching the planner's
+  provenance principle: a model whose source doesn't match the backend's expected
+  identifier format (an Ollama tag handed to `vllm serve`) yields a `<placeholder>`
+  plus an explaining note rather than a plausible-but-wrong id; a GGUF quant level
+  (`Q4_K_M`) becomes a note to serve the native-equivalent checkpoint rather than a
+  fabricated `--quantization Q4_K_M` flag; `--gpu-memory-utilization` is labeled a
+  starting point; and where a backend's smallest KV dtype (fp8) is coarser than the
+  quantization the plan modeled (q4), the note says real VRAM will exceed the plan.
+
 ## [0.12.3] - 2026-08-09
 
 Four correctness defects, found by probing the published package the way an outside

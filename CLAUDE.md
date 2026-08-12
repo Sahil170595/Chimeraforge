@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.12.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.13.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -36,13 +36,16 @@ chimeraforge suggest --source catalog --hardware "RTX 4080 12GB"   # no network 
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (provenance: measured)
 
+# Export the serve command for the winning config (vllm/ollama/tgi)
+chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --launch
+
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (549 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (585 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -74,6 +77,7 @@ src/
       hardware.py                     # GPUSpec dataclass (+ tdp_watts, interconnect_gbps), GPU_DB (22 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
       formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
+      launch.py                       # build_launch_command(): Candidate -> vllm/ollama/tgi serve command (0.13.0)
       data/fitted_models.json         # Pre-fitted coefficients from TR133 (loaded via importlib.resources)
 
   python/banterhearts/                # Python agent benchmarking package
@@ -127,7 +131,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 20 files, 549 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 21 files, 585 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -273,11 +277,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 549 total tests
+pytest tests/ -v                    # 585 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (549 tests, 20 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (585 tests, 21 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -293,6 +297,8 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
+- **Launch export** (27): test_launch.py - per-backend derived flags (context/TP/PP/batch/
+  KV dtype), placeholder+note on id-source mismatch, `--json --launch` wrapper contract
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
