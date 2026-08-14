@@ -178,6 +178,12 @@ def plan(
         help="Show the cost/latency/quality trade-off frontier (the menu of "
         "non-dominated configs), not just the single cheapest pick.",
     ),
+    launch: bool = typer.Option(
+        False,
+        "--launch",
+        help="Also emit a copy-paste serve command (vllm/ollama/tgi) for the "
+        "recommended config, with the plan's context/parallelism/batch/KV flags.",
+    ),
     list_hardware: bool = typer.Option(
         False,
         "--list-hardware",
@@ -408,11 +414,40 @@ def plan(
                 f"[dim]source={spec.source}[/]"
             )
 
+    # Launch command for the winning config (opt-in). Built from the plan's own
+    # parameters, so the flags match what was actually sized.
+    launch_cmd = None
+    if launch and candidates:
+        from chimeraforge.planner.launch import build_launch_command
+
+        best = candidates[0]
+        try:
+            launch_cmd = build_launch_command(
+                best,
+                result.specs.get(best.model),
+                context_length=context_length,
+                prompt_tokens=prompt_tokens,
+                kv_quant=kv_quant,
+            )
+        except ValueError as exc:
+            # A backend with no template must not kill an otherwise-valid plan.
+            err_console.print(f"[yellow]Launch command unavailable:[/] {escape(str(exc))}")
+
     if output_json:
         # highlight=False + soft_wrap: emit plain JSON so it stays valid (Rich
         # would otherwise reflow long string values and corrupt them) and pipes
         # cleanly to `jq`.
         payload = format_pareto_json(frontier) if pareto else format_json(candidates)
+        if launch:
+            # Wrap only under --launch so the default --json contract (a bare array)
+            # is unchanged for every existing consumer.
+            payload = json_mod.dumps(
+                {
+                    "candidates": json_mod.loads(payload),
+                    "launch": launch_cmd.to_dict() if launch_cmd else None,
+                },
+                indent=2,
+            )
         console.print(payload, highlight=False, soft_wrap=True)
     elif pareto:
         format_pareto(frontier, hardware)
@@ -426,6 +461,11 @@ def plan(
             budget=budget,
             safety_target=safety_target,
         )
+
+    if launch_cmd is not None and not output_json:
+        from chimeraforge.planner.formatter import format_launch
+
+        format_launch(launch_cmd)
 
     if not candidates and trace:
         from chimeraforge.planner.engine import summarize_trace

@@ -15,6 +15,7 @@ from dataclasses import asdict
 
 from chimeraforge.planner.engine import summarize_trace
 from chimeraforge.planner.hardware import GPU_DB, get_gpu
+from chimeraforge.planner.launch import build_launch_command
 from chimeraforge.planner.resolver import ResolverError, resolve_spec
 from chimeraforge.planner.service import run_plan
 
@@ -128,14 +129,31 @@ def plan_deployment(
             "hint": "relax quality_target/budget/latency_slo_ms, quantize (kv_quant), or "
             "use a larger GPU or tensor/pipeline parallelism.",
         }
+    # "How do I actually run it" is the immediate next question an assistant gets
+    # asked, and the flags (context, TP/PP, batch, KV dtype) are exactly what a model
+    # guesses wrong -- so ship the derived command with the plan.
+    best = result.candidates[0]
+    try:
+        launch = build_launch_command(
+            best,
+            result.specs.get(best.model),
+            context_length=context_length,
+            prompt_tokens=prompt_tokens,
+            kv_quant=kv_quant,
+        ).to_dict()
+    except ValueError:
+        launch = None  # backend without a template -- the plan itself is still valid
+
     return {
         "ok": True,
         "hardware": hardware,
-        "recommended": _candidate_summary(result.candidates[0]),
+        "recommended": _candidate_summary(best),
+        "launch": launch,
         "alternatives": [_candidate_summary(c) for c in result.candidates[1:_MAX_CANDIDATES]],
         "total_evaluated": len(result.candidates),
         "note": "Numbers are labeled measured/estimated/unknown in each candidate's "
-        "`provenance`; '~' fields are estimates, not measured.",
+        "`provenance`; '~' fields are estimates, not measured. `launch` carries the "
+        "serve command for the recommended config -- read its `notes` before running.",
     }
 
 

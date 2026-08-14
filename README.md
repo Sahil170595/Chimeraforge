@@ -101,7 +101,7 @@ Claude Desktop / Cursor (add to your MCP config file):
 
 The `--from "chimeraforge[mcp]"` pulls in the MCP SDK; `uvx` runs the server in a self-contained environment. If you have already `pip install "chimeraforge[mcp]"` into the environment your client launches, you can instead use `"command": "chimeraforge", "args": ["mcp"]`.
 
-Exposes three tools: `chimeraforge_plan` (the full gate search), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge.
+Exposes three tools: `chimeraforge_plan` (the full gate search), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge. `chimeraforge_plan` also returns a `launch` field -- the serve command for the recommended config -- so the assistant can answer "and how do I run it" without inventing flags.
 
 ---
 
@@ -115,6 +115,7 @@ chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"   
 chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434  # any Ollama tag
 chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4   # multi-GPU
 chimeraforge plan --model-size 3b --kv-quant q4 --pareto                       # smaller KV cache, trade-off menu
+chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --launch          # + the serve command to actually run it
 chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 ```
 
@@ -124,6 +125,7 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - **Fits models too big for one GPU:** `--tensor-parallel/--tp {N|auto}` shards weights + KV across N GPUs (Megatron-style, comms-modelled); `--pipeline-parallel/--pp {N|auto}` splits layers across N stages instead (cheaper on slow interconnects, needs batching to fill the pipeline). Not combinable yet.
 - **KV-cache quantization** (`--kv-quant {fp16,q8,q4}`) shrinks the cache and raises max concurrency -- biggest win at long context.
 - **Energy** (`--electricity-rate`): monthly kWh cost, `$/1M-tok (+energy)`, and tok/s-per-watt, reported alongside (not folded into) the budget gate.
+- **Launch-command export** (`--launch`): emits the `vllm serve` / `ollama run` / TGI `docker run` command for the winning config, with the plan's own context length, TP/PP degree, batch size, and KV dtype filled in -- the flags that are error-prone to hand-compute. It won't fabricate what it can't derive: a GGUF quant level becomes a note to serve the native-equivalent checkpoint, not an invented `--quantization` flag.
 - Per-prediction provenance (`measured` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
 
