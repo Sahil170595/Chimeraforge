@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-08-14
+
+### Fixed
+- **Mixture-of-Experts models are no longer planned as if they were dense.** An MoE
+  model keeps every expert resident in VRAM but a decoded token only reads the
+  experts it routed to. The planner previously used the *total* parameter count
+  everywhere, so it under-predicted MoE throughput by the active/total ratio --
+  **3.6x on Mixtral-8x7B, ~18x on DeepSeek-V3** -- and inflated TTFT by the same
+  factor. Those are the flagship 2026 models, and the wrong answer looked
+  confident. Now VRAM and the concurrency cap size on **total** params (unchanged),
+  while the decode roofline, the decode compute ceiling, and prefill/TTFT use
+  **active** params.
+
+### Added
+- `ModelSpec` carries MoE geometry (`num_experts`, `experts_per_token`,
+  `moe_intermediate_size`, `n_dense_layers`) with `is_moe` and `active_params_b`.
+  Active params are derived first-principles by subtracting the routed experts a
+  token does *not* select -- which avoids having to model attention, embeddings,
+  shared experts, or norms at all. Verified against published counts:
+  **Mixtral-8x7B 12.9B (exact), DeepSeek-V3 37.5B vs 37B, Qwen3-30B-A3B 3.32B vs 3.3B.**
+- The resolver reads MoE fields from HF `config.json` across family spellings
+  (Mixtral `num_local_experts`, DeepSeek `n_routed_experts` + `first_k_dense_replace`,
+  Qwen `num_experts`).
+- `Candidate.active_params_b` exposes the split, and an MoE plan warns which count
+  drove which prediction.
+
+### Notes
+- When the expert geometry is incomplete, `active_params_b` falls back to the
+  **total** count. An under-informed guess would *inflate* predicted throughput,
+  so the conservative dense answer is the honest one.
+- Expert parallelism and routing load-imbalance are still not modelled (the
+  imbalance ratio is workload-dependent and would have to be measured, not
+  assumed) -- the MoE warning says so.
+- Dense models are byte-identical to 0.13.0: `active == total` on every path.
+
 ## [0.13.0] - 2026-08-09
 
 ### Added

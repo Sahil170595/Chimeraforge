@@ -171,3 +171,16 @@ MODEL_ARCH: dict[str, dict[str, int]] = {
     "llama3.2-3b": {"n_layers": 28, "n_kv_heads": 8, "d_head": 128},
     "llama3.1-8b": {"n_layers": 32, "n_kv_heads": 8, "d_head": 128},
 }
+
+# Mixture-of-Experts (0.14.0). A SwiGLU expert is three matrices (gate, up, down),
+# each hidden x moe_intermediate. Used to size the routed experts a token does NOT
+# select, which is what separates an MoE model's active params from its total.
+MOE_EXPERT_MATRICES = 3
+
+# HF config.json key aliases for MoE geometry -- every family names these
+# differently (Mixtral num_local_experts, DeepSeek n_routed_experts, Qwen
+# num_experts), so resolution tries each in order.
+MOE_NUM_EXPERTS_KEYS = ("num_local_experts", "n_routed_experts", "num_experts")
+MOE_TOPK_KEYS = ("num_experts_per_tok", "moe_topk", "num_experts_per_token")
+MOE_INTERMEDIATE_KEYS = ("moe_intermediate_size", "expert_intermediate_size", "intermediate_size")
+MOE_DENSE_LAYER_KEYS = ("first_k_dense_replace",)

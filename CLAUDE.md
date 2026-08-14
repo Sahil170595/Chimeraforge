@@ -4,7 +4,7 @@
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.13.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.14.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -45,7 +45,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (585 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (608 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -131,7 +131,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 21 files, 585 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 22 files, 608 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -173,6 +173,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Replicas scale linearly** (eta=1); the old Amdahl serial-fraction model was wrong for replica fan-out (capped throughput at ~1.8x; rejected >=7B) and is no longer applied.
 - **Tensor parallelism (0.10.0):** `plan --tensor-parallel {N|auto}` (alias `--tp`) splits ONE model across N GPUs — weights /N, KV across heads (`VRAMModel...tp=`), so a model too big for one GPU fits (70B FP16 on 4x H100). `ThroughputModel.tp_decode_tps` gives ~Nx aggregate bandwidth minus Megatron all-reduce comms (2/layer, scaled by `GPUSpec.interconnect_gbps`): near-ideal on NVLink, erodes on PCIe/high batch. TP throughput is an **estimate** (comms modelled, not measured — warns; `INTERCONNECT_EFFICIENCY` calibratable). Fleet = N replicas x TP GPUs (cost/energy scale with `gpus_total`); `auto` = smallest TP that fits. `tp=1` reproduces pre-0.10.0 exactly.
 - **Pipeline parallelism (0.11.0):** `plan --pipeline-parallel {N|auto}` (alias `--pp`) splits a model's *layers* into N stages (`VRAMModel...pp=`) — weights + each stage's KV /N with **no head cap** (scales past `n_kv_heads`, unlike TP). `ThroughputModel.pp_decode_tps`: ~Nx bandwidth, only a small point-to-point activation pass (no all-reduce) so **barely degrades on PCIe where TP collapses** — but the GPipe **pipeline bubble** (`batch/(batch+pp-1)`) means PP needs batching (poor at batch 1, warns when under-filled). Estimate (bubble modelled). **TP and PP can't combine yet** (errors); `auto`=smallest PP that fits (may need higher for throughput); `pp=1` reproduces pre-0.11.0 exactly.
+- **Mixture-of-Experts (0.14.0):** MoE splits the param count in two and each is correct in a different place -- **VRAM/concurrency use TOTAL** (every expert resident), **decode roofline + compute ceiling + prefill/TTFT use ACTIVE** (`ModelSpec.active_params_b`). Active is derived by *subtracting the routed experts a token does not select* (`n_moe_layers * (num_experts - experts_per_token) * MOE_EXPERT_MATRICES * hidden * moe_intermediate`), so attention/embeddings/shared-experts never need modelling. Matches published counts (Mixtral 12.9B exact, DS-V3 37.5 vs 37, Qwen3-A3B 3.32 vs 3.3). Resolver reads per-family config keys (`num_local_experts`/`n_routed_experts`/`num_experts`, `first_k_dense_replace`). **Incomplete geometry falls back to TOTAL** -- a guess would inflate throughput, so dense is the honest default. Expert parallelism + routing imbalance NOT modelled (warns). Dense models are byte-identical to 0.13.0.
 - **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
@@ -277,11 +278,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 585 total tests
+pytest tests/ -v                    # 608 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (585 tests, 21 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (608 tests, 22 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -299,6 +300,9 @@ pytest tests/ --cov=src             # With coverage
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
 - **Launch export** (27): test_launch.py - per-backend derived flags (context/TP/PP/batch/
   KV dtype), placeholder+note on id-source mismatch, `--json --launch` wrapper contract
+- **MoE** (23): test_moe.py - active-param derivation vs PUBLISHED counts (Mixtral/
+  DeepSeek-V3/Qwen3-A3B), per-family config keys, dense unaffected, degrade-to-total
+  on incomplete geometry, engine uses total for VRAM + active for throughput/TTFT
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
