@@ -6,7 +6,7 @@ Extracted from TR133 research. No repo-specific paths or imports.
 from __future__ import annotations
 
 # Canonical search ladder for the planner's quant sweep (highest precision first).
-QUANT_LEVELS = ["FP16", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q3_K_S", "Q2_K"]
+QUANT_LEVELS = ["FP16", "FP8", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q3_K_S", "Q2_K"]
 
 # Approximate effective bits-per-weight (incl. GGUF block/scale overhead). Broader
 # than QUANT_LEVELS so a model's *native* quant (e.g. an Ollama `q4_0`/`IQ4_XS`
@@ -15,6 +15,7 @@ QUANT_BPW: dict[str, float] = {
     "FP32": 32.0,
     "FP16": 16.0,
     "BF16": 16.0,
+    "FP8": 8.0,  # exact: 1 byte/param, no block-scale overhead
     "Q8_0": 8.0,
     "Q6_K": 6.5,
     "Q5_K_M": 5.5,
@@ -184,3 +185,40 @@ MOE_NUM_EXPERTS_KEYS = ("num_local_experts", "n_routed_experts", "num_experts")
 MOE_TOPK_KEYS = ("num_experts_per_tok", "moe_topk", "num_experts_per_token")
 MOE_INTERMEDIATE_KEYS = ("moe_intermediate_size", "expert_intermediate_size", "intermediate_size")
 MOE_DENSE_LAYER_KEYS = ("first_k_dense_replace",)
+
+# Which weight formats each backend actually serves (0.15.0). Before this, the
+# planner offered every GGUF level on every backend -- so it would recommend
+# "vLLM + Q2_K", which vLLM does not serve in the normal path, and priced it using
+# a speedup multiplier measured on llama.cpp. The bundled corpus only ever measured
+# FP16 on vLLM/TGI, so those GGUF cells were extrapolation stacked on a mismatch.
+# GGUF is llama.cpp's format (Ollama); vLLM/TGI serve float and FP8 checkpoints.
+QUANT_FAMILY_FLOAT = "float"
+QUANT_FAMILY_FP8 = "fp8"
+QUANT_FAMILY_GGUF = "gguf"
+
+FLOAT_QUANTS = frozenset({"FP32", "FP16", "BF16"})
+
+BACKEND_QUANT_FAMILIES: dict[str, frozenset[str]] = {
+    "ollama": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_GGUF}),
+    "vllm": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
+    "tgi": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
+}
+
+
+def quant_family(quant: str) -> str:
+    """Classify a quant into the serving format family a backend must support."""
+    if quant == "FP8":
+        return QUANT_FAMILY_FP8
+    if quant in FLOAT_QUANTS:
+        return QUANT_FAMILY_FLOAT
+    return QUANT_FAMILY_GGUF
+
+
+def backend_supports_quant(backend: str, quant: str) -> bool:
+    """True if ``backend`` can serve a checkpoint in ``quant``'s format.
+
+    Unknown backends are permissive -- a caller registering a custom backend
+    should not have every quant silently rejected.
+    """
+    families = BACKEND_QUANT_FAMILIES.get(backend)
+    return True if families is None else quant_family(quant) in families

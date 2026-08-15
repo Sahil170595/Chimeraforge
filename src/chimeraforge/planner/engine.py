@@ -25,6 +25,8 @@ from chimeraforge.planner.constants import (
     QUANT_BPW,
     QUANT_LEVELS,
     TP_SEARCH_DEGREES,
+    backend_supports_quant,
+    quant_family,
 )
 from chimeraforge.planner.hardware import get_gpu
 from chimeraforge.planner.models import PlannerModels
@@ -340,6 +342,24 @@ def enumerate_candidates(
                 continue  # known-unsafe cell: refusal rate below target
 
             for backend in BACKENDS:
+                # A backend can only serve formats it actually supports. GGUF is
+                # llama.cpp's (Ollama); vLLM/TGI serve float and FP8 checkpoints.
+                # Offering "vLLM + Q2_K" priced with a llama.cpp speedup was a
+                # recommendation nobody could deploy.
+                if not backend_supports_quant(backend, quant):
+                    _reject(
+                        model,
+                        quant,
+                        "format",
+                        f"{backend} does not serve {quant_family(quant)} checkpoints",
+                    )
+                    continue
+                # FP8 needs FP8 tensor cores; on Ampere/Turing it is emulated or
+                # refused outright, so it is not a config to hand someone.
+                if quant == "FP8" and gpu is not None and not gpu.fp8_supported:
+                    _reject(model, quant, "format", f"{hardware} has no FP8 tensor cores")
+                    continue
+
                 # Predict N=1 throughput, recording provenance. A direct
                 # (model|backend|quant) lookup is "measured"; the bundled
                 # fp16/power-law fallback for a registry(-aliased) model, or a

@@ -8,7 +8,7 @@ untested hardware.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -22,6 +22,11 @@ class GPUSpec:
     # Per-GPU interconnect bandwidth in GB/s (bidirectional aggregate) for tensor-
     # parallel all-reduce: NVLink on datacenter SXM, PCIe on consumer. 0 = unknown.
     interconnect_gbps: float = 0.0
+    # Native FP8 tensor cores (0.15.0). Serving an FP8 checkpoint on a GPU without
+    # them means emulation or an outright refusal from the backend, so the planner
+    # will not offer FP8 there. Ada / Hopper / Blackwell / CDNA3 have it; Ampere
+    # (RTX 30, A100) and Turing (T4) do not.
+    fp8_supported: bool = True
 
 
 # Reference GPU - all TR measurements collected on this card
@@ -73,6 +78,14 @@ GPU_DB: dict[str, GPUSpec] = {
     # Data-center - AMD (Infinity Fabric)
     "MI300X 192GB": GPUSpec("MI300X 192GB", 192.0, 5300.0, 2.00, 1307.0, 750.0, 896.0),
 }
+
+# Pre-Ada NVIDIA parts have no FP8 tensor cores: Ampere (RTX 30, A100) and Turing
+# (T4). Everything else in the DB (Ada, Hopper, Blackwell, CDNA3 MI300X) does.
+# Applied as a post-pass so the table above stays one readable line per GPU.
+NO_FP8_GPUS = frozenset({"RTX 3090 24GB", "RTX 3080 10GB", "A100 40GB", "A100 80GB", "T4 16GB"})
+for _name in NO_FP8_GPUS:
+    GPU_DB[_name] = replace(GPU_DB[_name], fp8_supported=False)
+del _name
 
 
 def get_gpu(name: str) -> GPUSpec | None:
