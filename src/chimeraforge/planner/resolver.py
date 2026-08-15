@@ -33,6 +33,11 @@ from chimeraforge.planner.constants import (
     MODEL_ARCH,
     MODEL_FAMILY,
     MODEL_PARAMS_B,
+    MOE_DENSE_LAYER_KEYS,
+    MOE_EXPERT_MATRICES,
+    MOE_INTERMEDIATE_KEYS,
+    MOE_NUM_EXPERTS_KEYS,
+    MOE_TOPK_KEYS,
     QUANT_BPW,
 )
 from chimeraforge.planner.identity import parse_identity, parse_quant, resolve_model
@@ -78,6 +83,11 @@ class ModelSpec:
             can reuse that model's *measured* throughput/quality/safety data
             instead of a roofline estimate. ``None`` for genuinely off-registry
             models (Ollama/HF/manual), which fall back to first-principles.
+        num_experts: Routed experts per MoE layer (Mixtral 8, DeepSeek-V3 256).
+        experts_per_token: Routed experts each token is dispatched to (top-k).
+        moe_intermediate_size: Per-expert FFN width. Needed to size an expert.
+        n_dense_layers: Leading layers that are dense, not MoE (DeepSeek's
+            ``first_k_dense_replace``); the rest carry routed experts.
     """
 
     name: str
@@ -92,6 +102,57 @@ class ModelSpec:
     variant: str | None = None
     source: str = SOURCE_MANUAL
     registry_alias: str | None = None
+    # Mixture-of-Experts geometry (0.14.0). All None/0 for a dense model.
+    num_experts: int | None = None
+    experts_per_token: int | None = None
+    moe_intermediate_size: int | None = None
+    n_dense_layers: int = 0
+
+    @property
+    def is_moe(self) -> bool:
+        """True when the model routes tokens to a subset of per-layer experts."""
+        return bool(
+            self.num_experts
+            and self.experts_per_token
+            and self.num_experts > self.experts_per_token
+        )
+
+    @property
+    def active_params_b(self) -> float:
+        """Parameters actually read per decoded token, in billions.
+
+        A dense model reads every weight per token, so active == total. An MoE
+        layer reads only the ``experts_per_token`` routed experts it dispatched
+        to, so the weights of the *unselected* routed experts are never touched:
+
+            active = total - n_moe_layers * (num_experts - experts_per_token)
+                             * MOE_EXPERT_MATRICES * hidden * moe_intermediate
+
+        Subtracting the unselected experts (rather than summing what *is* active)
+        avoids having to model attention, embeddings, shared experts, and norms
+        at all -- everything outside that subtraction is read every token either
+        way. Verified against published active counts: Mixtral-8x7B 12.9B (exact),
+        DeepSeek-V3 37.5B vs 37B, Qwen3-30B-A3B 3.32B vs 3.3B.
+
+        Falls back to ``params_b`` whenever the geometry is incomplete -- an
+        under-informed guess here would silently *inflate* predicted throughput,
+        so the conservative dense answer is the honest one.
+        """
+        if not self.is_moe or not self.hidden_size or not self.moe_intermediate_size:
+            return self.params_b
+        n_moe_layers = max(self.n_layers - max(self.n_dense_layers, 0), 0)
+        if n_moe_layers <= 0:
+            return self.params_b
+        unselected = self.num_experts - self.experts_per_token
+        inactive_b = (
+            n_moe_layers
+            * unselected
+            * MOE_EXPERT_MATRICES
+            * self.hidden_size
+            * self.moe_intermediate_size
+        ) / 1e9
+        # Never return a nonsensical (<=0) or larger-than-total active count.
+        return round(min(max(self.params_b - inactive_b, 0.0) or self.params_b, self.params_b), 4)
 
     def arch(self) -> dict[str, int]:
         """Return the arch dict consumed by ``VRAMModel.predict``."""
@@ -207,6 +268,38 @@ def spec_from_ollama_show(name: str, payload: dict) -> ModelSpec:
     )
 
 
+def _first_key(config: dict, keys: tuple[str, ...]) -> int | None:
+    """First present, positive int among ``keys`` in an HF config."""
+    for k in keys:
+        v = config.get(k)
+        if isinstance(v, int) and v > 0:
+            return v
+    return None
+
+
+def moe_from_config(config: dict) -> dict:
+    """Extract MoE geometry from an HF ``config.json``.
+
+    Every family spells these differently (Mixtral ``num_local_experts``,
+    DeepSeek ``n_routed_experts``, Qwen ``num_experts``), so each field is tried
+    against a list of aliases. Returns empty-ish values for a dense model.
+
+    ``intermediate_size`` is only accepted as the expert width when the config
+    also declares experts -- on a dense model that key is the ordinary FFN width
+    and would otherwise be mistaken for an expert.
+    """
+    num_experts = _first_key(config, MOE_NUM_EXPERTS_KEYS)
+    top_k = _first_key(config, MOE_TOPK_KEYS)
+    if not num_experts or not top_k:
+        return {}
+    return {
+        "num_experts": num_experts,
+        "experts_per_token": top_k,
+        "moe_intermediate_size": _first_key(config, MOE_INTERMEDIATE_KEYS),
+        "n_dense_layers": _first_key(config, MOE_DENSE_LAYER_KEYS) or 0,
+    }
+
+
 def spec_from_hf(repo: str, config: dict, params_b: float | None) -> ModelSpec:
     """Build a ModelSpec from an HF ``config.json`` (+ param count from the API).
 
@@ -250,6 +343,7 @@ def spec_from_hf(repo: str, config: dict, params_b: float | None) -> ModelSpec:
         family=ident.family or config.get("model_type"),
         variant=ident.variant,
         source=SOURCE_HF,
+        **moe_from_config(config),
     )
 
 

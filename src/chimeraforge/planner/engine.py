@@ -58,6 +58,9 @@ class Candidate:
     warnings: list[str]
     # Model-agnostic metadata: where the model facts and each prediction came from.
     params_b: float = 0.0
+    # Params read per token (0.14.0). Equals params_b for a dense model; smaller for
+    # MoE, where VRAM sizes on total but throughput/TTFT scale with active.
+    active_params_b: float = 0.0
     model_source: str = SOURCE_REGISTRY
     provenance: dict[str, str] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
@@ -227,6 +230,13 @@ def enumerate_candidates(
             spec = ModelSpec.from_registry(model)
         params_known = spec is not None or model in MODEL_PARAMS_B
         params_b = spec.params_b if spec else MODEL_PARAMS_B.get(model, 3.0)
+        # MoE splits the parameter count in two, and the planner must use the right
+        # one in each place: VRAM holds EVERY expert (total), but a decoded token
+        # only reads the experts it routed to (active). Using total for throughput
+        # under-predicts an MoE model by the active/total ratio -- 3.6x on
+        # Mixtral-8x7B, 18x on DeepSeek-V3. Dense models: active == total.
+        active_params_b = spec.active_params_b if spec else params_b
+        is_moe = bool(spec and spec.is_moe)
         arch = spec.arch() if spec else None
         family = spec.family if spec else None
         # Don't mislabel an unknown model as "registry": only a real registry hit
@@ -246,7 +256,9 @@ def enumerate_candidates(
         # TTFT (prefill) is compute-bound: same for all quants/backends of a model
         # on this GPU and prompt length, so compute it once. 0.0 when GPU compute
         # is unknown -> latency falls back to decode-only.
-        ttft_ms = models.latency.predict_ttft_ms(params_b, prompt_tokens, hardware)
+        # Prefill FLOPs scale with the params a token actually passes through, so
+        # MoE prefill uses active params too.
+        ttft_ms = models.latency.predict_ttft_ms(active_params_b, prompt_tokens, hardware)
 
         # ``alias`` is the registry model whose measured data we may reuse: the
         # model itself for registry hits, the matched model for offline
@@ -341,7 +353,7 @@ def enumerate_candidates(
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
                     throughput_source = "estimated"
                 else:
-                    n1_tps = models.throughput.roofline_tps(params_b, quant, hardware)
+                    n1_tps = models.throughput.roofline_tps(active_params_b, quant, hardware)
                     throughput_source = "estimated"
                     used_roofline = True
 
@@ -372,7 +384,7 @@ def enumerate_candidates(
                             arch_eff["n_layers"],
                             interconnect_gbps,
                             hardware,
-                            params_b,
+                            active_params_b,
                         )
                     if pp > 1:
                         return models.throughput.pp_decode_tps(
@@ -383,10 +395,10 @@ def enumerate_candidates(
                             hidden_size,
                             interconnect_gbps,
                             hardware,
-                            params_b,
+                            active_params_b,
                         )
                     return models.throughput.batched_decode_tps(
-                        n1_tps, kv_per_seq_gb, b, hardware, params_b
+                        n1_tps, kv_per_seq_gb, b, hardware, active_params_b
                     )
 
                 best = None  # (n, b, per_gpu_tps, per_req_tps, lat)
@@ -478,6 +490,13 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if is_moe:
+                    warnings.append(
+                        f"MoE: {active_params_b}B of {params_b}B params active per token "
+                        f"({spec.experts_per_token}/{spec.num_experts} experts). VRAM sizes "
+                        "on total (all experts resident); throughput/TTFT on active. Expert "
+                        "parallelism and routing load-imbalance are not modelled"
+                    )
                 if kv_quantized:
                     warnings.append(
                         f"KV cache quantized ({kv_quant}): VRAM/concurrency reflect it, but "
@@ -571,6 +590,7 @@ def enumerate_candidates(
                         rtsi_risk=rtsi_risk,
                         warnings=warnings,
                         params_b=round(params_b, 4),
+                        active_params_b=round(active_params_b, 4),
                         model_source=model_source,
                         provenance=provenance,
                         max_concurrent_seqs=max_seqs,
