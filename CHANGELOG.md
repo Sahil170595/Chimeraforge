@@ -14,6 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tool output during development.
 
 ### Added
+- **Hidden reasoning-token accounting (`plan --reasoning-tokens N`).** A reasoning
+  model (R1, o-series, QwQ) emits thinking tokens the caller never sees, but the GPU
+  decodes every one and the KV cache holds them for the life of the request.
+  Planning on visible output alone under-counts decode by the reasoning ratio. With
+  1000 hidden tokens on an 8B at 2 req/s, decode goes 128 -> 1128 tokens/request and
+  p95 goes **363ms -> 6128ms** -- the difference between a plan that meets its SLO
+  and one that does not. Exposed on `Candidate` as `reasoning_tokens` and
+  `decode_tokens_per_req`, and as a `reasoning_tokens` argument on the MCP
+  `chimeraforge_plan` tool.
+- A **peak-sequence warning**: when `prompt + visible + reasoning` exceeds
+  `--context-length`, the KV cache was sized for a window the request cannot finish
+  inside.
 - **Convention guards** (`tests/test_repo_conventions.py`): a per-file ASCII-only
   check parametrized over every `src/` and `tests/` Python file, and a version-sync
   check tying `server.json` to `pyproject.toml` and `__version__`, plus the
@@ -25,6 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ownership by reading the `mcp-name` token out of the published description -- and
   then publishes. It refuses to run if `server.json` disagrees with the tag, which
   is exactly how 0.12.3 shipped with the registry still pointing at 0.12.2.
+
+### Notes
+- The reasoning ratio **defaults to 0 and is never inferred**. It is a property of
+  the prompt and the workload, not of the weights, so it stays an explicit scenario
+  input -- measure it rather than let the planner invent one.
 
 ## [0.15.0] - 2026-08-14
 

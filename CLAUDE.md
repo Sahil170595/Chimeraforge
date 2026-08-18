@@ -1,5 +1,58 @@
 # CLAUDE.md — ChimeraForge
 
+## Rule 1 -- Assertive by default
+
+**Believe the problem is solvable and move.** The default is to solve it, not to
+survey options and hand the decision back. Hesitation that stalls delivery is a
+failure mode, the same as a wrong answer.
+
+- **Decide, then report.** If a choice has a defensible best answer, take it,
+  state the call and the reasoning, and keep going. Do not present a menu of
+  options for something you can determine yourself.
+- **Escalate only what is genuinely the user's to decide** -- irreversible or
+  outward-facing actions, spending money, publishing under their name, or a
+  product-direction call with no technically correct answer. Everything else is
+  yours to resolve.
+- **A blocker is a task, not a stop.** "That needs data I don't have" is the
+  start of the work: go get the data, from the primary source, and record where
+  it came from. Missing tooling gets installed; a stale figure gets re-fetched.
+- **Finish the whole arc.** Build, verify, document, ship, and confirm live.
+  Half-finished work handed back with questions attached is not delivery.
+
+This does **not** license guessing. Assertive means *going and finding out*, not
+asserting something unverified -- rigor is how you earn the right to be decisive.
+Confidence about the process, honesty about the evidence.
+
+## Research, data, and validation discipline
+
+Any number that reaches a user, a report, or a bundled dataset is a research
+artifact and is handled like one.
+
+- **Primary sources only.** Fetch the vendor page, the datasheet, the paper, the
+  API. Never transcribe a figure from memory -- model knowledge has a cutoff and
+  prices, specs and APIs move.
+- **Provenance travels with the value.** Every bundled datum records its source
+  (URL or document), the date it was captured, and the method. A dataset without
+  a `captured_at` and a source is not shippable.
+- **Date-stamp and expire.** Snapshot data declares its age and warns when stale
+  rather than presenting an old figure as current.
+- **Regenerable, not hand-typed.** Bundled datasets are produced by a script in
+  `scripts/` that can be re-run to refresh them, so the pipeline is auditable and
+  the data is reproducible.
+- **Validate before it lands.** A build script checks ranges, types, required
+  fields and internal consistency, and fails loudly rather than writing a
+  half-populated file.
+- **Derive, then verify against ground truth.** Prefer a first-principles
+  derivation over a fitted constant, and pin it to published values in a test
+  (as the MoE active-parameter derivation is pinned to Mixtral / DeepSeek-V3 /
+  Qwen3). A self-consistent test proves nothing.
+- **Label the epistemic status.** measured / estimated / unknown, end to end. If
+  a value cannot be stood behind, it is reported as unknown -- never quietly
+  filled with a plausible default.
+- **Current libraries and tooling.** Use the current, supported version of a
+  library, API, or CLI, and check its real interface before writing against it
+  rather than coding from recall. Pin what must be reproducible.
+
 ## Project Overview
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
@@ -45,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (776 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (790 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -131,7 +184,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 24 files, 776 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 25 files, 790 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -279,11 +332,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 776 total tests
+pytest tests/ -v                    # 790 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (776 tests, 24 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (790 tests, 25 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -307,6 +360,8 @@ pytest tests/ --cov=src             # With coverage
 - **FP8 / format gating** (36): test_fp8.py - FP8 bpw+ladder, per-backend format
   families (GGUF=ollama, float+fp8=vllm/tgi), FP8 tensor-core hardware gate,
   rejection reasons, estimated-not-measured quality, launch flags
+- **Reasoning tokens** (13): test_reasoning_tokens.py - hidden-token decode
+  accounting, peak-sequence guard, default-off, CLI/MCP surfaces, negative clamp
 - **Repo conventions** (131): test_repo_conventions.py - per-file ASCII-only guard
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
