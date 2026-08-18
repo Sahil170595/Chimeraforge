@@ -57,7 +57,7 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.15.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.18.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -98,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (820 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (847 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -184,7 +184,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 26 files, 820 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 27 files, 847 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -228,6 +228,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Pipeline parallelism (0.11.0):** `plan --pipeline-parallel {N|auto}` (alias `--pp`) splits a model's *layers* into N stages (`VRAMModel...pp=`) — weights + each stage's KV /N with **no head cap** (scales past `n_kv_heads`, unlike TP). `ThroughputModel.pp_decode_tps`: ~Nx bandwidth, only a small point-to-point activation pass (no all-reduce) so **barely degrades on PCIe where TP collapses** — but the GPipe **pipeline bubble** (`batch/(batch+pp-1)`) means PP needs batching (poor at batch 1, warns when under-filled). Estimate (bubble modelled). **TP and PP can't combine yet** (errors); `auto`=smallest PP that fits (may need higher for throughput); `pp=1` reproduces pre-0.11.0 exactly.
 - **Mixture-of-Experts (0.14.0):** MoE splits the param count in two and each is correct in a different place -- **VRAM/concurrency use TOTAL** (every expert resident), **decode roofline + compute ceiling + prefill/TTFT use ACTIVE** (`ModelSpec.active_params_b`). Active is derived by *subtracting the routed experts a token does not select* (`n_moe_layers * (num_experts - experts_per_token) * MOE_EXPERT_MATRICES * hidden * moe_intermediate`), so attention/embeddings/shared-experts never need modelling. Matches published counts (Mixtral 12.9B exact, DS-V3 37.5 vs 37, Qwen3-A3B 3.32 vs 3.3). Resolver reads per-family config keys (`num_local_experts`/`n_routed_experts`/`num_experts`, `first_k_dense_replace`). **Incomplete geometry falls back to TOTAL** -- a guess would inflate throughput, so dense is the honest default. Expert parallelism + routing imbalance NOT modelled (warns). Dense models are byte-identical to 0.13.0.
 - **Format gating + FP8 (0.15.0):** `BACKEND_QUANT_FAMILIES` / `backend_supports_quant()` restrict each backend to formats it serves -- **GGUF -> ollama only**, **float+FP8 -> vllm/tgi**. Before this the engine offered every GGUF level on every backend and priced it with a llama.cpp-measured multiplier (the corpus only ever measured FP16 on vllm/tgi). `FP8` = exact 8.0 bpw; its throughput multiplier comes from the existing nearest-bpw fallback (lands on Q8_0's 1.3x) rather than an invented constant; quality resolves via the FP16-baseline path as **estimated** (absent from the TR corpus), and it is **unscreened for safety** so `--safety-target` passes it warned per the lookup-only policy. `GPUSpec.fp8_supported` gates FP8 to Ada/Hopper/Blackwell/CDNA3 (`NO_FP8_GPUS` marks Ampere/Turing). Rejections land in the trace (`gate="format"`).
+- **Attention cache shape (0.18.0):** KV sizing uses the model's real shape, not always GQA. `ModelSpec.kv_elems_per_token_per_layer` returns `kv_lora_rank + qk_rope_head_dim` for **MLA** (DeepSeek-V2/V3 = 576 vs GQA's 32,768 -- a 57x overstatement) else `2*n_kv_heads*d_head`. **SWA** caps local layers at `sliding_window` with 1 full-attention layer every `swa_global_every`, giving a layer-weighted effective context. `arch()` only advertises the window when the pattern is ALSO known -- an unplaceable window would shrink the estimate, and under-sizing KV claims a fit that isn't there (Mistral: window, no pattern -> full context). Dense/bare-arch-dict/legacy-cache paths byte-identical.
 - **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
@@ -332,11 +333,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 820 total tests
+pytest tests/ -v                    # 847 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (820 tests, 26 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (847 tests, 27 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -365,6 +366,9 @@ pytest tests/ --cov=src             # With coverage
 - **API cost / break-even** (28): test_apicost.py - hand-checked arithmetic, the
   at-breakeven-costs-are-equal property, staleness (incl. undated = stale),
   bundled-snapshot provenance, open-vs-frontier labeling, CLI + JSON contract
+- **Attention shapes** (26): test_attention_shapes.py - MLA latent width vs GQA,
+  SWA layer-weighted context, conservative when the window pattern is unknown,
+  dense/legacy unchanged, engine warnings, concurrency ceiling 20 -> 503
 - **Repo conventions** (131): test_repo_conventions.py - per-file ASCII-only guard
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token

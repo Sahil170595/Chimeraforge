@@ -80,6 +80,13 @@ class TestServerJsonStaysInSync:
 
         assert chimeraforge.__version__ == pyproject_version
 
+    def test_claude_md_version_line_matches(self, pyproject_version):
+        # This line silently drifted two releases behind before it was guarded.
+        text = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+        match = re.search(r"^\*\*Version:\*\* (\S+)", text, re.MULTILINE)
+        assert match, "no **Version:** line in CLAUDE.md"
+        assert match.group(1) == pyproject_version
+
     def test_description_within_registry_limit(self, server_json):
         # The registry returns 422 above 100 characters.
         assert len(server_json["description"]) <= 100

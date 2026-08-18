@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-08-18
+
+### Fixed
+- **KV-cache is now sized on the model's actual attention shape.** The planner
+  assumed MHA/GQA everywhere -- `2 (K+V) * kv_heads * d_head` per token per layer.
+  Two families break that, and 0.14.0's MoE support made the first one reachable:
+  - **MLA** (DeepSeek-V2/V3) caches a single compressed latent plus a decoupled
+    RoPE key, not per-head K and V. Applying the GQA formula to DeepSeek-V3
+    overstated its cache by **57x** -- 30.5 GB against the real 0.54 GB at 8k
+    context -- which rejected fleets that would have fit. On an 8x H200 group the
+    concurrency ceiling goes from **20 to 503** sequences once the shape is right.
+  - **Sliding-window attention** (Gemma-3 and similar) caps local layers at the
+    window, so the cache stops growing past it rather than scaling with context.
+
+### Added
+- `ModelSpec` carries `kv_lora_rank` / `qk_rope_head_dim` (MLA) and
+  `sliding_window` / `swa_global_every` (SWA), with `is_mla` and
+  `kv_elems_per_token_per_layer`. The resolver reads them from HF `config.json`,
+  including deriving the window pattern from a `layer_types` list.
+- Plans on these models warn which cache shape drove the estimate.
+
+### Notes
+- **A sliding window is only applied when the layer pattern is known too.** Mistral
+  declares a window but no pattern, so it is sized at full context. Applying a
+  window we cannot place would *shrink* the estimate, and under-sizing KV is the
+  direction that turns "it fits" into an OOM -- so the conservative answer wins.
+- Dense MHA/GQA models are unchanged on every path, including bare arch dicts
+  passed by library callers and specs cached before 0.18.0.
+
+
 ## [0.17.0] - 2026-08-18
 
 ### Added
