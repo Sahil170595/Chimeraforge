@@ -710,7 +710,7 @@ class TestFindModelsEdgeCases:
     These tests previously specified the opposite, and in doing so specified a defect:
     `test_large_size_returns_closest` asserted that "100b" returns llama3.1-8b, and
     `test_non_numeric` asserted that "abc" returns every model. Both behaviours were
-    real, and both made the planner answer a question it had not been asked — a
+    real, and both made the planner answer a question it had not been asked -- a
     `--model-size 70b` plan reported 8.03B parameters and 4.55 GB of VRAM, with nothing
     in the output saying the request had been changed.
 
