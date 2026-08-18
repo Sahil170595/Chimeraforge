@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-08-18
+
 ### Added
 - **Self-host vs hosted-API break-even (`plan --compare-api`).** Answers the
   question that comes before "which GPU": is self-hosting worth it at all, at this
