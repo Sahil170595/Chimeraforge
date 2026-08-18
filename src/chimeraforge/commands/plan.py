@@ -366,7 +366,7 @@ def plan(
 
     if get_gpu(hardware) is None:
         # Refused, not substituted. This used to warn and then plan on RTX 4080 12GB
-        # specs, returning a full result set about a GPU nobody asked for — and the
+        # specs, returning a full result set about a GPU nobody asked for -- and the
         # warning went to STDOUT, so a caller stripping non-JSON lines to recover the
         # payload got those rows with nothing in the JSON recording the substitution.
         from chimeraforge.planner.hardware import GPU_DB

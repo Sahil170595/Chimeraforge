@@ -453,13 +453,13 @@ if __name__ == "__main__":
             "while executing identical benchmark-analysis workloads.",
             "",
             f"- **Average throughput improvement:** {throughput_improvement:.1f}% "
-            f"({avg_baseline_throughput:.2f} → {avg_chimera_throughput:.2f} tok/s)",
+            f"({avg_baseline_throughput:.2f} -> {avg_chimera_throughput:.2f} tok/s)",
             f"- **Average TTFT reduction:** {ttft_reduction:.1f}% "
-            f"({avg_baseline_ttft:.2f} → {avg_chimera_ttft:.2f} ms)",
+            f"({avg_baseline_ttft:.2f} -> {avg_chimera_ttft:.2f} ms)",
             "",
             "## Aggregate Performance",
             "",
-            "| Metric | Baseline | Chimera | Δ |",
+            "| Metric | Baseline | Chimera | Delta |",
             "|--------|----------|---------|---|",
             f"| Average Throughput (tok/s) | {avg_baseline_throughput:.2f} | {avg_chimera_throughput:.2f} | "
             f"{throughput_improvement:+.1f}% |",

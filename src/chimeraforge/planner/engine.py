@@ -103,7 +103,7 @@ def find_models_for_size(target_size: str) -> list[str]:
 
     The registry tops out near 8B, so every request above roughly 12B took that second
     path. A planner's only product is a number someone trusts, and a wrong one wearing
-    the right shape is worse than a refusal — so the caller is now told what the registry
+    the right shape is worse than a refusal -- so the caller is now told what the registry
     can model and how to plan for anything else.
     """
     target = target_size.strip().lower().removesuffix("b")
@@ -136,7 +136,7 @@ def find_models_for_size(target_size: str) -> list[str]:
 
 
 def _size_class_hint() -> str:
-    """What the caller can do instead — named, rather than left to guess."""
+    """What the caller can do instead -- named, rather than left to guess."""
     spans = ", ".join(f"{params}B" for params in sorted(MODEL_PARAMS_B.values()))
     return (
         f"The registry holds: {spans}. For anything it does not carry, pass "
