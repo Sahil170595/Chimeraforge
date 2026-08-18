@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-08-18
+
+### Added
+- **Prefix-cache-aware prefill (`plan --prefix-cache-hit-rate`).** vLLM, TGI and
+  SGLang skip prefill for a prompt span already resident in cache. Chatbot and
+  agent traffic -- the workload presets this planner already ships -- reuse a long
+  system prompt and conversation head on nearly every turn, so charging the full
+  prompt on every request overstates TTFT and the tail with it. On an 8B at a
+  4,096-token prompt, a 90% hit rate takes TTFT from **166.3ms to 16.6ms** and p95
+  from **1,355ms to 349ms**. Exposed as `Candidate.prefix_cache_hit_rate` and
+  `prefill_tokens_effective`, and as an argument on the MCP `chimeraforge_plan`
+  tool.
+
+### Notes
+- **Defaults to 0 and is never inferred.** The hit rate is a property of the
+  traffic, not of the model, so there is nothing in a spec to read it from -- it
+  stays an explicit scenario input, like the reasoning-token ratio.
+- **The KV memory a shared prefix saves is deliberately not deducted.** A real
+  server does reclaim it, but under-sizing KV is the direction that claims a fit
+  that is not there, so the conservative number stands and the warning says so.
+- A fully cached prompt still prefills one token: the newest token runs the stack
+  either way, so TTFT never reaches zero.
+
+
 ## [0.18.0] - 2026-08-18
 
 ### Fixed

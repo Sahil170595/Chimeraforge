@@ -89,6 +89,13 @@ def plan(
         "(R1/o-series/QwQ). The GPU decodes these and the KV cache holds them, but "
         "they are not in --avg-tokens. Your scenario input: measure it, do not guess.",
     ),
+    prefix_cache_hit_rate: float = typer.Option(
+        0.0,
+        "--prefix-cache-hit-rate",
+        help="Fraction of the prompt already in the prefix cache (0.0-1.0). Skips "
+        "prefill for that span, lowering TTFT. Your scenario input: chatbot/agent "
+        "traffic reuses a long system prompt, one-shot traffic does not.",
+    ),
     prompt_tokens: int = typer.Option(
         512,
         "--prompt-tokens",
@@ -291,6 +298,8 @@ def plan(
         _fail("--avg-tokens must be positive.")
     if reasoning_tokens < 0:
         _fail("--reasoning-tokens must be non-negative.")
+    if not 0.0 <= prefix_cache_hit_rate <= 1.0:
+        _fail("--prefix-cache-hit-rate must be between 0.0 and 1.0.")
     if electricity_rate < 0:
         _fail("--electricity-rate must be non-negative.")
     kv_quant = kv_quant.lower()
@@ -395,6 +404,7 @@ def plan(
             budget=budget,
             avg_tokens=avg_tokens,
             reasoning_tokens=reasoning_tokens,
+            prefix_cache_hit_rate=prefix_cache_hit_rate,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             safety_target=safety_target,
