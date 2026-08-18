@@ -82,6 +82,13 @@ def plan(
         "--avg-tokens",
         help="Average output tokens per request (decode length).",
     ),
+    reasoning_tokens: int = typer.Option(
+        0,
+        "--reasoning-tokens",
+        help="Hidden thinking tokens generated per request by a reasoning model "
+        "(R1/o-series/QwQ). The GPU decodes these and the KV cache holds them, but "
+        "they are not in --avg-tokens. Your scenario input: measure it, do not guess.",
+    ),
     prompt_tokens: int = typer.Option(
         512,
         "--prompt-tokens",
@@ -276,6 +283,8 @@ def plan(
         _fail("--request-rate must be positive.")
     if avg_tokens <= 0:
         _fail("--avg-tokens must be positive.")
+    if reasoning_tokens < 0:
+        _fail("--reasoning-tokens must be non-negative.")
     if electricity_rate < 0:
         _fail("--electricity-rate must be non-negative.")
     kv_quant = kv_quant.lower()
@@ -379,6 +388,7 @@ def plan(
             quality_target=quality_target,
             budget=budget,
             avg_tokens=avg_tokens,
+            reasoning_tokens=reasoning_tokens,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             safety_target=safety_target,

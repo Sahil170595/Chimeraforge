@@ -64,6 +64,10 @@ class Candidate:
     # MoE, where VRAM sizes on total but throughput/TTFT scale with active.
     active_params_b: float = 0.0
     model_source: str = SOURCE_REGISTRY
+    # Hidden reasoning tokens assumed per request, and the total decoded per
+    # request (visible + reasoning) that drove throughput and latency (0.16.0).
+    reasoning_tokens: int = 0
+    decode_tokens_per_req: int = 0
     provenance: dict[str, str] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
     max_concurrent_seqs: int = 0
@@ -151,6 +155,7 @@ def enumerate_candidates(
     budget: float,
     avg_tokens: int,
     context_length: int,
+    reasoning_tokens: int = 0,
     safety_target: float | None = None,
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
@@ -182,6 +187,15 @@ def enumerate_candidates(
         if trace is not None:
             trace.append((model, quant, gate, detail))
 
+    # Reasoning models emit hidden thinking tokens the caller never sees, but the
+    # GPU decodes every one of them and the KV cache holds them for the whole
+    # request. Planning on visible output alone under-counts decode by the
+    # reasoning ratio -- often several-fold. Never inferred: the ratio is not a
+    # property of the weights, so it stays an explicit scenario input (0 = off).
+    reasoning_hidden = max(int(reasoning_tokens), 0)
+    decode_tokens = max(avg_tokens + reasoning_hidden, 1)
+    # Peak residency is the whole sequence: prompt + everything generated.
+    peak_seq_tokens = prompt_tokens + decode_tokens
     specs = specs or {}
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
@@ -386,7 +400,7 @@ def enumerate_candidates(
                 # latency (TPOT) for aggregate throughput; we pick the smallest
                 # feasible (N, then B) for lowest cost + lowest latency.
                 eta = 1.0
-                required_tps = request_rate * avg_tokens
+                required_tps = request_rate * decode_tokens
                 batched = BACKEND_CONTINUOUS_BATCHING.get(backend, False)
                 b_max = max_seqs if (batched and max_seqs > 1) else 1
                 batch_grid = _batch_grid(b_max)
@@ -433,7 +447,7 @@ def enumerate_candidates(
                             backend,
                             request_rate,
                             n_agents=n,
-                            avg_tokens=avg_tokens,
+                            avg_tokens=decode_tokens,
                             quant=quant,
                             hardware=hardware,
                             n1_tps=per_req,
@@ -510,6 +524,20 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if reasoning_hidden:
+                    warnings.append(
+                        f"reasoning model: {decode_tokens} tokens decoded per request "
+                        f"({avg_tokens} visible + {reasoning_hidden} hidden). Throughput "
+                        "and latency size on the total; the ratio is your scenario "
+                        "input, not a measured property of the model"
+                    )
+                    if peak_seq_tokens > context_length:
+                        warnings.append(
+                            f"peak sequence {peak_seq_tokens} tokens (prompt "
+                            f"{prompt_tokens} + decode {decode_tokens}) exceeds "
+                            f"--context-length {context_length}: KV was sized for a "
+                            "window this request cannot finish inside"
+                        )
                 if is_moe:
                     warnings.append(
                         f"MoE: {active_params_b}B of {params_b}B params active per token "
@@ -611,6 +639,8 @@ def enumerate_candidates(
                         warnings=warnings,
                         params_b=round(params_b, 4),
                         active_params_b=round(active_params_b, 4),
+                        reasoning_tokens=reasoning_hidden,
+                        decode_tokens_per_req=decode_tokens,
                         model_source=model_source,
                         provenance=provenance,
                         max_concurrent_seqs=max_seqs,
