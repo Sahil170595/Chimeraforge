@@ -68,6 +68,10 @@ class Candidate:
     # request (visible + reasoning) that drove throughput and latency (0.16.0).
     reasoning_tokens: int = 0
     decode_tokens_per_req: int = 0
+    # Prefix-cache hit rate assumed, and the prompt tokens actually prefilled
+    # after it (0.19.0). hit_rate 0.0 = no caching assumed.
+    prefix_cache_hit_rate: float = 0.0
+    prefill_tokens_effective: int = 0
     provenance: dict[str, str] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
     max_concurrent_seqs: int = 0
@@ -156,6 +160,7 @@ def enumerate_candidates(
     avg_tokens: int,
     context_length: int,
     reasoning_tokens: int = 0,
+    prefix_cache_hit_rate: float = 0.0,
     safety_target: float | None = None,
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
@@ -196,6 +201,16 @@ def enumerate_candidates(
     decode_tokens = max(avg_tokens + reasoning_hidden, 1)
     # Peak residency is the whole sequence: prompt + everything generated.
     peak_seq_tokens = prompt_tokens + decode_tokens
+    # Prefix caching (vLLM/TGI/SGLang) skips prefill for a prompt span already in
+    # cache, so only the uncached remainder is computed. Chatbot and agent traffic
+    # -- the presets this planner already ships -- reuse a long system prompt and
+    # conversation head on nearly every turn, which is exactly where prefill stops
+    # being the dominant TTFT term. Never inferred: the hit rate is a property of
+    # the traffic, not the model, so it defaults to 0 (no caching assumed).
+    hit_rate = min(max(float(prefix_cache_hit_rate), 0.0), 1.0)
+    # At least one token is always prefilled -- a fully cached prompt still runs the
+    # newest token through the stack, so TTFT never truly reaches zero.
+    prefill_tokens_eff = max(int(round(prompt_tokens * (1.0 - hit_rate))), 1)
     specs = specs or {}
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
@@ -274,7 +289,7 @@ def enumerate_candidates(
         # is unknown -> latency falls back to decode-only.
         # Prefill FLOPs scale with the params a token actually passes through, so
         # MoE prefill uses active params too.
-        ttft_ms = models.latency.predict_ttft_ms(active_params_b, prompt_tokens, hardware)
+        ttft_ms = models.latency.predict_ttft_ms(active_params_b, prefill_tokens_eff, hardware)
 
         # ``alias`` is the registry model whose measured data we may reuse: the
         # model itself for registry hits, the matched model for offline
@@ -524,6 +539,13 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if hit_rate > 0:
+                    warnings.append(
+                        f"prefix cache assumed at {hit_rate:.0%} hit rate: {prefill_tokens_eff} of "
+                        f"{prompt_tokens} prompt tokens prefilled, so TTFT reflects the uncached "
+                        "remainder. The hit rate is your scenario input, not a model property, and "
+                        "the KV memory a shared prefix saves is deliberately NOT deducted"
+                    )
                 if spec is not None and spec.is_mla:
                     warnings.append(
                         f"MLA attention: KV cached as a {spec.kv_lora_rank}-wide latent + "
@@ -661,6 +683,8 @@ def enumerate_candidates(
                         active_params_b=round(active_params_b, 4),
                         reasoning_tokens=reasoning_hidden,
                         decode_tokens_per_req=decode_tokens,
+                        prefix_cache_hit_rate=round(hit_rate, 4),
+                        prefill_tokens_effective=prefill_tokens_eff,
                         model_source=model_source,
                         provenance=provenance,
                         max_concurrent_seqs=max_seqs,
