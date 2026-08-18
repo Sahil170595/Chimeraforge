@@ -222,3 +222,12 @@ def backend_supports_quant(backend: str, quant: str) -> bool:
     """
     families = BACKEND_QUANT_FAMILIES.get(backend)
     return True if families is None else quant_family(quant) in families
+
+
+# Attention cache shape (0.18.0). MLA (DeepSeek-V2/V3) caches a compressed latent
+# instead of per-head K/V; sliding-window attention caps local layers at a window.
+MLA_LORA_RANK_KEYS = ("kv_lora_rank",)
+MLA_ROPE_DIM_KEYS = ("qk_rope_head_dim",)
+SWA_WINDOW_KEYS = ("sliding_window",)
+# 1 full-attention layer every N. Gemma-3 spells this `sliding_window_pattern`.
+SWA_PATTERN_KEYS = ("sliding_window_pattern", "global_attn_every_n_layers")

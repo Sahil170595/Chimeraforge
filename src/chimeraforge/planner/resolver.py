@@ -38,6 +38,10 @@ from chimeraforge.planner.constants import (
     MOE_INTERMEDIATE_KEYS,
     MOE_NUM_EXPERTS_KEYS,
     MOE_TOPK_KEYS,
+    MLA_LORA_RANK_KEYS,
+    MLA_ROPE_DIM_KEYS,
+    SWA_PATTERN_KEYS,
+    SWA_WINDOW_KEYS,
     QUANT_BPW,
 )
 from chimeraforge.planner.identity import parse_identity, parse_quant, resolve_model
@@ -107,6 +111,12 @@ class ModelSpec:
     experts_per_token: int | None = None
     moe_intermediate_size: int | None = None
     n_dense_layers: int = 0
+    # Attention cache shape (0.18.0). Standard MHA/GQA caches 2 (K+V) * n_kv_heads *
+    # d_head per token per layer; these two families do not.
+    kv_lora_rank: int | None = None  # MLA: width of the compressed KV latent
+    qk_rope_head_dim: int | None = None  # MLA: decoupled RoPE key cached alongside it
+    sliding_window: int | None = None  # SWA: attention window, when layers are local
+    swa_global_every: int = 0  # SWA: 1 full-attention layer every N (0 = unknown)
 
     @property
     def is_moe(self) -> bool:
@@ -154,13 +164,40 @@ class ModelSpec:
         # Never return a nonsensical (<=0) or larger-than-total active count.
         return round(min(max(self.params_b - inactive_b, 0.0) or self.params_b, self.params_b), 4)
 
+    @property
+    def is_mla(self) -> bool:
+        """Multi-head Latent Attention (DeepSeek-V2/V3): KV cached as one latent."""
+        return bool(self.kv_lora_rank and self.qk_rope_head_dim)
+
+    @property
+    def kv_elems_per_token_per_layer(self) -> int:
+        """Cache elements held per token, per layer.
+
+        MHA/GQA cache K and V separately for every KV head, so
+        ``2 * n_kv_heads * d_head``. MLA instead caches a single compressed latent
+        plus a decoupled RoPE key -- ``kv_lora_rank + qk_rope_head_dim`` -- which
+        is dramatically smaller and is the whole point of the design (DeepSeek-V3:
+        576 vs 32,768 elements, a 57x difference).
+        """
+        if self.is_mla:
+            return self.kv_lora_rank + self.qk_rope_head_dim
+        return 2 * self.n_kv_heads * self.d_head
+
     def arch(self) -> dict[str, int]:
         """Return the arch dict consumed by ``VRAMModel.predict``."""
-        return {
+        arch: dict[str, int] = {
             "n_layers": self.n_layers,
             "n_kv_heads": self.n_kv_heads,
             "d_head": self.d_head,
+            "kv_elems_per_token_per_layer": self.kv_elems_per_token_per_layer,
         }
+        # Only advertise a window when the interleave pattern is known too. Applying
+        # a window we cannot place would SHRINK the predicted cache, and an
+        # under-estimate is the direction that says "it fits" when it does not.
+        if self.sliding_window and self.swa_global_every:
+            arch["swa_window"] = self.sliding_window
+            arch["swa_global_every"] = self.swa_global_every
+        return arch
 
     def weight_gb(self, quant: str) -> float:
         """Raw weight size in GB for a quant level (params * bpw / 8)."""
@@ -300,6 +337,35 @@ def moe_from_config(config: dict) -> dict:
     }
 
 
+def attention_from_config(config: dict) -> dict:
+    """Extract non-standard attention cache geometry from an HF ``config.json``.
+
+    Returns only what is actually declared. A sliding window is reported without a
+    pattern when the config gives no pattern, and ``arch()`` then declines to apply
+    it -- an unplaceable window would shrink the cache estimate, and under-sizing
+    KV is what turns "it fits" into an OOM.
+    """
+    out: dict = {}
+    lora = _first_key(config, MLA_LORA_RANK_KEYS)
+    rope = _first_key(config, MLA_ROPE_DIM_KEYS)
+    if lora and rope:
+        out["kv_lora_rank"] = lora
+        out["qk_rope_head_dim"] = rope
+    window = _first_key(config, SWA_WINDOW_KEYS)
+    if window:
+        out["sliding_window"] = window
+        pattern = _first_key(config, SWA_PATTERN_KEYS)
+        if pattern:
+            out["swa_global_every"] = pattern
+        else:
+            layer_types = config.get("layer_types")
+            if isinstance(layer_types, list) and layer_types:
+                full = sum(1 for x in layer_types if "full" in str(x))
+                if full:
+                    out["swa_global_every"] = max(round(len(layer_types) / full), 1)
+    return out
+
+
 def spec_from_hf(repo: str, config: dict, params_b: float | None) -> ModelSpec:
     """Build a ModelSpec from an HF ``config.json`` (+ param count from the API).
 
@@ -344,6 +410,7 @@ def spec_from_hf(repo: str, config: dict, params_b: float | None) -> ModelSpec:
         variant=ident.variant,
         source=SOURCE_HF,
         **moe_from_config(config),
+        **attention_from_config(config),
     )
 
 

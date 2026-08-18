@@ -99,20 +99,38 @@ class VRAMModel:
         batch_size: int = 1,
         kv_bytes: float = KV_DTYPE_BYTES,
     ) -> float:
-        """KV-cache size in GB: ``2 (K+V) * layers * batch * ctx * kv_heads * d_head * kv_bytes``.
+        """KV-cache size in GB for the model's actual attention shape.
+
+        The default is MHA/GQA: ``2 (K+V) * kv_heads * d_head`` elements per token
+        per layer. Two families break that assumption and the difference is not
+        marginal:
+
+        - **MLA** (DeepSeek-V2/V3) caches one compressed latent plus a decoupled
+          RoPE key instead of per-head K and V. The resolver supplies the real
+          figure via ``kv_elems_per_token_per_layer``; applying the GQA formula to
+          DeepSeek-V3 overstates its cache by ~57x (30.5 GB vs 0.54 GB at 8k).
+        - **Sliding-window attention** caps local layers at the window rather than
+          the full context, so the cache stops growing past it. Only applied when
+          the interleave pattern is known as well (``swa_global_every``): applying
+          a window we cannot place would shrink the estimate, and under-estimating
+          is the direction that claims a fit that is not there.
 
         ``kv_bytes`` is the per-element cache size (2 = FP16 default; see
         ``KV_QUANT_BYTES`` for q8/q4).
         """
-        total_bytes = (
-            2
-            * arch["n_layers"]
-            * batch_size
-            * context_length
-            * arch["n_kv_heads"]
-            * arch["d_head"]
-            * kv_bytes
+        n_layers = arch["n_layers"]
+        per_token = arch.get("kv_elems_per_token_per_layer") or (
+            2 * arch["n_kv_heads"] * arch["d_head"]
         )
+        window, every = arch.get("swa_window"), arch.get("swa_global_every")
+        if window and every and every > 0 and window < context_length:
+            # 1 layer in `every` attends the full context; the rest stop at the window.
+            global_layers = n_layers / every
+            local_layers = max(n_layers - global_layers, 0)
+            effective_ctx = (global_layers * context_length + local_layers * window) / n_layers
+        else:
+            effective_ctx = context_length
+        total_bytes = n_layers * batch_size * effective_ctx * per_token * kv_bytes
         return total_bytes / (1024**3)
 
     def max_concurrent_seqs(

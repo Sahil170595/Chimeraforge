@@ -524,6 +524,26 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if spec is not None and spec.is_mla:
+                    warnings.append(
+                        f"MLA attention: KV cached as a {spec.kv_lora_rank}-wide latent + "
+                        f"{spec.qk_rope_head_dim} RoPE dims per layer, not per-head K/V. "
+                        "Sized on that shape; the standard GQA formula would overstate this "
+                        "model's cache by more than an order of magnitude"
+                    )
+                if spec is not None and spec.sliding_window:
+                    if spec.swa_global_every:
+                        warnings.append(
+                            f"sliding-window attention: local layers capped at "
+                            f"{spec.sliding_window} tokens with 1 full-attention layer every "
+                            f"{spec.swa_global_every}, so KV stops growing past the window"
+                        )
+                    else:
+                        warnings.append(
+                            f"model declares a {spec.sliding_window}-token sliding window but "
+                            "no layer pattern, so KV is sized at full context (conservative) -- "
+                            "the real cache is smaller"
+                        )
                 if reasoning_hidden:
                     warnings.append(
                         f"reasoning model: {decode_tokens} tokens decoded per request "
