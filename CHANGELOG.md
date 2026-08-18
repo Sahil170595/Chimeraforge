@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Non-ASCII characters removed from source** (4 em-dashes, 2 arrows, 1 delta).
+  Three sat in `run_demo.py`'s *rendered report output*, not just comments. They
+  render as mojibake on a cp1252 console and twice crashed a plain `print()` of
+  tool output during development.
+
+### Added
+- **Convention guards** (`tests/test_repo_conventions.py`): a per-file ASCII-only
+  check parametrized over every `src/` and `tests/` Python file, and a version-sync
+  check tying `server.json` to `pyproject.toml` and `__version__`, plus the
+  registry's 100-char description limit and the README `mcp-name` token. Both rules
+  had already been broken more than once, invisibly.
+- **The MCP Registry publish is now part of the release workflow.** A new
+  `mcp-registry` job runs after the PyPI upload, authenticates with GitHub OIDC (no
+  stored secret), waits for the release to be indexed on PyPI -- the registry proves
+  ownership by reading the `mcp-name` token out of the published description -- and
+  then publishes. It refuses to run if `server.json` disagrees with the tag, which
+  is exactly how 0.12.3 shipped with the registry still pointing at 0.12.2.
+
 ## [0.15.0] - 2026-08-14
 
 ### Fixed
