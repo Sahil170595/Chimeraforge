@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 
 import pytest
 
@@ -60,11 +61,13 @@ class TestServerJsonStaysInSync:
 
     @pytest.fixture(scope="class")
     def pyproject_version(self) -> str:
-        import tomllib
-
-        return tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"][
-            "version"
-        ]
+        # Read with a regex rather than tomllib: tomllib is 3.11+ stdlib and this
+        # project supports 3.10, so importing it fails on the oldest Python in CI.
+        # The [project] version line is a stable one-liner, so this is enough.
+        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+        assert match, "no version line in pyproject.toml"
+        return match.group(1)
 
     def test_server_version_matches_package(self, server_json, pyproject_version):
         assert server_json["version"] == pyproject_version
