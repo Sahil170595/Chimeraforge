@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-08-18
+
 ### Fixed
 - **Non-ASCII characters removed from source** (4 em-dashes, 2 arrows, 1 delta).
   Three sat in `run_demo.py`'s *rendered report output*, not just comments. They
