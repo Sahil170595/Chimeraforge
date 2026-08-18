@@ -606,11 +606,25 @@ class TestSafetyGate:
         assert ("llama3.2-1b", "Q4_K_M") in gated  # refusal 0.905 >= 0.8 -> kept
 
     def test_candidates_carry_safety_fields(self, bundled_models):
+        # The gate's contract is lookup-only, by design (TR142/TR146: no
+        # extrapolation). So it rejects cells with a *known* refusal below target
+        # and lets unscreened cells through carrying a loud warning -- it never
+        # invents a refusal rate. Asserted that way rather than "every candidate
+        # has a known refusal", which only held while every quant that survived
+        # happened to be one the GGUF-only safety corpus covers (FP8 is not).
         cands = self._plan(bundled_models, "llama3.2-1b", safety_target=0.8)
         assert cands
         for c in cands:
-            assert c.safety_refusal is not None and c.safety_refusal >= 0.8
+            if c.safety_refusal is None:
+                assert any("safety not screened" in w for w in c.warnings)
+            else:
+                assert c.safety_refusal >= 0.8
             assert c.rtsi_risk in ("HIGH", "MODERATE", "LOW", "UNKNOWN")
+
+    def test_screened_cells_still_gated_when_unscreened_ones_pass(self, bundled_models):
+        # Guard the above loosening: a known-unsafe cell must still be rejected.
+        cands = self._plan(bundled_models, "llama3.2-1b", safety_target=0.8)
+        assert ("llama3.2-1b", "Q2_K") not in {(c.model, c.quant) for c in cands}
 
     def test_non_monotonic_3b_is_data_faithful(self, bundled_models):
         # llama3.2-3b refusal is non-monotonic: Q4_K_M (0.664) < Q2_K (0.927).

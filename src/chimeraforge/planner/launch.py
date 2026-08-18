@@ -82,8 +82,8 @@ def _ollama_tag(candidate, spec) -> tuple[str, bool]:
 
 def _quant_note(candidate) -> list[str]:
     """vLLM/TGI take a *format* (fp8/awq/gptq), not the planner's GGUF quant level."""
-    if candidate.quant == "FP16":
-        return []
+    if candidate.quant in ("FP16", "BF16", "FP8"):
+        return []  # FP8 is a real vLLM/TGI format -- emitted as a flag, not a note
     return [
         f"Planner modeled quant {candidate.quant} (a GGUF scale). vLLM/TGI serve "
         "fp16/fp8/AWQ/GPTQ checkpoints, not GGUF quant names -- serve the "
@@ -104,6 +104,8 @@ def _build_vllm(candidate, spec, *, context_length: int, kv_quant: str) -> Launc
         f"--max-model-len {context_length}",
         f"--gpu-memory-utilization {RECOMMENDED_GPU_MEM_UTIL}",
     ]
+    if candidate.quant == "FP8":
+        parts.append("--quantization fp8")
     if candidate.tensor_parallel > 1:
         parts.append(f"--tensor-parallel-size {candidate.tensor_parallel}")
     if candidate.pipeline_parallel > 1:
@@ -174,6 +176,8 @@ def _build_tgi(
         f"--max-input-tokens {max_input}",
         f"--max-total-tokens {context_length}",
     ]
+    if candidate.quant == "FP8":
+        parts.append("--quantize fp8")
     if candidate.effective_batch > 1:
         parts.append(f"--max-concurrent-requests {candidate.effective_batch}")
     if candidate.tensor_parallel > 1:

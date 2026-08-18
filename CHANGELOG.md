@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-08-14
+
+### Fixed
+- **Backends are only offered formats they actually serve.** The planner enumerated
+  every GGUF quant against every backend, so it would recommend "vLLM + Q2_K" -- a
+  config vLLM does not serve in the normal path -- and price it with a throughput
+  multiplier measured on llama.cpp. The bundled corpus only ever measured **FP16**
+  on vLLM/TGI, so those GGUF cells were an extrapolation stacked on a format
+  mismatch. GGUF is now Ollama-only; vLLM/TGI take float and FP8. Rejected
+  combinations are recorded in the trace, so a 0-result says why.
+
+### Added
+- **FP8 quantization** for vLLM/TGI, the format people actually run there. VRAM is
+  exact (8 bits/param, no block-scale overhead). Throughput reuses the existing
+  nearest-bpw fallback, which lands on the measured 8-bit multiplier rather than
+  inventing an FP8 number -- the conservative end of the published 1.3x-2.3x range,
+  since the compute-bound gains at high batch are not modelled.
+- **`GPUSpec.fp8_supported`.** FP8 is only offered where FP8 tensor cores exist
+  (Ada, Hopper, Blackwell, CDNA3). On Ampere (RTX 30, A100) and Turing (T4) it is
+  rejected with a stated reason rather than silently costed.
+- `plan --launch` emits `--quantization fp8` (vLLM) / `--quantize fp8` (TGI), and
+  drops the "serve a native-equivalent checkpoint" note, which no longer applies.
+
+### Notes
+- **FP8 quality is labeled `estimated`, never `measured`.** It is absent from the
+  TR quality corpus, so it resolves through the FP16-baseline path with no
+  fabricated delta added to the measured data.
+- FP8 is likewise outside the TR134/TR142 safety corpus. Under `--safety-target`
+  it therefore passes as *unscreened* and carries the existing "safety not
+  screened" warning -- the documented lookup-only policy (no extrapolation). A
+  test previously asserted that every candidate under a safety target had a known
+  refusal rate; that held only because every surviving quant happened to be one
+  the GGUF-only corpus covered. It now asserts the actual contract: known-unsafe
+  cells are rejected, unscreened cells pass warned.
+- Ollama + GGUF planning (the reference path) is unchanged.
+
 ## [0.14.0] - 2026-08-14
 
 ### Fixed
