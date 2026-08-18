@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Self-host vs hosted-API break-even (`plan --compare-api`).** Answers the
+  question that comes before "which GPU": is self-hosting worth it at all, at this
+  volume? Self-hosting is a fixed monthly bill for fixed capacity; an API is a
+  per-token charge that scales. The two cross at one volume, and the whole decision
+  turns on which side of it you are on. Prices the planned workload against every
+  hosted option and reports the crossing point in monthly output tokens.
+- **`scripts/build_cost_data.py`** regenerates and validates the bundled price
+  snapshot: schema, types, ISO dates, an https source per provider, and sanity
+  bounds that fail the build rather than shipping a likely parse error.
+
+### Notes
+- **Prices are a dated snapshot, not a live quote.** No vendor publishes a pricing
+  API, so `data/api_pricing.json` carries `captured_at` plus a source URL per
+  provider, and anything past 90 days is reported as **stale** rather than quoted
+  as current. A snapshot with no date at all is treated as stale, never as fresh.
+- **A frontier API is not a like-for-like comparison for an 8B you host.** Every
+  entry is labeled `open` (same class of open-weights model, hosted) or `frontier`
+  (different quality tier), so the number cannot be read as apples-to-apples.
+- Prices captured 2026-08-18 from the vendors' own published pages: Together AI
+  (hosted open models) and Anthropic.
+
+
 ## [0.16.0] - 2026-08-18
 
 ### Fixed

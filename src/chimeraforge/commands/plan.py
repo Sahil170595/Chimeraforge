@@ -191,6 +191,12 @@ def plan(
         help="Also emit a copy-paste serve command (vllm/ollama/tgi) for the "
         "recommended config, with the plan's context/parallelism/batch/KV flags.",
     ),
+    compare_api: bool = typer.Option(
+        False,
+        "--compare-api",
+        help="Also price this workload against hosted APIs and report the break-even "
+        "volume. Uses a dated snapshot of published list prices, not a live quote.",
+    ),
     list_hardware: bool = typer.Option(
         False,
         "--list-hardware",
@@ -443,21 +449,36 @@ def plan(
             # A backend with no template must not kill an otherwise-valid plan.
             err_console.print(f"[yellow]Launch command unavailable:[/] {escape(str(exc))}")
 
+    # Self-host vs hosted API (opt-in). Priced off the winning candidate's actual
+    # monthly bill, so it reflects the fleet the planner just sized.
+    api_cmp = None
+    if compare_api and candidates:
+        from chimeraforge.planner.apicost import PricingError, compare as compare_apis
+
+        try:
+            api_cmp = compare_apis(
+                self_host_monthly=candidates[0].monthly_cost,
+                request_rate=request_rate,
+                prompt_tokens=prompt_tokens,
+                output_tokens=avg_tokens + reasoning_tokens,
+            )
+        except PricingError as exc:
+            err_console.print(f"[yellow]API comparison unavailable:[/] {escape(str(exc))}")
+
     if output_json:
         # highlight=False + soft_wrap: emit plain JSON so it stays valid (Rich
         # would otherwise reflow long string values and corrupt them) and pipes
         # cleanly to `jq`.
         payload = format_pareto_json(frontier) if pareto else format_json(candidates)
-        if launch:
-            # Wrap only under --launch so the default --json contract (a bare array)
-            # is unchanged for every existing consumer.
-            payload = json_mod.dumps(
-                {
-                    "candidates": json_mod.loads(payload),
-                    "launch": launch_cmd.to_dict() if launch_cmd else None,
-                },
-                indent=2,
-            )
+        if launch or compare_api:
+            # Wrap only under --launch/--compare-api so the default --json contract
+            # (a bare array) is unchanged for every existing consumer.
+            wrapped = {"candidates": json_mod.loads(payload)}
+            if launch:
+                wrapped["launch"] = launch_cmd.to_dict() if launch_cmd else None
+            if compare_api:
+                wrapped["api_comparison"] = api_cmp.to_dict() if api_cmp else None
+            payload = json_mod.dumps(wrapped, indent=2)
         console.print(payload, highlight=False, soft_wrap=True)
     elif pareto:
         format_pareto(frontier, hardware)
@@ -476,6 +497,11 @@ def plan(
         from chimeraforge.planner.formatter import format_launch
 
         format_launch(launch_cmd)
+
+    if api_cmp is not None and not output_json:
+        from chimeraforge.planner.formatter import format_api_comparison
+
+        format_api_comparison(api_cmp)
 
     if not candidates and trace:
         from chimeraforge.planner.engine import summarize_trace

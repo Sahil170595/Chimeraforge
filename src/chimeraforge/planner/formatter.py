@@ -378,3 +378,47 @@ def print_models_table() -> None:
     for name, params in sorted(MODEL_PARAMS_B.items(), key=lambda x: x[1]):
         table.add_row(name, f"{params:.2f}")
     console.print(table)
+
+
+def format_api_comparison(cmp) -> None:
+    """Print self-host vs hosted-API monthly cost and the break-even volume."""
+    table = Table(
+        title=f"Self-host vs hosted API  (workload: {cmp.requests_per_month:,.0f} req/mo, "
+        f"{cmp.prompt_tokens} in / {cmp.output_tokens} out)"
+    )
+    table.add_column("Option")
+    table.add_column("Class", style="dim")
+    table.add_column("$/mo", justify="right")
+    table.add_column("vs self-host", justify="right")
+    table.add_column("Break-even out-tok/mo", justify="right")
+
+    table.add_row(
+        "[bold]self-host (this plan)[/]",
+        "-",
+        f"[bold green]${cmp.self_host_monthly:,.2f}[/]",
+        "-",
+        "-",
+    )
+    for o in cmp.options:
+        verdict = "[green]self-host wins[/]" if o.self_host_cheaper else "[yellow]API wins[/]"
+        be = f"{o.breakeven_tokens_month / 1e6:,.0f}M" if o.breakeven_tokens_month else "n/a"
+        cls = "like-for-like" if o.model_class == "open" else o.model_class
+        table.add_row(
+            f"{o.name} [dim]({o.provider})[/]", cls, f"${o.monthly_cost:,.2f}", verdict, be
+        )
+
+    console.print()
+    console.print(table)
+    stale = (
+        f"[red]STALE by {cmp.age_days} days[/] -- re-run scripts/build_cost_data.py"
+        if cmp.stale
+        else f"{cmp.age_days} days old"
+    )
+    console.print(
+        f"  [dim]List prices captured {cmp.captured_at} ({stale}). "
+        "Vendors publish no pricing API, so this is a dated snapshot, not a live quote.[/]"
+    )
+    console.print(
+        "  [dim]'like-for-like' hosts the same class of open-weights model; 'frontier' is a "
+        "different quality tier, so its price is not an apples-to-apples comparison.[/]\n"
+    )

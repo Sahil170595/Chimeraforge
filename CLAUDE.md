@@ -98,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (790 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (820 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -184,7 +184,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 25 files, 790 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 26 files, 820 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -332,11 +332,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 790 total tests
+pytest tests/ -v                    # 820 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (790 tests, 25 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (820 tests, 26 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -362,6 +362,9 @@ pytest tests/ --cov=src             # With coverage
   rejection reasons, estimated-not-measured quality, launch flags
 - **Reasoning tokens** (13): test_reasoning_tokens.py - hidden-token decode
   accounting, peak-sequence guard, default-off, CLI/MCP surfaces, negative clamp
+- **API cost / break-even** (28): test_apicost.py - hand-checked arithmetic, the
+  at-breakeven-costs-are-equal property, staleness (incl. undated = stale),
+  bundled-snapshot provenance, open-vs-frontier labeling, CLI + JSON contract
 - **Repo conventions** (131): test_repo_conventions.py - per-file ASCII-only guard
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
