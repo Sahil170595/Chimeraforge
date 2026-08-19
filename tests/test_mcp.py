@@ -95,9 +95,19 @@ class TestMcpTools:
 
 
 def test_build_server_registers_tools():
-    # Guard on the exact submodule build_server needs -- mcp 2.0 restructured it, so
-    # `import mcp` succeeding is not enough (the pin keeps CI on a 1.x that has it).
-    pytest.importorskip("mcp.server.fastmcp")
+    # Skip only when the optional extra is genuinely absent. If `mcp` IS installed
+    # but the submodule build_server needs is gone, that is a real break and must
+    # fail: guarding the whole thing with importorskip made an incompatible major
+    # (mcp 2.0 moved `mcp.server.fastmcp`) SKIP this test, so CI went green while
+    # the [mcp] extra was broken. A dependency bump found that hole; this closes it.
+    pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
+    import importlib.util
+
+    assert importlib.util.find_spec("mcp.server.fastmcp") is not None, (
+        "mcp is installed but `mcp.server.fastmcp` is missing -- the installed mcp "
+        "major is incompatible with build_server(). Port to the new API before "
+        "widening the pin in pyproject.toml."
+    )
     from chimeraforge.mcp_server import build_server
 
     server = build_server()
