@@ -24,6 +24,7 @@ from chimeraforge.planner.constants import (
     NVLINK_DOMAIN_SIZE,
     QUANT_BPW,
     QUANT_LEVELS,
+    SECONDS_PER_MONTH,
     TP_SEARCH_DEGREES,
     backend_supports_quant,
     quant_family,
@@ -72,6 +73,13 @@ class Candidate:
     # after it (0.19.0). hit_rate 0.0 = no caching assumed.
     prefix_cache_hit_rate: float = 0.0
     prefill_tokens_effective: int = 0
+    # Cost realism (0.20.0). `cost_per_1m_tok` prices a saturated fleet; the
+    # effective figure amortises the same bill over the tokens actually served
+    # at `duty_cycle`, which is what a monthly invoice divides by.
+    duty_cycle: float = 1.0
+    gpu_price_multiplier: float = 1.0
+    cost_per_1m_tok_effective: float = 0.0
+    tokens_served_month: float = 0.0
     provenance: dict[str, str] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
     max_concurrent_seqs: int = 0
@@ -161,6 +169,8 @@ def enumerate_candidates(
     context_length: int,
     reasoning_tokens: int = 0,
     prefix_cache_hit_rate: float = 0.0,
+    duty_cycle: float = 1.0,
+    gpu_price_multiplier: float = 1.0,
     safety_target: float | None = None,
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
@@ -214,7 +224,13 @@ def enumerate_candidates(
     specs = specs or {}
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
-    hw_cost_hr = gpu.cost_per_hour if gpu else 0.035
+    # A rented GPU bills for wall-clock, not for tokens. A fleet sized for a peak
+    # rate it only sees part of the day still costs the full month, so the
+    # per-token figure people budget against is the bill divided by tokens
+    # ACTUALLY served -- not by what a saturated fleet could serve.
+    duty = min(max(float(duty_cycle), 0.0), 1.0) or 1.0
+    price_mult = max(float(gpu_price_multiplier), 0.0)
+    hw_cost_hr = (gpu.cost_per_hour if gpu else 0.035) * price_mult
     # KV-cache element size: a quantized cache (q8/q4) shrinks KV VRAM and lifts the
     # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
     kv_bytes = KV_QUANT_BYTES.get(kv_quant, KV_DTYPE_BYTES)
@@ -515,6 +531,9 @@ def enumerate_candidates(
                 # must be the fleet's (N*tp) GPU cost (else understated). Identical
                 # replicas leave $/token unchanged -- the correct invariant.
                 cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * total_gpus)
+                # Tokens the workload actually asks for over a month, at duty cycle.
+                tokens_month = request_rate * decode_tokens * SECONDS_PER_MONTH * duty
+                cost_1m_eff = (monthly / tokens_month * 1e6) if tokens_month > 0 else float("inf")
 
                 # Energy (0.8.0): reported alongside the hardware cost, not summed into
                 # the budget gate (cloud $/hr already bundles power). 0.0 when TDP unknown.
@@ -539,6 +558,18 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if duty < 1.0:
+                    warnings.append(
+                        f"duty cycle {duty:.0%}: the fleet is billed for the whole month but "
+                        f"serves {duty:.0%} of it, so the effective cost is "
+                        f"${cost_1m_eff:.4f}/1M tok against ${cost_1m:.4f} at full capacity"
+                    )
+                if price_mult != 1.0:
+                    warnings.append(
+                        f"GPU price scaled {price_mult:.2f}x (spot/reserved/negotiated). The "
+                        "bundled $/hr are approximate on-demand rates; the multiplier is your "
+                        "input, and spot capacity can be reclaimed mid-request"
+                    )
                 if hit_rate > 0:
                     warnings.append(
                         f"prefix cache assumed at {hit_rate:.0%} hit rate: {prefill_tokens_eff} of "
@@ -674,6 +705,10 @@ def enumerate_candidates(
                         utilisation=round(lat["utilisation"], 3),
                         monthly_cost=round(monthly, 2),
                         cost_per_1m_tok=round(cost_1m, 4),
+                        duty_cycle=round(duty, 4),
+                        gpu_price_multiplier=round(price_mult, 4),
+                        cost_per_1m_tok_effective=round(cost_1m_eff, 4),
+                        tokens_served_month=round(tokens_month, 2),
                         safety_refusal=(
                             round(safety_refusal, 3) if safety_refusal is not None else None
                         ),

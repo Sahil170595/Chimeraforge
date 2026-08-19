@@ -231,3 +231,7 @@ MLA_ROPE_DIM_KEYS = ("qk_rope_head_dim",)
 SWA_WINDOW_KEYS = ("sliding_window",)
 # 1 full-attention layer every N. Gemma-3 spells this `sliding_window_pattern`.
 SWA_PATTERN_KEYS = ("sliding_window_pattern", "global_attn_every_n_layers")
+
+# One billing month, in seconds. Shared by the cost model and the API break-even
+# so a "month" means the same thing in both (30 days, matching predict_monthly).
+SECONDS_PER_MONTH = 60 * 60 * 24 * 30

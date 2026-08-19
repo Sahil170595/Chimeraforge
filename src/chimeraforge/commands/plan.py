@@ -89,6 +89,20 @@ def plan(
         "(R1/o-series/QwQ). The GPU decodes these and the KV cache holds them, but "
         "they are not in --avg-tokens. Your scenario input: measure it, do not guess.",
     ),
+    duty_cycle: float = typer.Option(
+        1.0,
+        "--duty-cycle",
+        help="Fraction of the month the fleet actually serves the planned rate "
+        "(0.0-1.0). A rented GPU bills for wall-clock, so a fleet sized for a peak "
+        "it sees 30%% of the day costs the same but delivers a third of the tokens.",
+    ),
+    gpu_price_multiplier: float = typer.Option(
+        1.0,
+        "--gpu-price-multiplier",
+        help="Scale the GPU $/hr for spot, reserved, or negotiated rates (e.g. 0.3 "
+        "for a 70%% spot discount). The bundled rates are approximate on-demand; the "
+        "discount is provider- and region-specific, so it is your input.",
+    ),
     prefix_cache_hit_rate: float = typer.Option(
         0.0,
         "--prefix-cache-hit-rate",
@@ -300,6 +314,10 @@ def plan(
         _fail("--reasoning-tokens must be non-negative.")
     if not 0.0 <= prefix_cache_hit_rate <= 1.0:
         _fail("--prefix-cache-hit-rate must be between 0.0 and 1.0.")
+    if not 0.0 < duty_cycle <= 1.0:
+        _fail("--duty-cycle must be greater than 0.0 and at most 1.0.")
+    if gpu_price_multiplier <= 0:
+        _fail("--gpu-price-multiplier must be positive.")
     if electricity_rate < 0:
         _fail("--electricity-rate must be non-negative.")
     kv_quant = kv_quant.lower()
@@ -405,6 +423,8 @@ def plan(
             avg_tokens=avg_tokens,
             reasoning_tokens=reasoning_tokens,
             prefix_cache_hit_rate=prefix_cache_hit_rate,
+            duty_cycle=duty_cycle,
+            gpu_price_multiplier=gpu_price_multiplier,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             safety_target=safety_target,
@@ -468,7 +488,7 @@ def plan(
         try:
             api_cmp = compare_apis(
                 self_host_monthly=candidates[0].monthly_cost,
-                request_rate=request_rate,
+                request_rate=request_rate * duty_cycle,
                 prompt_tokens=prompt_tokens,
                 output_tokens=avg_tokens + reasoning_tokens,
             )

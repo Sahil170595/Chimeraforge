@@ -25,7 +25,10 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from importlib import resources
 
-SECONDS_PER_MONTH = 60 * 60 * 24 * 30
+from chimeraforge.planner.constants import SECONDS_PER_MONTH
+
+# Re-exported from constants so a month means the same thing here and in the
+# cost model; imported by name in tests and callers.
 TOKENS_PER_MILLION = 1_000_000
 # Published list prices drift. Past this the snapshot is reported as stale rather
 # than presented as current: long enough not to cry wolf on a fresh release, short

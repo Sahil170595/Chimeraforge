@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-08-18
+
+### Added
+- **Duty-cycle-aware effective cost (`plan --duty-cycle`).** `cost_per_1m_tok`
+  divides the bill by what a *saturated* fleet could serve, which flatters it
+  twice: the planner sizes capacity at or above demand, so you pay for headroom,
+  and a rented GPU bills for wall-clock, so a fleet sized for a peak it sees part
+  of the day still costs the whole month.
+  `cost_per_1m_tok_effective` divides the same bill by the tokens the workload
+  actually asks for. On an 8B at 2 req/s the at-capacity figure is $0.9152/1M --
+  the effective figure is **$2.71/1M at full duty and $9.04/1M at 30%**.
+- **`--gpu-price-multiplier`** scales the GPU $/hr for spot, reserved or
+  negotiated rates. Price is not physics: throughput, latency and VRAM are
+  untouched, but what fits under a budget changes.
+- `Candidate` carries `duty_cycle`, `gpu_price_multiplier`,
+  `cost_per_1m_tok_effective` and `tokens_served_month`; `duty_cycle` is also an
+  argument on the MCP `chimeraforge_plan` tool.
+- **The self-host-vs-API comparison now scales with duty cycle too.** An idle API
+  costs nothing while idle GPUs keep billing, so a low duty cycle correctly moves
+  the comparison toward the API rather than flattering self-hosting.
+
+### Notes
+- Both dials default to no-op (`1.0`), so every pre-0.20.0 number is unchanged.
+- The spot discount is **your input, not a bundled constant** -- it is provider-,
+  region- and instance-specific, and the warning notes that spot capacity can be
+  reclaimed mid-request.
+- `SECONDS_PER_MONTH` moved to `constants.py` so a "month" means the same thing in
+  the cost model and the API break-even.
+
+
 ## [0.19.0] - 2026-08-18
 
 ### Added
