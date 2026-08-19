@@ -1,0 +1,36 @@
+# Keeps the two things CI depends on from silently rotting: the actions in the
+# workflows (a pinned major can go unmaintained) and the Python dev/runtime deps.
+# Grouped so a routine bump is one PR to review, not eight.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  # The composite action pins actions of its own; Dependabot needs it listed
+  # separately because it does not recurse into action directories.
+  - package-ecosystem: github-actions
+    directory: "/.github/actions/plan-comment"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+    groups:
+      python:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(deps)"
