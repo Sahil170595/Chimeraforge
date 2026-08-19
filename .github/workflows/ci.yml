@@ -6,52 +6,91 @@ on:
   pull_request:
     branches: [main]
 
+# A new push supersedes the old answer; keep the queue short rather than paying
+# for runs nobody will read. main is exempt so release commits always complete.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[all,dev]"
-
-      - name: Lint
-        run: |
-          ruff check src/chimeraforge/
-          ruff format --check src/chimeraforge/
-
-      - name: Run tests
-        run: pytest tests/ -v --tb=short
-
+  # Lint once, on one interpreter. Style is not version-dependent, and running it
+  # inside every matrix cell as well meant ruff executed six times per PR.
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip && pip install -e ".[dev]"
+      - run: ruff check src/chimeraforge/
+      - run: ruff format --check src/chimeraforge/
 
-      - name: Install dependencies
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # The README promises Windows and macOS. Claiming a platform we never run
+        # on is the same class of error the planner refuses to make about a number,
+        # so both are tested -- on the oldest and newest supported interpreters,
+        # which is where a portability break actually shows up.
+        include:
+          - os: windows-latest
+            python-version: "3.10"
+          - os: windows-latest
+            python-version: "3.13"
+          - os: macos-latest
+            python-version: "3.13"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[all,dev]"
+      - name: Tests
+        run: pytest tests/ -v --tb=short
 
-      - name: Ruff check
-        run: ruff check src/chimeraforge/
-
-      - name: Ruff format
-        run: ruff format --check src/chimeraforge/
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: python -m pip install --upgrade pip && pip install -e ".[all,dev]"
+      - name: Tests with coverage
+        run: pytest tests/ --cov=src/chimeraforge --cov-report=term-missing --cov-report=xml
+      - name: Coverage summary
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          root = ET.parse("coverage.xml").getroot()
+          pct = float(root.get("line-rate", 0)) * 100
+          print(f"## Coverage\n\n**{pct:.1f}%** of `src/chimeraforge` lines covered.\n")
+          rows = sorted(
+              ((c.get("filename"), float(c.get("line-rate", 0)) * 100)
+               for p in root.iter("package") for c in p.iter("class")),
+              key=lambda r: r[1],
+          )[:10]
+          print("| Least covered | % |\n|---|---|")
+          for name, p in rows:
+              print(f"| `{name}` | {p:.0f}% |")
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-xml
+          path: coverage.xml
