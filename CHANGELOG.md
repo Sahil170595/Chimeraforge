@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-08-18
+
+### Added
+- **GitHub Action: `.github/actions/plan-comment`.** Posts a capacity plan as a
+  sticky pull-request comment, so changing a model or a serving config shows its
+  deployment consequences *in review* rather than after deploy -- VRAM per GPU,
+  fleet size, throughput, p95, monthly cost, and the duty-cycle-effective cost,
+  with alternatives and the self-host-vs-API table folded away in `<details>`.
+  Outputs `plan-json` / `fits` / `monthly-cost` / `summary` for jobs that want to
+  gate on the numbers instead of reading them.
+
+### Notes
+- The rendering lives in a real script (`render.py`), not inline YAML, because the
+  edge cases -- nothing fits, `--compare-api` wrapping the payload, warnings that
+  must survive into review -- are exactly what needs tests. 28 of them.
+- The comment is sticky: found by a hidden marker and edited in place, so a busy PR
+  gets one updating comment rather than a wall of them.
+- `fail-on-no-fit` defaults to **false**. A plan that does not fit is information,
+  not necessarily a broken build.
+- Plan warnings are reproduced in the comment, so an estimate is never presented in
+  review as a measurement.
+
+
 ## [0.20.0] - 2026-08-18
 
 ### Added
