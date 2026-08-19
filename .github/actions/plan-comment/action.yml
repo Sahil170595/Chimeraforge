@@ -1,0 +1,126 @@
+name: "ChimeraForge plan comment"
+description: >-
+  Run a ChimeraForge capacity plan and post VRAM / throughput / latency / cost as
+  a sticky pull-request comment, so a change to a model or serving config shows
+  its deployment consequences in review instead of after deploy.
+author: "ChimeraForge"
+
+branding:
+  icon: cpu
+  color: purple
+
+inputs:
+  hardware:
+    description: "GPU to plan against (see `chimeraforge plan --list-hardware`)."
+    required: true
+  model:
+    description: >-
+      Model id: registry name, HF repo (org/name), or Ollama tag. Leave empty to
+      plan a registry size class with `model-size` instead.
+    required: false
+    default: ""
+  model-size:
+    description: "Registry size class (1b/3b/8b). Used only when `model` is empty."
+    required: false
+    default: "8b"
+  request-rate:
+    description: "Requests per second the fleet must sustain."
+    required: false
+    default: "1.0"
+  latency-slo-ms:
+    description: "Max p95 latency in milliseconds."
+    required: false
+    default: "5000"
+  budget:
+    description: "Max monthly cost in USD."
+    required: false
+    default: "1000"
+  extra-args:
+    description: >-
+      Extra flags passed through verbatim, e.g.
+      "--duty-cycle 0.3 --kv-quant q8 --compare-api".
+    required: false
+    default: ""
+  version:
+    description: "chimeraforge version to install. Pin this for reproducible comments."
+    required: false
+    default: "latest"
+  comment:
+    description: "Post (or update) a sticky PR comment. Set false to only emit outputs."
+    required: false
+    default: "true"
+  fail-on-no-fit:
+    description: >-
+      Fail the job when no configuration satisfies the gates. Off by default: a
+      plan that does not fit is information, not necessarily a broken build.
+    required: false
+    default: "false"
+
+outputs:
+  plan-json:
+    description: "Raw `chimeraforge plan --json` output."
+    value: ${{ steps.plan.outputs.plan-json }}
+  fits:
+    description: "'true' when at least one configuration passed every gate."
+    value: ${{ steps.plan.outputs.fits }}
+  monthly-cost:
+    description: "Monthly USD cost of the recommended configuration ('' if none fit)."
+    value: ${{ steps.plan.outputs.monthly-cost }}
+  summary:
+    description: "Markdown summary table (also written to the job summary)."
+    value: ${{ steps.plan.outputs.summary }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+
+    - name: Install chimeraforge
+      shell: bash
+      run: |
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          python -m pip install --quiet --upgrade chimeraforge
+        else
+          python -m pip install --quiet "chimeraforge==${{ inputs.version }}"
+        fi
+        chimeraforge --version
+
+    - name: Run the plan
+      id: plan
+      shell: bash
+      env:
+        CF_HARDWARE: ${{ inputs.hardware }}
+        CF_MODEL: ${{ inputs.model }}
+        CF_MODEL_SIZE: ${{ inputs.model-size }}
+        CF_RATE: ${{ inputs.request-rate }}
+        CF_SLO: ${{ inputs.latency-slo-ms }}
+        CF_BUDGET: ${{ inputs.budget }}
+        CF_EXTRA: ${{ inputs.extra-args }}
+        CF_FAIL_ON_NO_FIT: ${{ inputs.fail-on-no-fit }}
+      run: python "$GITHUB_ACTION_PATH/render.py"
+
+    - name: Post the comment
+      if: ${{ inputs.comment == 'true' && github.event_name == 'pull_request' }}
+      uses: actions/github-script@v8
+      env:
+        SUMMARY: ${{ steps.plan.outputs.summary }}
+      with:
+        script: |
+          // Sticky: find our previous comment by its marker and edit it, so a busy
+          // PR gets one comment that updates rather than a wall of them.
+          const marker = '<!-- chimeraforge-plan-comment -->';
+          const body = marker + '\n' + process.env.SUMMARY;
+          const {owner, repo} = context.repo;
+          const issue_number = context.payload.pull_request.number;
+          const existing = await github.paginate(github.rest.issues.listComments, {
+            owner, repo, issue_number, per_page: 100,
+          });
+          const mine = existing.find(c => c.body && c.body.includes(marker));
+          if (mine) {
+            await github.rest.issues.updateComment({owner, repo, comment_id: mine.id, body});
+          } else {
+            await github.rest.issues.createComment({owner, repo, issue_number, body});
+          }
