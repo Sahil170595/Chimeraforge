@@ -10,10 +10,10 @@ jobs:
     name: Build distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -70,7 +70,7 @@ jobs:
       id-token: write   # mints the OIDC token mcp-publisher exchanges; no secrets
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # The registry pins a server to a version that must already exist on PyPI,
       # so a stale server.json would list a release that cannot be verified.
