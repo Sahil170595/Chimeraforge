@@ -1,0 +1,59 @@
+{
+  "hardware": "RTX 4080 12GB",
+  "registered_at": "2026-08-19",
+  "notes": "Example pre-registered matrix. Register the cells BEFORE running: the audit records this file's fingerprint, so a matrix edited after seeing results no longer matches the report that cites it. Includes cells the planner is expected to get wrong -- an audit that only contains flattering configs is not an audit.",
+  "cells": [
+    {
+      "model": "llama3.2-1b",
+      "quant": "FP16",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.2-1b",
+      "quant": "Q8_0",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.2-1b",
+      "quant": "Q4_K_M",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.2-3b",
+      "quant": "FP16",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.2-3b",
+      "quant": "Q4_K_M",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.2-3b",
+      "quant": "Q2_K",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.1-8b",
+      "quant": "Q4_K_M",
+      "backend": "ollama"
+    },
+    {
+      "model": "llama3.1-8b",
+      "quant": "Q4_K_M",
+      "backend": "ollama",
+      "context_length": 8192
+    },
+    {
+      "model": "qwen2.5-3b",
+      "quant": "Q4_K_M",
+      "backend": "ollama"
+    },
+    {
+      "model": "qwen2.5-1.5b",
+      "quant": "Q4_K_M",
+      "backend": "ollama",
+      "prompt_tokens": 2048
+    }
+  ]
+}

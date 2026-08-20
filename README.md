@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**11 commands, one tool:** `plan` - `suggest` - `measure` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**12 commands, one tool:** `plan` - `suggest` - `measure` - `validate` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 

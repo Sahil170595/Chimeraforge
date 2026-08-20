@@ -22,6 +22,7 @@ from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
 from chimeraforge.commands.safety import safety
 from chimeraforge.commands.suggest import suggest
+from chimeraforge.commands.validate import validate
 
 console = Console()
 
@@ -58,6 +59,7 @@ def main(
 app.command()(plan)
 app.command()(suggest)
 app.command()(measure)
+app.command()(validate)
 app.command()(catalog)
 app.command()(safety)
 app.command()(bench)
