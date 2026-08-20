@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-08-19
+
+### Added
+- **`chimeraforge validate` -- prediction-vs-measured falsification audit.** The
+  trust principle was asserted per number ("this one is `estimated`"); this makes
+  the claim *checkable*. It runs a pre-registered config matrix through the
+  planner, joins each cell to a measurement (live via `bench`, or from a captured
+  file), and reports a per-provenance-class error scorecard with a markdown report
+  and full raw JSON.
+
+### Why it is built this way
+Every published planner accuracy audit is datacenter-only -- Vidur <9% on
+A100/H100, DistServe <2% on 32xA100, Splitwise MAPE <3%. None covers consumer
+GPUs, PCIe, or per-quantization behaviour, which is the tier this corpus is fit
+on. Three ways such an audit lies, and what stops each:
+
+- **Cherry-picking the matrix after seeing results.** The matrix is
+  SHA-256 fingerprinted (order-independent, sensitive to any cell edit) and the
+  audit records the hash it ran against, so a matrix edited afterwards no longer
+  matches the report citing it.
+- **Passing in-corpus lookups off as predictions.** A `measured`-provenance cell is
+  not a prediction -- the corpus *is* the answer. Cells split into
+  `roofline-estimate` / `parallel-estimate` / `measured-lookup`, the report **leads
+  with the estimated path**, and the lookup section is explicitly labeled *not an
+  out-of-sample test*.
+- **Averaging away the embarrassing cells.** Every cell is retained in the raw JSON
+  including skips-with-reasons, and each scorecard row carries its own worst case.
+
+Rows built from fewer than 5 cells are labeled an anecdote rather than quoted as a
+rate. Positive error means the planner was optimistic. Scoring is pure and offline,
+so a published audit can be re-derived from its own raw output without a GPU.
+
+- `examples/validation-matrix.json` is a runnable pre-registered example.
+
+
 ## [0.21.0] - 2026-08-18
 
 ### Added
