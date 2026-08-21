@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-08-21
+
+### Fixed
+- **The MCP server reported the SDK's version as its own.** FastMCP takes no
+  `version`, so `serverInfo` came back as `chimeraforge 1.29.0` -- the mcp SDK's
+  number, shown to every client as ours. Found by probing the container. Now set
+  through the low-level server, guarded so a future SDK change leaves the version
+  absent rather than wrong, with a test asserting exactly that: ours or nothing,
+  never someone else's.
+
+### Added
+- **`Dockerfile` for the MCP server.** Installs the published wheel (so the image
+  matches what PyPI actually ships), runs as a non-root user, and fails the build
+  if `build_server()` cannot be constructed rather than shipping an image that
+  breaks on first use. ~60 MB. Run attached, since MCP here speaks stdio:
+  `docker run --rm -i chimeraforge`.
+- **`scripts/probe_mcp_stdio.py`** performs a real client handshake (initialize ->
+  initialized -> tools/list) against any MCP stdio command and asserts the three
+  tools come back. Building proves the image installs; this proves it *serves*.
+- **CI builds the image and probes it**, so a broken Dockerfile fails the build
+  rather than the user.
+
+
 ## [0.22.0] - 2026-08-19
 
 ### Added

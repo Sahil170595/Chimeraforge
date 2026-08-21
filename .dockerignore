@@ -1,0 +1,24 @@
+# The image installs from the published wheel, so the working tree is not needed.
+.git
+.github
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+htmlcov
+coverage.xml
+dist
+build
+*.egg-info
+experiments
+outputs
+data
+recordings
+docs
+tests
+examples
+PRODUCT_SPEC.md
+VISION.md
+ROADMAP_RESEARCH_2026-08.md
+ROADMAP_PHASE_NEXT.md
