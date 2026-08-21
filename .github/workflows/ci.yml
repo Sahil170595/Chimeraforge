@@ -94,3 +94,28 @@ jobs:
         with:
           name: coverage-xml
           path: coverage.xml
+
+  docker:
+    name: docker image (builds + serves)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: chimeraforge:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # Building proves it installs; this proves it serves. The image is only useful
+      # to an MCP client if it answers introspection over stdio.
+      #
+      # Tools only, no --expect-version: the image installs the PUBLISHED wheel (that
+      # is what users and Glama actually get), so it necessarily lags a PR that
+      # changes the reported version. That assertion lives in tests/test_mcp.py,
+      # which runs against this branch's source.
+      - name: Probe MCP introspection over stdio
+        run: python scripts/probe_mcp_stdio.py -- docker run --rm -i chimeraforge:ci

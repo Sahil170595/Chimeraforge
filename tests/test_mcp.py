@@ -113,3 +113,24 @@ def test_build_server_registers_tools():
     server = build_server()
     assert server is not None
     assert type(server).__name__ == "FastMCP"
+
+
+def test_server_reports_our_version_not_the_sdks():
+    """A tool that labels every number's provenance must not misreport its own version.
+
+    FastMCP has no `version` parameter, so leaving it unset makes clients display the
+    MCP SDK's version as ChimeraForge's -- observed as "chimeraforge 1.29.0" when
+    probing the container. Setting it reaches into a private handle, so this asserts
+    the outcome rather than the mechanism: if a future SDK removes it, the version is
+    absent (acceptable) but never wrong (not acceptable).
+    """
+    pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
+    import chimeraforge
+    from chimeraforge.mcp_server import build_server
+
+    low_level = getattr(build_server(), "_mcp_server", None)
+    reported = getattr(low_level, "version", None)
+    assert reported in (chimeraforge.__version__, None), (
+        f"MCP server reports version {reported!r}, which is neither ours "
+        f"({chimeraforge.__version__}) nor absent -- clients would show a wrong version."
+    )

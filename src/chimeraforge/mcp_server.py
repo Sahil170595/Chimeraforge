@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+from chimeraforge import __version__
 from chimeraforge.planner.engine import summarize_trace
 from chimeraforge.planner.hardware import GPU_DB, get_gpu
 from chimeraforge.planner.launch import build_launch_command
@@ -203,6 +204,15 @@ def build_server():
         ) from exc
 
     server = FastMCP("chimeraforge", instructions=SERVER_INSTRUCTIONS)
+    # FastMCP (mcp 1.x) takes no `version`, but the low-level Server it wraps does,
+    # and leaving it unset makes every client display the SDK's version as ours --
+    # a tool that labels each number measured/estimated/unknown should not misreport
+    # its own version. Set through the private handle, guarded: if a future SDK drops
+    # it the server still builds and simply reports no version, which beats a wrong
+    # one. (mcp 2.0 already moved this module once; assume nothing is stable here.)
+    low_level = getattr(server, "_mcp_server", None)
+    if low_level is not None and hasattr(low_level, "version"):
+        low_level.version = __version__
     server.tool(name="chimeraforge_plan", description=_PLAN_DESC)(plan_deployment)
     server.tool(
         name="chimeraforge_resolve_model",
