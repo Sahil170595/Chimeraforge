@@ -100,6 +100,12 @@ class Candidate:
     tensor_parallel: int = 1
     pipeline_parallel: int = 1
     gpus_total: int = 0
+    # Goodput SLOs (0.23.0): the separate targets this config was checked
+    # against, 0.0 when that dial was off. A request is only useful if it is
+    # both responsive (TTFT) and smooth (TPOT); one blended p95 hides which
+    # of the two a config actually fails.
+    ttft_slo_ms: float = 0.0
+    tpot_slo_ms: float = 0.0
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -171,6 +177,8 @@ def enumerate_candidates(
     prefix_cache_hit_rate: float = 0.0,
     duty_cycle: float = 1.0,
     gpu_price_multiplier: float = 1.0,
+    ttft_slo: float | None = None,
+    tpot_slo: float | None = None,
     safety_target: float | None = None,
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
@@ -486,6 +494,15 @@ def enumerate_candidates(
                             concurrent_per_agent=b,
                             service_cv2=workload_cv2,
                         )
+                        # Goodput: a config only counts if it is responsive AND
+                        # smooth. Checked inside the (N, B) search, not after it, so
+                        # a bigger batch that wins on p95 by ruining per-token
+                        # latency is rejected here rather than recommended.
+                        cand_tpot = 1000.0 / per_req if per_req > 0 else float("inf")
+                        if ttft_slo and ttft_ms > ttft_slo:
+                            continue
+                        if tpot_slo and cand_tpot > tpot_slo:
+                            continue
                         if lat["p95_ms"] <= latency_slo:
                             best = (n, b, per_gpu, per_req, lat)
                             break
@@ -503,9 +520,22 @@ def enumerate_candidates(
                             f"< {required_tps:.0f} needed",
                         )
                     else:
-                        _reject(
-                            model, quant, "latency", f"{backend}: p95 > {latency_slo:.0f}ms SLO"
-                        )
+                        # Say which of the three bound, so "latency" is actionable:
+                        # a TTFT failure and a TPOT failure need opposite fixes
+                        # (more replicas vs a smaller batch).
+                        if ttft_slo and ttft_ms > ttft_slo:
+                            detail = (
+                                f"{backend}: TTFT {ttft_ms:.0f}ms > {ttft_slo:.0f}ms SLO "
+                                "(prefill-bound; a bigger batch will not help)"
+                            )
+                        elif tpot_slo:
+                            detail = (
+                                f"{backend}: no (replicas, batch) met the {tpot_slo:.0f}ms "
+                                "TPOT SLO without breaking another gate"
+                            )
+                        else:
+                            detail = f"{backend}: p95 > {latency_slo:.0f}ms SLO"
+                        _reject(model, quant, "latency", detail)
                     continue
 
                 best_n, best_b, per_gpu_tps, per_req_tps, lat = best
@@ -558,6 +588,12 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if ttft_slo or tpot_slo:
+                    warnings.append(
+                        "TTFT/TPOT SLOs gate the PREDICTED value, not an attainment "
+                        "percentage: the planner models a point estimate, not a latency "
+                        "distribution, so this is not a '99% of requests' guarantee"
+                    )
                 if duty < 1.0:
                     warnings.append(
                         f"duty cycle {duty:.0%}: the fleet is billed for the whole month but "
@@ -725,6 +761,8 @@ def enumerate_candidates(
                         max_concurrent_seqs=max_seqs,
                         ttft_ms=round(ttft_ms, 1),
                         tpot_ms=round(tpot_ms, 1),
+                        ttft_slo_ms=float(ttft_slo or 0.0),
+                        tpot_slo_ms=float(tpot_slo or 0.0),
                         effective_batch=best_b,
                         tdp_watts=round(tdp_watts, 1),
                         energy_cost_month=round(energy_month, 2),

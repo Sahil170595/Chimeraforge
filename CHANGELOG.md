@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Separate TTFT and TPOT service-level objectives (`--ttft-slo`, `--tpot-slo`).**
+  A single blended p95 hides which half of the experience a config fails, and the
+  two failures need opposite fixes: a TTFT miss is prefill-bound (more replicas, a
+  shorter prompt, a prefix cache), a TPOT miss is usually a batch that is too
+  large. Both are checked *inside* the (replicas x batch) search, so a config that
+  wins on p95 by ruining per-token latency is rejected rather than recommended.
+- Rejections name which bound: `TTFT 166ms > 100ms SLO (prefill-bound; a bigger
+  batch will not help)` instead of a generic latency failure.
+
+### Notes
+- **This gates a predicted value, not an attainment percentage.** The planner
+  models a point estimate, not a latency distribution, so setting either SLO warns
+  that it is not a "99% of requests" guarantee. Real goodput attainment needs a
+  distribution this planner does not model.
+- Both default to off, so every pre-existing number is unchanged.
+
+
 ## [0.22.1] - 2026-08-21
 
 ### Fixed
