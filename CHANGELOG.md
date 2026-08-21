@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **SGLang backend.** `BACKENDS` was `[ollama, vllm, tgi]`, which describes a
+  serving market that has moved on: SGLang is now one of the engines people
+  actually run, and TGI is fading. SGLang is offered with continuous batching,
+  float + FP8 formats (not GGUF), and a real launch command
+  (`python -m sglang.launch_server --model-path ... --tp-size N`).
+- `ThroughputModel.has_measured_rows(backend)` -- derived from the loaded corpus,
+  not a hardcoded list, so a backend added later is honest by default.
+
+### Notes
+- **SGLang ships with NO measured rows and says so.** Its throughput comes from the
+  same first-principles path any unmeasured model takes, provenance is never
+  `measured`, and every SGLang plan carries a warning stating the estimate is
+  *deliberately not borrowed from another backend*. Cloning vLLM's coefficients
+  would have made the numbers look confident and been a lie; `measure` replaces the
+  estimate with a real one.
+- A test pins this on `llama3.2-1b`, where vLLM *has* a measured row and SGLang does
+  not, so wiring SGLang to vLLM's lookup would make them converge and fail. A
+  companion test pins the opposite: on a model nobody has measured, unmeasured
+  backends agreeing is correct, not a bug.
+
+
 ## [0.22.1] - 2026-08-21
 
 ### Fixed

@@ -558,6 +558,13 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if not models.throughput.has_measured_rows(backend):
+                    warnings.append(
+                        f"{backend} has no measured rows in the bundled corpus, so its "
+                        "throughput is a first-principles estimate. It is deliberately NOT "
+                        "borrowed from another backend -- run `measure` on your own box to "
+                        "replace the estimate with a measurement"
+                    )
                 if duty < 1.0:
                     warnings.append(
                         f"duty cycle {duty:.0%}: the fleet is billed for the whole month but "
