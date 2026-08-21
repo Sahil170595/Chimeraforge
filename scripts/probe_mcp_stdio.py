@@ -13,9 +13,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import queue
 import subprocess
 import sys
+import threading
+import time
 
+TOOLS_REQUEST_ID = 2
 EXPECTED_TOOLS = {
     "chimeraforge_plan",
     "chimeraforge_resolve_model",
@@ -34,33 +38,90 @@ REQUESTS = [
         },
     },
     {"jsonrpc": "2.0", "method": "notifications/initialized"},
-    {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+    {"jsonrpc": "2.0", "id": TOOLS_REQUEST_ID, "method": "tools/list"},
 ]
 
 
 def probe(command: list[str], timeout: float = 120.0) -> tuple[dict, list[str]]:
-    """Run `command` as an MCP stdio server; return (serverInfo, tool names)."""
-    stdin = "".join(json.dumps(r) + "\n" for r in REQUESTS)
-    proc = subprocess.run(command, input=stdin, capture_output=True, text=True, timeout=timeout)
+    """Run `command` as an MCP stdio server; return (serverInfo, tool names).
+
+    stdin is held open until the response we asked for arrives. Writing the three
+    requests and immediately closing stdin looks like it works -- `initialize` gets
+    answered -- but the server sees EOF and shuts down before flushing the
+    `tools/list` reply, so the probe reports zero tools against a perfectly healthy
+    server. That race is timing-dependent: it passed locally and failed in CI.
+    """
+    proc = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+    lines: queue.Queue[str | None] = queue.Queue()
+
+    def _pump() -> None:
+        # A dedicated reader keeps a silent server from blocking us forever: the
+        # deadline below is enforced on the queue, not on a blocking readline.
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            lines.put(line)
+        lines.put(None)
+
+    reader = threading.Thread(target=_pump, daemon=True)
+    reader.start()
+
     server_info: dict = {}
     tools: list[str] = []
-    for line in proc.stdout.splitlines():
-        line = line.strip()
-        # The server interleaves log lines with JSON-RPC; skip anything not a message.
-        if not line.startswith("{"):
-            continue
+    seen_tools_reply = False
+    try:
+        assert proc.stdin is not None
+        for request in REQUESTS:
+            proc.stdin.write(json.dumps(request) + "\n")
+            proc.stdin.flush()
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline and not seen_tools_reply:
+            try:
+                line = lines.get(timeout=1.0)
+            except queue.Empty:
+                continue
+            if line is None:
+                break
+            line = line.strip()
+            # The server interleaves log lines with JSON-RPC; skip non-messages.
+            if not line.startswith("{"):
+                continue
+            try:
+                msg = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            result = msg.get("result") or {}
+            if "serverInfo" in result:
+                server_info = result["serverInfo"]
+            if msg.get("id") == TOOLS_REQUEST_ID:
+                tools = [t["name"] for t in result.get("tools", [])]
+                seen_tools_reply = True
+    finally:
+        # Only now is it safe to signal EOF; the server exits on its own.
         try:
-            msg = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        result = msg.get("result") or {}
-        if "serverInfo" in result:
-            server_info = result["serverInfo"]
-        if "tools" in result:
-            tools = [t["name"] for t in result["tools"]]
-    if not server_info and not tools:
-        sys.stderr.write(proc.stderr[-2000:])
-        raise SystemExit(f"no JSON-RPC response from {' '.join(command)} (exit {proc.returncode})")
+            if proc.stdin and not proc.stdin.closed:
+                proc.stdin.close()
+        except OSError:
+            pass
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+    if not seen_tools_reply:
+        stderr = (proc.stderr.read() if proc.stderr else "") or ""
+        sys.stderr.write(stderr[-2000:])
+        raise SystemExit(
+            f"no tools/list response from {' '.join(command)} within {timeout:.0f}s "
+            f"(exit {proc.returncode})"
+        )
     return server_info, tools
 
 
