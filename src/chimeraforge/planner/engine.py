@@ -100,6 +100,11 @@ class Candidate:
     tensor_parallel: int = 1
     pipeline_parallel: int = 1
     gpus_total: int = 0
+    # Partial CPU offload (0.23.0): fraction of weights that had to live in
+    # host RAM because they did not fit VRAM, and the host link bandwidth the
+    # derate assumed. 0.0 = fully resident, the only case before this.
+    offload_fraction: float = 0.0
+    host_bandwidth_gbps: float = 0.0
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -171,6 +176,8 @@ def enumerate_candidates(
     prefix_cache_hit_rate: float = 0.0,
     duty_cycle: float = 1.0,
     gpu_price_multiplier: float = 1.0,
+    allow_offload: bool = False,
+    host_bandwidth_gbps: float | None = None,
     safety_target: float | None = None,
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
@@ -230,6 +237,10 @@ def enumerate_candidates(
     # ACTUALLY served -- not by what a saturated fleet could serve.
     duty = min(max(float(duty_cycle), 0.0), 1.0) or 1.0
     price_mult = max(float(gpu_price_multiplier), 0.0)
+    # Host link speed for offloaded weights. Defaults to the GPU's own PCIe figure,
+    # which is the transfer bottleneck on consumer cards, but it is a scenario input:
+    # real throughput depends on the board, the lanes and the host RAM behind them.
+    host_bw = float(host_bandwidth_gbps or (gpu.interconnect_gbps if gpu else 0.0) or 0.0)
     hw_cost_hr = (gpu.cost_per_hour if gpu else 0.035) * price_mult
     # KV-cache element size: a quantized cache (q8/q4) shrinks KV VRAM and lifts the
     # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
@@ -349,9 +360,27 @@ def enumerate_candidates(
                 tp=tp,
                 pp=pp,
             )
+            # Weights that do not fit can live in host RAM and be streamed per token.
+            # llama.cpp/Ollama do exactly this, which is why "it does not fit" and
+            # "it runs" are both true at once -- and why a planner that only ever
+            # says "does not fit" loses credibility against a machine that is
+            # visibly running the model, slowly.
+            offload_fraction = 0.0
+            if vram > hw_vram and allow_offload and host_bw > 0:
+                weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8.0 / max(tp * pp, 1)
+                overflow_gb = vram - hw_vram
+                if weight_gb > 0 and overflow_gb < weight_gb:
+                    # Only weights spill; KV and activations must stay resident, so a
+                    # config whose non-weight footprint alone exceeds VRAM is still
+                    # rejected rather than pretended into fitting.
+                    offload_fraction = min(overflow_gb / weight_gb, 1.0)
+                    vram = hw_vram
+
             if vram > hw_vram:
                 detail = f"{vram:.1f}GB/GPU > {hw_vram:.0f}GB"
                 par = f" (TP={tp})" if tp > 1 else (f" (PP={pp})" if pp > 1 else "")
+                if allow_offload:
+                    par += " (offload cannot help: KV+activations alone exceed VRAM)"
                 _reject(model, quant, "vram", detail + par)
                 continue
 
@@ -421,6 +450,16 @@ def enumerate_candidates(
                     n1_tps = models.throughput.roofline_tps(active_params_b, quant, hardware)
                     throughput_source = "estimated"
                     used_roofline = True
+
+                # Decode reads every weight once per token. Whatever sits in host RAM
+                # crosses the PCIe link instead of VRAM, so the per-token time is the
+                # resident part plus the streamed part, and the streamed part is slower
+                # by the full bandwidth ratio (H100 HBM 3352 GB/s vs PCIe 5 128 GB/s is
+                # ~26x). This is why partial offload runs at all and why it crawls.
+                if offload_fraction > 0 and host_bw > 0 and gpu is not None:
+                    bw_ratio = gpu.bandwidth_gbps / host_bw
+                    resident = 1.0 - offload_fraction
+                    n1_tps = n1_tps / (resident + offload_fraction * bw_ratio)
 
                 # Search (N replicas x B batch-per-GPU) for the cheapest config
                 # meeting the rate under the latency SLO. N replicas scale linearly
@@ -558,6 +597,13 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if offload_fraction > 0:
+                    warnings.append(
+                        f"partial CPU offload: {offload_fraction:.0%} of weights stream from "
+                        f"host RAM over a {host_bw:.0f} GB/s link each token. It runs, but the "
+                        "throughput derate is MODELLED from the bandwidth ratio, not measured, "
+                        "and the host link speed is a scenario input -- measure before trusting"
+                    )
                 if duty < 1.0:
                     warnings.append(
                         f"duty cycle {duty:.0%}: the fleet is billed for the whole month but "
@@ -730,6 +776,8 @@ def enumerate_candidates(
                         energy_cost_month=round(energy_month, 2),
                         energy_cost_per_1m_tok=round(energy_1m, 4),
                         perf_per_watt=round(ppw, 4),
+                        offload_fraction=round(offload_fraction, 4),
+                        host_bandwidth_gbps=round(host_bw, 1) if offload_fraction else 0.0,
                         tensor_parallel=tp,
                         pipeline_parallel=pp,
                         gpus_total=total_gpus,

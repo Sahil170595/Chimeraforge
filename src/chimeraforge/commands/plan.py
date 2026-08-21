@@ -89,6 +89,19 @@ def plan(
         "(R1/o-series/QwQ). The GPU decodes these and the KV cache holds them, but "
         "they are not in --avg-tokens. Your scenario input: measure it, do not guess.",
     ),
+    allow_offload: bool = typer.Option(
+        False,
+        "--allow-offload",
+        help="Allow configs where weights that do not fit VRAM stream from host RAM "
+        "(what llama.cpp/Ollama do). It runs, but slowly: the derate is modelled "
+        "from the bandwidth ratio, not measured.",
+    ),
+    host_bandwidth_gbps: float = typer.Option(
+        None,
+        "--host-bandwidth-gbps",
+        help="Host link bandwidth for offloaded weights (default: the GPU's PCIe "
+        "figure). Board- and lane-dependent, so it is your scenario input.",
+    ),
     duty_cycle: float = typer.Option(
         1.0,
         "--duty-cycle",
@@ -318,6 +331,8 @@ def plan(
         _fail("--duty-cycle must be greater than 0.0 and at most 1.0.")
     if gpu_price_multiplier <= 0:
         _fail("--gpu-price-multiplier must be positive.")
+    if host_bandwidth_gbps is not None and host_bandwidth_gbps <= 0:
+        _fail("--host-bandwidth-gbps must be positive.")
     if electricity_rate < 0:
         _fail("--electricity-rate must be non-negative.")
     kv_quant = kv_quant.lower()
@@ -425,6 +440,8 @@ def plan(
             prefix_cache_hit_rate=prefix_cache_hit_rate,
             duty_cycle=duty_cycle,
             gpu_price_multiplier=gpu_price_multiplier,
+            allow_offload=allow_offload,
+            host_bandwidth_gbps=host_bandwidth_gbps,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             safety_target=safety_target,
