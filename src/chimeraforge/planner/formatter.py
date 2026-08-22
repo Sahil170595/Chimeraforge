@@ -6,6 +6,7 @@ import json
 from dataclasses import asdict
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
@@ -422,3 +423,55 @@ def format_api_comparison(cmp) -> None:
         "  [dim]'like-for-like' hosts the same class of open-weights model; 'frontier' is a "
         "different quality tier, so its price is not an apples-to-apples comparison.[/]\n"
     )
+
+
+def format_fleet(plan) -> None:
+    """Print a heterogeneous fleet allocation and what it saves over one GPU type."""
+    title = "Heterogeneous fleet" if plan.is_mixed else "Fleet (single type was cheapest)"
+    table = Table(
+        title=f"{title}  (demand: {plan.demand_rate:g} req/s)",
+        show_lines=False,
+    )
+    for col in ("GPU", "Units", "req/s each", "$/mo each", "$ per req/s", "Config"):
+        table.add_column(col)
+    for gpu, units in plan.units.items():
+        if not units:
+            continue
+        o = plan.options[gpu]
+        table.add_row(
+            gpu,
+            str(units),
+            f"{o.rate_per_gpu:.2f}",
+            f"${o.cost_per_gpu_month:,.2f}",
+            f"${o.cost_per_rate:,.2f}",
+            f"{o.quant}/{o.backend}",
+        )
+    console.print(table)
+
+    console.print(
+        f"  [bold]{plan.gpus_total} GPU(s)[/]  "
+        f"[bold]${plan.monthly_cost:,.2f}/mo[/]  "
+        f"serving {plan.served_rate:.2f} req/s of {plan.demand_rate:g} demanded"
+    )
+    if plan.best_homogeneous:
+        gpu, units, cost = plan.best_homogeneous
+        saved = plan.savings_vs_best_homogeneous
+        if saved > 0:
+            console.print(
+                f"  [green]{saved:.1%} cheaper[/] than the best single type "
+                f"({units} x {gpu}, ${cost:,.2f}/mo)"
+            )
+        else:
+            # No saving is a real result, not a failure: say so rather than
+            # leaving a mixed-fleet table implying one.
+            console.print(
+                f"  [dim]No saving over a single type[/] ({units} x {gpu}, "
+                f"${cost:,.2f}/mo) -- homogeneous is already optimal here."
+            )
+    prov = plan.provenance()
+    console.print(
+        f"  [dim]provenance (worst across types used): "
+        f"throughput={prov['throughput']}, quality={prov['quality']}[/]"
+    )
+    for warning in plan.warnings:
+        console.print(f"  [yellow]![/] {escape(warning)}")
