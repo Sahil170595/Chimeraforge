@@ -119,7 +119,8 @@ def _print_panel(result) -> None:
     if result.eta_at_n is not None:
         t.add_row(
             f"Scaling eta(N={result.n_concurrent})",
-            f"{result.eta_at_n}  [green](measured)[/]  -> serial s={result.serial_fraction}",
+            f"{result.eta_at_n}  [yellow](measured, but not used by the planner)[/]"
+            f"  -> serial s={result.serial_fraction}",
         )
     else:
         t.add_row("Scaling", "[yellow]not measured[/] (skipped or concurrent run failed)")
