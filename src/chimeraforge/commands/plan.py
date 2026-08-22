@@ -652,6 +652,7 @@ def plan(
             fleet_plan = plan_fleet(
                 gpu_names,
                 demand_rate=request_rate,
+                budget=budget,
                 plan_fn=run_plan,
                 # The mix supplies scale-out, so each type is priced on its own
                 # merits with the same gates the single-GPU path applies.
@@ -660,7 +661,6 @@ def plan(
                     model_size=model_size,
                     latency_slo=latency_slo,
                     quality_target=quality_target,
-                    budget=budget,
                     avg_tokens=avg_tokens,
                     reasoning_tokens=reasoning_tokens,
                     prefix_cache_hit_rate=prefix_cache_hit_rate,

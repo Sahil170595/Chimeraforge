@@ -18,6 +18,8 @@ emitted as if certain. Specifically:
 
 from __future__ import annotations
 
+import shlex
+
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.resolver import SOURCE_HF, SOURCE_OLLAMA
@@ -105,7 +107,7 @@ def _join(parts: list[str]) -> str:
 def _build_vllm(candidate, spec, *, context_length: int, kv_quant: str) -> LaunchCommand:
     model_id, placeholder = _hf_repo(candidate, spec)
     parts = [
-        f"vllm serve {model_id}",
+        f"vllm serve {_q(model_id)}",
         f"--max-model-len {context_length}",
         f"--gpu-memory-utilization {RECOMMENDED_GPU_MEM_UTIL}",
     ]
@@ -182,7 +184,7 @@ def _build_tgi(
         "docker run --gpus all --shm-size 1g -p 8080:80",
         "-v $HOME/.cache/huggingface:/data",
         TGI_IMAGE,
-        f"--model-id {model_id}",
+        f"--model-id {_q(model_id)}",
         f"--max-input-tokens {max_input}",
         f"--max-total-tokens {context_length}",
     ]
@@ -222,7 +224,7 @@ def _build_tgi(
 def _build_sglang(candidate, spec, *, context_length: int, kv_quant: str) -> LaunchCommand:
     model_id, placeholder = _hf_repo(candidate, spec)
     parts = [
-        f"python -m sglang.launch_server --model-path {model_id}",
+        f"python -m sglang.launch_server --model-path {_q(model_id)}",
         f"--context-length {context_length}",
         f"--port {SGLANG_DEFAULT_PORT}",
     ]
@@ -254,6 +256,17 @@ def _build_sglang(candidate, spec, *, context_length: int, kv_quant: str) -> Lau
             f"(the plan's model came from {_source_of(spec)}, not an HF repo)."
         )
     return LaunchCommand(backend="sglang", command=_join(parts), notes=notes)
+
+
+def _q(identifier: str) -> str:
+    """Shell-quote an identifier destined for a copy-paste command.
+
+    These commands are printed for a human to paste into a terminal, and model
+    ids reach here from the HF Hub listing and from MCP callers -- not only from
+    the keyboard of whoever runs it. `meta/x$(id)` was interpolated raw.
+    brief.py already quotes its reproduction command; this is the same rule.
+    """
+    return shlex.quote(identifier)
 
 
 def _lora_flags(candidate, backend: str) -> tuple[list[str], list[str]]:

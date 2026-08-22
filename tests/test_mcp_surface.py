@@ -175,7 +175,10 @@ class TestSuggest:
         monkeypatch.setattr("chimeraforge.planner.discovery.load_catalog", dict)
         r = suggest_models(hardware="RTX 4090 24GB", source="catalog")
         assert r["ok"] and r["models"] == []
-        assert "catalog build" in r["hint"]
+        # `chimeraforge catalog build` exits 2 -- the flag is `--build`. This
+        # string is handed to an LLM through the MCP tool description, and is the
+        # only recovery instruction given when the catalog is empty.
+        assert "catalog --build" in r["hint"]
 
     def test_unknown_source_is_actionable(self):
         r = suggest_models(hardware="RTX 4090 24GB", source="pypi")

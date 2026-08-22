@@ -162,7 +162,7 @@ def suggest(
 # -- Live catalog ------------------------------------------------------
 #
 # A persistent index of resolved ModelSpecs, so `suggest --source catalog`
-# ranks a curated set of known-good models offline (after one `catalog build`).
+# ranks a curated set of known-good models offline (after one `catalog --build`).
 
 
 def _catalog_path() -> Path:

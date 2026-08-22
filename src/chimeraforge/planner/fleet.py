@@ -48,6 +48,10 @@ MAX_UNITS_PER_TYPE = 64
 # Ceiling on distinct GPU types in one mix. Every additional type is another
 # distinct machine image, driver stack and routing tier to operate.
 MAX_FLEET_TYPES = 6
+# Effectively no budget, for the capability probe. A real ceiling is applied to
+# the assembled mix instead; per-unit affordability is not the question a fleet
+# budget asks.
+UNBUDGETED = 1e12
 # The rate search is a bisection on "does one GPU of this type still meet the
 # SLO", which is monotone. This many steps resolves the rate to ~0.1% of range.
 _BISECT_STEPS = 24
@@ -334,10 +338,27 @@ def plan_fleet(
     demand_rate: float,
     plan_fn,
     plan_kwargs: dict,
+    budget: float | None = None,
 ) -> FleetPlan:
-    """Price each GPU type, then choose the cheapest mix that covers the demand."""
+    """Price each GPU type, then choose the cheapest mix that covers the demand.
+
+    ``budget`` gates the ASSEMBLED mix, not each GPU in isolation. Passing it
+    through to the per-GPU probe did both jobs badly: an L4 at $360/mo was
+    reported as "cannot serve this workload at all" against a $100 budget when it
+    serves the workload perfectly well and merely costs more than the cap, while
+    the mix it returned came to $172.80 against that same $100. Per-unit
+    affordability is not the question a fleet budget asks.
+    """
     if demand_rate <= 0:
         raise FleetError("request rate must be greater than zero to size a fleet")
+
+    # The per-GPU probe measures capability, so it must not be budget-limited.
+    # Set explicitly rather than popped: run_plan's own default budget is $100/mo,
+    # so removing the key still excluded an L4 (at $360/mo) as "cannot serve this
+    # workload at all" -- which it can; it merely costs more than the default.
+    probe_kwargs = dict(plan_kwargs)
+    probe_kwargs["budget"] = UNBUDGETED
+    plan_kwargs = probe_kwargs
 
     options: dict[str, GpuOption] = {}
     infeasible: list[str] = []
@@ -385,6 +406,16 @@ def plan_fleet(
         served_rate=served,
         best_homogeneous=best_homo,
     )
+
+    if budget is not None and monthly > budget:
+        # The cheapest covering mix is the cheapest one that exists, so if it
+        # busts the budget nothing does -- report that rather than returning an
+        # over-budget answer as though it satisfied the constraint.
+        raise FleetError(
+            f"the cheapest mix covering {demand_rate:g} req/s costs "
+            f"${monthly:,.2f}/mo, over the ${budget:,.2f} budget. Raise the budget, "
+            f"lower the rate, relax the latency SLO, or add a cheaper GPU type."
+        )
 
     if plan.is_mixed:
         plan.warnings.append(

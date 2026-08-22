@@ -37,6 +37,7 @@ from chimeraforge.planner.constants import (
     quant_family,
 )
 from chimeraforge.planner.hardware import (
+    GPU_DB,
     REFERENCE_GPU,
     bandwidth_ratio,
     get_gpu,
@@ -271,7 +272,18 @@ def enumerate_candidates(
         )
     specs = specs or {}
     gpu = get_gpu(hardware)
-    hw_vram = gpu.vram_gb if gpu else 12.0
+    if gpu is None:
+        # Both shipped callers pre-validate, but enumerate_candidates is exported
+        # public API and silently substituted a 12 GB card, $0.035/hr and a
+        # bandwidth ratio of 1.0 -- returning a full, confident result set sized
+        # for hardware the caller never asked about, with vram still labelled
+        # measured.
+        known = ", ".join(list(GPU_DB)[:6])
+        raise ValueError(
+            f"unknown GPU {hardware!r}. Known GPUs include: {known}, ... "
+            f"(see chimeraforge.planner.hardware.GPU_DB)"
+        )
+    hw_vram = gpu.vram_gb
     # A rented GPU bills for wall-clock, not for tokens. A fleet sized for a peak
     # rate it only sees part of the day still costs the full month, so the
     # per-token figure people budget against is the bill divided by tokens

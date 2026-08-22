@@ -156,7 +156,15 @@ class TestStaleRefusal:
             )
         msg = str(exc.value)
         assert "400 days old" in msg
-        assert "build_api_pricing" in msg and "--compare-api" in msg
+        # The refusal named scripts/build_api_pricing.py, which does not exist --
+        # pointing someone at a missing file is its own small dishonesty.
+        assert "build_cost_data" in msg and "--compare-api" in msg
+        from pathlib import Path as _P
+
+        root = _P(__file__).resolve().parents[1]
+        assert (root / "scripts" / "build_cost_data.py").exists(), (
+            "the refusal must name a script that actually exists"
+        )
 
     def test_no_candidates_refuses_rather_than_rendering_an_empty_brief(self, inputs):
         with pytest.raises(BriefError, match="nothing to recommend"):

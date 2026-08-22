@@ -52,6 +52,16 @@ def validate(
         "--report",
         help="Write the markdown report here.",
     ),
+    expect_fingerprint: str = typer.Option(
+        None,
+        "--expect-fingerprint",
+        metavar="HASH",
+        help="Fail unless the matrix hashes to this value. Without it the "
+        "fingerprint is recomputed from whatever matrix was loaded and merely "
+        "printed, so editing the matrix after seeing results yields a report that "
+        "matches itself perfectly. Pass the hash recorded at pre-registration to "
+        "make it a real gate.",
+    ),
     output_json: bool = typer.Option(
         False,
         "--json",
@@ -106,6 +116,19 @@ def validate(
         matrix = Matrix.load(matrix_path)
     except ValidationError as exc:
         _fail(str(exc))
+
+    if expect_fingerprint:
+        # The point of pre-registration: the hash is checked against what was
+        # committed BEFORE any result was seen. Recomputing it from the loaded
+        # matrix and printing it proves only that the file hashes to its own hash,
+        # so editing a cell after seeing results produced a self-consistent report.
+        actual = matrix.fingerprint()
+        want = expect_fingerprint.strip().lower()
+        if not actual.lower().startswith(want):
+            _fail(
+                f"matrix fingerprint {actual[:16]} does not match the expected "
+                f"{want}: this is not the matrix that was pre-registered."
+            )
 
     captured: dict[str, dict[str, float]] = {}
     if measurements_path:

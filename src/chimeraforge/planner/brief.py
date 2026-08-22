@@ -57,7 +57,7 @@ PROVENANCE_MARK = {
 STALE_REFUSAL = (
     "refusing to render: the API price snapshot is {age} days old (captured "
     "{captured}), past the {limit}-day limit. A dated document lends a stale price "
-    "more authority than a terminal line does. Re-run scripts/build_api_pricing.py, "
+    "more authority than a terminal line does. Re-run scripts/build_cost_data.py, "
     "or drop --compare-api to render the brief without the API section."
 )
 
@@ -78,7 +78,10 @@ class BriefInputs:
     request_rate: float = 1.0
     latency_slo_ms: float = 5000.0
     quality_target: float = 0.5
-    budget_usd_month: float = 100000.0
+    # Must match the CLI's --budget default. At 100000 an explicit --budget 100000
+    # was treated as "unchanged" and omitted from repro_command(), so the printed
+    # command re-ran at $100 and produced a different plan from the brief above it.
+    budget_usd_month: float = 100.0
     avg_output_tokens: int = 128
     reasoning_tokens: int = 0
     prompt_tokens: int = 512
