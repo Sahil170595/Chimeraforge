@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`plan --report brief.md`: the plan as a document a team can argue with.** A terminal panel answers "what should I run"; defending a GPU purchase in a meeting needs a dated record of what was assumed, where each number came from, what the alternatives cost, and the exact command that reproduces it. The brief carries all of that, including the planner's warnings verbatim.
+- **A fourth provenance class, `derived`.** GPU count and monthly cost are exact arithmetic over the inputs and the GPU price database -- not predictions, and not measurements either. Filing them under `measured` would have cited the TR benchmark corpus as the source of numbers it never measured.
+
+### Notes
+- The report **refuses to render** on a stale price snapshot rather than printing an old price in a nicer font: a formatted document reads as more durable than a terminal line, and its reader will not re-derive the arithmetic. It also refuses when no configuration fits, and exits non-zero in both cases so a CI job fails rather than continuing with no file where one was expected.
+- Prose is generated *from* the provenance labels rather than written next to them, and a rule test walks the rendered table asserting every row carries a phrase. An unqualified sentence silently outranks the `~` meant to qualify it.
+
+### Fixed
+- `--model` is repeatable, so the brief's reproduction command was handed a list where it expected a string and raised `TypeError` at render time -- after the plan had already run. Found by a test that was passing as a skip.
+
+
 ## [0.25.0] - 2026-08-21
 
 ### Added
