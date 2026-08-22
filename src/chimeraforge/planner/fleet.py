@@ -55,7 +55,11 @@ _BISECT_STEPS = 24
 # any single-GPU rate the corpus supports; only there to bracket the search.
 _MAX_SINGLE_GPU_RATE = 4096.0
 
-PROVENANCE_ORDER = ("measured", "estimated", "unknown")
+# Best-grounded first. "extrapolated" is a real measurement scaled off the
+# reference rig, so it outranks a pure roofline estimate but is not measurement
+# of the card in hand. Unknown labels sort worst, so a value this list has never
+# heard of can never be reported as the best of a mix.
+PROVENANCE_ORDER = ("measured", "extrapolated", "estimated", "unknown")
 
 
 class FleetError(ValueError):
@@ -140,7 +144,12 @@ class FleetPlan:
         used = [self.options[g] for g, n in self.units.items() if n > 0]
         out: dict[str, str] = {}
         for key in ("vram", "throughput", "quality"):
-            ranks = [PROVENANCE_ORDER.index(o.provenance.get(key, "unknown")) for o in used]
+            ranks = [
+                PROVENANCE_ORDER.index(o.provenance[key])
+                if o.provenance.get(key) in PROVENANCE_ORDER
+                else len(PROVENANCE_ORDER) - 1
+                for o in used
+            ]
             out[key] = PROVENANCE_ORDER[max(ranks)] if ranks else "unknown"
         return out
 

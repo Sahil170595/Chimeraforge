@@ -35,7 +35,12 @@ from chimeraforge.planner.constants import (
     backend_supports_quant,
     quant_family,
 )
-from chimeraforge.planner.hardware import get_gpu
+from chimeraforge.planner.hardware import (
+    REFERENCE_GPU,
+    bandwidth_ratio,
+    get_gpu,
+    is_reference_hardware,
+)
 from chimeraforge.planner.models import PlannerModels
 from chimeraforge.planner.resolver import (
     SOURCE_MANUAL,
@@ -495,9 +500,19 @@ def enumerate_candidates(
                 # roofline estimate for a genuinely off-registry model, is
                 # "estimated".
                 used_roofline = False
-                if f"{lookup_name}|{backend}|{quant}" in models.throughput.lookup:
+                lookup_hit = f"{lookup_name}|{backend}|{quant}" in models.throughput.lookup
+                if lookup_hit:
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
-                    throughput_source = "measured"
+                    # A lookup hit is evidence about the rig the row was measured
+                    # on, and the key carries no hardware -- every row came off the
+                    # reference GPU. On any other GPU the number has already been
+                    # through bandwidth_ratio, so it is an extrapolation and saying
+                    # "measured" would cite a benchmark that never ran on this card.
+                    # It reached 13.8x on a B200 before this was caught.
+                    if is_reference_hardware(hardware):
+                        throughput_source = "measured"
+                    else:
+                        throughput_source = "extrapolated"
                 elif use_measured:
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
                     throughput_source = "estimated"
@@ -838,6 +853,13 @@ def enumerate_candidates(
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
                 elif quality_source == "estimated" and not use_measured:
                     warnings.append("quality estimated from family prior, not measured")
+                if throughput_source == "extrapolated":
+                    ratio = bandwidth_ratio(hardware)
+                    warnings.append(
+                        f"throughput is a {ratio:.1f}x memory-bandwidth extrapolation of a "
+                        f"{REFERENCE_GPU} measurement, not a measurement of this GPU -- "
+                        f"run `chimeraforge measure` on the target to replace it"
+                    )
                 if lora_adapters > 0:
                     # The VRAM add is arithmetic; the speed cost is one vendor
                     # benchmark on one engine, one GPU and one model, published as

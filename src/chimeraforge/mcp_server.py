@@ -33,14 +33,17 @@ SERVER_INSTRUCTIONS = (
     "your own knowledge for GPU VRAM fit, throughput, latency, cost, and 'how many "
     "GPUs' questions -- your training data is stale on hardware/prices and this math "
     "(KV-cache, batching, tensor/pipeline parallelism) is error-prone to do mentally. "
-    "Every number is labeled measured / estimated / unknown in the `provenance` field; "
-    "surface that honestly to the user rather than presenting an estimate as fact."
+    "Every number is labeled measured / extrapolated / estimated / unknown in "
+    "the `provenance` field ('extrapolated' means measured on a different GPU, "
+    "then scaled). Surface that honestly rather than presenting an estimate as "
+    "fact."
 )
 
 _PLAN_DESC = (
     "Recommend the best (model x quantization x backend x GPU-count) deployment for a "
     "workload, or report why nothing fits. Returns candidates with per-number "
-    "provenance (measured/estimated/unknown). Use for: 'what GPU do I need for <model>', "
+    "provenance (measured/extrapolated/estimated/unknown). Use for: "
+    "'what GPU do I need for <model>', "
     "'will <model> fit on <gpu>', 'how many GPUs for N req/s', 'what will it cost'."
 )
 
