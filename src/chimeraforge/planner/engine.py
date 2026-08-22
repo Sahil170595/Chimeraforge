@@ -694,6 +694,14 @@ def enumerate_candidates(
                     "quality": quality_source,
                     "safety": safety_source,
                 }
+                if model_source == SOURCE_REGISTRY_APPROX:
+                    # The alias is a different model. Its rows are a reasonable
+                    # stand-in for throughput, but quality and safety are
+                    # properties OF a model -- reporting another one's as
+                    # measured attributes a benchmark to weights that never ran.
+                    for _key in ("quality", "safety"):
+                        if provenance.get(_key) == "measured":
+                            provenance[_key] = "estimated" if _key == "quality" else "unknown"
 
                 warnings = []
                 if quant_family(quant) == "w4a16":
