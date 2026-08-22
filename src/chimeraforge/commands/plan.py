@@ -89,6 +89,18 @@ def plan(
         "(R1/o-series/QwQ). The GPU decodes these and the KV cache holds them, but "
         "they are not in --avg-tokens. Your scenario input: measure it, do not guess.",
     ),
+    ttft_slo: float = typer.Option(
+        None,
+        "--ttft-slo",
+        help="Max acceptable time-to-first-token in ms. Gates responsiveness "
+        "separately from the blended p95, which hides which half a config fails.",
+    ),
+    tpot_slo: float = typer.Option(
+        None,
+        "--tpot-slo",
+        help="Max acceptable time-per-output-token in ms (streaming smoothness). "
+        "A large batch can win on p95 while making each token arrive too slowly.",
+    ),
     duty_cycle: float = typer.Option(
         1.0,
         "--duty-cycle",
@@ -318,6 +330,10 @@ def plan(
         _fail("--duty-cycle must be greater than 0.0 and at most 1.0.")
     if gpu_price_multiplier <= 0:
         _fail("--gpu-price-multiplier must be positive.")
+    if ttft_slo is not None and ttft_slo <= 0:
+        _fail("--ttft-slo must be positive.")
+    if tpot_slo is not None and tpot_slo <= 0:
+        _fail("--tpot-slo must be positive.")
     if electricity_rate < 0:
         _fail("--electricity-rate must be non-negative.")
     kv_quant = kv_quant.lower()
@@ -425,6 +441,8 @@ def plan(
             prefix_cache_hit_rate=prefix_cache_hit_rate,
             duty_cycle=duty_cycle,
             gpu_price_multiplier=gpu_price_multiplier,
+            ttft_slo=ttft_slo,
+            tpot_slo=tpot_slo,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             safety_target=safety_target,
