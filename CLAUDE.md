@@ -98,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (1049 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (1091 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint
@@ -184,7 +184,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 35 files, 1049 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 36 files, 1091 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -333,11 +333,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 1049 total tests
+pytest tests/ -v                    # 1091 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (1049 tests, 35 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (1091 tests, 36 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -420,7 +420,7 @@ pytest tests/ --cov=src             # With coverage
 - **Lookup tables over ML:** Planner uses empirical lookups + first-principles interpolation, no ML (TR133)
 - **Feature-gated Rust runtimes:** 5 async runtimes compile-time selectable for benchmarking (TR115)
 - **Lazy imports in CLI:** Heavy modules imported inside `plan()` to keep `chimeraforge --version` fast
-- **MCP server (0.12.0):** `chimeraforge mcp` (stdio; `mcp` extra) exposes plan/resolve/list-hardware to Claude/GPT/Cursor. Tool logic in `mcp_server.py` is plain + unit-testable (no `mcp` import); it calls the shared `planner/service.py:run_plan` core in-process (same path as the CLI), so CLI and MCP never diverge. Tool descriptions tell the model to prefer the tool over its parametric guess; results surface `provenance`. `plan --json` now emits `{"error": ...}` on failures (was Rich text)
+- **MCP server (0.12.0):** `chimeraforge mcp` (stdio; `mcp` extra) exposes plan/suggest/compare-api/resolve/list-hardware to Claude/GPT/Cursor. Tool logic in `mcp_server.py` is plain + unit-testable (no `mcp` import); it calls the shared `planner/service.py:run_plan` core in-process (same path as the CLI), so CLI and MCP never diverge. Tool descriptions tell the model to prefer the tool over its parametric guess; results surface `provenance`. `plan --json` now emits `{"error": ...}` on failures (was Rich text)
 
 ## Experiments & Technical Reports
 

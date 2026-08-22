@@ -15,9 +15,14 @@ from dataclasses import asdict
 
 from chimeraforge import __version__
 from chimeraforge.planner.engine import summarize_trace
+from chimeraforge.planner.constants import WORKLOAD_CV2
 from chimeraforge.planner.hardware import GPU_DB, get_gpu
 from chimeraforge.planner.launch import build_launch_command
-from chimeraforge.planner.resolver import ResolverError, resolve_spec
+from chimeraforge.planner.resolver import (
+    DEFAULT_OLLAMA_URL,
+    ResolverError,
+    resolve_spec,
+)
 from chimeraforge.planner.service import run_plan
 
 # Written to out-compete the model's own parametric guess (Anthropic tool-writing
@@ -39,7 +44,23 @@ _PLAN_DESC = (
     "'will <model> fit on <gpu>', 'how many GPUs for N req/s', 'what will it cost'."
 )
 
+_COMPARE_DESC = (
+    "Compare self-hosting against the hosted APIs for a workload: sizes the cheapest "
+    "feasible GPU fleet, prices the same traffic through each API model, and gives the "
+    "monthly output-token volume where the two break even. Use for 'is it cheaper to "
+    "self-host or use the API', 'when does a GPU pay for itself'. API prices come from "
+    "a dated snapshot -- the result reports its age and flags it when stale; say so "
+    "rather than quoting an old price as current."
+)
+
+_SUGGEST_DESC = (
+    "Rank the models that actually fit and hit the SLO on a given GPU -- the inverse of "
+    "planning. Use for 'what can I run on a 4090', 'best model for 12GB'. Sources: "
+    "catalog (offline curated set), ollama (locally installed), hf (top Hub repos)."
+)
+
 _MAX_CANDIDATES = 5
+_SUGGEST_SOURCES = frozenset({"catalog", "ollama", "hf"})
 
 
 def _candidate_summary(c) -> dict:
@@ -85,13 +106,26 @@ def plan_deployment(
     kv_quant: str = "fp16",
     tensor_parallel: int | None = 1,
     pipeline_parallel: int | None = 1,
+    workload: str = "steady",
+    safety_target: float | None = None,
+    gpu_price_multiplier: float = 1.0,
+    allow_offload: bool = False,
+    host_bandwidth_gbps: float | None = None,
     allow_network: bool = True,
 ) -> dict:
     """Plan a deployment; return the top candidates or an actionable error.
 
     ``model`` is a registry name, Ollama tag (``ollama:qwen3:8b``), or HF repo
     (``Qwen/Qwen3-8B``); if omitted, plans the registry size class ``model_size``.
+    ``workload`` sets request-size variance for the queueing tail (steady / chatbot /
+    bursty / agent) -- real traffic is not deterministic and the p95 moves a lot.
     """
+    if workload not in WORKLOAD_CV2:
+        return {
+            "ok": False,
+            "error": f"unknown workload '{workload}'.",
+            "hint": f"use one of: {', '.join(WORKLOAD_CV2)}",
+        }
     if get_gpu(hardware) is None:
         known = ", ".join(list(GPU_DB)[:8])
         return {
@@ -119,6 +153,11 @@ def plan_deployment(
             kv_quant=kv_quant,
             tensor_parallel=tensor_parallel,
             pipeline_parallel=pipeline_parallel,
+            workload_cv2=WORKLOAD_CV2[workload],
+            safety_target=safety_target,
+            gpu_price_multiplier=gpu_price_multiplier,
+            allow_offload=allow_offload,
+            host_bandwidth_gbps=host_bandwidth_gbps,
             allow_network=allow_network,
         )
     except ResolverError as exc:
@@ -198,6 +237,183 @@ def list_hardware() -> dict:
     return {"ok": True, "count": len(gpus), "gpus": gpus}
 
 
+def compare_self_host_vs_api(
+    hardware: str,
+    model: str | None = None,
+    model_size: str = "8b",
+    request_rate: float = 1.0,
+    avg_output_tokens: int = 128,
+    reasoning_tokens: int = 0,
+    prompt_tokens: int = 512,
+    duty_cycle: float = 1.0,
+    context_length: int = 2048,
+    quality_target: float = 0.5,
+    latency_slo_ms: float = 5000.0,
+    allow_network: bool = True,
+) -> dict:
+    """Price a self-hosted fleet against the hosted APIs, and give the break-even volume.
+
+    Sizes the cheapest SLO-feasible self-host config for the workload, then prices the
+    same traffic through every model in the bundled price snapshot. Use for 'is it
+    cheaper to self-host or call the API', 'when does self-hosting pay for itself'.
+    """
+    plan = plan_deployment(
+        hardware=hardware,
+        model=model,
+        model_size=model_size,
+        request_rate=request_rate,
+        latency_slo_ms=latency_slo_ms,
+        quality_target=quality_target,
+        avg_output_tokens=avg_output_tokens,
+        reasoning_tokens=reasoning_tokens,
+        prompt_tokens=prompt_tokens,
+        duty_cycle=duty_cycle,
+        context_length=context_length,
+        allow_network=allow_network,
+    )
+    if not plan.get("ok"):
+        return plan
+    if not plan.get("recommended"):
+        # No feasible self-host config, so there is no self-host cost to compare
+        # against. Saying "the API wins" here would answer a different question --
+        # report the planning failure instead.
+        return {
+            "ok": True,
+            "comparable": False,
+            "why_nothing_fit": plan.get("why_nothing_fit"),
+            "hint": plan.get("hint"),
+        }
+
+    from chimeraforge.planner.apicost import PricingError
+    from chimeraforge.planner.apicost import compare as compare_apis
+
+    best = plan["recommended"]
+    try:
+        cmp_result = compare_apis(
+            self_host_monthly=best["monthly_cost_usd"],
+            # Duty cycle is the fraction of the month the traffic actually runs. The
+            # API bills only for what you send, so it scales the request rate here;
+            # the GPU side is already handled inside the planner.
+            request_rate=request_rate * duty_cycle,
+            prompt_tokens=prompt_tokens,
+            output_tokens=avg_output_tokens + reasoning_tokens,
+        )
+    except PricingError as exc:
+        return {"ok": False, "error": f"price snapshot unavailable: {exc}"}
+
+    data = cmp_result.to_dict()
+    cheaper = [o for o in data["options"] if not o["self_host_cheaper"]]
+    stale_note = (
+        ", STALE -- re-check the vendor page before quoting" if data["prices_stale"] else ""
+    )
+    return {
+        "ok": True,
+        "comparable": True,
+        "self_host": best,
+        "api_comparison": data,
+        "api_options_cheaper_than_self_host": len(cheaper),
+        "note": (
+            "Prices are a dated snapshot captured "
+            f"{data['prices_captured_at'] or 'on an unrecorded date'} "
+            f"({data['prices_age_days']} days old{stale_note}). The self-host figure is "
+            "GPU rental only -- it excludes engineering time, and its throughput may be "
+            "an estimate; check `self_host.provenance`."
+        ),
+    }
+
+
+def suggest_models(
+    hardware: str,
+    source: str = "catalog",
+    request_rate: float = 1.0,
+    latency_slo_ms: float = 5000.0,
+    quality_target: float = 0.5,
+    budget_usd_month: float = 100000.0,
+    avg_output_tokens: int = 128,
+    context_length: int = 2048,
+    ollama_url: str | None = None,
+    hf_limit: int = 8,
+    limit: int = 10,
+) -> dict:
+    """Rank the models that actually fit and hit the SLO on a given GPU.
+
+    The inverse of planning: instead of 'will this model fit', answers 'what should I
+    run'. ``source``: 'catalog' (offline curated set), 'ollama' (locally installed
+    tags), 'hf' (top Hugging Face text-generation repos); comma-separated.
+    """
+    if get_gpu(hardware) is None:
+        return {
+            "ok": False,
+            "error": f"unknown GPU '{hardware}'.",
+            "hint": "call chimeraforge_list_hardware for the known set.",
+        }
+    sources = [s.strip().lower() for s in source.split(",") if s.strip()]
+    bad = [s for s in sources if s not in _SUGGEST_SOURCES]
+    if bad:
+        return {
+            "ok": False,
+            "error": f"unknown source(s): {', '.join(bad)}",
+            "hint": f"use any of: {', '.join(sorted(_SUGGEST_SOURCES))}",
+        }
+
+    from chimeraforge.planner.discovery import (
+        discover_identifiers,
+        load_catalog,
+        resolve_many,
+        suggest,
+    )
+    from chimeraforge.planner.models import load_effective_models
+
+    specs = {}
+    errors: list[tuple[str, str]] = []
+    if "catalog" in sources:
+        specs.update(load_catalog())
+    live = [s for s in sources if s in ("ollama", "hf")]
+    if live:
+        eff_url = ollama_url or (DEFAULT_OLLAMA_URL if "ollama" in live else None)
+        ids = discover_identifiers(live, ollama_url=eff_url, hf_limit=hf_limit)
+        found, errors = resolve_many(ids, ollama_url=eff_url)
+        specs.update(found)
+
+    if not specs:
+        return {
+            "ok": True,
+            "hardware": hardware,
+            "models": [],
+            "hint": (
+                "no models to rank. For source='catalog' the user must run "
+                "`chimeraforge catalog build` once; for 'ollama' the daemon must be "
+                "running with models installed."
+            ),
+        }
+
+    ranked = suggest(
+        load_effective_models(),
+        specs,
+        hardware=hardware,
+        request_rate=request_rate,
+        latency_slo=latency_slo_ms,
+        quality_target=quality_target,
+        budget=budget_usd_month,
+        avg_tokens=avg_output_tokens,
+        context_length=context_length,
+    )
+    return {
+        "ok": True,
+        "hardware": hardware,
+        "sources": sources,
+        "considered": len(specs),
+        "fitting": len(ranked),
+        "models": [_candidate_summary(c) for c in ranked[:limit]],
+        "unresolved": [{"id": i, "reason": r} for i, r in errors[:5]],
+        "note": (
+            "One best config per model, ranked. A model absent from the list did not "
+            "fit the GPU or missed a gate. Throughput for models outside the measured "
+            "corpus is a roofline estimate -- see each `provenance`."
+        ),
+    }
+
+
 def build_server():
     """Construct the FastMCP server (requires the ``mcp`` extra)."""
     try:
@@ -226,6 +442,10 @@ def build_server():
         name="chimeraforge_list_hardware",
         description="List known GPUs with VRAM/bandwidth/TDP/interconnect.",
     )(list_hardware)
+    server.tool(name="chimeraforge_compare_api", description=_COMPARE_DESC)(
+        compare_self_host_vs_api
+    )
+    server.tool(name="chimeraforge_suggest", description=_SUGGEST_DESC)(suggest_models)
     return server
 
 
