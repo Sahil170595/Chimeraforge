@@ -223,6 +223,17 @@ class ThroughputModel:
             return 1.0
         return min(known, key=lambda x: abs(x[0] - bpw))[1]
 
+    def has_measured_rows(self, backend: str) -> bool:
+        """True if the corpus contains any measurement for this backend.
+
+        Derived from the loaded corpus rather than a hardcoded list, so a backend
+        added later is honest by default: with no rows it predicts from first
+        principles and the engine says so, and it starts reporting `measured` only
+        once someone actually measures it.
+        """
+        prefix = f"|{backend}|"
+        return any(prefix in key for key in self.lookup)
+
     def predict(
         self,
         model: str,
