@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-08-21
+
 ### Added
 - **Multi-LoRA serving: `--lora-adapters N --lora-rank R [--lora-target qv|attn]`.** Serving many fine-tunes off one base model is an established production pattern, and the sizing question ("how many adapters fit") has an exact answer. LoRA factorises a `(d_in x d_out)` weight into `A (d_in x r)` and `B (r x d_out)`, so an adapter costs `r * (d_in + d_out)` per target module per layer. The derivation is pinned to the published PEFT parameter count for Llama-2-7B q/v (`524288 * r`), not to itself.
 - **`--hidden-size` manual override.** Needed to size adapters and MoE experts exactly, and previously missing from the override set.
