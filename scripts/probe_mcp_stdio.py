@@ -20,6 +20,10 @@ import threading
 import time
 
 TOOLS_REQUEST_ID = 2
+# A FLOOR, not the exact set. The image installs the PUBLISHED wheel, so it lags a
+# PR that adds a tool -- pinning the exact set here would fail every such PR for
+# being ahead of PyPI. The exact registration is asserted in tests/test_mcp_surface.py
+# against branch source; this only proves the shipped image still serves the core.
 EXPECTED_TOOLS = {
     "chimeraforge_plan",
     "chimeraforge_resolve_model",

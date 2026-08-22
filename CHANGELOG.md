@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Two new MCP tools.** `chimeraforge_suggest` inverts the planning question -- instead of "will this model fit", it ranks what to actually run on a given GPU (from the offline catalog, installed Ollama tags, or the HF Hub). `chimeraforge_compare_api` sizes the cheapest feasible self-host fleet, prices the same traffic through every hosted model in the snapshot, and returns the monthly output-token volume where the two break even.
+- **Plan-tool parity with the CLI.** `chimeraforge_plan` now also takes `workload` (queueing variance: steady / chatbot / bursty / agent), `safety_target`, `gpu_price_multiplier`, `allow_offload` and `host_bandwidth_gbps`. A knob the CLI models but the tool cannot pass is invisible to an assistant -- it fails as a missing capability, never as an error -- so a test now walks `run_plan`'s signature and fails if a new one is added without a route through the tool.
+
+### Notes
+- API prices are a dated snapshot: `chimeraforge_compare_api` reports the capture date and age in every result and puts STALE in the prose note, not only in a boolean a model may skip over.
+- When nothing fits, the comparison returns `comparable: false` with the rejection reason rather than reporting an API win -- with no feasible fleet there is no self-host cost, and "the API is cheaper" would answer a different question.
+
+
 ## [0.24.0] - 2026-08-21
 
 ### Added
