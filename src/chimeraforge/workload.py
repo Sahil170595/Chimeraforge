@@ -114,6 +114,8 @@ class WorkloadProfile:
     output_tokens: Field | None = None
     workload_cv2: Field | None = None
     prefix_cache_hit_rate: Field | None = None
+    # Reported for context; the planner assumes Poisson arrivals, so it is not fed in.
+    arrival_cv2: Field | None = None
     peak_concurrency: Field | None = None
     queue_depth: Field | None = None
     absent: list[str] = field(default_factory=list)
@@ -137,6 +139,7 @@ class WorkloadProfile:
             "prompt_tokens",
             "output_tokens",
             "workload_cv2",
+            "arrival_cv2",
             "prefix_cache_hit_rate",
             "peak_concurrency",
             "queue_depth",
@@ -293,18 +296,17 @@ def from_log(path: str | Path, *, engine: str = "unknown") -> WorkloadProfile:
                 PROV_MEASURED,
                 f"{len(rows)} requests over {window:.0f}s",
             )
-            # Inter-arrival variability drives the queueing tail, so it is derived
-            # from the arrivals themselves rather than borrowed from a preset.
+            # Arrival variability is a real property of the traffic and worth
+            # reporting, but it is NOT what the planner's queueing term wants --
+            # see the service-CV^2 derivation below.
             gaps = [b - a for a, b in zip(sorted(stamps), sorted(stamps)[1:]) if b > a]
-            cv2 = _cv2(gaps) if len(gaps) >= MIN_SAMPLES_FOR_VARIANCE else None
-            if cv2 is not None:
-                profile.workload_cv2 = Field(
-                    round(cv2, 4), PROV_MEASURED, f"from {len(gaps)} inter-arrival gaps"
-                )
-            elif gaps:
-                profile.notes.append(
-                    f"only {len(gaps)} inter-arrival gaps (< {MIN_SAMPLES_FOR_VARIANCE}); "
-                    "a CV^2 from that few is noise, so it is left absent"
+            arrival = _cv2(gaps) if len(gaps) >= MIN_SAMPLES_FOR_VARIANCE else None
+            if arrival is not None:
+                profile.arrival_cv2 = Field(
+                    round(arrival, 4),
+                    PROV_MEASURED,
+                    f"from {len(gaps)} inter-arrival gaps (reported, not used by the "
+                    f"planner: its queueing term assumes Poisson arrivals)",
                 )
     if profile.request_rate is None:
         profile.absent.append("request_rate")
@@ -314,6 +316,32 @@ def from_log(path: str | Path, *, engine: str = "unknown") -> WorkloadProfile:
         )
     if profile.workload_cv2 is None and "workload_cv2" not in profile.absent:
         profile.absent.append("workload_cv2")
+
+    # The planner's two-moment wait takes a SERVICE-time CV^2 and hard-codes
+    # Poisson arrivals (Ca^2 = 1); WORKLOAD_CV2's presets are documented as output
+    # length variability. Feeding it the inter-arrival CV^2 was a category error --
+    # a Poisson-ish log yields ~1, which reads as "chatbot" regardless of how
+    # uniform the actual responses were.
+    #
+    # Decode length is the right proxy: at a fixed decode rate, service time is
+    # proportional to tokens generated, so their CV^2 is the service CV^2.
+    decode_vals = [
+        float(v)
+        for v in (_pick(r, LOG_FIELDS["decode_tokens"]) for r in rows)
+        if isinstance(v, (int, float))
+    ]
+    service = _cv2(decode_vals) if len(decode_vals) >= MIN_SAMPLES_FOR_VARIANCE else None
+    if service is not None:
+        profile.workload_cv2 = Field(
+            round(service, 4),
+            PROV_MEASURED,
+            f"service-time CV^2 from {len(decode_vals)} decode lengths",
+        )
+    elif decode_vals:
+        profile.notes.append(
+            f"only {len(decode_vals)} decode lengths (< {MIN_SAMPLES_FOR_VARIANCE}); "
+            "a service CV^2 from that few is noise, so it is left absent"
+        )
 
     for name, key in (("prompt_tokens", "prompt_tokens"), ("output_tokens", "decode_tokens")):
         vals = [
@@ -557,6 +585,7 @@ def format_markdown(profile: WorkloadProfile) -> str:
         "prompt_tokens",
         "output_tokens",
         "workload_cv2",
+        "arrival_cv2",
         "prefix_cache_hit_rate",
         "peak_concurrency",
         "queue_depth",

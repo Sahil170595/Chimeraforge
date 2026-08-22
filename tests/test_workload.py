@@ -88,10 +88,15 @@ class TestFromLog:
         for name in ("request_rate", "prompt_tokens", "output_tokens", "workload_cv2"):
             assert getattr(log_profile, name).provenance == "measured"
 
-    def test_recovers_the_known_cv2_of_a_poisson_process(self, tmp_path):
-        """Ground truth, not self-consistency: exponential inter-arrivals have a
-        CV^2 of exactly 1. If the derivation cannot recover that from arrivals it
-        generated itself, it is not measuring variance."""
+    def test_separates_arrival_variance_from_service_variance(self, tmp_path):
+        """Ground truth, and the distinction the planner depends on.
+
+        Exponential inter-arrivals have a CV^2 of exactly 1; constant decode
+        lengths have a service CV^2 of exactly 0. This trace has both at once, so
+        it fails if the two are ever conflated again -- and they were: the
+        inter-arrival figure fed the service slot, so a Poisson-ish log always read
+        as ~1 ("chatbot") no matter how uniform the responses actually were.
+        """
         rng = random.Random(11)
         t = 1_700_000_000.0
         rows = []
@@ -100,7 +105,37 @@ class TestFromLog:
             rows.append({"timestamp": round(t, 4), "prompt_tokens": 100, "completion_tokens": 50})
         p = tmp_path / "poisson.jsonl"
         p.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
-        assert from_log(p).workload_cv2.value == pytest.approx(1.0, abs=0.15)
+        got = from_log(p)
+        assert got.arrival_cv2.value == pytest.approx(1.0, abs=0.15)
+        assert got.workload_cv2.value == pytest.approx(0.0, abs=1e-9)
+
+    def test_service_cv2_matches_the_lognormal_it_came_from(self, tmp_path):
+        """For lognormal(mu, sigma) the CV^2 is exp(sigma^2) - 1, independent of mu.
+        At sigma=0.7 that is 0.632 -- closed form, not self-consistency."""
+        rng = random.Random(5)
+        rows = [
+            {
+                "timestamp": 1_700_000_000 + i * 2.0,
+                "prompt_tokens": 100,
+                "completion_tokens": max(int(rng.lognormvariate(5.0, 0.7)), 1),
+            }
+            for i in range(6000)
+        ]
+        p = tmp_path / "lognormal.jsonl"
+        p.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        got = from_log(p)
+        assert got.workload_cv2.value == pytest.approx(math.exp(0.7**2) - 1, rel=0.10)
+        # Fixed-interval arrivals: the ARRIVAL figure is the one that must be 0 here.
+        assert got.arrival_cv2.value == pytest.approx(0.0, abs=1e-9)
+
+    def test_the_planner_is_fed_the_service_figure(self):
+        """The queueing term takes a service CV^2 and hard-codes Poisson arrivals,
+        so the arrival figure is reported but never passed through."""
+        got = from_log(FIXTURES / "requests_sample.jsonl")
+        assert got.plan_kwargs()["workload_cv2"] == got.workload_cv2.value
+        assert got.arrival_cv2 is not None
+        assert got.arrival_cv2.value != got.workload_cv2.value
+        assert "not used by the planner" in got.arrival_cv2.note
 
     def test_recovers_a_deterministic_arrival_process(self, tmp_path):
         # Fixed-interval arrivals have CV^2 = 0. Anything above noise here means the

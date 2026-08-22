@@ -62,7 +62,12 @@ class TestVRAMAccuracy:
         # value that legitimately drifts on refit.
         m = bundled_models.vram
         arch = {"n_layers": 28, "n_kv_heads": 8, "d_head": 128}  # llama3.2-3b
-        weight = 3.21 * 16 / 8 * m.overhead_factor
+        # GiB, matching kv_cache_gb and GPUSpec.vram_gb. The weight term used to
+        # be decimal GB while the KV term was binary, so this sum mixed units and
+        # overstated the total by 7.37%.
+        from chimeraforge.planner.constants import GB_TO_GIB
+
+        weight = 3.21 * 16 / 8 * GB_TO_GIB * m.overhead_factor
         kv = m.kv_cache_gb(arch, 2048, 1)
         act = m.act_coeff * arch["n_layers"] * (2048 / 1024)  # linear in ctx (flash attn)
         assert m.predict("llama3.2-3b", "FP16", 2048) == pytest.approx(weight + kv + act, rel=1e-3)

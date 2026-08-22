@@ -95,6 +95,16 @@ HIGH_VARIANCE_CV2 = 4.0
 # equal MBU elsewhere predicts ~29% more throughput than the old figure did.
 MBU_DEFAULT = 0.84
 
+# Weights come out of `params_b * bpw / 8` in DECIMAL GB (a billion parameters is
+# 1e9, not 2^30), while KV cache and GPU capacity are both binary GiB -- GDDR/HBM
+# capacities are powers of two, so a "24 GB" card is 24 GiB. Summing the two and
+# comparing against VRAM overstated weights by 7.37% and refused configs that fit.
+#
+# Only for capacity arithmetic. The roofline divides decimal GB/s of bandwidth by
+# decimal GB of weights, which is already dimensionally consistent and must not be
+# converted.
+GB_TO_GIB = 1e9 / (1024**3)
+
 # Default architecture used only when a model's real config cannot be resolved.
 DEFAULT_ARCH: dict[str, int] = {"n_layers": 32, "n_kv_heads": 8, "d_head": 128}
 DEFAULT_PARAMS_B = 3.0
