@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Multi-LoRA serving: `--lora-adapters N --lora-rank R [--lora-target qv|attn]`.** Serving many fine-tunes off one base model is an established production pattern, and the sizing question ("how many adapters fit") has an exact answer. LoRA factorises a `(d_in x d_out)` weight into `A (d_in x r)` and `B (r x d_out)`, so an adapter costs `r * (d_in + d_out)` per target module per layer. The derivation is pinned to the published PEFT parameter count for Llama-2-7B q/v (`524288 * r`), not to itself.
+- **`--hidden-size` manual override.** Needed to size adapters and MoE experts exactly, and previously missing from the override set.
+- Launch export emits `--enable-lora --max-loras --max-lora-rank` (vLLM), `--lora-paths --max-loras-per-batch` (SGLang), `--lora-adapters` (TGI). MCP `chimeraforge_plan` takes the same knobs.
+
+### Notes
+- **VRAM is exact; the decode cost is not, and they are labeled differently.** The speed penalty comes from one vendor sweep on one engine, one GPU, one model, which published two rank endpoints and *not* the two intermediate ranks it tested. So the multiplier is anchored on those endpoints, interpolated in log2(rank) between them, clamped rather than extrapolated outside them, and every LoRA plan carries a warning naming the source and its scope.
+- **Adapter count drives VRAM only.** The same source found throughput near-flat from 2 to 64 adapters, so scaling the decode rate by count would be a fit to nothing; the residual ~10% spread is declared unmodelled rather than fitted to two digits. Per-adapter KV fragmentation is likewise not modelled.
+- **A spec without a real `hidden_size` is rejected, not guessed.** Collapsing hidden to the GQA KV width would under-size the adapter, and an under-sized adapter claims a fit that is not there.
+- Ollama is not given LoRA flags: llama.cpp merges an adapter into the base weights rather than serving adapters per request, so it gets a note saying so.
+- Adapter paths are a `<adapter-path>` placeholder. The planner does not know where they live, and a command that looks runnable while silently serving the wrong adapter is worse than one that visibly needs filling in.
+
+
 ## [0.26.0] - 2026-08-21
 
 ### Added

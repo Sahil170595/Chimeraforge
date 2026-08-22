@@ -253,3 +253,40 @@ SWA_PATTERN_KEYS = ("sliding_window_pattern", "global_attn_every_n_layers")
 # One billing month, in seconds. Shared by the cost model and the API break-even
 # so a "month" means the same thing in both (30 days, matching predict_monthly).
 SECONDS_PER_MONTH = 60 * 60 * 24 * 30
+
+# -- Multi-LoRA serving (0.27.0) ---------------------------------------
+#
+# Which linear modules an adapter targets. The planner sizes only what it can
+# derive exactly: q/k/v/o dimensions all follow from hidden_size, n_kv_heads and
+# d_head, which every resolved ModelSpec carries. MLP targets need the dense
+# intermediate_size, which the resolver does not always have, so "all" is not
+# offered rather than guessed -- an under-sized adapter claims a fit that is not
+# there.
+LORA_TARGETS: dict[str, tuple[str, ...]] = {
+    "qv": ("q", "v"),  # the PEFT default
+    "attn": ("q", "k", "v", "o"),
+}
+DEFAULT_LORA_TARGET = "qv"
+# Adapters are served in fp16 regardless of base-model quantization: the low-rank
+# update is applied in the compute dtype, and quantizing a rank-16 matrix saves
+# megabytes while costing accuracy nobody has measured.
+LORA_BYTES_PER_PARAM = 2.0
+# LoRA factorises a (d_in x d_out) weight into A (d_in x r) and B (r x d_out), so
+# one target module costs r * (d_in + d_out) parameters.
+LORA_MATRICES_PER_MODULE = 2
+
+# Rank-indexed throughput cost, from the only public multi-LoRA sweep with per-rank
+# numbers: SqueezeBits, vLLM 0.6.3 on A100 80GB PCIe, Llama-3.1-8B-Instruct, 1K in /
+# 1K out (https://blog.squeezebits.com/37065). Two endpoints are published --
+# 23.9% degradation at the low rank and 47.0% at the high -- and NOT the two
+# intermediate points, so anything between these is interpolated, never measured.
+# Kept as endpoints rather than a fitted curve so the interpolation stays visible.
+LORA_RANK_THROUGHPUT: dict[int, float] = {8: 0.761, 64: 0.530}
+LORA_SOURCE = "SqueezeBits vLLM 0.6.3 / A100 80GB / Llama-3.1-8B (blog.squeezebits.com/37065)"
+# Same source: throughput was near-flat from 2 to 64 concurrent adapters (~10%
+# spread), so adapter COUNT drives VRAM here and not the decode rate. The residual
+# ~10% is unmodelled and warned about rather than fitted to two digits.
+LORA_COUNT_UNMODELLED_SPREAD = 0.10
+# vLLM's own ceiling on simultaneously-loaded adapters per batch.
+MAX_LORA_ADAPTERS = 64
+MAX_LORA_RANK = 64

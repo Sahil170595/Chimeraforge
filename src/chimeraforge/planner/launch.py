@@ -38,6 +38,7 @@ TGI_KV_CACHE_DTYPE = "fp8_e5m2"
 OLLAMA_KV_CACHE_TYPE = {"q8": "q8_0", "q4": "q4_0"}
 
 _HF_PLACEHOLDER = "<hf-repo>"
+_LORA_PLACEHOLDER = "<adapter-path>"
 _OLLAMA_PLACEHOLDER = "<ollama-tag>"
 
 
@@ -118,8 +119,10 @@ def _build_vllm(candidate, spec, *, context_length: int, kv_quant: str) -> Launc
         parts.append(f"--pipeline-parallel-size {candidate.pipeline_parallel}")
     if candidate.effective_batch > 1:
         parts.append(f"--max-num-seqs {candidate.effective_batch}")
+    lora_parts, lora_notes = _lora_flags(candidate, "vllm")
+    parts.extend(lora_parts)
 
-    notes: list[str] = []
+    notes: list[str] = list(lora_notes)
     if kv_quant != "fp16":
         parts.append(f"--kv-cache-dtype {VLLM_KV_CACHE_DTYPE}")
         if kv_quant == "q4":
@@ -166,6 +169,7 @@ def _build_ollama(candidate, spec, *, context_length: int, kv_quant: str) -> Lau
             f"Replace {_OLLAMA_PLACEHOLDER} with the Ollama model tag "
             f"(the plan's model came from {_source_of(spec)})."
         )
+    notes.extend(_lora_flags(candidate, "ollama")[1])
     return LaunchCommand(backend="ollama", command=f"ollama run {tag}", env=env, notes=notes)
 
 
@@ -190,8 +194,10 @@ def _build_tgi(
         parts.append(f"--max-concurrent-requests {candidate.effective_batch}")
     if candidate.tensor_parallel > 1:
         parts.append(f"--num-shard {candidate.tensor_parallel}")
+    lora_parts, lora_notes = _lora_flags(candidate, "tgi")
+    parts.extend(lora_parts)
 
-    notes: list[str] = []
+    notes: list[str] = list(lora_notes)
     if kv_quant != "fp16":
         parts.append(f"--kv-cache-dtype {TGI_KV_CACHE_DTYPE}")
         if kv_quant == "q4":
@@ -230,8 +236,10 @@ def _build_sglang(candidate, spec, *, context_length: int, kv_quant: str) -> Lau
         parts.append("--quantization fp8")
     elif candidate.quant in ("AWQ", "GPTQ"):
         parts.append(f"--quantization {candidate.quant.lower()}")
+    lora_parts, lora_notes = _lora_flags(candidate, "sglang")
+    parts.extend(lora_parts)
 
-    notes: list[str] = []
+    notes: list[str] = list(lora_notes)
     if kv_quant != "fp16":
         parts.append(f"--kv-cache-dtype {SGLANG_KV_CACHE_DTYPE}")
         if kv_quant == "q4":
@@ -246,6 +254,49 @@ def _build_sglang(candidate, spec, *, context_length: int, kv_quant: str) -> Lau
             f"(the plan's model came from {_source_of(spec)}, not an HF repo)."
         )
     return LaunchCommand(backend="sglang", command=_join(parts), notes=notes)
+
+
+def _lora_flags(candidate, backend: str) -> tuple[list[str], list[str]]:
+    """Per-backend flags for serving N adapters at rank R, plus the honest notes.
+
+    The planner sizes adapters but has no idea WHERE they live, so every backend
+    gets a placeholder path rather than a fabricated one -- a command that looks
+    runnable and silently serves the wrong adapter is worse than one that visibly
+    needs filling in. Ollama gets nothing: llama.cpp merges a LoRA into the base
+    weights rather than serving adapters per request.
+    """
+    n, rank = candidate.lora_adapters, candidate.lora_rank
+    if n <= 0:
+        return [], []
+    notes = [
+        f"Replace {_LORA_PLACEHOLDER} with your adapter path(s): the plan sized "
+        f"{n} rank-{rank} adapter(s) but does not know where they live."
+    ]
+    if backend == "vllm":
+        return (
+            [
+                "--enable-lora",
+                f"--max-loras {n}",
+                f"--max-lora-rank {rank}",
+                f"--lora-modules {_LORA_PLACEHOLDER}",
+            ],
+            notes,
+        )
+    if backend == "sglang":
+        return (
+            [f"--lora-paths {_LORA_PLACEHOLDER}", f"--max-loras-per-batch {n}"],
+            notes,
+        )
+    if backend == "tgi":
+        return ([f"--lora-adapters {_LORA_PLACEHOLDER}"], notes)
+    return (
+        [],
+        [
+            f"The plan sized {n} LoRA adapter(s), but {backend} does not serve "
+            "adapters per request -- merge the adapter into the base weights and "
+            "serve that instead."
+        ],
+    )
 
 
 def build_launch_command(

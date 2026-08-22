@@ -81,6 +81,9 @@ class BriefInputs:
     prefix_cache_hit_rate: float = 0.0
     gpu_price_multiplier: float = 1.0
     safety_target: float | None = None
+    lora_adapters: int = 0
+    lora_rank: int = 16
+    lora_target: str = "qv"
     ttft_slo_ms: float | None = None
     tpot_slo_ms: float | None = None
 
@@ -121,6 +124,9 @@ class BriefInputs:
             ("--prefix-cache-hit-rate", self.prefix_cache_hit_rate, 0.0),
             ("--gpu-price-multiplier", self.gpu_price_multiplier, 1.0),
             ("--safety-target", self.safety_target, None),
+            ("--lora-adapters", self.lora_adapters, 0),
+            ("--lora-rank", self.lora_rank, defaults.lora_rank),
+            ("--lora-target", self.lora_target, defaults.lora_target),
             ("--ttft-slo", self.ttft_slo_ms, None),
             ("--tpot-slo", self.tpot_slo_ms, None),
         ]
@@ -276,6 +282,17 @@ def build_brief(
                 f"{w.perf_per_watt:.2f} tok/s per watt, from board TDP",
             )
         )
+    if w.lora_adapters:
+        # Two different epistemic classes in one feature, so they get two rows
+        # rather than one averaged claim.
+        metrics.append(
+            MetricRow(
+                "LoRA adapters",
+                f"{w.lora_adapters} x rank-{w.lora_rank}",
+                PROV_DERIVED,
+                f"{w.lora_gb * 1000:.0f} MB resident; exact geometry, shared base weights",
+            )
+        )
     if w.safety_refusal is not None:
         metrics.append(
             MetricRow(
@@ -361,6 +378,10 @@ def render_markdown(brief: Brief) -> str:
         out.append(f"| GPU price multiplier | {i.gpu_price_multiplier}x |")
     if i.safety_target is not None:
         out.append(f"| Safety floor (refusal) | {i.safety_target} |")
+    if i.lora_adapters:
+        out.append(
+            f"| LoRA adapters | {i.lora_adapters} x rank-{i.lora_rank}, targeting {i.lora_target} |"
+        )
 
     if brief.alternatives:
         out += [
