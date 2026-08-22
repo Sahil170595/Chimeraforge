@@ -1,0 +1,13 @@
+# HELP sglang:e2e_request_latency_seconds End-to-end request latency in seconds
+# TYPE sglang:e2e_request_latency_seconds histogram
+sglang:e2e_request_latency_seconds_bucket{le="1.0",model_name="m"} 120.0
+sglang:e2e_request_latency_seconds_bucket{le="4.0",model_name="m"} 700.0
+sglang:e2e_request_latency_seconds_bucket{le="+Inf",model_name="m"} 900.0
+sglang:e2e_request_latency_seconds_sum{model_name="m"} 3150.0
+sglang:e2e_request_latency_seconds_count{model_name="m"} 900.0
+# TYPE sglang:num_running_reqs gauge
+sglang:num_running_reqs{model_name="m"} 22.0
+# TYPE sglang:num_queue_reqs gauge
+sglang:num_queue_reqs{model_name="m"} 5.0
+# TYPE sglang:cache_hit_rate gauge
+sglang:cache_hit_rate{model_name="m"} 38.5

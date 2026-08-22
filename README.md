@@ -72,6 +72,17 @@ chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 
 ---
 
+## Plan with your traffic, not your guesses
+
+```bash
+chimeraforge workload --from-log requests.jsonl --out workload.json
+chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --workload-profile workload.json
+```
+
+Derives the request rate, prompt and output lengths, traffic variance and prefix-cache hit rate from a request log or a live vLLM/SGLang `/metrics` endpoint. The variance one matters most: `plan` otherwise takes it as one of four presets, and it drives the whole queueing tail.
+
+Metric names are per-engine and explicit -- vLLM has renamed two of these between versions, and a scraper that silently falls back to a stale name reports a fabricated measurement. An unknown engine is an error, and a field the source did not expose stays absent rather than acquiring a default.
+
 ## Decision briefs
 
 ```bash
@@ -279,7 +290,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB). De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **1,175 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **1,232 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

@@ -18,6 +18,16 @@ from chimeraforge.planner.constants import (
     KV_QUANT_BYTES,
 )
 
+# Which CLI flag each profile-supplied field corresponds to, so an explicitly
+# passed flag can be detected and left alone.
+_PROFILE_FLAG = {
+    "request_rate": "request_rate",
+    "prompt_tokens": "prompt_tokens",
+    "avg_tokens": "avg_tokens",
+    "workload_cv2": "workload",
+    "prefix_cache_hit_rate": "prefix_cache_hit_rate",
+}
+
 console = Console()
 # Diagnostics go here so `--json` output on stdout stays exactly one document. A caller
 # that has to strip lines before parsing does not have a contract.
@@ -25,6 +35,7 @@ err_console = Console(stderr=True)
 
 
 def plan(
+    ctx: typer.Context,
     model_size: str = typer.Option(
         "3b",
         "--model-size",
@@ -278,6 +289,15 @@ def plan(
         "alternatives, risks verbatim, and the command that reproduces it. Every number "
         "is provenance-labeled. Refuses to render on a stale price snapshot.",
     ),
+    workload_profile: str = typer.Option(
+        None,
+        "--workload-profile",
+        metavar="PATH",
+        help="A profile from `chimeraforge workload`. Fills request rate, token "
+        "lengths, traffic variance and prefix-cache hit rate from measured traffic. "
+        "An explicit flag always wins; a field the profile did not measure is left "
+        "for you to supply, never defaulted.",
+    ),
     list_hardware: bool = typer.Option(
         False,
         "--list-hardware",
@@ -452,6 +472,56 @@ def plan(
                 f"[green]Measured[/] {ident}: {mres.tps_n1} tok/s"
                 + (f", eta(N={mres.n_concurrent})={mres.eta_at_n}" if mres.eta_at_n else "")
             )
+
+    # A measured profile replaces the typed-in guesses -- but only where the caller
+    # did NOT type something. An explicit flag is a deliberate scenario ("what if
+    # traffic tripled"), and silently overwriting it with yesterday's measurement
+    # would answer a question nobody asked.
+    profile_applied: list[str] = []
+    if workload_profile:
+        from chimeraforge.workload import WorkloadError, WorkloadProfile
+
+        try:
+            wp = WorkloadProfile.load(workload_profile)
+        except WorkloadError as exc:
+            _fail(escape(str(exc)))
+
+        # Click knows exactly which parameters came from the command line; sniffing
+        # sys.argv would miss env vars and break under any programmatic invocation.
+        #
+        # Compared by NAME, not identity. Typer 0.27 vendors its own Click, so the
+        # value returned here is a `typer._click.core.ParameterSource` member and an
+        # `is` (or even `==`) test against the real `click.core` enum is False --
+        # which silently made every explicit flag look unset, so the profile
+        # overwrote it. Passed under Typer 0.25, failed under 0.27.
+        def _was_passed(param: str) -> bool:
+            return getattr(ctx.get_parameter_source(param), "name", None) == "COMMANDLINE"
+
+        explicit = {p for p in _PROFILE_FLAG.values() if _was_passed(p)}
+        for key, value in wp.plan_kwargs().items():
+            flag = _PROFILE_FLAG[key]
+            if flag in explicit:
+                continue
+            if key == "request_rate":
+                request_rate = value
+            elif key == "prompt_tokens":
+                prompt_tokens = value
+            elif key == "avg_tokens":
+                avg_tokens = value
+            elif key == "workload_cv2":
+                workload_cv2 = value
+            elif key == "prefix_cache_hit_rate":
+                prefix_cache_hit_rate = value
+            profile_applied.append(f"{key}={value}")
+        if not output_json:
+            src = f"{wp.engine} profile captured {wp.captured_at}"
+            if profile_applied:
+                console.print(f"[dim]From {escape(src)}:[/] {escape(', '.join(profile_applied))}")
+            if wp.absent:
+                err_console.print(
+                    f"[yellow]Profile did not measure:[/] {', '.join(wp.absent)} "
+                    "(using the values you passed / the defaults)"
+                )
 
     # Manual overrides need exactly one --model.
     overrides = {
