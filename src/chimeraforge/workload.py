@@ -180,16 +180,26 @@ class WorkloadProfile:
             notes=list(data.get("notes", [])),
         )
         for name, raw in (data.get("fields") or {}).items():
-            if hasattr(p, name):
-                setattr(
-                    p,
-                    name,
-                    Field(
-                        value=float(raw["value"]),
-                        provenance=str(raw.get("provenance", PROV_ESTIMATED)),
-                        note=str(raw.get("note", "")),
-                    ),
-                )
+            if not hasattr(p, name):
+                continue
+            try:
+                value = float(raw["value"])
+            except (KeyError, TypeError, ValueError) as exc:
+                # A raw KeyError escaped the CLI's WorkloadError handler and came
+                # out as a traceback, which is exactly what test_cli_fail_loud
+                # exists to prevent.
+                raise WorkloadError(f"workload profile field {name!r} is malformed: {exc}") from exc
+            setattr(
+                p,
+                name,
+                Field(
+                    value=value,
+                    # Absent provenance means we do not know how it was derived.
+                    # Defaulting to "estimated" claimed more than the file said.
+                    provenance=str(raw.get("provenance", "unknown")),
+                    note=str(raw.get("note", "")),
+                ),
+            )
         return p
 
     @classmethod
