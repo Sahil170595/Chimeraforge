@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-08-21
+
 ### Added
 - **AWQ and GPTQ (W4A16) for vLLM, SGLang and TGI.** These are the 4-bit formats people actually run on the serving backends, and leaving them out meant the planner offered FP16 or FP8 and nothing in between -- while happily suggesting a 4-bit GGUF that those backends do not serve. Effective width is 4.5 bpw (4-bit weights plus per-group scales and zeros at the usual group size), which is the same arithmetic a 4-bit GGUF k-quant lands on, arrived at independently. `--quantization awq` / `--quantize gptq` are emitted in the launch command.
 
