@@ -627,6 +627,13 @@ def enumerate_candidates(
                 }
 
                 warnings = []
+                if quant_family(quant) == "w4a16":
+                    warnings.append(
+                        f"{quant} quality is UNSCREENED: the TR corpus measures GGUF "
+                        "k-quants, and a 4-bit GGUF delta is not evidence about AWQ or "
+                        "GPTQ -- different calibration, different error. VRAM is exact; "
+                        "the quality figure is an FP16-baseline estimate"
+                    )
                 if offload_fraction > 0:
                     warnings.append(
                         f"partial CPU offload: {offload_fraction:.0%} of weights stream from "

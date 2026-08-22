@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **AWQ and GPTQ (W4A16) for vLLM, SGLang and TGI.** These are the 4-bit formats people actually run on the serving backends, and leaving them out meant the planner offered FP16 or FP8 and nothing in between -- while happily suggesting a 4-bit GGUF that those backends do not serve. Effective width is 4.5 bpw (4-bit weights plus per-group scales and zeros at the usual group size), which is the same arithmetic a 4-bit GGUF k-quant lands on, arrived at independently. `--quantization awq` / `--quantize gptq` are emitted in the launch command.
+
+### Notes
+- **W4A16 quality is unscreened and says so.** The TR corpus measures GGUF k-quants; a 4-bit GGUF delta is not evidence about AWQ or GPTQ, which use different calibration and make different errors. Reusing the GGUF number would have been the easy move and would have been wrong, so quality resolves through the FP16-baseline path as `estimated` and every W4A16 plan carries an UNSCREENED warning. VRAM stays exact -- it is arithmetic.
+- Ollama is not offered W4A16: llama.cpp serves GGUF, not AWQ/GPTQ checkpoints.
+
+
 ## [0.23.0] - 2026-08-21
 
 ### Added
