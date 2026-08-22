@@ -435,10 +435,18 @@ class TestCostModel:
 
     def test_energy_cost_per_month_formula(self):
         m = CostModel()
-        # 700 W * 0.85 util / 1000 * 720 h * 1 GPU * $0.12/kWh.
+        # 700 W * 0.85 util / 1000 * 720 h * 1 GPU * $0.12/kWh = $51.41/mo.
+        #
+        # The literal, not a re-derivation from the same imported constants: with
+        # POWER_UTILISATION and HOURS_PER_MONTH on both sides the two moved
+        # together, so mutating 720 -> 7200 or 0.85 -> 0.10 left the suite green.
+        # That is a 10x wrong electricity bill and an 8.5x wrong tok/s-per-watt,
+        # both user-facing.
         got = m.energy_cost_per_month(700.0, n_gpus=1, rate=0.12)
-        expected = 700.0 / 1000 * POWER_UTILISATION * HOURS_PER_MONTH * 0.12
-        assert got == pytest.approx(expected)
+        assert got == pytest.approx(51.408, abs=0.001)
+        # And the constants really are what the arithmetic above assumed.
+        assert HOURS_PER_MONTH == 720
+        assert POWER_UTILISATION == pytest.approx(0.85)
 
     def test_energy_scales_with_gpus_and_rate(self):
         m = CostModel()

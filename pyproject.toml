@@ -56,7 +56,7 @@ resolve = []
 # Pinned to mcp 1.x: the server targets `mcp.server.fastmcp.FastMCP`, which mcp 2.0
 # restructured/moved. Bump deliberately after porting to the 2.0 API, not implicitly.
 mcp = ["mcp>=1.2,<2.0"]
-dev = ["pytest>=7.4,<10.0", "pytest-cov>=4.1,<8.0", "pytest-asyncio>=0.21,<2.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0", "mcp>=1.2,<2.0"]
+dev = ["pytest>=7.4,<10.0", "pytest-cov>=4.1,<8.0", "pytest-asyncio>=0.21,<2.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0", "mcp>=1.2,<2.0", "pyyaml>=6.0"]
 all = ["chimeraforge[bench,eval,refit,safety,resolve,mcp]"]
 
 [tool.setuptools.packages.find]
@@ -69,6 +69,12 @@ include = ["chimeraforge*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "strict"
+# So `pytest tests/` -- the verify gate the README and CLAUDE.md both document --
+# works from a clean checkout without an editable install. An editable install
+# pointing at a stale path made the documented command fail with
+# ModuleNotFoundError while PYTHONPATH=src kept working, which hides the breakage
+# from whoever set their shell up once and never looked again.
+pythonpath = ["src"]
 
 [tool.ruff]
 target-version = "py310"

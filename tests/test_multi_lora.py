@@ -111,8 +111,17 @@ class TestExactGeometry:
         assert b == 4 * a
 
     def test_bytes_are_fp16(self):
-        p = LLAMA31_8B.lora_params_per_adapter(16)
-        assert LLAMA31_8B.lora_gb_per_adapter(16) == pytest.approx(p * LORA_BYTES_PER_PARAM / 1e9)
+        """A hand-computed literal, not the production expression.
+
+        This asserted `p * LORA_BYTES_PER_PARAM / 1e9`, which is literally the
+        body of lora_gb_per_adapter -- so mutating the constant 2.0 -> 8.0 left
+        the suite green while sizing every adapter as fp64: a 4x error in the
+        term that decides whether a multi-LoRA deployment fits the card.
+        """
+        # 6,815,744 params x 2 bytes = 13,631,488 bytes = 0.013631488 GB.
+        assert LLAMA31_8B.lora_params_per_adapter(16) == 6_815_744
+        assert LLAMA31_8B.lora_gb_per_adapter(16) == pytest.approx(0.013631488, abs=1e-9)
+        assert LORA_BYTES_PER_PARAM == 2.0, "adapters are served in fp16"
 
     def test_zero_rank_is_zero(self):
         assert LLAMA31_8B.lora_params_per_adapter(0) == 0
