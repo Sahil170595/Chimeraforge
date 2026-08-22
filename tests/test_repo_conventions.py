@@ -47,6 +47,88 @@ def test_source_is_ascii_only(path: pathlib.Path):
     )
 
 
+class TestReadmeTracksTheCode:
+    """The README is the shopfront, and it rots silently.
+
+    PyPI, the Glama listing and the MCP registry all render it and each
+    re-indexes on its own schedule, so a stale line keeps being served long
+    after the code moved. The Glama listing was found advertising three MCP
+    tools, 12 commands and 549 tests well after all three had changed.
+
+    These are the claims that actually rotted, so these are the ones pinned.
+    """
+
+    @pytest.fixture(scope="class")
+    def readme(self) -> str:
+        return (ROOT / "README.md").read_text(encoding="utf-8")
+
+    @pytest.fixture(scope="class")
+    def commands(self) -> list[str]:
+        from chimeraforge.cli import app
+
+        return sorted(c.name or c.callback.__name__ for c in app.registered_commands)
+
+    def test_every_command_has_a_readme_section(self, readme, commands):
+        missing = [c for c in commands if f"### `{c}`" not in readme]
+        assert not missing, (
+            f"commands shipped with no README section: {missing}. "
+            "Document it in the PR that adds it, not in a later cleanup."
+        )
+
+    def test_no_readme_section_for_a_command_that_no_longer_exists(self, readme, commands):
+        documented = set(re.findall(r"^### `([a-z-]+)`", readme, re.MULTILINE))
+        assert documented <= set(commands), (
+            f"README documents commands the CLI does not register: "
+            f"{sorted(documented - set(commands))}"
+        )
+
+    def test_headline_command_count_is_right(self, readme, commands):
+        match = re.search(r"\*\*(\d+) commands, one tool", readme)
+        assert match, "the '**N commands, one tool**' headline is gone from the README"
+        assert int(match.group(1)) == len(commands)
+
+    def test_headline_lists_every_command(self, readme, commands):
+        line = next(ln for ln in readme.splitlines() if "commands, one tool" in ln)
+        missing = [c for c in commands if f"`{c}`" not in line]
+        assert not missing, f"headline command list omits: {missing}"
+
+    def test_advertised_test_count_is_not_stale(self, readme):
+        """A lower bound, not an exact match: parametrization only pushes the real
+        count higher, so a `def test_` tally can never legitimately exceed the
+        advertised number. This is the check that would have caught 549 vs 1233."""
+        match = re.search(r"\*\*([\d,]+) automated tests\*\*", readme)
+        assert match, "the '**N automated tests**' claim is gone from the README"
+        claimed = int(match.group(1).replace(",", ""))
+        defined = sum(
+            len(re.findall(r"^\s*def test_", p.read_text(encoding="utf-8"), re.MULTILINE))
+            for p in (ROOT / "tests").glob("test_*.py")
+        )
+        assert claimed >= defined, (
+            f"README advertises {claimed} tests but {defined} test functions are "
+            "defined (and parametrization makes the real number higher still)"
+        )
+
+    def test_mcp_tool_count_matches_the_server(self, readme):
+        """Counts the actual `server.tool(name="chimeraforge_...")` registrations.
+
+        An earlier version of this test counted `_DESC` constants instead, which
+        happened to equal the stale claim and so passed on the very README that
+        was wrong. Read the registrations from source rather than a proxy -- and
+        from source, not a live import, so it holds without the `mcp` extra.
+        """
+        source = (ROOT / "src" / "chimeraforge" / "mcp_server.py").read_text(encoding="utf-8")
+        registered = len(set(re.findall(r'name="(chimeraforge_\w+)"', source)))
+        assert registered, "no MCP tool registrations found -- did the pattern change?"
+        words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7}
+        match = re.search(r"Exposes (\w+) tools", readme)
+        assert match, "the 'Exposes N tools' line is gone from the README"
+        claimed = words.get(match.group(1))
+        assert claimed is not None, f"unrecognised tool count word: {match.group(1)!r}"
+        assert claimed == registered, (
+            f"README says {match.group(1)} MCP tools; {registered} are registered"
+        )
+
+
 class TestGlamaJson:
     """glama.json is the ownership proof for the Glama registry listing.
 

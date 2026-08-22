@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**12 commands, one tool:** `plan` - `suggest` - `measure` - `validate` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**13 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -176,6 +176,26 @@ chimeraforge plan --model qwen3:14b --measure   # measure then plan in one step
 
 Benchmarks the live model (real N=1 throughput, service time, concurrency scaling) and folds it into a local corpus. `plan` / `suggest` then prefer the measured numbers automatically (provenance flips to `measured`).
 
+### `workload` -- derive plan inputs from real traffic
+
+```bash
+chimeraforge workload --from-log requests.jsonl --out workload.json
+chimeraforge workload --from-metrics http://localhost:8000/metrics --engine vllm --out workload.json
+chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --workload-profile workload.json
+```
+
+Reads the request rate, prompt/output lengths, traffic variance and prefix-cache hit rate off a JSONL request log or a live vLLM/SGLang `/metrics` endpoint, so `plan` stops taking them as typed-in guesses. The variance one matters most -- it drives the whole queueing tail, and a measured CV^2 is not one of four presets.
+
+Metric names are per-engine and explicit; an unknown `--engine` is an error and pointing the wrong one at an endpoint fails loud, because a scraper that silently falls back to a renamed metric reports a fabricated measurement. A log yields `measured` mean and variance; a Prometheus histogram yields an exact mean but a bucket-approximated variance, labeled `estimated`. A single scrape is not a rate, so `request_rate` stays absent rather than being divided out of an unmeasured uptime -- and any field the source did not expose stays a required input to `plan`, never a default. An explicit flag always beats the profile.
+
+### `validate` -- audit predictions against measurements
+
+```bash
+chimeraforge validate --matrix matrix.json --measurements captured.json
+```
+
+Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent), so a matrix edited after seeing results no longer matches its own report -- pre-registration, not post-hoc selection. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
+
 ### `catalog` -- local model catalog
 
 ```bash
@@ -290,7 +310,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB). De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **1,232 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **1,244 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
