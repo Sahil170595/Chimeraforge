@@ -30,6 +30,11 @@ from pathlib import Path
 
 from chimeraforge.planner.constants import (
     DEFAULT_ARCH,
+    DEFAULT_LORA_TARGET,
+    LORA_BYTES_PER_PARAM,
+    LORA_TARGETS,
+    MLA_LORA_RANK_KEYS,
+    MLA_ROPE_DIM_KEYS,
     MODEL_ARCH,
     MODEL_FAMILY,
     MODEL_PARAMS_B,
@@ -38,11 +43,9 @@ from chimeraforge.planner.constants import (
     MOE_INTERMEDIATE_KEYS,
     MOE_NUM_EXPERTS_KEYS,
     MOE_TOPK_KEYS,
-    MLA_LORA_RANK_KEYS,
-    MLA_ROPE_DIM_KEYS,
+    QUANT_BPW,
     SWA_PATTERN_KEYS,
     SWA_WINDOW_KEYS,
-    QUANT_BPW,
 )
 from chimeraforge.planner.identity import parse_identity, parse_quant, resolve_model
 
@@ -168,6 +171,38 @@ class ModelSpec:
     def is_mla(self) -> bool:
         """Multi-head Latent Attention (DeepSeek-V2/V3): KV cached as one latent."""
         return bool(self.kv_lora_rank and self.qk_rope_head_dim)
+
+    def lora_params_per_adapter(self, rank: int, target: str = DEFAULT_LORA_TARGET) -> int:
+        """Trainable parameters in one LoRA adapter, exactly.
+
+        LoRA factorises each target weight (d_in x d_out) into A (d_in x r) and
+        B (r x d_out), so a module costs ``r * (d_in + d_out)`` and the adapter is
+        that summed over targets and layers. This is arithmetic, not a fit: for
+        Llama-2-7B q/v it reproduces the published ``524288 * r``.
+
+        Falls back to ``hidden = n_kv_heads * d_head`` only when hidden_size is
+        absent, which is the GQA-collapsed case and understates a real GQA model --
+        so callers treat a spec without hidden_size as unsized rather than trusting
+        the number.
+        """
+        modules = LORA_TARGETS.get(target)
+        if not modules or rank <= 0:
+            return 0
+        hidden = self.hidden_size or (self.n_kv_heads * self.d_head)
+        kv_dim = self.n_kv_heads * self.d_head
+        # q and o are hidden->hidden; k and v project down to the (grouped) KV width.
+        widths = {
+            "q": (hidden, hidden),
+            "o": (hidden, hidden),
+            "k": (hidden, kv_dim),
+            "v": (hidden, kv_dim),
+        }
+        per_layer = sum(rank * (widths[m][0] + widths[m][1]) for m in modules)
+        return per_layer * self.n_layers
+
+    def lora_gb_per_adapter(self, rank: int, target: str = DEFAULT_LORA_TARGET) -> float:
+        """VRAM one resident adapter occupies, in GB (fp16 weights)."""
+        return self.lora_params_per_adapter(rank, target) * LORA_BYTES_PER_PARAM / 1e9
 
     @property
     def kv_elems_per_token_per_layer(self) -> int:

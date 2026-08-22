@@ -14,6 +14,7 @@ from rich.markup import escape
 from chimeraforge.planner.constants import (
     DEFAULT_ELECTRICITY_RATE,
     DEFAULT_KV_QUANT,
+    DEFAULT_LORA_TARGET,
     KV_QUANT_BYTES,
 )
 
@@ -214,6 +215,31 @@ def plan(
         None,
         "--d-head",
         help="Manual override: per-head dimension.",
+    ),
+    hidden_size: int = typer.Option(
+        None,
+        "--hidden-size",
+        help="Manual override: model hidden dimension. Needed to size LoRA adapters "
+        "and MoE experts exactly.",
+    ),
+    lora_adapters: int = typer.Option(
+        0,
+        "--lora-adapters",
+        help="Serve N LoRA adapters alongside the base model (multi-tenant adapter "
+        "serving). Adapters share the base weights; VRAM is exact geometry.",
+    ),
+    lora_rank: int = typer.Option(
+        16,
+        "--lora-rank",
+        help="LoRA rank of the served adapters. Drives both adapter VRAM (exact) and "
+        "the decode cost (estimated from one published sweep).",
+    ),
+    lora_target: str = typer.Option(
+        DEFAULT_LORA_TARGET,
+        "--lora-target",
+        help="Which linear modules the adapters target: qv (PEFT default) or attn "
+        "(q,k,v,o). MLP targets need an intermediate_size the resolver may not have, "
+        "so they are not offered rather than guessed.",
     ),
     measure_first: bool = typer.Option(
         False,
@@ -433,6 +459,7 @@ def plan(
         "n_layers": n_layers,
         "n_kv_heads": n_kv_heads,
         "d_head": d_head,
+        "hidden_size": hidden_size,
     }
     if model and any(v is not None for v in overrides.values()) and len(model) != 1:
         _fail("manual overrides require exactly one --model.")
@@ -477,6 +504,9 @@ def plan(
             kv_quant=kv_quant,
             tensor_parallel=tp_val,
             pipeline_parallel=pp_val,
+            lora_adapters=lora_adapters,
+            lora_rank=lora_rank,
+            lora_target=lora_target,
             pareto=pareto,
             models_path=models_path,
             ollama_url=ollama_url,
@@ -609,6 +639,9 @@ def plan(
                     prefix_cache_hit_rate=prefix_cache_hit_rate,
                     gpu_price_multiplier=gpu_price_multiplier,
                     safety_target=safety_target,
+                    lora_adapters=lora_adapters,
+                    lora_rank=lora_rank,
+                    lora_target=lora_target,
                     ttft_slo_ms=ttft_slo,
                     tpot_slo_ms=tpot_slo,
                 ),

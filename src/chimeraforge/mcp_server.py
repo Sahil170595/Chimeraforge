@@ -82,6 +82,9 @@ def _candidate_summary(c) -> dict:
         "cost_per_1m_tok_usd": c.cost_per_1m_tok,
         "energy_cost_month_usd": c.energy_cost_month,
         "perf_per_watt": c.perf_per_watt,
+        "lora_adapters": c.lora_adapters,
+        "lora_rank": c.lora_rank,
+        "lora_vram_gb": c.lora_gb,
         "provenance": c.provenance,
         "warnings": c.warnings,
     }
@@ -111,6 +114,9 @@ def plan_deployment(
     gpu_price_multiplier: float = 1.0,
     allow_offload: bool = False,
     host_bandwidth_gbps: float | None = None,
+    lora_adapters: int = 0,
+    lora_rank: int = 16,
+    lora_target: str = "qv",
     allow_network: bool = True,
 ) -> dict:
     """Plan a deployment; return the top candidates or an actionable error.
@@ -158,6 +164,9 @@ def plan_deployment(
             gpu_price_multiplier=gpu_price_multiplier,
             allow_offload=allow_offload,
             host_bandwidth_gbps=host_bandwidth_gbps,
+            lora_adapters=lora_adapters,
+            lora_rank=lora_rank,
+            lora_target=lora_target,
             allow_network=allow_network,
         )
     except ResolverError as exc:

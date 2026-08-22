@@ -11,7 +11,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE, DEFAULT_KV_QUANT
+from chimeraforge.planner.constants import (
+    DEFAULT_ELECTRICITY_RATE,
+    DEFAULT_KV_QUANT,
+    DEFAULT_LORA_TARGET,
+)
 from chimeraforge.planner.engine import (
     Candidate,
     enumerate_candidates,
@@ -59,6 +63,9 @@ def run_plan(
     kv_quant: str = DEFAULT_KV_QUANT,
     tensor_parallel: int | None = 1,
     pipeline_parallel: int | None = 1,
+    lora_adapters: int = 0,
+    lora_rank: int = 16,
+    lora_target: str = DEFAULT_LORA_TARGET,
     pareto: bool = False,
     models_path: str | None = None,
     ollama_url: str | None = None,
@@ -119,6 +126,9 @@ def run_plan(
         kv_quant=kv_quant,
         tensor_parallel=tensor_parallel,
         pipeline_parallel=pipeline_parallel,
+        lora_adapters=lora_adapters,
+        lora_rank=lora_rank,
+        lora_target=lora_target,
     )
     frontier = pareto_frontier(candidates) if pareto else None
     return PlanResult(

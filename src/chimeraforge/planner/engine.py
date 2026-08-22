@@ -15,8 +15,14 @@ from chimeraforge.planner.constants import (
     DEFAULT_ARCH,
     DEFAULT_ELECTRICITY_RATE,
     DEFAULT_KV_QUANT,
+    DEFAULT_LORA_TARGET,
     DEFAULT_PROMPT_TOKENS,
     HIGH_VARIANCE_CV2,
+    LORA_COUNT_UNMODELLED_SPREAD,
+    LORA_SOURCE,
+    LORA_TARGETS,
+    MAX_LORA_ADAPTERS,
+    MAX_LORA_RANK,
     KV_DTYPE_BYTES,
     KV_QUANT_BYTES,
     MODEL_ARCH,
@@ -105,6 +111,11 @@ class Candidate:
     # derate assumed. 0.0 = fully resident, the only case before this.
     offload_fraction: float = 0.0
     host_bandwidth_gbps: float = 0.0
+    # Multi-LoRA serving (0.27.0): resident adapters, their rank, and the VRAM they
+    # add. Adapters share the base weights, so this is per-GPU and additive.
+    lora_adapters: int = 0
+    lora_rank: int = 0
+    lora_gb: float = 0.0
     # Goodput SLOs (0.23.0): the separate targets this config was checked
     # against, 0.0 when that dial was off. A request is only useful if it is
     # both responsive (TTFT) and smooth (TPOT); one blended p95 hides which
@@ -184,6 +195,9 @@ def enumerate_candidates(
     gpu_price_multiplier: float = 1.0,
     allow_offload: bool = False,
     host_bandwidth_gbps: float | None = None,
+    lora_adapters: int = 0,
+    lora_rank: int = 16,
+    lora_target: str = DEFAULT_LORA_TARGET,
     ttft_slo: float | None = None,
     tpot_slo: float | None = None,
     safety_target: float | None = None,
@@ -236,6 +250,19 @@ def enumerate_candidates(
     # At least one token is always prefilled -- a fully cached prompt still runs the
     # newest token through the stack, so TTFT never truly reaches zero.
     prefill_tokens_eff = max(int(round(prompt_tokens * (1.0 - hit_rate))), 1)
+    if lora_adapters < 0:
+        raise ValueError("lora_adapters must be >= 0")
+    if lora_adapters > MAX_LORA_ADAPTERS:
+        raise ValueError(
+            f"lora_adapters={lora_adapters} exceeds the {MAX_LORA_ADAPTERS}-adapter "
+            "ceiling the serving engines support per batch"
+        )
+    if lora_adapters and not 1 <= lora_rank <= MAX_LORA_RANK:
+        raise ValueError(f"lora_rank must be between 1 and {MAX_LORA_RANK}")
+    if lora_adapters and lora_target not in LORA_TARGETS:
+        raise ValueError(
+            f"unknown lora_target {lora_target!r}; use one of: {', '.join(sorted(LORA_TARGETS))}"
+        )
     specs = specs or {}
     gpu = get_gpu(hardware)
     hw_vram = gpu.vram_gb if gpu else 12.0
@@ -368,6 +395,26 @@ def enumerate_candidates(
                 tp=tp,
                 pp=pp,
             )
+            # Adapters are resident alongside the base weights they share, so this is
+            # a flat add per GPU. It is exact arithmetic from the rank and the target
+            # geometry, not a fit -- but only when the spec carries a real
+            # hidden_size; without one the width collapses to the GQA KV width and
+            # would understate a real model, so the config is rejected rather than
+            # sized optimistically.
+            lora_gb = 0.0
+            if lora_adapters > 0:
+                if spec is None or not spec.hidden_size:
+                    _reject(
+                        model,
+                        quant,
+                        "vram",
+                        "multi-LoRA needs the model's hidden_size to size adapters "
+                        "exactly; pass --hidden-size or use a model the resolver "
+                        "can read a config for",
+                    )
+                    continue
+                lora_gb = lora_adapters * spec.lora_gb_per_adapter(lora_rank, lora_target)
+                vram += lora_gb
             # Weights that do not fit can live in host RAM and be streamed per token.
             # llama.cpp/Ollama do exactly this, which is why "it does not fit" and
             # "it runs" are both true at once -- and why a planner that only ever
@@ -468,6 +515,13 @@ def enumerate_candidates(
                     bw_ratio = gpu.bandwidth_gbps / host_bw
                     resident = 1.0 - offload_fraction
                     n1_tps = n1_tps / (resident + offload_fraction * bw_ratio)
+
+                # Serving adapters costs decode rate, and the published sweep says
+                # the cost tracks RANK, not adapter count (near-flat 2->64). So the
+                # multiplier is rank-indexed only; the residual ~10% count spread is
+                # warned about, not fitted.
+                if lora_adapters > 0:
+                    n1_tps *= models.throughput.lora_multiplier(lora_rank)
 
                 # Search (N replicas x B batch-per-GPU) for the cheapest config
                 # meeting the rate under the latency SLO. N replicas scale linearly
@@ -784,6 +838,26 @@ def enumerate_candidates(
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
                 elif quality_source == "estimated" and not use_measured:
                     warnings.append("quality estimated from family prior, not measured")
+                if lora_adapters > 0:
+                    # The VRAM add is arithmetic; the speed cost is one vendor
+                    # benchmark on one engine, one GPU and one model, published as
+                    # two endpoints with the middle interpolated. Say all of that
+                    # rather than let a rank-32 multiplier read as measured.
+                    mult = models.throughput.lora_multiplier(lora_rank)
+                    warnings.append(
+                        f"multi-LoRA: adapter VRAM ({lora_gb:.2f}GB for "
+                        f"{lora_adapters} x rank-{lora_rank}) is exact geometry, but "
+                        f"the {(1 - mult) * 100:.0f}% decode cost is ESTIMATED from a "
+                        f"single published sweep ({LORA_SOURCE}) whose intermediate "
+                        f"ranks are interpolated -- measure on your rig before sizing "
+                        f"to it"
+                    )
+                    warnings.append(
+                        "multi-LoRA: adapter COUNT is modelled for VRAM only -- the "
+                        f"same source saw ~{LORA_COUNT_UNMODELLED_SPREAD:.0%} "
+                        "throughput spread from 2 to 64 adapters, which is not "
+                        "modelled, and per-adapter KV fragmentation is not either"
+                    )
 
                 candidates.append(
                     Candidate(
@@ -833,6 +907,9 @@ def enumerate_candidates(
                         tensor_parallel=tp,
                         pipeline_parallel=pp,
                         gpus_total=total_gpus,
+                        lora_adapters=lora_adapters,
+                        lora_rank=lora_rank if lora_adapters else 0,
+                        lora_gb=round(lora_gb, 6),
                     )
                 )
 

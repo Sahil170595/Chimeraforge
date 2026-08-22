@@ -14,6 +14,8 @@ load pre-fitted coefficients from fitted_models.json and predict only.
 
 from __future__ import annotations
 
+import math
+
 import json
 import logging
 from dataclasses import dataclass, field
@@ -28,6 +30,7 @@ from chimeraforge.planner.constants import (
     INTERCONNECT_EFFICIENCY,
     KV_CACHE_UTILISATION,
     KV_DTYPE_BYTES,
+    LORA_RANK_THROUGHPUT,
     MBU_DEFAULT,
     MODEL_ARCH,
     MODEL_FAMILY,
@@ -198,6 +201,31 @@ class ThroughputModel:
     size_power_a: float = 100.0
     size_power_b: float = 0.5
     fitted: bool = False
+
+    @staticmethod
+    def lora_multiplier(rank: int) -> float:
+        """Decode-rate multiplier for serving LoRA adapters at ``rank``.
+
+        Anchored on the only public multi-LoRA sweep that reports per-rank numbers
+        (``LORA_SOURCE``), which publishes the two ENDPOINTS -- not the two
+        intermediate ranks it tested. Between them this interpolates linearly in
+        log2(rank), because the ranks double; outside them it clamps rather than
+        extrapolating a two-point line into ranks nobody measured.
+
+        This is an ``estimated`` number from one vendor benchmark on one engine,
+        one GPU and one model. Callers surface that; they do not launder it.
+        """
+        ranks = sorted(LORA_RANK_THROUGHPUT)
+        lo, hi = ranks[0], ranks[-1]
+        if rank <= lo:
+            return LORA_RANK_THROUGHPUT[lo]
+        if rank >= hi:
+            return LORA_RANK_THROUGHPUT[hi]
+        span = math.log2(hi) - math.log2(lo)
+        frac = (math.log2(rank) - math.log2(lo)) / span
+        return LORA_RANK_THROUGHPUT[lo] + frac * (
+            LORA_RANK_THROUGHPUT[hi] - LORA_RANK_THROUGHPUT[lo]
+        )
 
     def quant_multiplier(self, quant: str) -> float:
         """Throughput multiplier for a quant vs FP16.
