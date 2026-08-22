@@ -86,8 +86,14 @@ HIGH_VARIANCE_CV2 = 4.0
 # Roofline throughput estimate for off-registry models. Decode is memory-bound:
 # each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
 # MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16
-# datapoint: 146.33 tok/s / (556 GB/s / 2.48 GB) = 0.65 (see models.ThroughputModel).
-MBU_DEFAULT = 0.65
+# datapoint: 146.33 tok/s / (432 GB/s / 2.48 GB) = 0.84 (see models.ThroughputModel).
+#
+# This was 0.65 against a 556 GB/s reference bandwidth that the card does not have.
+# The measured rate never changed -- only the denominator -- so the reference GPU's
+# own roofline is identical either way (0.65*556 == 0.84*432). What moves is every
+# OTHER GPU: the rig was achieving 84% of its real bandwidth, not 65%, so assuming
+# equal MBU elsewhere predicts ~29% more throughput than the old figure did.
+MBU_DEFAULT = 0.84
 
 # Default architecture used only when a model's real config cannot be resolved.
 DEFAULT_ARCH: dict[str, int] = {"n_layers": 32, "n_kv_heads": 8, "d_head": 128}

@@ -1,4 +1,44 @@
 {
+  "_provenance": {
+    "schema_version": 1,
+    "captured_at": "2026-06-01",
+    "source": "Technical Reports TR108-TR137 (ChimeraForge/Banterhearts); coefficients fitted in TR133",
+    "method": "fresh-process isolation per run, forced cold starts, 3-5 runs per config, IQR outlier detection",
+    "reference_hardware": "RTX 4080 Laptop 12GB (192-bit GDDR6, 432 GB/s) -- every row was measured here",
+    "coverage": {
+      "throughput_rows": 23,
+      "throughput_models": [
+        "gpt2",
+        "llama3.2-1b",
+        "llama3.2-3b",
+        "phi-2",
+        "qwen2.5-0.5b",
+        "qwen2.5-1.5b",
+        "qwen2.5-3b"
+      ],
+      "throughput_backends": [
+        "ollama",
+        "tgi",
+        "transformers-cpu",
+        "transformers-gpu",
+        "transformers-gpu-compile",
+        "vllm"
+      ],
+      "throughput_quants": [
+        "FP16"
+      ],
+      "quality_cells": 35,
+      "safety_cells": 40,
+      "latency_service_times": 9
+    },
+    "limitations": [
+      "Every throughput row is FP16. Quantized throughput is the FP16 row times a quant multiplier, not a measurement of that quant.",
+      "Every row was measured on one GPU. Other hardware is bandwidth-extrapolated and labelled 'extrapolated', not 'measured'.",
+      "The largest model measured is 3.21B; predictions above that extrapolate the power law.",
+      "No SGLang rows exist; that backend falls through to the fp16/power-law path."
+    ],
+    "regeneration": "NOT yet regenerable by a script. The TR raw artifacts live outside this package, so scripts/build_fitted_models.py does not exist -- unlike api_pricing.json (scripts/build_cost_data.py) and the safety block (scripts/build_safety_data.py). This is a known gap, recorded here rather than left implicit."
+  },
   "vram": {
     "overhead_factor": 1.058047797687617,
     "act_coeff": 0.00909537188657266,

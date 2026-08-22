@@ -37,10 +37,22 @@ class TestRooflineCalibration:
         assert tps == pytest.approx(146.33, rel=0.03)
 
     def test_roofline_scales_with_bandwidth(self, bundled_models):
-        # 4090 (1008 GB/s) vs 4080 (556) -> ~1.81x for the same model.
+        # 4090 (1008 GB/s) vs the reference 4080 Laptop (432) -> ~2.33x for the
+        # same model. The reference was carried as 556 GB/s, which is neither the
+        # laptop part (192-bit, 432) nor the desktop one (717); correcting it
+        # moved every cross-GPU ratio by +29%.
+        #
+        # Read from GPU_DB rather than hardcoded, so this pins the RELATIONSHIP --
+        # roofline is linear in bandwidth -- instead of re-encoding two constants
+        # that would then move together with the code and assert nothing.
+        from chimeraforge.planner.hardware import GPU_DB
+
+        ref_bw = GPU_DB["RTX 4080 12GB"].bandwidth_gbps
+        target_bw = GPU_DB["RTX 4090 24GB"].bandwidth_gbps
         t4080 = bundled_models.throughput.roofline_tps(7.0, "FP16", "RTX 4080 12GB")
         t4090 = bundled_models.throughput.roofline_tps(7.0, "FP16", "RTX 4090 24GB")
-        assert t4090 / t4080 == pytest.approx(1008.0 / 556.0, rel=0.02)
+        assert t4090 / t4080 == pytest.approx(target_bw / ref_bw, rel=0.02)
+        assert ref_bw == 432.0, "the reference rig is the RTX 4080 Laptop: 192-bit, 432 GB/s"
 
 
 class TestVRAMAccuracy:
