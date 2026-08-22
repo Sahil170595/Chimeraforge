@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`plan --fleet "H100 80GB,A100 80GB,L4 24GB"`: heterogeneous fleets.** The planner has always sized N identical replicas of one GPU, which is a constraint on the *answer*, not just the search -- a cheap GPU can be the better buy at loose SLOs and small requests while an expensive one wins at tight SLOs and long requests, so the cheapest fleet is often a mix. Melange (arXiv:2404.14527) measured this across L4/A10G/A100-80G/H100 and reports up to 77% saved in conversational settings. On an 8B at 64 req/s the mix here picks 1x H100 + 1x L4 at $2,160/mo over the best single type (2x A100, $2,304) -- the last 0.9 req/s is cheaper on a small GPU than on a second big one.
+- `--fleet` also extends the `--json` wrapper with a `fleet` key, on the same opt-in basis as `--launch` and `--compare-api`, so the default bare-array contract is unchanged.
+
+### Notes
+- **This sits on top of the gate search, not inside it.** Each GPU type is priced by running the existing `enumerate_candidates` pipeline against that GPU alone, so every gate and every piece of serving physics applies unchanged and a mixed fleet cannot become a back door around a check the homogeneous path enforces.
+- **A mixed fleet needs a router that does not exist.** It presumes traffic is split by GPU capability; vLLM and SGLang do not ship such a router, and the source study explicitly leaves heterogeneous load balancing as future work. Every mixed plan says so and cites the paper.
+- **Provenance is the worst across the types used, never the best** -- otherwise one measured GPU would launder several estimated ones. Mixing compounds throughput error across types instead of concentrating it in one, and the plan says that too.
+- Savings are quoted against the **best** single GPU type, not an arbitrary one; a badly-chosen baseline inflates the number the way a vendor benchmark does. Where homogeneous is already optimal, the plan says "no saving" rather than manufacturing a mix to justify the flag.
+- Private planning docs are now glob-ignored (`ROADMAP_*.md`) rather than listed one by one -- each new one was a single `git add -A` away from being committed.
+
+### Fixed
+- The allocator's capacity quantisation used float floor-division, and `100.0 // 0.05` is 1999 rather than 2000. That shaved a step off every GPU's capacity, forcing a spurious extra unit and quietly inflating the bill with an answer that looked entirely reasonable. Caught by a hand-computed optimum, and pinned by a test.
+
+
 ## [0.28.0] - 2026-08-21
 
 ### Added

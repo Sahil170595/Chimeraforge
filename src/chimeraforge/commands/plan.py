@@ -289,6 +289,15 @@ def plan(
         "alternatives, risks verbatim, and the command that reproduces it. Every number "
         "is provenance-labeled. Refuses to render on a stale price snapshot.",
     ),
+    fleet: str = typer.Option(
+        None,
+        "--fleet",
+        metavar="GPU,GPU,...",
+        help="Size a HETEROGENEOUS fleet across these GPU types instead of N copies "
+        "of one. Prices each type separately, then picks the cheapest mix that "
+        "covers the rate. A mix needs a capability-aware router, which no serving "
+        "engine ships -- the plan says so.",
+    ),
     workload_profile: str = typer.Option(
         None,
         "--workload-profile",
@@ -625,6 +634,44 @@ def plan(
 
     # Self-host vs hosted API (opt-in). Priced off the winning candidate's actual
     # monthly bill, so it reflects the fleet the planner just sized.
+    fleet_plan = None
+    if fleet:
+        from chimeraforge.planner.fleet import FleetError, parse_fleet, plan_fleet
+
+        try:
+            gpu_names = parse_fleet(fleet)
+            fleet_plan = plan_fleet(
+                gpu_names,
+                demand_rate=request_rate,
+                plan_fn=run_plan,
+                # The mix supplies scale-out, so each type is priced on its own
+                # merits with the same gates the single-GPU path applies.
+                plan_kwargs=dict(
+                    models=model or None,
+                    model_size=model_size,
+                    latency_slo=latency_slo,
+                    quality_target=quality_target,
+                    budget=budget,
+                    avg_tokens=avg_tokens,
+                    reasoning_tokens=reasoning_tokens,
+                    prefix_cache_hit_rate=prefix_cache_hit_rate,
+                    duty_cycle=duty_cycle,
+                    gpu_price_multiplier=gpu_price_multiplier,
+                    ttft_slo=ttft_slo,
+                    tpot_slo=tpot_slo,
+                    context_length=context_length,
+                    prompt_tokens=prompt_tokens,
+                    safety_target=safety_target,
+                    workload_cv2=workload_cv2,
+                    electricity_rate=electricity_rate,
+                    kv_quant=kv_quant,
+                    allow_network=not no_network,
+                    overrides=overrides,
+                ),
+            )
+        except FleetError as exc:
+            _fail(escape(str(exc)))
+
     api_cmp = None
     if compare_api and candidates:
         from chimeraforge.planner.apicost import PricingError, compare as compare_apis
@@ -644,7 +691,7 @@ def plan(
         # would otherwise reflow long string values and corrupt them) and pipes
         # cleanly to `jq`.
         payload = format_pareto_json(frontier) if pareto else format_json(candidates)
-        if launch or compare_api:
+        if launch or compare_api or fleet:
             # Wrap only under --launch/--compare-api so the default --json contract
             # (a bare array) is unchanged for every existing consumer.
             wrapped = {"candidates": json_mod.loads(payload)}
@@ -652,6 +699,8 @@ def plan(
                 wrapped["launch"] = launch_cmd.to_dict() if launch_cmd else None
             if compare_api:
                 wrapped["api_comparison"] = api_cmp.to_dict() if api_cmp else None
+            if fleet:
+                wrapped["fleet"] = fleet_plan.to_dict() if fleet_plan else None
             payload = json_mod.dumps(wrapped, indent=2)
         console.print(payload, highlight=False, soft_wrap=True)
     elif pareto:
@@ -734,6 +783,11 @@ def plan(
         if not output_json:
             console.print()
             console.print(f"[green]Decision brief written to[/] [bold]{escape(str(path))}[/]")
+
+    if fleet_plan is not None and not output_json:
+        from chimeraforge.planner.formatter import format_fleet
+
+        format_fleet(fleet_plan)
 
     if not candidates and trace:
         from chimeraforge.planner.engine import summarize_trace
