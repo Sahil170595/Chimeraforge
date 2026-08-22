@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-08-21
+
 ### Added
 - **`plan --report brief.md`: the plan as a document a team can argue with.** A terminal panel answers "what should I run"; defending a GPU purchase in a meeting needs a dated record of what was assumed, where each number came from, what the alternatives cost, and the exact command that reproduces it. The brief carries all of that, including the planner's warnings verbatim.
 - **A fourth provenance class, `derived`.** GPU count and monthly cost are exact arithmetic over the inputs and the GPU price database -- not predictions, and not measurements either. Filing them under `measured` would have cited the TR benchmark corpus as the source of numbers it never measured.
