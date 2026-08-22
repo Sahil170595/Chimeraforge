@@ -88,9 +88,13 @@ class TestMaxConcurrentSeqs:
         # 0.10.0: tensor parallelism shards weights 1/tp -> less VRAM per GPU.
         m = VRAMModel()
         base = m.predict("llama3.1-8b", "FP16", 4096)
-        assert m.predict("llama3.1-8b", "FP16", 4096, tp=1) == pytest.approx(base)  # backward-compat
-        assert base > m.predict("llama3.1-8b", "FP16", 4096, tp=2) > m.predict(
-            "llama3.1-8b", "FP16", 4096, tp=4
+        assert m.predict("llama3.1-8b", "FP16", 4096, tp=1) == pytest.approx(
+            base
+        )  # backward-compat
+        assert (
+            base
+            > m.predict("llama3.1-8b", "FP16", 4096, tp=2)
+            > m.predict("llama3.1-8b", "FP16", 4096, tp=4)
         )
 
     def test_tp_lets_oversized_model_fit(self):
@@ -108,7 +112,9 @@ class TestMaxConcurrentSeqs:
         arch = {"n_layers": 32, "n_kv_heads": 2, "d_head": 128}
         p2 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=2)
         p8 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=8)
-        weight_gb = 4.0 * 8.0 / 8  # Q8_0 = 8 bpw
+        from chimeraforge.planner.constants import GB_TO_GIB
+
+        weight_gb = 4.0 * 8.0 / 8 * GB_TO_GIB  # Q8_0 = 8 bpw, in GiB
         assert (p2 - p8) == pytest.approx(weight_gb / 2 - weight_gb / 8)
 
     def test_pp_shards_weights_no_head_constraint(self):
@@ -118,7 +124,9 @@ class TestMaxConcurrentSeqs:
         arch = {"n_layers": 80, "n_kv_heads": 2, "d_head": 128}
         base = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1)
         pp8 = m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=8)
-        assert m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1) == base  # backward-compat
+        assert (
+            m.predict("x", "FP16", 8192, params_b=70.0, arch=arch, pp=1) == base
+        )  # backward-compat
         assert pp8 < base
         # TP=8 on the same 2-KV-head model can't shard KV past 2 heads, so at equal
         # degree PP frees at least as much (KV shards fully under PP).
