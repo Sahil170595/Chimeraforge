@@ -41,7 +41,11 @@ QUANT_BPW: dict[str, float] = {
 }
 
 # Supported serving backends
-BACKENDS = ["ollama", "vllm", "tgi"]
+# SGLang added in 0.23.0: the 2026 serving market is vLLM / SGLang / Ollama, and a
+# planner that cannot name SGLang is describing a market that has moved on. It
+# carries NO measured rows in the corpus, so it predicts from first principles and
+# says so -- cloning vLLM's coefficients would have been the easy lie.
+BACKENDS = ["ollama", "vllm", "tgi", "sglang"]
 
 # Which backends do continuous (in-flight) batching -- one GPU serves many
 # sequences concurrently, amortizing weight reads. Ollama (llama.cpp) effectively
@@ -50,6 +54,8 @@ BACKEND_CONTINUOUS_BATCHING: dict[str, bool] = {
     "ollama": False,
     "vllm": True,
     "tgi": True,
+    # SGLang batches continuously (RadixAttention prefix sharing on top).
+    "sglang": True,
 }
 
 # Decode compute-utilisation ceiling for batched decode (when large batches turn
@@ -202,6 +208,8 @@ BACKEND_QUANT_FAMILIES: dict[str, frozenset[str]] = {
     "ollama": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_GGUF}),
     "vllm": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
     "tgi": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
+    # Same serving formats as vLLM: float checkpoints and FP8, not GGUF.
+    "sglang": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
 }
 
 

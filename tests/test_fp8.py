@@ -91,8 +91,9 @@ class TestFormatFamilies:
         assert not backend_supports_quant("ollama", "FP8")
 
     def test_unknown_backend_is_permissive(self):
-        # A custom backend must not have everything silently rejected.
-        assert backend_supports_quant("sglang", "Q4_K_M")
+        # A custom backend must not have everything silently rejected. (Not
+        # "sglang" any more -- that is a real backend as of 0.23.0.)
+        assert backend_supports_quant("tensorrt-llm", "Q4_K_M")
 
 
 class TestHardwareFp8Capability:

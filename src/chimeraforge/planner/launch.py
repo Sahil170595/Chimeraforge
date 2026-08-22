@@ -26,6 +26,9 @@ from chimeraforge.planner.resolver import SOURCE_HF, SOURCE_OLLAMA
 # common starting point (vLLM's own default); a recommendation, not a derived value.
 RECOMMENDED_GPU_MEM_UTIL = 0.90
 TGI_IMAGE = "ghcr.io/huggingface/text-generation-inference:latest"
+# SGLang serves on 30000 by default and takes its KV dtype as fp8_e5m2.
+SGLANG_DEFAULT_PORT = 30000
+SGLANG_KV_CACHE_DTYPE = "fp8_e5m2"
 # vLLM's only quantized KV-cache dtype is fp8 (no int8/int4); TGI likewise. The
 # planner's q8/q4 KV both map here, with a note when the modeled cache is smaller
 # than fp8 (so real VRAM will be higher than the plan assumed on these backends).
@@ -205,6 +208,39 @@ def _build_tgi(
     return LaunchCommand(backend="tgi", command=_join(parts), notes=notes)
 
 
+def _build_sglang(candidate, spec, *, context_length: int, kv_quant: str) -> LaunchCommand:
+    model_id, placeholder = _hf_repo(candidate, spec)
+    parts = [
+        f"python -m sglang.launch_server --model-path {model_id}",
+        f"--context-length {context_length}",
+        f"--port {SGLANG_DEFAULT_PORT}",
+    ]
+    if candidate.tensor_parallel > 1:
+        parts.append(f"--tp-size {candidate.tensor_parallel}")
+    if candidate.pipeline_parallel > 1:
+        parts.append(f"--pp-size {candidate.pipeline_parallel}")
+    if candidate.effective_batch > 1:
+        parts.append(f"--max-running-requests {candidate.effective_batch}")
+    if candidate.quant == "FP8":
+        parts.append("--quantization fp8")
+
+    notes: list[str] = []
+    if kv_quant != "fp16":
+        parts.append(f"--kv-cache-dtype {SGLANG_KV_CACHE_DTYPE}")
+        if kv_quant == "q4":
+            notes.append(
+                "SGLang's smallest KV-cache dtype is fp8; the plan modeled q4 KV, so "
+                "real KV VRAM on SGLang will be higher than the plan assumed."
+            )
+    notes.extend(_quant_note(candidate))
+    if placeholder:
+        notes.append(
+            f"Replace {_HF_PLACEHOLDER} with the model's Hugging Face repo "
+            f"(the plan's model came from {_source_of(spec)}, not an HF repo)."
+        )
+    return LaunchCommand(backend="sglang", command=_join(parts), notes=notes)
+
+
 def build_launch_command(
     candidate,
     spec=None,
@@ -233,6 +269,8 @@ def build_launch_command(
         return _build_vllm(candidate, spec, context_length=context_length, kv_quant=kv_quant)
     if backend == "ollama":
         return _build_ollama(candidate, spec, context_length=context_length, kv_quant=kv_quant)
+    if backend == "sglang":
+        return _build_sglang(candidate, spec, context_length=context_length, kv_quant=kv_quant)
     if backend == "tgi":
         return _build_tgi(
             candidate,
