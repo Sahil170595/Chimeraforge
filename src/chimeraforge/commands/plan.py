@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json as json_mod
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -242,6 +243,14 @@ def plan(
         "--compare-api",
         help="Also price this workload against hosted APIs and report the break-even "
         "volume. Uses a dated snapshot of published list prices, not a live quote.",
+    ),
+    report: str = typer.Option(
+        None,
+        "--report",
+        metavar="PATH",
+        help="Write a decision brief (markdown) to PATH: recommendation, assumptions, "
+        "alternatives, risks verbatim, and the command that reproduces it. Every number "
+        "is provenance-labeled. Refuses to render on a stale price snapshot.",
     ),
     list_hardware: bool = typer.Option(
         False,
@@ -567,6 +576,61 @@ def plan(
         from chimeraforge.planner.formatter import format_api_comparison
 
         format_api_comparison(api_cmp)
+
+    if report:
+        from chimeraforge.planner.brief import (
+            BriefError,
+            BriefInputs,
+            build_brief,
+            render_markdown,
+        )
+
+        # tp_val/pp_val may be None ('auto'); record the degree actually chosen.
+        win = candidates[0] if candidates else None
+        try:
+            brief = build_brief(
+                inputs=BriefInputs(
+                    hardware=hardware,
+                    model=model,
+                    model_size=model_size,
+                    request_rate=request_rate,
+                    latency_slo_ms=latency_slo,
+                    quality_target=quality_target,
+                    budget_usd_month=budget,
+                    avg_output_tokens=avg_tokens,
+                    reasoning_tokens=reasoning_tokens,
+                    prompt_tokens=prompt_tokens,
+                    context_length=context_length,
+                    kv_quant=kv_quant,
+                    workload=workload,
+                    duty_cycle=duty_cycle,
+                    tensor_parallel=win.tensor_parallel if win else (tp_val or 1),
+                    pipeline_parallel=win.pipeline_parallel if win else (pp_val or 1),
+                    prefix_cache_hit_rate=prefix_cache_hit_rate,
+                    gpu_price_multiplier=gpu_price_multiplier,
+                    safety_target=safety_target,
+                    ttft_slo_ms=ttft_slo,
+                    tpot_slo_ms=tpot_slo,
+                ),
+                candidates=candidates,
+                api_comparison=api_cmp.to_dict() if api_cmp else None,
+                launch=launch_cmd.to_dict() if launch_cmd else None,
+            )
+        except BriefError as exc:
+            # A refusal is the feature, so it exits non-zero: a CI job that writes a
+            # brief must fail rather than carry on with no file where one is expected.
+            err_console.print(f"[red]Brief not written:[/] {escape(str(exc))}")
+            raise typer.Exit(code=1) from exc
+
+        path = Path(report)
+        try:
+            path.write_text(render_markdown(brief), encoding="utf-8")
+        except OSError as exc:
+            err_console.print(f"[red]Could not write {escape(str(path))}:[/] {escape(str(exc))}")
+            raise typer.Exit(code=1) from exc
+        if not output_json:
+            console.print()
+            console.print(f"[green]Decision brief written to[/] [bold]{escape(str(path))}[/]")
 
     if not candidates and trace:
         from chimeraforge.planner.engine import summarize_trace

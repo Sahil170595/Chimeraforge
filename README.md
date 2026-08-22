@@ -72,6 +72,16 @@ chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 
 ---
 
+## Decision briefs
+
+```bash
+chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2 --report brief.md
+```
+
+Writes a markdown record of the decision: the recommendation, every assumption as an input rather than a finding, the alternatives table, the planner's warnings verbatim, and the exact command that regenerates it. Each number is tagged `measured` / `estimated` / `derived` / `unknown` in prose, not just with a symbol.
+
+It refuses to render on a stale price snapshot and exits non-zero, rather than printing an old price in a nicer font -- a formatted document reads as more durable than a terminal line, and its reader will not re-derive the arithmetic.
+
 ## MCP server -- give Claude / GPT / Cursor the same numbers
 
 GPU sizing is exactly where assistants fail: training-cutoff hardware prices and specs, plus error-prone KV-cache/batching arithmetic done from memory. `chimeraforge mcp` runs a stdio MCP server so an assistant calls the real planner against measured data instead of guessing.
@@ -269,7 +279,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB). De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **1,091 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **1,128 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
