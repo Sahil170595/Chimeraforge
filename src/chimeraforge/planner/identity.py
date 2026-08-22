@@ -112,9 +112,19 @@ def parse_identity(identifier: str, quant_override: str | None = None) -> ModelI
 def resolve_model(identifier: str) -> str | None:
     """Return the registry model name matching *identifier*, or None.
 
-    An exact registry name passes through. Otherwise match by family + nearest
-    parameter count (within ``_PARAMS_TOLERANCE``); a family with a single
-    registry model resolves regardless of the parsed size.
+    An exact registry name passes through. Otherwise match by family AND nearest
+    parameter count, within ``_PARAMS_TOLERANCE``.
+
+    A size that was parsed is never ignored. This previously short-circuited on
+    a family with exactly one registry model and returned it "regardless of the
+    parsed size" -- so ``llama3.1:405b`` resolved to the 8B, and the planner then
+    sized a 405-billion-parameter model at 8.03B and 4.55 GB while reporting its
+    quality as ``measured``, because every downstream gate reads the alias's rows.
+    Only two families have a single member, which is why it went unnoticed.
+
+    A single-member family still resolves when NO size could be parsed
+    (``phi:latest`` -> phi-2, which is what that tag actually serves). The rule
+    is narrower than "one candidate wins": a size that was read must be honoured.
     """
     if identifier in MODEL_PARAMS_B:
         return identifier
@@ -124,10 +134,10 @@ def resolve_model(identifier: str) -> str | None:
     candidates = [m for m, f in MODEL_FAMILY.items() if f == fam]
     if not candidates:
         return None
-    if len(candidates) == 1:
-        return candidates[0]
     params = parse_params_b(identifier)
     if params is None or params <= 0:  # e.g. a degenerate "...0b" token -> no division
-        return None
+        # Nothing to check the size against. One candidate is a defensible guess
+        # and is labelled registry-approx by the caller; several is not.
+        return candidates[0] if len(candidates) == 1 else None
     best = min(candidates, key=lambda m: abs(MODEL_PARAMS_B[m] - params))
     return best if abs(MODEL_PARAMS_B[best] - params) / params <= _PARAMS_TOLERANCE else None
