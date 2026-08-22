@@ -15,7 +15,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
-**Every number is labeled `measured`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are computed from a model's real architecture (exact). Throughput is a measured lookup when available, otherwise an explicit bandwidth-roofline estimate -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
+**Every number is labeled `measured`, `extrapolated`, `derived`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are `derived` -- exact arithmetic over the model's real architecture, not a measurement. Throughput is a measured lookup only on the rig the corpus was measured on; on any other GPU that row is scaled by memory bandwidth and reported as `extrapolated`, with the factor named, because a 13.8x bandwidth extrapolation is not a measurement of your card. Failing that it is an explicit roofline `estimate` -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
@@ -89,7 +89,7 @@ Metric names are per-engine and explicit -- vLLM has renamed two of these betwee
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2 --report brief.md
 ```
 
-Writes a markdown record of the decision: the recommendation, every assumption as an input rather than a finding, the alternatives table, the planner's warnings verbatim, and the exact command that regenerates it. Each number is tagged `measured` / `estimated` / `derived` / `unknown` in prose, not just with a symbol.
+Writes a markdown record of the decision: the recommendation, every assumption as an input rather than a finding, the alternatives table, the planner's warnings verbatim, and the exact command that regenerates it. Each number is tagged `measured` / `extrapolated` / `derived` / `estimated` / `unknown` in prose, not just with a symbol.
 
 It refuses to render on a stale price snapshot and exits non-zero, rather than printing an old price in a nicer font -- a formatted document reads as more durable than a terminal line, and its reader will not re-derive the arithmetic.
 
@@ -122,7 +122,7 @@ Claude Desktop / Cursor (add to your MCP config file):
 
 The `--from "chimeraforge[mcp]"` pulls in the MCP SDK; `uvx` runs the server in a self-contained environment. If you have already `pip install "chimeraforge[mcp]"` into the environment your client launches, you can instead use `"command": "chimeraforge", "args": ["mcp"]`.
 
-Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_suggest` (the inverse -- rank what actually fits a given GPU), `chimeraforge_compare_api` (self-host vs hosted-API cost and the break-even volume), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge. `chimeraforge_plan` also returns a `launch` field -- the serve command for the recommended config -- so the assistant can answer "and how do I run it" without inventing flags. `chimeraforge_compare_api` prices against a *dated* snapshot and reports its age, so an assistant quotes a price with its capture date rather than presenting a stale figure as current.
+Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_suggest` (the inverse -- rank what actually fits a given GPU), `chimeraforge_compare_api` (self-host vs hosted-API cost and the break-even volume), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `extrapolated` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge. `chimeraforge_plan` also returns a `launch` field -- the serve command for the recommended config -- so the assistant can answer "and how do I run it" without inventing flags. `chimeraforge_compare_api` prices against a *dated* snapshot and reports its age, so an assistant quotes a price with its capture date rather than presenting a stale figure as current.
 
 ---
 
@@ -155,7 +155,7 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - **Mixture-of-Experts aware:** VRAM sizes on *total* params (every expert stays resident) while throughput and TTFT use *active* params (a token only reads the experts it routes to). Treating an MoE model as dense under-predicts its throughput by 3.6x on Mixtral-8x7B and ~18x on DeepSeek-V3. Active counts are derived from the model's real expert geometry and match published figures.
 - **Energy** (`--electricity-rate`): monthly kWh cost, `$/1M-tok (+energy)`, and tok/s-per-watt, reported alongside (not folded into) the budget gate.
 - **Launch-command export** (`--launch`): emits the `vllm serve` / `ollama run` / TGI `docker run` command for the winning config, with the plan's own context length, TP/PP degree, batch size, and KV dtype filled in -- the flags that are error-prone to hand-compute. It won't fabricate what it can't derive: a GGUF quant level becomes a note to serve the native-equivalent checkpoint, not an invented `--quantization` flag.
-- Per-prediction provenance (`measured` / `estimated` / `unknown`); explains the binding gate when nothing fits.
+- Per-prediction provenance (`measured` / `extrapolated` / `derived` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
 
 ### `suggest` -- discover & rank models
@@ -271,9 +271,9 @@ Runs the stdio MCP server described above. Requires `pip install "chimeraforge[m
 
 | Dimension | How it's computed | Provenance |
 |-----------|-------------------|------------|
-| VRAM / KV-cache | First-principles from real model architecture; KV-quant and TP/PP-aware sharding | exact |
+| VRAM / KV-cache | First-principles from real model architecture; KV-quant and TP/PP-aware sharding | derived (exact arithmetic) |
 | Max concurrency | KV-cache-bound sequences per GPU | exact |
-| Throughput (decode) | Measured lookup, else bandwidth roofline; continuous-batching curve; TP comms / PP bubble | measured / estimated |
+| Throughput (decode) | Measured lookup on the reference rig; bandwidth-scaled off it elsewhere; else roofline | measured / extrapolated / estimated |
 | TTFT (prefill) | Compute-bound, GPU FP16 TFLOPS x MFU | estimated |
 | Quality | Measured composite lookup, family-prior estimate, or unknown | measured / estimated / unknown |
 | Cost | GPU $/hr x fleet size ($/1M-tok invariant in replica count) | exact |
@@ -311,7 +311,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB). De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **1,285 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **1,316 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

@@ -100,6 +100,26 @@ def get_gpu(name: str) -> GPUSpec | None:
     return None
 
 
+def is_reference_hardware(target_gpu: str | None) -> bool:
+    """True when this GPU is the rig the bundled corpus was actually measured on.
+
+    Every row in the corpus came off ``REFERENCE_GPU``; the lookup key is
+    ``model|backend|quant`` and carries no hardware. So a lookup hit is only
+    evidence about THIS GPU when this GPU is that one -- on anything else the
+    number has been through ``bandwidth_ratio`` and is an extrapolation.
+
+    ``None`` counts as reference: callers that pass no hardware get the unscaled
+    measurement itself.
+    """
+    if target_gpu is None:
+        return True
+    target = get_gpu(target_gpu)
+    ref = GPU_DB.get(REFERENCE_GPU)
+    if target is None or ref is None:
+        return False
+    return target.name == ref.name
+
+
 def bandwidth_ratio(target_gpu: str) -> float:
     """Throughput scaling ratio: target bandwidth / reference bandwidth.
 

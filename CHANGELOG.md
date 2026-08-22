@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **A measured-on-a-different-GPU number was labeled `measured`.** The throughput lookup key is `model|backend|quant` and carries no hardware, but every row in the corpus came off one rig. A key hit set the label, and only afterwards was the value multiplied by `bandwidth_ratio(hardware)` -- so `llama3.2-3b` on a B200 reported **1327.5 tok/s labeled `measured`, a 13.8x extrapolation of a 95.9 tok/s RTX 4080 measurement, with zero warnings**. This is the worst failure this project can have: a crash is visible, a confidently-wrong `measured` badge is not, and it is the field the MCP server hands an assistant and the brief renders as prose.
+- **Two honesty checks were disabled by that bug, and re-arm with it.** The fleet's "a mix compounds throughput error across types" warning and `validate.classify()` both keyed off `provenance["throughput"] == "measured"`, so on datacenter GPUs -- which are never the reference rig -- the warning never fired and the audit filed bandwidth-extrapolated cells under `measured-lookup`, the bucket meaning "not an out-of-sample test". The falsification harness could not have detected the bug it was pointed at.
+- **The brief gave pure models and pure arithmetic the throughput label.** VRAM, TTFT, TPOT and p95 all rendered as "measured on the TR benchmark corpus"; TTFT is a FLOPs estimate nobody ever measured, and VRAM is arithmetic. VRAM is now `derived`; the latency rows are `estimated` unconditionally, since a queueing model layered on a throughput number cannot be better grounded than the model.
+- **The formatter read provenance with a `"measured"` default**, so an absent label failed *open* to the strongest possible claim. It now fails to `unknown`.
+
+### Added
+- A fifth provenance value, **`extrapolated`**: a real measurement taken on the reference rig and scaled to this GPU by memory bandwidth. It ranks between `measured` and `estimated` -- better grounded than a pure roofline, but not a measurement of the card in hand -- and every such plan states the factor and names the rig.
+
+
 ## [0.29.0] - 2026-08-22
 
 ### Added

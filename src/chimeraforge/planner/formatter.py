@@ -83,7 +83,9 @@ def format_recommendation(
     perf = Table(show_header=False, box=None, padding=(0, 2))
     perf.add_column("Key", style="dim")
     perf.add_column("Value")
-    tp_basis = best.provenance.get("throughput", "measured")
+    # Absent label must fail to the WEAKEST claim, not the strongest: a Candidate
+    # built without provenance rendered as "(measured)".
+    tp_basis = best.provenance.get("throughput", "unknown")
     tp_color = "green" if tp_basis == "measured" else "yellow"
     perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis})[/]")
     perf.add_row("Total throughput", f"{best.total_throughput_tps} tok/s")
@@ -117,7 +119,7 @@ def format_recommendation(
     refusal_str = (
         f"{best.safety_refusal}" if best.safety_refusal is not None else "n/a (unscreened)"
     )
-    q_basis = best.provenance.get("quality", "measured")
+    q_basis = best.provenance.get("quality", "unknown")
     q_color = {"measured": "green", "estimated": "yellow", "unknown": "red"}.get(q_basis, "white")
     cost_table.add_row("Quality score", f"{best.quality}  [{q_color}]({q_basis})[/]")
     cost_table.add_row("Quality tier", f"[{tier_color}]{best.quality_tier}[/]")
@@ -240,9 +242,9 @@ def format_suggestions(
     table.add_column("p95 ms", justify="right")
 
     for i, c in enumerate(ranked, 1):
-        q_basis = c.provenance.get("quality", "measured")
+        q_basis = c.provenance.get("quality", "unknown")
         q_mark = "" if q_basis == "measured" else "~"
-        tp_basis = c.provenance.get("throughput", "measured")
+        tp_basis = c.provenance.get("throughput", "unknown")
         tp_mark = "" if tp_basis == "measured" else "~"
         table.add_row(
             str(i),

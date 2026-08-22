@@ -31,6 +31,10 @@ PROV_DERIVED = "derived"
 # Prose keyed to the provenance label, so the sentence cannot outrun the evidence.
 PROVENANCE_PHRASE = {
     "measured": "measured on the TR benchmark corpus",
+    "extrapolated": (
+        "measured on the reference rig, then scaled to this GPU by memory bandwidth "
+        "-- a real measurement, but not of this card"
+    ),
     "estimated": "estimated (first-principles model, not measured)",
     "unknown": "unknown -- not screened, treat as unvalidated",
     # Not a prediction at all: exact arithmetic over the inputs and the GPU
@@ -40,7 +44,13 @@ PROVENANCE_PHRASE = {
     PROV_DERIVED: "derived (exact arithmetic over the inputs, not a prediction)",
 }
 # Marks a value in a table so the qualifier survives being skim-read.
-PROVENANCE_MARK = {"measured": "", "estimated": "~", "unknown": "?", PROV_DERIVED: ""}
+PROVENANCE_MARK = {
+    "measured": "",
+    "extrapolated": "~",
+    "estimated": "~",
+    "unknown": "?",
+    PROV_DERIVED: "",
+}
 
 # A brief without a date is undatable evidence; a brief whose prices are older than
 # this is misleading evidence. Both are refusals, not warnings.
@@ -233,7 +243,6 @@ def build_brief(
 
     w = candidates[0]
     prov = w.provenance or {}
-    vram_p = prov.get("vram", "estimated")
     tput_p = prov.get("throughput", "estimated")
     qual_p = prov.get("quality", "unknown")
 
@@ -242,7 +251,10 @@ def build_brief(
         MetricRow(
             "VRAM per GPU",
             f"{w.vram_gb:.1f} GB",
-            vram_p,
+            # Weights + KV + activations is arithmetic over the model's architecture.
+            # Nobody measured it, and the engine's own vram label only ever meant
+            # "a registry alias exists", which is not evidence about bytes.
+            PROV_DERIVED,
             "weights + KV cache + activations",
         ),
         MetricRow(
@@ -257,7 +269,9 @@ def build_brief(
             tput_p,
             f"{w.throughput_tps:.1f} tok/s per replica",
         ),
-        MetricRow("p95 latency", f"{w.p95_latency_ms:.0f} ms", tput_p, "service + queueing"),
+        # Latency is a queueing model layered on a throughput number, so it cannot
+        # be better-grounded than "estimated" even when the throughput was measured.
+        MetricRow("p95 latency", f"{w.p95_latency_ms:.0f} ms", "estimated", "service + queueing"),
         MetricRow("Quality score", f"{w.quality:.3f}", qual_p, w.quality_tier),
         MetricRow(
             "Cost",
@@ -270,9 +284,9 @@ def build_brief(
     # Only report a dimension the plan actually exercised -- a row of zeros reads as
     # a measurement of nothing.
     if w.ttft_ms:
-        metrics.append(MetricRow("TTFT", f"{w.ttft_ms:.0f} ms", tput_p, "prefill"))
+        metrics.append(MetricRow("TTFT", f"{w.ttft_ms:.0f} ms", "estimated", "prefill"))
     if w.tpot_ms:
-        metrics.append(MetricRow("TPOT", f"{w.tpot_ms:.1f} ms", tput_p, "per output token"))
+        metrics.append(MetricRow("TPOT", f"{w.tpot_ms:.1f} ms", "estimated", "per output token"))
     if w.energy_cost_month:
         metrics.append(
             MetricRow(
