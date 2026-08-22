@@ -217,7 +217,7 @@ class TestGeneral:
 
     def test_unknown_backend_raises(self):
         with pytest.raises(ValueError, match="no launch-command template"):
-            build_launch_command(_cand(backend="sglang"), context_length=2048)
+            build_launch_command(_cand(backend="tensorrt-llm"), context_length=2048)
 
     def test_to_dict_shape(self):
         lc = build_launch_command(

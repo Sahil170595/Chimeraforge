@@ -27,6 +27,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-weight footprint alone exceeds VRAM is still rejected, with the reason
   "offload cannot help" rather than being pretended into fitting.
 - Off by default; every pre-existing result is unchanged.
+- **Separate TTFT and TPOT service-level objectives (`--ttft-slo`, `--tpot-slo`).**
+  A single blended p95 hides which half of the experience a config fails, and the
+  two failures need opposite fixes: a TTFT miss is prefill-bound (more replicas, a
+  shorter prompt, a prefix cache), a TPOT miss is usually a batch that is too
+  large. Both are checked *inside* the (replicas x batch) search, so a config that
+  wins on p95 by ruining per-token latency is rejected rather than recommended.
+- Rejections name which bound: `TTFT 166ms > 100ms SLO (prefill-bound; a bigger
+  batch will not help)` instead of a generic latency failure.
+
+### Notes
+- **This gates a predicted value, not an attainment percentage.** The planner
+  models a point estimate, not a latency distribution, so setting either SLO warns
+  that it is not a "99% of requests" guarantee. Real goodput attainment needs a
+  distribution this planner does not model.
+- Both default to off, so every pre-existing number is unchanged.
+
+- **SGLang backend.** `BACKENDS` was `[ollama, vllm, tgi]`, which describes a
+  serving market that has moved on: SGLang is now one of the engines people
+  actually run, and TGI is fading. SGLang is offered with continuous batching,
+  float + FP8 formats (not GGUF), and a real launch command
+  (`python -m sglang.launch_server --model-path ... --tp-size N`).
+- `ThroughputModel.has_measured_rows(backend)` -- derived from the loaded corpus,
+  not a hardcoded list, so a backend added later is honest by default.
+
+### Notes
+- **SGLang ships with NO measured rows and says so.** Its throughput comes from the
+  same first-principles path any unmeasured model takes, provenance is never
+  `measured`, and every SGLang plan carries a warning stating the estimate is
+  *deliberately not borrowed from another backend*. Cloning vLLM's coefficients
+  would have made the numbers look confident and been a lie; `measure` replaces the
+  estimate with a real one.
+- A test pins this on `llama3.2-1b`, where vLLM *has* a measured row and SGLang does
+  not, so wiring SGLang to vLLM's lookup would make them converge and fail. A
+  companion test pins the opposite: on a model nobody has measured, unmeasured
+  backends agreeing is correct, not a bug.
 
 
 ## [0.22.1] - 2026-08-21
