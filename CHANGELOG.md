@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] - 2026-08-22
+
 ### Added
 - **`plan --fleet "H100 80GB,A100 80GB,L4 24GB"`: heterogeneous fleets.** The planner has always sized N identical replicas of one GPU, which is a constraint on the *answer*, not just the search -- a cheap GPU can be the better buy at loose SLOs and small requests while an expensive one wins at tight SLOs and long requests, so the cheapest fleet is often a mix. Melange (arXiv:2404.14527) measured this across L4/A10G/A100-80G/H100 and reports up to 77% saved in conversational settings. On an 8B at 64 req/s the mix here picks 1x H100 + 1x L4 at $2,160/mo over the best single type (2x A100, $2,304) -- the last 0.9 req/s is cheaper on a small GPU than on a second big one.
 - `--fleet` also extends the `--json` wrapper with a `fleet` key, on the same opt-in basis as `--launch` and `--compare-api`, so the default bare-array contract is unchanged.
