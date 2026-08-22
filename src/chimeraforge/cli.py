@@ -20,6 +20,7 @@ from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
+from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
 from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.validate import validate
@@ -67,4 +68,5 @@ app.command()(refit)
 app.command()(compare)
 app.command(name="eval")(eval_cmd)
 app.command()(report)
+app.command()(workload)
 app.command()(mcp)

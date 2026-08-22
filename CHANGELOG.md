@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`chimeraforge workload`: derive plan inputs from real traffic.** `plan` takes a request rate, prompt and output lengths, a traffic-variance preset and a prefix-cache hit rate -- and today all five are typed in by hand. The variance one is picked from a menu of four, which means the queueing tail, the part of the answer people most want, rests on a guess. Every one of them is already being measured by whatever is serving the traffic. `--from-log requests.jsonl` reads a request log; `--from-metrics URL --engine vllm|sglang` scrapes a live `/metrics` endpoint.
+- **`plan --workload-profile p.json`** consumes the profile. An explicitly passed flag always wins -- that is a deliberate scenario ("what if traffic tripled"), and overwriting it with yesterday's measurement would answer a different question.
+
+### Notes
+- **Metric names are per-engine and explicit; an unknown engine is an error.** vLLM renamed `gpu_cache_usage_perc` to `kv_cache_usage_perc` and `time_per_output_token_seconds` to `inter_token_latency_seconds` between documented versions. A scraper that quietly falls back to a stale name reports a fabricated measurement, which is worse than reporting nothing. Names were read from each project's own metrics reference, a test asserts no renamed vLLM name is referenced, and pointing the wrong `--engine` at an endpoint fails loud instead of returning an empty profile.
+- **A log gives `measured`; a histogram gives `estimated`.** Per-request rows carry the real distribution, so mean and variance are both exact. A Prometheus histogram gives sum and count exactly but the spread only through bucket edges, so a CV^2 from one is approximated at bucket midpoints and labeled accordingly.
+- **A single scrape is not a rate.** `request_rate` is left absent rather than derived by dividing a counter by a process uptime nobody measured.
+- **An absent field never acquires a default.** It stays a required explicit input to `plan`, so a partial profile cannot smuggle a made-up value in under the profile's `measured` badge. The profile records `captured_at`, source, engine and engine version.
+
+
 ## [0.27.0] - 2026-08-21
 
 ### Added
