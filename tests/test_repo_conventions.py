@@ -47,6 +47,42 @@ def test_source_is_ascii_only(path: pathlib.Path):
     )
 
 
+class TestGlamaJson:
+    """glama.json is the ownership proof for the Glama registry listing.
+
+    It is tiny, which is exactly why it rots unnoticed: a typo'd username or a
+    stray comma silently un-claims the listing (Glama re-validates the file on
+    every claim), and nothing else in the repo would fail.
+    """
+
+    @pytest.fixture(scope="class")
+    def glama(self) -> dict:
+        return json.loads((ROOT / "glama.json").read_text(encoding="utf-8"))
+
+    def test_exists_at_the_repo_root(self):
+        # Glama reads it from the root only; anywhere else is invisible to it.
+        assert (ROOT / "glama.json").is_file()
+
+    def test_declares_the_published_schema(self, glama):
+        assert glama["$schema"] == "https://glama.ai/mcp/schemas/server.json"
+
+    def test_maintainer_matches_the_repo_owner(self, glama):
+        # The claim flow checks the authenticated GitHub user against this list,
+        # so a mismatch here fails the claim with no other symptom.
+        assert glama["maintainers"] == ["Sahil170595"]
+
+    def test_maintainers_are_unique_non_empty_strings(self, glama):
+        names = glama["maintainers"]
+        assert names and all(isinstance(n, str) and n.strip() for n in names)
+        assert len(set(names)) == len(names)
+
+    def test_no_unknown_top_level_keys(self, glama):
+        # The schema defines only these two; Docker build spec, related servers
+        # and metadata overrides are web-UI settings after claiming, not fields
+        # here -- putting them in the file does nothing and reads as if it did.
+        assert set(glama) == {"$schema", "maintainers"}
+
+
 class TestServerJsonStaysInSync:
     """server.json pins the version the MCP registry will advertise.
 
