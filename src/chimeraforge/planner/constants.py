@@ -6,7 +6,7 @@ Extracted from TR133 research. No repo-specific paths or imports.
 from __future__ import annotations
 
 # Canonical search ladder for the planner's quant sweep (highest precision first).
-QUANT_LEVELS = ["FP16", "FP8", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q3_K_S", "Q2_K"]
+QUANT_LEVELS = ["FP16", "FP8", "Q8_0", "Q6_K", "Q5_K_M", "AWQ", "GPTQ", "Q4_K_M", "Q3_K_S", "Q2_K"]
 
 # Approximate effective bits-per-weight (incl. GGUF block/scale overhead). Broader
 # than QUANT_LEVELS so a model's *native* quant (e.g. an Ollama `q4_0`/`IQ4_XS`
@@ -16,6 +16,11 @@ QUANT_BPW: dict[str, float] = {
     "FP16": 16.0,
     "BF16": 16.0,
     "FP8": 8.0,  # exact: 1 byte/param, no block-scale overhead
+    # W4A16 (AWQ / GPTQ): 4-bit weights plus per-group scales+zeros. At the usual
+    # group size 128 that overhead is ~0.5 bpw, so ~4.5 effective -- the same
+    # arithmetic as a 4-bit GGUF k-quant, arrived at independently.
+    "AWQ": 4.5,
+    "GPTQ": 4.5,
     "Q8_0": 8.0,
     "Q6_K": 6.5,
     "Q5_K_M": 5.5,
@@ -201,15 +206,18 @@ MOE_DENSE_LAYER_KEYS = ("first_k_dense_replace",)
 QUANT_FAMILY_FLOAT = "float"
 QUANT_FAMILY_FP8 = "fp8"
 QUANT_FAMILY_GGUF = "gguf"
+QUANT_FAMILY_W4A16 = "w4a16"
 
 FLOAT_QUANTS = frozenset({"FP32", "FP16", "BF16"})
+# 4-bit weight / 16-bit activation checkpoints served by vLLM, SGLang and TGI.
+W4A16_QUANTS = frozenset({"AWQ", "GPTQ"})
 
 BACKEND_QUANT_FAMILIES: dict[str, frozenset[str]] = {
     "ollama": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_GGUF}),
-    "vllm": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
-    "tgi": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
+    "vllm": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8, QUANT_FAMILY_W4A16}),
+    "tgi": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8, QUANT_FAMILY_W4A16}),
     # Same serving formats as vLLM: float checkpoints and FP8, not GGUF.
-    "sglang": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8}),
+    "sglang": frozenset({QUANT_FAMILY_FLOAT, QUANT_FAMILY_FP8, QUANT_FAMILY_W4A16}),
 }
 
 
@@ -217,6 +225,8 @@ def quant_family(quant: str) -> str:
     """Classify a quant into the serving format family a backend must support."""
     if quant == "FP8":
         return QUANT_FAMILY_FP8
+    if quant in W4A16_QUANTS:
+        return QUANT_FAMILY_W4A16
     if quant in FLOAT_QUANTS:
         return QUANT_FAMILY_FLOAT
     return QUANT_FAMILY_GGUF
