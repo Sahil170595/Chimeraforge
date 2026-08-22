@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Partial CPU offload (`--allow-offload`).** "It does not fit" and "it runs" are
+  both true at once: llama.cpp and Ollama stream the weights that do not fit from
+  host RAM. A planner that only ever says "does not fit" loses the argument against
+  a machine visibly running the model. The answer is now priced instead of refused
+  -- on an RTX 4060 8GB an 8B goes from 5 fitting configs to 11, the best of them
+  running FP16 with **61% of weights offloaded at 9.8 tok/s**.
+- `--host-bandwidth-gbps` for the host link, defaulting to the GPU's PCIe figure.
+- `Candidate.offload_fraction` / `host_bandwidth_gbps`.
+
+### Notes
+- **The derate is modelled, not measured.** Decode reads every weight per token, so
+  the offloaded share crosses PCIe instead of VRAM and costs the full bandwidth
+  ratio (H100 HBM 3352 GB/s against PCIe 5 at 128 GB/s is ~26x). That is why
+  offload runs and why it crawls -- and the warning says the number is derived from
+  the ratio rather than benchmarked.
+- **Only weights spill.** KV and activations must stay resident, so a config whose
+  non-weight footprint alone exceeds VRAM is still rejected, with the reason
+  "offload cannot help" rather than being pretended into fitting.
+- Off by default; every pre-existing result is unchanged.
 - **Separate TTFT and TPOT service-level objectives (`--ttft-slo`, `--tpot-slo`).**
   A single blended p95 hides which half of the experience a config fails, and the
   two failures need opposite fixes: a TTFT miss is prefill-bound (more replicas, a
