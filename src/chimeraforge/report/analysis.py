@@ -74,10 +74,13 @@ def compute_mae(actual: list[float], predicted: list[float]) -> float:
     return statistics.mean(abs(a - p) for a, p in zip(actual, predicted))
 
 
-def compute_mape(actual: list[float], predicted: list[float]) -> float:
-    """Compute mean absolute percentage error.
+def compute_mape(actual: list[float], predicted: list[float]) -> float | None:
+    """Compute mean absolute percentage error, or None when undefined.
 
-    Pairs where ``actual == 0`` are skipped to avoid division by zero.
+    Pairs where ``actual == 0`` are skipped to avoid division by zero. If that
+    leaves nothing, the result is None rather than 0.0 -- an empty set has no
+    error, and reporting 0.0 presented flawless accuracy derived from no usable
+    observations.
 
     Args:
         actual: Observed values.
@@ -92,13 +95,16 @@ def compute_mape(actual: list[float], predicted: list[float]) -> float:
     if len(actual) != len(predicted):
         raise ValueError(f"Length mismatch: actual={len(actual)}, predicted={len(predicted)}")
     if not actual:
-        return 0.0
+        return None
     pct_errors: list[float] = []
     for a, p in zip(actual, predicted):
         if a != 0.0:
             pct_errors.append(abs(a - p) / abs(a))
     if not pct_errors:
-        return 0.0
+        # None, not 0.0. Every pair was filtered out for a zero actual, so there
+        # is no error to report -- and 0.0 reads as flawless accuracy computed
+        # from no observations at all.
+        return None
     return statistics.mean(pct_errors)
 
 

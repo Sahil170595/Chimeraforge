@@ -274,9 +274,23 @@ def generate_markdown(results: list[dict], config: ReportConfig) -> str:
 
     # Environment
     if config.include_environment:
-        env = results[0].get("environment", {})
-        if env:
-            parts.append(_md_environment_section(env))
+        # `report -d <dir>` globs every *.json in an accumulating bench directory,
+        # so taking results[0] alone put one "Environment: RTX 4080" header above
+        # rows measured on several machines. Only claim it when the set agrees.
+        envs = [r.get("environment", {}) for r in results if r.get("environment")]
+        distinct = {json.dumps(e, sort_keys=True) for e in envs}
+        if len(distinct) == 1:
+            parts.append(_md_environment_section(envs[0]))
+        elif len(distinct) > 1:
+            names = sorted({e.get("gpu_name") or e.get("gpu") or "unknown" for e in envs})
+            parts.append("## Environment")
+            parts.append("")
+            parts.append(
+                f"**{len(distinct)} distinct environments** in this result set "
+                f"({', '.join(names)}), so no single environment is claimed for "
+                "these rows. Split the results directory to get a per-rig report."
+            )
+            parts.append("")
 
     # Summary table
     rows = summarize_bench_results(results)

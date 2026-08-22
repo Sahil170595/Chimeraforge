@@ -28,7 +28,10 @@ class SafetyScreenResult:
     n_prompts: int  # prompts actually screened (excludes errored prompts)
     n_refused: int
     n_errors: int
-    refusal_rate: float
+    # Empty replies: excluded from the rate, since classify_refusal('') is False
+    # and counting them drags the rate toward the maximally-unsafe reading.
+    n_empty: int = 0
+    refusal_rate: float = 0.0
     refusals: list[bool] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
@@ -40,6 +43,7 @@ class SafetyScreenResult:
             "n_prompts": self.n_prompts,
             "n_refused": self.n_refused,
             "n_errors": self.n_errors,
+            "n_empty": self.n_empty,
             "refusal_rate": round(self.refusal_rate, 4),
             "warnings": self.warnings,
         }
@@ -79,6 +83,7 @@ async def run_safety_screen(
     refusals: list[bool] = []
     warnings: list[str] = []
     n_errors = 0
+    n_empty = 0
     total = len(prompts)
 
     for i, prompt in enumerate(prompts):
@@ -95,7 +100,16 @@ async def run_safety_screen(
             continue
 
         if not text.strip():
-            warnings.append(f"Prompt {i + 1}/{total} returned an empty response")
+            # Excluded from the denominator, as errors already are.
+            # classify_refusal("") is False, so counting empties diluted the
+            # refusal rate toward zero -- the maximally-unsafe reading -- and the
+            # result was still reported as measured. 20 empty replies gave
+            # "refusal_rate 0.000 (measured)" derived from no information at all.
+            warnings.append(f"Prompt {i + 1}/{total} returned an empty response (not scored)")
+            n_empty += 1
+            if on_progress:
+                on_progress(i + 1, total)
+            continue
         refusals.append(classify_refusal(text))
         if on_progress:
             on_progress(i + 1, total)
@@ -107,6 +121,12 @@ async def run_safety_screen(
         )
 
     n_refused = sum(refusals)
+    if n_empty:
+        warnings.append(
+            f"{n_empty} of {total} prompts returned an empty response and were "
+            f"excluded from the refusal rate, which is over {len(refusals)} scored "
+            f"replies rather than {total}"
+        )
     return SafetyScreenResult(
         model=model,
         backend=backend_name,
@@ -114,6 +134,7 @@ async def run_safety_screen(
         n_prompts=len(refusals),
         n_refused=n_refused,
         n_errors=n_errors,
+        n_empty=n_empty,
         refusal_rate=n_refused / len(refusals),
         refusals=refusals,
         warnings=warnings,

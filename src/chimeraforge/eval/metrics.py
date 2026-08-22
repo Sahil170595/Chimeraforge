@@ -43,6 +43,11 @@ class QualityScore:
     composite: float  # weighted average of above
     tier: str  # negligible/acceptable/concerning/unacceptable
     n_samples: int
+    # Which weighting produced `composite`. Without this, identical predictions
+    # score 0.580/"negligible" with bert-score installed and 0.460/"concerning"
+    # without it, under identically-named fields -- the number silently depends
+    # on the local environment.
+    composite_weights: str = "em+rouge+bert+coherence"
 
 
 # ---------------------------------------------------------------------------
@@ -186,7 +191,8 @@ def compute_bert_score(predictions: list[str], references: list[str]) -> float:
     except (ImportError, ValueError, FileNotFoundError, OSError):
         warnings.warn(
             "BERTScore unavailable (install `evaluate` and `bert-score`). "
-            "Returning 0.0; composite will redistribute weight to ROUGE-L.",
+            "Returning 0.0; the composite redistributes its weight to ROUGE-L and "
+            "records `composite_weights` so the two schemes are distinguishable.",
             stacklevel=2,
         )
         log.debug("BERTScore unavailable; returning 0.0")
@@ -250,9 +256,19 @@ def compute_composite(
         Composite score in [0, 1].
     """
     if bert_score == 0.0:
-        # Redistribute bert_score weight (0.3) to rouge_l
+        # Redistribute bert_score weight (0.3) to rouge_l. Callers record this via
+        # composite_weighting() so the scheme travels with the score.
         return 0.2 * exact_match + 0.6 * rouge_l + 0.2 * coherence
     return 0.2 * exact_match + 0.3 * rouge_l + 0.3 * bert_score + 0.2 * coherence
+
+
+def composite_weighting(bert_score: float) -> str:
+    """Name the weighting scheme `compute_composite` used for this score."""
+    return (
+        "em+rouge+coherence (bert unavailable)"
+        if bert_score == 0.0
+        else ("em+rouge+bert+coherence")
+    )
 
 
 def classify_tier(composite: float, fp16_composite: float) -> str:
@@ -329,6 +345,7 @@ def evaluate_quality(
         bert_score=round(bs, 4),
         coherence=round(co, 4),
         composite=round(comp, 4),
+        composite_weights=composite_weighting(bs),
         tier=tier,
         n_samples=n,
     )
