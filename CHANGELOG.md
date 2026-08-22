@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-08-21
+
 ### Added
 - **`chimeraforge workload`: derive plan inputs from real traffic.** `plan` takes a request rate, prompt and output lengths, a traffic-variance preset and a prefix-cache hit rate -- and today all five are typed in by hand. The variance one is picked from a menu of four, which means the queueing tail, the part of the answer people most want, rests on a guess. Every one of them is already being measured by whatever is serving the traffic. `--from-log requests.jsonl` reads a request log; `--from-metrics URL --engine vllm|sglang` scrapes a live `/metrics` endpoint.
 - **`plan --workload-profile p.json`** consumes the profile. An explicitly passed flag always wins -- that is a deliberate scenario ("what if traffic tripled"), and overwriting it with yesterday's measurement would answer a different question.
