@@ -303,6 +303,17 @@ async def run_quant_sweep(
     for q in levels:
         logger.info("Quant sweep: %s @ %s", model, q)
         result = await run_benchmark(model=model, backend_name=backend_name, quant=q, **kwargs)
+        # `quant` reaches the result object but never the backend -- no adapter
+        # takes a per-request quantization, because a quant is a property of the
+        # loaded artifact. So every row here is the SAME served model re-run,
+        # differing only by noise, wearing a different quant label. Left unsaid
+        # those rows flow into refit and become "measured" per-quant corpus keys.
+        # The context sweep already warns for exactly this reason.
+        result.warnings.append(
+            f"quant={q} recorded but NOT applied: no backend accepts a per-request "
+            f"quantization, so this row is the artifact {backend_name} already had "
+            f"loaded. Serve the quantized model and use --quant to label it."
+        )
         results.append(result)
     return results
 

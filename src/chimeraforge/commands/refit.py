@@ -94,12 +94,13 @@ def refit(
     if output:
         out = Path(output)
     else:
-        try:
-            from platformdirs import user_data_dir
+        # The one path plan/suggest/MCP actually read, honouring $CHIMERAFORGE_CACHE.
+        # This used to default to platformdirs' user_data_dir while the read side
+        # used ~/.cache/chimeraforge, so a successful refit printed "Saved to ..."
+        # and exited 0 while being completely inert.
+        from chimeraforge.planner.resolver import measured_corpus_path
 
-            out = Path(user_data_dir("chimeraforge")) / "fitted_models.json"
-        except ImportError:
-            out = Path.home() / ".chimeraforge" / "fitted_models.json"
+        out = Path(measured_corpus_path())
 
     # Validate BEFORE writing so --validate is a real gate, not advisory: invalid
     # coefficients (e.g. a quant multiplier < FP16, non-positive throughput) must

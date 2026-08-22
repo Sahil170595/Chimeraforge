@@ -169,7 +169,13 @@ def fit_power_law(
                 points.append((p, tps))
 
     if len(points) < MIN_POWER_LAW_POINTS:
-        return (100.0, 0.5)
+        # None, not a placeholder pair. This returned (100.0, 0.5), which
+        # merge_fitted_models then wrote over the TR133 fit because a tuple is
+        # not None -- so a single-model `measure` run replaced a=72.11/b=0.0888
+        # with a=100/b=0.5 and silently made a 70B predict 12.0 tok/s instead of
+        # 49.5 (-76%). The summary reported power_law_refit: False the whole time,
+        # so the code already knew the fit had not happened.
+        return None
 
     try:
         from scipy.optimize import curve_fit  # type: ignore[import-untyped]
@@ -182,9 +188,13 @@ def fit_power_law(
 
         (a, b), _ = curve_fit(_power, xs, ys, p0=[100.0, 0.5], maxfev=5000)
         return (float(a), float(b))
-    except (ImportError, RuntimeError, TypeError, ValueError):
-        log.warning("scipy curve_fit unavailable or failed; using defaults")
-        return (100.0, 0.5)
+    except (ImportError, RuntimeError, TypeError, ValueError) as exc:
+        # Same rule as the under-determined case: no fit means keep the existing
+        # coefficients, not overwrite them with a placeholder. Writing defaults
+        # here would corrupt the corpus precisely when scipy is missing, which is
+        # the environment least likely to notice.
+        log.warning("power law not re-fit (scipy unavailable or fit failed): %s", exc)
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -531,7 +541,7 @@ def refit_from_bench(
         "throughput_entries_updated": len(tp_lookup),
         "quant_multipliers_updated": len(qm),
         "service_times_updated": len(st),
-        "power_law_refit": pl != (100.0, 0.5),
+        "power_law_refit": pl is not None,
         "total_runs": n_total_runs,
         "confidence_weight": min(1.0, n_total_runs / CONFIDENCE_RUN_THRESHOLD),
         "hardware_offsets": hw_offsets,
