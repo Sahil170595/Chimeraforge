@@ -488,10 +488,14 @@ def plan(
 
         # Click knows exactly which parameters came from the command line; sniffing
         # sys.argv would miss env vars and break under any programmatic invocation.
+        #
+        # Compared by NAME, not identity. Typer 0.27 vendors its own Click, so the
+        # value returned here is a `typer._click.core.ParameterSource` member and an
+        # `is` (or even `==`) test against the real `click.core` enum is False --
+        # which silently made every explicit flag look unset, so the profile
+        # overwrote it. Passed under Typer 0.25, failed under 0.27.
         def _was_passed(param: str) -> bool:
-            from click.core import ParameterSource
-
-            return ctx.get_parameter_source(param) is ParameterSource.COMMANDLINE
+            return getattr(ctx.get_parameter_source(param), "name", None) == "COMMANDLINE"
 
         explicit = {p for p in _PROFILE_FLAG.values() if _was_passed(p)}
         for key, value in wp.plan_kwargs().items():

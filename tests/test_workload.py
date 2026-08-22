@@ -22,6 +22,7 @@ import random
 from pathlib import Path
 
 import pytest
+import typer
 
 from chimeraforge.planner.service import run_plan
 from chimeraforge.workload import (
@@ -37,6 +38,20 @@ from chimeraforge.workload import (
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+# Defined at module scope so Typer can resolve the `typer.Context` annotation under
+# `from __future__ import annotations` -- a nested command cannot see a local import.
+_PROBE_SEEN: dict[str, bool] = {}
+_probe_app = typer.Typer()
+
+
+@_probe_app.command()
+def _probe(ctx: typer.Context, rate: float = typer.Option(1.0, "--rate")) -> None:
+    from click.core import ParameterSource
+
+    src = ctx.get_parameter_source("rate")
+    _PROBE_SEEN["by_name"] = getattr(src, "name", None) == "COMMANDLINE"
+    _PROBE_SEEN["by_identity"] = src is ParameterSource.COMMANDLINE
 
 
 @pytest.fixture(scope="module")
@@ -387,7 +402,36 @@ class TestPlanIntegration:
         b = json.loads(
             override.output[override.output.index("[") : override.output.rindex("]") + 1]
         )[0]
-        assert b["n_agents"] > a["n_agents"]
+        # Utilisation is continuous in the request rate, so this detects the
+        # override without depending on where the replica search happens to land.
+        assert b["utilisation"] != a["utilisation"]
+        # And it must land on exactly the plan that rate produces -- proving the
+        # profile supplied everything else and nothing but the rate was overridden.
+        direct = run_plan(
+            model_size="8b",
+            hardware="RTX 4090 24GB",
+            budget=5000,
+            request_rate=20.0,
+            prompt_tokens=int(log_profile.prompt_tokens.value),
+            avg_tokens=int(log_profile.output_tokens.value),
+            workload_cv2=log_profile.workload_cv2.value,
+            prefix_cache_hit_rate=log_profile.prefix_cache_hit_rate.value,
+        ).candidates[0]
+        assert b["n_agents"] == direct.n_agents
+        assert b["p95_latency_ms"] == direct.p95_latency_ms
+
+    def test_parameter_source_is_compared_by_name_not_identity(self):
+        """Typer 0.27 vendors Click, so the ParameterSource returned by a Typer
+        context is `typer._click.core.ParameterSource` -- an identity test against
+        `click.core.ParameterSource.COMMANDLINE` is False, which silently made every
+        explicit flag look unset. Passed under Typer 0.25, failed under 0.27."""
+        from typer.testing import CliRunner as TyperRunner
+
+        _PROBE_SEEN.clear()
+        TyperRunner().invoke(_probe_app, ["--rate", "5"])
+        assert _PROBE_SEEN["by_name"], "name comparison must detect a command-line flag"
+        # Identity may or may not hold depending on whether Typer vendors Click;
+        # the point is that the code must not depend on it.
 
     def test_no_profile_flag_changes_nothing(self):
         from typer.testing import CliRunner
