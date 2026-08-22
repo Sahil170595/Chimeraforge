@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-08-21
+
 ### Added
 - **Partial CPU offload (`--allow-offload`).** "It does not fit" and "it runs" are
   both true at once: llama.cpp and Ollama stream the weights that do not fit from
