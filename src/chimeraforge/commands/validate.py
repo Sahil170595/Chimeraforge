@@ -87,6 +87,15 @@ def validate(
             console.print(f"[red]Error:[/] {msg}")
         raise typer.Exit(code=1)
 
+    if ollama_url and measurements_path:
+        # Before any file is read: a bad flag combination should not need a
+        # well-formed matrix to be reported. Resolving it silently scored a stale
+        # file while the operator believed a fresh benchmark had run, exit 0.
+        _fail(
+            "--ollama-url and --measurements are mutually exclusive: pass --ollama-url "
+            "to benchmark live, or --measurements to score a captured file."
+        )
+
     if not measurements_path and not ollama_url:
         _fail(
             "nothing to compare against: pass --measurements FILE to score a captured "
@@ -105,7 +114,7 @@ def validate(
         except ValidationError as exc:
             _fail(str(exc))
 
-    measure_live = bool(ollama_url) and not measurements_path
+    measure_live = bool(ollama_url)
     if measure_live:
         from chimeraforge.commands._deps import require_extra
 

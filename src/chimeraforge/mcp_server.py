@@ -15,7 +15,7 @@ from dataclasses import asdict
 
 from chimeraforge import __version__
 from chimeraforge.planner.engine import summarize_trace
-from chimeraforge.planner.constants import WORKLOAD_CV2
+from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE, WORKLOAD_CV2
 from chimeraforge.planner.hardware import GPU_DB, get_gpu
 from chimeraforge.planner.launch import build_launch_command
 from chimeraforge.planner.resolver import (
@@ -23,7 +23,7 @@ from chimeraforge.planner.resolver import (
     ResolverError,
     resolve_spec,
 )
-from chimeraforge.planner.service import run_plan
+from chimeraforge.planner.service import run_plan, validate_plan_inputs
 
 # Written to out-compete the model's own parametric guess (Anthropic tool-writing
 # guidance): state the grounding and the provenance contract explicitly.
@@ -83,6 +83,12 @@ def _candidate_summary(c) -> dict:
         "p95_latency_ms": c.p95_latency_ms,
         "monthly_cost_usd": c.monthly_cost,
         "cost_per_1m_tok_usd": c.cost_per_1m_tok,
+        # The at-capacity figure assumes a saturated fleet. Below 100% duty you
+        # also pay for every idle hour, and that is the number people budget
+        # against -- omitting it left MCP reporting 0.0738 where the effective
+        # cost was 0.434 (5.9x).
+        "cost_per_1m_tok_effective_usd": c.cost_per_1m_tok_effective,
+        "duty_cycle": c.duty_cycle,
         "energy_cost_month_usd": c.energy_cost_month,
         "perf_per_watt": c.perf_per_watt,
         "lora_adapters": c.lora_adapters,
@@ -143,6 +149,26 @@ def plan_deployment(
             "hint": f"call chimeraforge_list_hardware; known GPUs include: {known}, ...",
         }
     try:
+        validate_plan_inputs(
+            request_rate=request_rate,
+            avg_tokens=avg_output_tokens,
+            reasoning_tokens=reasoning_tokens,
+            prompt_tokens=prompt_tokens,
+            prefix_cache_hit_rate=prefix_cache_hit_rate,
+            duty_cycle=duty_cycle,
+            gpu_price_multiplier=gpu_price_multiplier,
+            host_bandwidth_gbps=host_bandwidth_gbps,
+            ttft_slo=ttft_slo_ms,
+            tpot_slo=tpot_slo_ms,
+            electricity_rate=DEFAULT_ELECTRICITY_RATE,
+            kv_quant=kv_quant,
+            latency_slo=latency_slo_ms,
+            context_length=context_length,
+        )
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+
+    try:
         result = run_plan(
             models=[model] if model else None,
             model_size=model_size,
@@ -183,13 +209,23 @@ def plan_deployment(
         return {"ok": False, "error": str(exc)}
 
     if not result.candidates:
+        # One envelope, always the same keys. This used to return a different
+        # shape from the success path ({candidates, why_nothing_fit} vs
+        # {recommended, alternatives}), so no client could write one parser and
+        # an LLM would confabulate whichever branch it had not been shown.
+        # why_nothing_fit is always a list, never the bare string "no candidates".
         return {
             "ok": True,
             "hardware": hardware,
-            "candidates": [],
-            "why_nothing_fit": summarize_trace(result.trace) if result.trace else "no candidates",
+            "recommended": None,
+            "launch": None,
+            "alternatives": [],
+            "total_evaluated": 0,
+            "why_nothing_fit": summarize_trace(result.trace) if result.trace else [],
             "hint": "relax quality_target/budget/latency_slo_ms, quantize (kv_quant), or "
             "use a larger GPU or tensor/pipeline parallelism.",
+            "note": "No configuration cleared every gate. `why_nothing_fit` names the "
+            "binding one per model; nothing here is a recommendation.",
         }
     # "How do I actually run it" is the immediate next question an assistant gets
     # asked, and the flags (context, TP/PP, batch, KV dtype) are exactly what a model
@@ -213,6 +249,8 @@ def plan_deployment(
         "launch": launch,
         "alternatives": [_candidate_summary(c) for c in result.candidates[1:_MAX_CANDIDATES]],
         "total_evaluated": len(result.candidates),
+        "why_nothing_fit": [],
+        "hint": "",
         "note": "Numbers are labeled measured/estimated/unknown in each candidate's "
         "`provenance`; '~' fields are estimates, not measured. `launch` carries the "
         "serve command for the recommended config -- read its `notes` before running.",
