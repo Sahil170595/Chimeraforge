@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-08-22
+
 ### Fixed
 - **A measured-on-a-different-GPU number was labeled `measured`.** The throughput lookup key is `model|backend|quant` and carries no hardware, but every row in the corpus came off one rig. A key hit set the label, and only afterwards was the value multiplied by `bandwidth_ratio(hardware)` -- so `llama3.2-3b` on a B200 reported **1327.5 tok/s labeled `measured`, a 13.8x extrapolation of a 95.9 tok/s RTX 4080 measurement, with zero warnings**. This is the worst failure this project can have: a crash is visible, a confidently-wrong `measured` badge is not, and it is the field the MCP server hands an assistant and the brief renders as prose.
 - **Two honesty checks were disabled by that bug, and re-arm with it.** The fleet's "a mix compounds throughput error across types" warning and `validate.classify()` both keyed off `provenance["throughput"] == "measured"`, so on datacenter GPUs -- which are never the reference rig -- the warning never fired and the audit filed bandwidth-extrapolated cells under `measured-lookup`, the bucket meaning "not an out-of-sample test". The falsification harness could not have detected the bug it was pointed at.
