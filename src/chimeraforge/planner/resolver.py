@@ -21,6 +21,8 @@ Network failures raise ``ResolverError`` -- never a silent fallback.
 
 from __future__ import annotations
 
+import datetime as _dt
+
 import json
 import logging
 import os
@@ -497,13 +499,43 @@ def _cache_key(identifier: str) -> str:
     return re.sub(r"[^\w.-]", "_", identifier.lower())
 
 
+# Cached specs describe someone else's repo, which can change under us. Long
+# enough that offline work keeps working, short enough that a config edit lands.
+SPEC_CACHE_TTL_DAYS = 30
+_CACHE_STAMP = "_captured_at"
+
+
+def _cache_age_days(captured: str | None) -> int | None:
+    """Age of a cache stamp in days, or None when absent or unparseable."""
+    if not captured:
+        return None
+    try:
+        return (_dt.date.today() - _dt.date.fromisoformat(captured)).days
+    except (ValueError, TypeError):
+        return None
+
+
 def _cache_load(identifier: str) -> ModelSpec | None:
+    """Read a cached spec, ignoring one that is older than ``SPEC_CACHE_TTL_DAYS``.
+
+    The cache is consulted ahead of the network, so without an expiry a repo whose
+    config.json changes upstream is answered from the old copy indefinitely and
+    there is no way to notice. A stamped, expiring entry re-fetches on its own.
+    Entries written before stamping existed have no date and are treated as
+    expired rather than trusted.
+    """
     path = _cache_dir() / f"{_cache_key(identifier)}.json"
     if not path.is_file():
         return None
     try:
-        spec = ModelSpec.from_dict(json.loads(path.read_text(encoding="utf-8")))
-        log.debug("spec cache hit for %s", identifier)
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        captured = raw.pop(_CACHE_STAMP, None)
+        age = _cache_age_days(captured)
+        if age is None or age > SPEC_CACHE_TTL_DAYS:
+            log.debug("spec cache for %s is stale (age=%s d), refetching", identifier, age)
+            return None
+        spec = ModelSpec.from_dict(raw)
+        log.debug("spec cache hit for %s (age %s d)", identifier, age)
         return spec
     except (ValueError, TypeError) as exc:
         log.warning("ignoring corrupt spec cache %s: %s", path, exc)
@@ -514,8 +546,10 @@ def _cache_store(identifier: str, spec: ModelSpec) -> None:
     try:
         d = _cache_dir()
         d.mkdir(parents=True, exist_ok=True)
+        payload = dict(spec.to_dict())
+        payload[_CACHE_STAMP] = _dt.date.today().isoformat()
         (d / f"{_cache_key(identifier)}.json").write_text(
-            json.dumps(spec.to_dict(), indent=2), encoding="utf-8"
+            json.dumps(payload, indent=2), encoding="utf-8"
         )
     except OSError as exc:
         log.warning("could not write spec cache for %s: %s", identifier, exc)

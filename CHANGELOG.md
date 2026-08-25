@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **A 405B tag was sized as an 8B model, with quality reported as `measured`.** `resolve_model` short-circuited on a family with exactly one registry model and returned it "regardless of the parsed size" -- the docstring said so, as though it were a feature. So `llama3.1:405b` resolved to `llama3.1-8b`, and the planner returned **params_b 8.03, VRAM 4.55 GB, quality 0.639 (measured)** for a 405-billion-parameter model, because every gate downstream reads the alias's rows. The size was parsed correctly the whole time and then discarded. Only two families have a single member, which is why it survived. A parsed size is now always honoured, and an unresolvable tag is refused with an actionable message rather than answered with a smaller wrong number.
+- **An approximated alias no longer confers `measured` on quality or safety.** Reusing another model's rows for throughput is defensible; quality and safety are properties *of* a model, and reporting another one's as measured attributes a benchmark to weights that never ran.
+- **`measure --quant` is verified against the artifact the backend is actually serving.** The label becomes part of the corpus key, and that key is what `plan` later reports as measured -- so an unchecked label attributed one quantization's rate to another permanently. The served artifact now wins, and the swap is disclosed.
+- **Cached model specs expire.** The spec cache is consulted ahead of the network, so a repo whose `config.json` changed upstream was answered from the stale copy indefinitely with no way to notice. Entries are stamped and expire after `SPEC_CACHE_TTL_DAYS`; entries written before stamping existed are treated as expired rather than trusted.
+
+
 ## [0.30.0] - 2026-08-22
 
 ### Fixed

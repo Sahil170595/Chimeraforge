@@ -91,6 +91,28 @@ def fold_into_corpus(
     return merged
 
 
+def reconcile_quant(asked: str, served: str | None) -> tuple[str, list[str]]:
+    """Reconcile an explicit --quant label against what the backend is serving.
+
+    ``--quant`` is free text that becomes part of the corpus key, and that key is
+    what ``plan`` later reports as measured. If the backend is serving a different
+    artifact, an unchecked label attributes one quantization's rate to another --
+    permanently, because the corpus is persistent and nothing revisits it.
+
+    The served artifact wins, because it is what actually produced the numbers.
+    An unknown served quant leaves the caller's label alone rather than guessing.
+    """
+    if not served:
+        return asked, []
+    if served.upper() == asked.upper():
+        return asked, []
+    return served, [
+        f"--quant {asked} does not match the artifact the backend is serving "
+        f"({served}); recording as {served} so the corpus key describes what "
+        f"actually ran"
+    ]
+
+
 async def measure_model(
     model: str,
     *,
@@ -126,6 +148,7 @@ async def measure_model(
 
     # Resolve for the native quant + a clean lookup key; tolerate failure since
     # measurement itself does not need the resolved spec.
+    quant_explicit = quant is not None
     if quant is None:
         try:
             spec = resolve_spec(model, ollama_url=ollama_url, hf_token=hf_token)
@@ -133,6 +156,25 @@ async def measure_model(
         except ResolverError as exc:
             log.warning("could not resolve '%s' for native quant: %s", model, exc)
     quant = quant or "FP16"
+
+    # --quant is a free-text label that becomes part of the corpus key, and the
+    # key is what `plan` later reports as measured. If the backend is actually
+    # serving a different artifact, an explicit label silently attributes one
+    # quant's rate to another -- forever, because the corpus is persistent. So
+    # check it against what the backend says it loaded, and say so on mismatch
+    # rather than writing the claim through.
+    if quant_explicit:
+        served_quant = None
+        try:
+            served_quant = resolve_spec(
+                model, ollama_url=ollama_url, hf_token=hf_token
+            ).native_quant
+        except ResolverError as exc:
+            warnings.append(
+                f"could not verify the served quantization against --quant {quant}: {exc}"
+            )
+        quant, quant_warnings = reconcile_quant(quant, served_quant)
+        warnings.extend(quant_warnings)
 
     # 1. N=1 single-stream throughput + service time.
     n1 = await run_benchmark(
