@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **The test suite no longer downloads or loads a neural model.** Every test touching the scoring path imported torch, transformers and bert-score and then materialized roberta-large to score two-word strings -- 65s of a 108s suite, and the weight materialization segfaulted intermittently on Windows (`Windows fatal exception: access violation` in `_materialize_copy`), the only place the suite touched native threading. `evaluate` is now stood in for deterministically, so the library path stays wired and exercised in microseconds. **Full suite: 108.19s -> 10.6s, with torch never imported.** No shipped code changed.
+- **The BERTScore and ROUGE-L tests now pin what they claim to.** `test_returns_valid_score` asserted `-0.01 <= score <= 1.01`, which both the real score (1.0) and the missing-dependency sentinel (0.0) satisfy -- it could not tell a working BERTScore from an absent one. And because CI installs `[all,dev]`, `evaluate` was always present there, so the pure-Python LCS fallback inside `compute_rouge_l` was never executed by any test on any machine. Both availability branches are now asserted, the fallback is pinned against hand-derived F1 values, and four mutations to its internals (precision/recall swap, F1 to arithmetic mean, off-by-one recall, wrong rouge type) each fail the suite.
+- **`CLAUDE.md` documented a lint command that does not pass.** Quick Reference said `ruff check src/`, but CI gates on `ruff check src/chimeraforge/`; the documented form also sweeps the ungated legacy `src/python/banterhearts` tree and fails with ~100 pre-existing errors unrelated to any change. Corrected, with the scope explained, and added to the `verify` skill's gate.
+
+
 ## [0.30.1] - 2026-08-25
 
 ### Fixed
