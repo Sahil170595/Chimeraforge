@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-08-25
+
 ### Fixed
 - **One `measure` run could silently replace the fitted power law with a placeholder.** `fit_power_law` returned `(100.0, 0.5)` when it could not fit, and `merge_fitted_models` writes the result when it `is not None` -- a tuple is not None. The TR133 coefficients (a=72.11, b=0.0888) were overwritten, making a 70B predict **12.0 tok/s instead of 49.5 (-76%)** and a 0.5B **141.4 instead of 76.7 (+84%)**. The summary flag was literally `pl != (100.0, 0.5)`, so the code already knew no fit had happened and reported `power_law_refit: False` while writing the value anyway. Now returns `None`, including on the scipy-unavailable branch, which corrupted the corpus precisely in the environment least likely to notice.
 - **`refit` wrote its output where nothing reads it.** It defaulted to platformdirs' `user_data_dir` while `plan`/`suggest`/MCP read `~/.cache/chimeraforge`, so a successful refit printed "Saved to ...", exited 0, and was completely inert. Both sides now use `measured_corpus_path()`, so `$CHIMERAFORGE_CACHE` moves them together.
