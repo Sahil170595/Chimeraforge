@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.5] - 2026-08-28
+
 ### Fixed
 - **`--json` payloads were printed through Rich's markup parser.** Square brackets are style tags to Rich, so a model id containing them had text silently deleted (`org/x[bold]y-7b` -> `org/xy-7b`), produced invalid JSON escapes, or raised `MarkupError` -- on the one output whose entire contract is being valid JSON. Ids arrive from the HF Hub and from MCP callers, not just a keyboard.
 - **The MCP tool validated almost nothing.** `kv_quant="q3"` escaped as an uncaught `KeyError`, `request_rate=-1.0` returned `ok: true` with a plan for negative traffic, and `duty_cycle=0.0` was silently rewritten to 1.0. Validation now lives in `planner/service.py` and is applied by both entry points, so the surface an LLM drives is no longer the unguarded one. It is deliberately *not* wired into `run_plan`: the engine clamps on purpose for direct library callers, and that contract is pinned by tests.
