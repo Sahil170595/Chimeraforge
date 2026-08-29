@@ -56,7 +56,21 @@ GPU_DB: dict[str, GPUSpec] = {
     "RTX 4060 Ti 16GB": GPUSpec("RTX 4060 Ti 16GB", 16.0, 288.0, 0.030, 44.1, 165.0, 64.0),
     "RTX 4070 12GB": GPUSpec("RTX 4070 12GB", 12.0, 504.0, 0.030, 58.4, 200.0, 64.0),
     "RTX 4070 Ti 12GB": GPUSpec("RTX 4070 Ti 12GB", 12.0, 504.0, 0.035, 80.2, 285.0, 64.0),
-    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 556.0, 0.035, 80.2, 285.0, 64.0),
+    # The reference rig, and the only card the bundled corpus was measured on --
+    # so its bandwidth is the denominator of every cross-GPU extrapolation and
+    # of MBU_DEFAULT. It is the RTX 4080 LAPTOP GPU (README: "on an RTX 4080
+    # Laptop (12 GB)"; the rig pairs it with an i9-13900HX, an HX-series mobile
+    # part, and no desktop RTX 4080 12GB exists -- the desktop card is 16 GB).
+    #
+    # It previously carried 556 GB/s and 285 W, which are neither the laptop part
+    # nor the desktop one. NVIDIA publishes 12 GB GDDR6 on a 192-bit bus at a
+    # 60-150 W TGP (nvidia.com/en-us/geforce/laptops/compare, fetched 2026-08-22);
+    # 192-bit at the 18 Gbps GDDR6 these Ada mobile parts ship with is 432 GB/s.
+    # TGP is the 150 W ceiling, since the sustained figure depends on the chassis.
+    #
+    # Confirm on the rig with:
+    #   nvidia-smi --query-gpu=name,memory.total,power.max_limit --format=csv
+    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 432.0, 0.035, 80.2, 150.0, 64.0),
     "RTX 4080 16GB": GPUSpec("RTX 4080 16GB", 16.0, 717.0, 0.045, 97.5, 320.0, 64.0),
     "RTX 4090 24GB": GPUSpec("RTX 4090 24GB", 24.0, 1008.0, 0.060, 165.2, 450.0, 64.0),
     # Consumer - NVIDIA Blackwell (GDDR7, PCIe 5.0 = 128 GB/s)
