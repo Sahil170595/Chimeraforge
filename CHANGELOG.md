@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.9] - 2026-08-28
+
 ### Fixed
 - **Shell injection into the copy-paste launch command.** `launch.py` interpolated the model id raw into commands the tool tells people to paste into a terminal (`vllm serve meta/x$(id)`), and ids arrive from HF Hub listings and MCP callers, not only from the keyboard. All four interpolation sites are now `shlex.quote`d, as `brief.py` already did for its reproduction command.
 - **`plan --fleet --budget` over- and under-constrained at once.** The budget was applied to each GPU inside the capability probe, so an L4 was reported as "cannot serve this workload at all" when it merely costs more than the cap -- while the returned mix came to $172.80 against a $100 budget. The budget now gates the assembled mix, and the probe is explicitly unbudgeted (dropping the key was not enough: `run_plan`'s own default is $100).
