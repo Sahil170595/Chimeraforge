@@ -70,3 +70,7 @@ app.command(name="eval")(eval_cmd)
 app.command()(report)
 app.command()(workload)
 app.command()(mcp)
+
+
+if __name__ == "__main__":  # pragma: no cover - module invocation
+    app()

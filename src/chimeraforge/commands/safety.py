@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 console = Console()
 
@@ -118,11 +119,11 @@ def safety(
                 )
             )
     except NotImplementedError as exc:
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(code=1)
     except (RuntimeError, ValueError) as exc:
         # RuntimeError: health/model pre-flight or all-prompts-failed; ValueError: unknown backend
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(code=1)
 
     # Compare against bundled gate data: resolve the (possibly Ollama-tagged)

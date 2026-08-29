@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 console = Console()
 
@@ -21,5 +22,5 @@ def mcp() -> None:
     try:
         main()
     except RuntimeError as exc:  # missing `mcp` extra -> clean, actionable error
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(code=1)
