@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.7] - 2026-08-28
+
 ### Fixed
 - **The "TTFT not measurable" sentinel was treated as a number, and rendered green.** `-1.0` flowed into the comparison layer, where `_safe_delta_pct(-1.0, 850.0)` returned -85,100% and the table coloured it as an 85,100% improvement; a zero baseline returned 0.0, reporting an unbounded regression as "no change". Both are now `None`, rendered `n/a`.
 - **The comparison summary averaged percentages.** 100->50 paired with 50->100 is no net change, but the mean of -50% and +100% is +25%, rendered green. Now a ratio of totals, with unusable rows counted and disclosed.
