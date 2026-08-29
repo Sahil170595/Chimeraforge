@@ -78,10 +78,30 @@ class TestMcpTools:
         assert "hint" in r
 
     def test_plan_empty_reports_why(self):
+        """The no-fit branch returns the SAME envelope as the success branch.
+
+        It used to return {candidates, why_nothing_fit} against the success
+        path's {recommended, alternatives}, so no client could write one parser
+        and an LLM would confabulate whichever branch it had not been shown.
+        """
         r = plan_deployment(hardware="RTX 4090 24GB", model_size="8b", budget_usd_month=0.0001)
         assert r["ok"]
-        assert r["candidates"] == []
+        assert r["recommended"] is None
+        assert r["alternatives"] == []
+        assert r["total_evaluated"] == 0
         assert r["why_nothing_fit"]
+        assert isinstance(r["why_nothing_fit"], list), (
+            "always a list -- it used to be the bare string 'no candidates'"
+        )
+
+    def test_both_outcomes_share_one_envelope(self):
+        feasible = plan_deployment(
+            hardware="RTX 4090 24GB", model_size="8b", request_rate=2.0, budget_usd_month=5000
+        )
+        infeasible = plan_deployment(
+            hardware="RTX 4090 24GB", model_size="8b", budget_usd_month=0.0001
+        )
+        assert sorted(feasible) == sorted(infeasible)
 
     def test_resolve_model_offline(self):
         r = resolve_model("llama3.1-8b", allow_network=False)

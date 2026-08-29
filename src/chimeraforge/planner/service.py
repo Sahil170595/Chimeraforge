@@ -15,6 +15,7 @@ from chimeraforge.planner.constants import (
     DEFAULT_ELECTRICITY_RATE,
     DEFAULT_KV_QUANT,
     DEFAULT_LORA_TARGET,
+    KV_QUANT_BYTES,
 )
 from chimeraforge.planner.engine import (
     Candidate,
@@ -35,6 +36,67 @@ class PlanResult:
     specs: dict[str, ModelSpec] = field(default_factory=dict)
     trace: list[tuple[str, str, str, str]] = field(default_factory=list)
     frontier: list[Candidate] | None = None
+
+
+def validate_plan_inputs(
+    *,
+    request_rate: float,
+    avg_tokens: int,
+    reasoning_tokens: int,
+    prompt_tokens: int,
+    prefix_cache_hit_rate: float,
+    duty_cycle: float,
+    gpu_price_multiplier: float,
+    host_bandwidth_gbps: float | None,
+    ttft_slo: float | None,
+    tpot_slo: float | None,
+    electricity_rate: float,
+    kv_quant: str,
+    latency_slo: float,
+    context_length: int,
+) -> None:
+    """Reject impossible inputs, raising ValueError with an actionable message.
+
+    Deliberately NOT called by ``run_plan``. The engine clamps out-of-range
+    values on purpose so that direct library callers cannot produce nonsense --
+    ``tests/test_prefix_cache.py`` and ``tests/test_cost_realism.py`` pin that
+    behaviour. This is the check the *user-facing entry points* apply first, so a
+    typo is rejected rather than quietly rounded into something plausible.
+
+    The CLI already had its own copy; the MCP tool had none, so ``kv_quant="q3"``
+    escaped as an uncaught ``KeyError`` and ``request_rate=-1.0`` returned
+    ``ok: true`` with a plan for negative traffic. Shared here so the two surfaces
+    cannot drift, and the one an LLM drives is not the unguarded one.
+    """
+    checks: list[tuple[bool, str]] = [
+        (request_rate <= 0, "request_rate must be positive"),
+        (avg_tokens <= 0, "avg_output_tokens must be positive"),
+        (reasoning_tokens < 0, "reasoning_tokens must be non-negative"),
+        (prompt_tokens <= 0, "prompt_tokens must be positive"),
+        (
+            not 0.0 <= prefix_cache_hit_rate <= 1.0,
+            "prefix_cache_hit_rate must be between 0.0 and 1.0",
+        ),
+        (
+            not 0.0 < duty_cycle <= 1.0,
+            "duty_cycle must be greater than 0.0 and at most 1.0",
+        ),
+        (gpu_price_multiplier <= 0, "gpu_price_multiplier must be positive"),
+        (
+            host_bandwidth_gbps is not None and host_bandwidth_gbps <= 0,
+            "host_bandwidth_gbps must be positive",
+        ),
+        (ttft_slo is not None and ttft_slo <= 0, "ttft_slo must be positive"),
+        (tpot_slo is not None and tpot_slo <= 0, "tpot_slo must be positive"),
+        (electricity_rate < 0, "electricity_rate must be non-negative"),
+        (latency_slo <= 0, "latency_slo must be positive"),
+        (context_length <= 0, "context_length must be positive"),
+    ]
+    for failed, message in checks:
+        if failed:
+            raise ValueError(message)
+    if str(kv_quant).lower() not in KV_QUANT_BYTES:
+        raise ValueError(f"kv_quant must be one of: {', '.join(KV_QUANT_BYTES)}")
 
 
 def run_plan(

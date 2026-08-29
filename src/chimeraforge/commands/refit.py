@@ -6,6 +6,9 @@ import typer
 from rich.console import Console
 
 console = Console()
+# Diagnostics here so `--json` stdout stays exactly one document. A caller that
+# must strip lines before parsing does not have a contract.
+err_console = Console(stderr=True)
 
 
 def refit(
@@ -68,26 +71,26 @@ def refit(
     if bench_dir:
         d = Path(bench_dir)
         if not d.is_dir():
-            console.print(f"[red]Error:[/] --bench-dir '{bench_dir}' is not a directory.")
+            err_console.print(f"[red]Error:[/] --bench-dir '{bench_dir}' is not a directory.")
             raise typer.Exit(code=1)
         paths.extend(sorted(d.glob("*.json")))
     if bench_files:
         for f in bench_files.split(","):
             p = Path(f.strip())
             if not p.is_file():
-                console.print(f"[red]Error:[/] bench file '{f.strip()}' not found.")
+                err_console.print(f"[red]Error:[/] bench file '{f.strip()}' not found.")
                 raise typer.Exit(code=1)
             paths.append(p)
 
     if not paths:
-        console.print("[red]Error:[/] provide --bench-dir or --bench-files.")
+        err_console.print("[red]Error:[/] provide --bench-dir or --bench-files.")
         raise typer.Exit(code=1)
 
     base_path = Path(base_models) if base_models else None
     try:
         merged, summary = refit_from_bench(paths, base_path)
     except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
-        console.print(f"[red]Error:[/] failed to read bench file(s): {exc}")
+        err_console.print(f"[red]Error:[/] failed to read bench file(s): {exc}")
         raise typer.Exit(code=1)
 
     # Determine output path
@@ -120,7 +123,7 @@ def refit(
                 console.print(format_validation_json(vresult), highlight=False, soft_wrap=True)
             else:
                 format_validation_table(vresult, console)
-                console.print("[red]Validation failed -- refit NOT saved.[/]")
+                err_console.print("[red]Validation failed -- refit NOT saved.[/]")
             raise typer.Exit(code=1)
 
     saved = save_fitted_models(merged, out)
@@ -146,6 +149,9 @@ def refit(
         from chimeraforge.refit.validator import format_validation_json, format_validation_table
 
         if output_json:
-            console.print(format_validation_json(vresult), highlight=False, soft_wrap=True)
+            # stderr: the summary above is already the one stdout document, and
+            # emitting this there produced two concatenated JSON objects that no
+            # parser accepts.
+            err_console.print(format_validation_json(vresult), highlight=False, soft_wrap=True)
         else:
             format_validation_table(vresult, console)

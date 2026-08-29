@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`--json` payloads were printed through Rich's markup parser.** Square brackets are style tags to Rich, so a model id containing them had text silently deleted (`org/x[bold]y-7b` -> `org/xy-7b`), produced invalid JSON escapes, or raised `MarkupError` -- on the one output whose entire contract is being valid JSON. Ids arrive from the HF Hub and from MCP callers, not just a keyboard.
+- **The MCP tool validated almost nothing.** `kv_quant="q3"` escaped as an uncaught `KeyError`, `request_rate=-1.0` returned `ok: true` with a plan for negative traffic, and `duty_cycle=0.0` was silently rewritten to 1.0. Validation now lives in `planner/service.py` and is applied by both entry points, so the surface an LLM drives is no longer the unguarded one. It is deliberately *not* wired into `run_plan`: the engine clamps on purpose for direct library callers, and that contract is pinned by tests.
+- **The MCP plan tool returned two disjoint schemas** -- `{recommended, alternatives}` on success against `{candidates, why_nothing_fit}` on failure -- so no client could write one parser. Now a single envelope with `recommended: null`, and `why_nothing_fit` is always a list rather than sometimes the bare string "no candidates".
+- **The MCP payload omitted the duty-cycle-corrected cost.** At `duty_cycle=0.3` it reported $0.0347/1M while the effective figure was $0.217 -- 6.3x out, and the effective one is what people budget against.
+- **`--tp 1_0` was accepted as 10.** Bare `int()` takes Python numeric underscores, so a typo silently became a different shard degree.
+- **`refit --json --validate` emitted two concatenated JSON documents**, and several commands wrote error text to stdout in `--json` mode. Diagnostics now go to stderr; stdout stays one document.
+- **A malformed workload profile raised a bare `KeyError`** through the CLI's handler as a traceback. Now a `WorkloadError`. A field with no provenance also defaulted to `estimated`, claiming more than the file said; it is now `unknown`.
+- **`validate --measurements X --ollama-url Y` silently ignored the URL** and scored the stale file while the operator believed a fresh benchmark had run. Now refused, and checked before any file is read.
+
 ## [0.30.4] - 2026-08-28
 
 ### Fixed

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json as json_mod
+import re
 from pathlib import Path
 
 import typer
@@ -27,6 +28,8 @@ _PROFILE_FLAG = {
     "workload_cv2": "workload",
     "prefix_cache_hit_rate": "prefix_cache_hit_rate",
 }
+
+_DIGITS = re.compile(r"\d+")
 
 console = Console()
 # Diagnostics go here so `--json` output on stdout stays exactly one document. A caller
@@ -389,7 +392,9 @@ def plan(
         if output_json:
             import json as _json
 
-            console.print(_json.dumps({"error": msg}), highlight=False, soft_wrap=True)
+            console.print(
+                _json.dumps({"error": msg}), highlight=False, soft_wrap=True, markup=False
+            )
         else:
             console.print(f"[red]Error:[/] {msg}")
         raise typer.Exit(code=1)
@@ -423,6 +428,10 @@ def plan(
         raw = raw.strip().lower()
         if raw == "auto":
             return None
+        # Not bare int(): Python accepts numeric underscores, so "1_0" parsed as
+        # 10 and a typo silently became a ten-way shard.
+        if not _DIGITS.fullmatch(raw):
+            _fail(f"{flag} must be a positive integer or 'auto'.")
         try:
             val = int(raw)
         except ValueError:
@@ -702,7 +711,13 @@ def plan(
             if fleet:
                 wrapped["fleet"] = fleet_plan.to_dict() if fleet_plan else None
             payload = json_mod.dumps(wrapped, indent=2)
-        console.print(payload, highlight=False, soft_wrap=True)
+        # markup=False is load-bearing, not cosmetic. Rich parses square brackets
+        # as style tags, so a model id containing them had text silently deleted
+        # ("org/x[bold]y-7b" -> "org/xy-7b"), emitted invalid JSON escapes, or
+        # raised MarkupError -- on a payload whose whole contract is being valid
+        # JSON. Ids reach here from the HF Hub and from MCP callers, not just a
+        # keyboard.
+        console.print(payload, highlight=False, soft_wrap=True, markup=False)
     elif pareto:
         format_pareto(frontier, hardware)
     else:
