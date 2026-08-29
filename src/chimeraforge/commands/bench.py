@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import typer
+
+from chimeraforge.planner.constants import QUANT_LEVELS
 from rich.console import Console
 
 console = Console()
@@ -30,7 +32,12 @@ def bench(
     all_quants: bool = typer.Option(
         False,
         "--all-quants",
-        help="Sweep all 7 quantization levels.",
+        help=(
+            f"Sweep all {len(QUANT_LEVELS)} quantization levels "
+            f"({', '.join(QUANT_LEVELS)}). Note: no backend accepts a per-request "
+            f"quantization, so each row is labelled but not applied -- see the "
+            f"warning on every swept result."
+        ),
     ),
     workload: str = typer.Option(
         "single",

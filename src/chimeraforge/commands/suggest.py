@@ -29,7 +29,7 @@ def suggest(
         "ollama",
         "--source",
         help="Discovery source(s), comma-separated: ollama, hf, catalog. "
-        "'catalog' uses the offline curated set (run `chimeraforge catalog build` first).",
+        "'catalog' uses the offline curated set (run `chimeraforge catalog --build` first).",
     ),
     hf_limit: int = typer.Option(
         8, "--hf-limit", help="Max top-downloaded HF models to consider (network heavy)."
@@ -92,7 +92,7 @@ def suggest(
         specs.update(load_catalog())
         if not specs and sources == ["catalog"]:
             console.print(
-                "[yellow]Catalog is empty.[/] Run [bold]chimeraforge catalog build[/] first."
+                "[yellow]Catalog is empty.[/] Run [bold]chimeraforge catalog --build[/] first."
             )
             raise typer.Exit(code=1)
 

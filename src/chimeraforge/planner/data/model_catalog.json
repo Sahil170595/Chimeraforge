@@ -1,5 +1,5 @@
 {
-  "_comment": "Curated seed of popular, openly-licensed, publicly-ungated text-generation models spanning a size ladder (0.36B-14B) and several families. `chimeraforge catalog build` resolves these to real specs (HF config.json, tokenless) and caches them so `suggest --source catalog` works offline. Ids route by shape: org/name -> HF, colon-tag -> Ollama. Gated repos (Gemma, Llama) are deliberately excluded so a tokenless build never 401s.",
+  "_comment": "Curated seed of popular, openly-licensed, publicly-ungated text-generation models spanning a size ladder (0.36B-14B) and several families. `chimeraforge catalog --build` resolves these to real specs (HF config.json, tokenless) and caches them so `suggest --source catalog` works offline. Ids route by shape: org/name -> HF, colon-tag -> Ollama. Gated repos (Gemma, Llama) are deliberately excluded so a tokenless build never 401s.",
   "models": [
     "Qwen/Qwen2.5-0.5B-Instruct",
     "Qwen/Qwen2.5-1.5B-Instruct",

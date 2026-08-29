@@ -432,7 +432,7 @@ def suggest_models(
             "models": [],
             "hint": (
                 "no models to rank. For source='catalog' the user must run "
-                "`chimeraforge catalog build` once; for 'ollama' the daemon must be "
+                "`chimeraforge catalog --build` once; for 'ollama' the daemon must be "
                 "running with models installed."
             ),
         }
