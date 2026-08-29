@@ -124,11 +124,29 @@ class TestDerateIsBandwidthDriven:
         c = _most_offloaded(_plan(allow_offload=True, host_bandwidth_gbps=48.0))
         assert c.host_bandwidth_gbps == 48.0
 
-    def test_defaults_to_the_gpus_pcie_figure(self):
-        from chimeraforge.planner.hardware import GPU_DB
+    def test_defaults_to_the_host_link_not_the_tp_fabric(self):
+        """`GPUSpec.interconnect_gbps` is the tensor-parallel GPU-to-GPU link --
+        NVLink on datacenter parts. It is not the path to host DRAM, and using an
+        H100's 900 GB/s NVLink as one overstated offloaded decode by more than an
+        order of magnitude on exactly the configs where offload is the only way
+        to fit. The default is now a PCIe host-link constant.
+        """
+        from chimeraforge.planner.constants import DEFAULT_HOST_LINK_GBPS
 
         c = _most_offloaded(_plan(allow_offload=True))
-        assert c.host_bandwidth_gbps == GPU_DB["RTX 4060 8GB"].interconnect_gbps
+        assert c.host_bandwidth_gbps == DEFAULT_HOST_LINK_GBPS
+
+    def test_a_datacenter_nvlink_figure_is_never_used_as_the_host_link(self):
+        from chimeraforge.planner.constants import DEFAULT_HOST_LINK_GBPS
+        from chimeraforge.planner.hardware import GPU_DB
+
+        # The failure this prevents: 900, 600 or 1800 GB/s standing in for ~32.
+        for name in ("H100 80GB", "A100 80GB", "B200 180GB"):
+            assert GPU_DB[name].interconnect_gbps > DEFAULT_HOST_LINK_GBPS * 10
+
+    def test_an_explicit_host_bandwidth_still_wins(self):
+        c = _most_offloaded(_plan(allow_offload=True, host_bandwidth_gbps=64.0))
+        assert c.host_bandwidth_gbps == 64.0
 
 
 class TestItStillRefusesWhenOffloadCannotHelp:

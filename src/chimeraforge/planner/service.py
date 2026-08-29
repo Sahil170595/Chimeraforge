@@ -143,6 +143,15 @@ def run_plan(
     ``model_size``. Raises ``ResolverError`` if an id can't be resolved,
     ``FileNotFoundError`` / ``ValueError`` for a bad ``models_path``.
     """
+    # Normalise the closed-set inputs before anything consumes them. Validation
+    # lowercased only for its membership test and then forwarded the raw string,
+    # so `kv_quant="Q4"` passed the check and then missed KV_QUANT_BYTES,
+    # silently producing the FP16 plan -- a different VRAM figure with no "KV
+    # cache quantized" warning. The CLI lowercased first; the MCP path did not,
+    # so the two surfaces disagreed on the same input.
+    if isinstance(kv_quant, str):
+        kv_quant = kv_quant.lower()
+
     planner_models = load_models(models_path) if models_path else load_effective_models()
 
     specs: dict[str, ModelSpec] = {}

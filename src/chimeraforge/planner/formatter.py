@@ -17,6 +17,26 @@ from chimeraforge.planner.hardware import GPU_DB
 # Marks that survive being skim-read, matching brief.PROVENANCE_MARK.
 PROVENANCE_MARKS = {"measured": "", "derived": "", "extrapolated": "~", "estimated": "~"}
 
+
+def _finite(obj):
+    """Replace non-finite floats with None so the payload is real JSON.
+
+    `cost_per_1m_tok_effective` is inf whenever throughput is zero, and CPython's
+    json.dumps emits the bare token `Infinity` -- a CPython extension, not RFC
+    8259. Python clients tolerate it; JSON.parse in a JS/TS MCP host throws and
+    loses the whole tool result, not just the field.
+    """
+    import math
+
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _finite(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_finite(v) for v in obj]
+    return obj
+
+
 console = Console()
 
 
@@ -204,7 +224,7 @@ def format_recommendation(
 
 def format_json(candidates: list[Candidate]) -> str:
     """Format candidates as JSON for programmatic consumption."""
-    return json.dumps([asdict(c) for c in candidates], indent=2)
+    return json.dumps(_finite([asdict(c) for c in candidates]), indent=2)
 
 
 def format_launch(launch) -> None:
@@ -302,12 +322,14 @@ def format_suggestions_json(
 ) -> str:
     """Format ranked suggestions as JSON."""
     return json.dumps(
-        {
-            "considered": considered,
-            "fit": len(ranked),
-            "suggestions": [asdict(c) for c in ranked],
-            "unresolved": [{"id": i, "error": m} for i, m in (errors or [])],
-        },
+        _finite(
+            {
+                "considered": considered,
+                "fit": len(ranked),
+                "suggestions": [asdict(c) for c in ranked],
+                "unresolved": [{"id": i, "error": m} for i, m in (errors or [])],
+            }
+        ),
         indent=2,
     )
 
@@ -369,7 +391,7 @@ def format_pareto(frontier: list[Candidate], hardware: str) -> None:
 
 def format_pareto_json(frontier: list[Candidate]) -> str:
     """Pareto frontier as JSON."""
-    return json.dumps([asdict(c) for c in frontier], indent=2)
+    return json.dumps(_finite([asdict(c) for c in frontier]), indent=2)
 
 
 def print_hardware_table() -> None:

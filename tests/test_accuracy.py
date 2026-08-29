@@ -21,7 +21,11 @@ class TestThroughputReproducesMeasured:
 
     @pytest.mark.parametrize(
         "model,expected",
-        [("llama3.2-1b", 146.33), ("llama3.2-3b", 95.86), ("qwen2.5-1.5b", 139.61)],
+        # llama3.2-3b is deliberately absent: its bundled ollama FP16 row (95.86
+        # tok/s) implies 142.5% of the reference card's 432 GB/s, which no decode
+        # loop can reach, so the prediction is clamped to the bandwidth ceiling and
+        # cannot reproduce the row. See TestBundledCorpusIsPhysicallyPossible.
+        [("llama3.2-1b", 146.33), ("qwen2.5-1.5b", 139.61)],
     )
     def test_ollama_fp16_lookup(self, bundled_models, model, expected):
         tps = bundled_models.throughput.predict(model, "ollama", "FP16", REF_GPU)

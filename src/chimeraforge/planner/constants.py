@@ -6,11 +6,26 @@ Extracted from TR133 research. No repo-specific paths or imports.
 from __future__ import annotations
 
 # Canonical search ladder for the planner's quant sweep (highest precision first).
-QUANT_LEVELS = ["FP16", "FP8", "Q8_0", "Q6_K", "Q5_K_M", "AWQ", "GPTQ", "Q4_K_M", "Q3_K_S", "Q2_K"]
+# Ordered by MEASURED width, descending. Q8_0 is 8.5 bpw (a 34-byte block per 32
+# weights) so it is wider than FP8's exact 8.0, and Q4_K_M's 4.90 is wider than
+# a group-128 W4A16's ~4.5 -- under the old approximations both pairs appeared
+# to be the other way round.
+QUANT_LEVELS = ["FP16", "Q8_0", "FP8", "Q6_K", "Q5_K_M", "Q4_K_M", "AWQ", "GPTQ", "Q3_K_S", "Q2_K"]
 
-# Approximate effective bits-per-weight (incl. GGUF block/scale overhead). Broader
-# than QUANT_LEVELS so a model's *native* quant (e.g. an Ollama `q4_0`/`IQ4_XS`
-# tag) resolves to a real VRAM footprint instead of silently defaulting to FP16.
+# Effective bits-per-weight, INCLUDING block scales and the mixed-precision
+# tensor promotions the k-quants apply. Broader than QUANT_LEVELS so a model's
+# *native* quant (e.g. an Ollama `q4_0`/`IQ4_XS` tag) resolves to a real VRAM
+# footprint instead of silently defaulting to FP16.
+#
+# Source: measured from bartowski/Meta-Llama-3-8B-Instruct-GGUF (HF API,
+# ?blobs=true) on 2026-08-29 as file_bytes * 8 / 8.03e9. The previous values
+# claimed to include block overhead and did not: Q8_0 was 8.0 when the llama.cpp
+# block is 34 bytes per 32 weights (exactly 8.5), and the _K_M variants promote
+# token_embd/output to a wider type, which is why Q4_K_M measures 4.90 and not
+# 4.5. Every entry was understated, so VRAM -- Gate 1 -- was too, by 6% at the
+# common quants and 21% at Q2_K: the planner said a model fit a card it would
+# OOM on. Values are Llama-architecture 8B; expect a few percent by architecture.
+# Regenerate with scripts/build_quant_bpw.py.
 QUANT_BPW: dict[str, float] = {
     "FP32": 32.0,
     "FP16": 16.0,
@@ -21,28 +36,28 @@ QUANT_BPW: dict[str, float] = {
     # arithmetic as a 4-bit GGUF k-quant, arrived at independently.
     "AWQ": 4.5,
     "GPTQ": 4.5,
-    "Q8_0": 8.0,
-    "Q6_K": 6.5,
-    "Q5_K_M": 5.5,
-    "Q5_K_S": 5.4,
+    "Q8_0": 8.5,  # exact: llama.cpp block is 2-byte scale + 32 int8 = 34B/32w
+    "Q6_K": 6.57,  # measured 6.571
+    "Q5_K_M": 5.71,  # measured 5.712
+    "Q5_K_S": 5.58,  # measured 5.578
     "Q5_1": 6.0,
     "Q5_0": 5.5,
-    "Q4_K_M": 4.5,
-    "Q4_K_S": 4.4,
+    "Q4_K_M": 4.9,  # measured 4.902
+    "Q4_K_S": 4.68,  # measured 4.675
     "Q4_1": 5.0,
     "Q4_0": 4.5,
-    "Q3_K_L": 4.3,
-    "Q3_K_M": 3.9,
-    "Q3_K_S": 3.5,
-    "Q2_K": 2.5,
+    "Q3_K_L": 4.31,  # measured 4.306
+    "Q3_K_M": 4.0,  # measured 4.004
+    "Q3_K_S": 3.65,  # measured 3.651
+    "Q2_K": 3.17,  # measured 3.167
     "Q2_K_S": 2.3,
-    "IQ4_NL": 4.5,
-    "IQ4_XS": 4.25,
-    "IQ3_S": 3.4,
-    "IQ3_XXS": 3.06,
-    "IQ2_M": 2.7,
-    "IQ2_XXS": 2.06,
-    "IQ1_S": 1.56,
+    "IQ4_NL": 4.66,  # measured 4.661
+    "IQ4_XS": 4.43,  # measured 4.431
+    "IQ3_S": 3.67,  # measured 3.669
+    "IQ3_XXS": 3.26,  # measured 3.263
+    "IQ2_M": 2.94,  # measured 2.937
+    "IQ2_XXS": 2.39,  # measured 2.390
+    "IQ1_S": 2.01,  # measured 2.012
 }
 
 # Supported serving backends
@@ -164,6 +179,14 @@ ACT_DTYPE_BYTES = 2  # activations stay FP16 for the all-reduce, regardless of w
 # hits peak; PCIe contends with the host root complex). A calibration constant, not
 # a datasheet figure -- the `measure` path can refine it. Literature gives no clean
 # %-of-peak number, so this is deliberately conservative.
+# The GPU's link to HOST DRAM, for CPU offload. PCIe 4.0 x16 is 31.5 GB/s per
+# direction; weight streaming is unidirectional, so the aggregate figure does
+# not apply. This is deliberately NOT GPUSpec.interconnect_gbps, which is the
+# tensor-parallel GPU-to-GPU fabric -- using an H100's 900 GB/s NVLink as its
+# path to system memory overstated offloaded decode by more than an order of
+# magnitude, on the exact configs where offload is the only way to fit.
+DEFAULT_HOST_LINK_GBPS = 32.0
+
 INTERCONNECT_EFFICIENCY = 0.75
 # GPUs inside one non-blocking NVLink domain (HGX baseboard). TP beyond this crosses
 # a slower node boundary and collapses; Blackwell GB200 NVL72 extends it to 72.

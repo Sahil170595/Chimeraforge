@@ -78,15 +78,17 @@ class TestQuantBitsPerWeightArePinned:
     @pytest.mark.parametrize(
         ("quant", "bpw"),
         [
+            # Measured from real GGUF artifacts, not approximated. See the
+            # provenance block above QUANT_BPW.
             ("FP32", 32.0),
             ("FP16", 16.0),
             ("FP8", 8.0),
-            ("Q8_0", 8.0),
-            ("Q6_K", 6.5),
-            ("Q5_K_M", 5.5),
-            ("Q4_K_M", 4.5),
-            ("Q3_K_S", 3.5),
-            ("Q2_K", 2.5),
+            ("Q8_0", 8.5),
+            ("Q6_K", 6.57),
+            ("Q5_K_M", 5.71),
+            ("Q4_K_M", 4.90),
+            ("Q3_K_S", 3.65),
+            ("Q2_K", 3.17),
         ],
     )
     def test_each_level_is_the_documented_width(self, quant, bpw):
@@ -96,6 +98,26 @@ class TestQuantBitsPerWeightArePinned:
         gguf = ["Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "Q3_K_S", "Q2_K"]
         widths = [QUANT_BPW[q] for q in gguf]
         assert widths == sorted(widths, reverse=True)
+
+    def test_q8_0_is_the_exact_block_width(self):
+        """llama.cpp's Q8_0 block is `{ ggml_half d; int8_t qs[32]; }` -- 34 bytes
+        per 32 weights, exactly 8.5 bpw. The table said 8.0, i.e. it dropped the
+        scale, which is precisely the overhead its own comment claimed to include."""
+        assert QUANT_BPW["Q8_0"] == pytest.approx((2 + 32) * 8 / 32)
+
+    def test_no_quantized_level_is_understated_against_measurement(self):
+        """Every entry used to be low, and all in the same direction -- a
+        systematic bias, not noise, in the term that drives Gate 1."""
+        measured = {
+            "Q8_0": 8.509,
+            "Q6_K": 6.571,
+            "Q5_K_M": 5.712,
+            "Q4_K_M": 4.902,
+            "Q3_K_S": 3.651,
+            "Q2_K": 3.167,
+        }
+        for quant, real in measured.items():
+            assert QUANT_BPW[quant] == pytest.approx(real, abs=0.02), quant
 
 
 class TestCalibrationConstantsArePinned:
@@ -191,3 +213,78 @@ class TestSerialFractionsArePinned:
         assert models.scaling.serial_fractions, "no fitted serial fractions at all"
         for key, value in models.scaling.serial_fractions.items():
             assert 0.0 <= value <= 1.0, f"{key} is not a fraction: {value}"
+
+
+class TestBundledCorpusIsPhysicallyPossible:
+    """Decode streams every weight once per token, so `tok/s <= bandwidth /
+    weight_bytes` is a hard bound at MBU 1.0. A row above it cannot be a
+    measurement of what its key says it is.
+
+    One bundled row is above it: `llama3.2-3b|ollama|FP16` at 95.86 tok/s needs
+    615 GB/s from a 432 GB/s card -- 142.5% of peak. It is kept rather than
+    quietly deleted or relabelled, because the provenance to justify either is
+    not available; predictions are clamped instead, and this test fixes the count
+    at one so the problem cannot grow silently.
+    """
+
+    KNOWN_ANOMALIES = {"llama3.2-3b|ollama|FP16"}
+
+    def _impossible(self):
+        from chimeraforge.planner.constants import MODEL_PARAMS_B, QUANT_BPW
+        from chimeraforge.planner.hardware import REFERENCE_GPU, get_gpu
+        from chimeraforge.planner.models import load_bundled_models
+
+        bw = get_gpu(REFERENCE_GPU).bandwidth_gbps
+        out = {}
+        for key, tps in load_bundled_models().throughput.lookup.items():
+            model, _backend, quant = key.split("|")
+            params = MODEL_PARAMS_B.get(model)
+            if params is None:
+                continue
+            weight_gb = params * QUANT_BPW.get(quant, 16.0) / 8
+            mbu = tps * weight_gb / bw
+            if mbu > 1.0:
+                out[key] = mbu
+        return out
+
+    def test_no_new_row_exceeds_the_memory_bus(self):
+        found = set(self._impossible())
+        new = found - self.KNOWN_ANOMALIES
+        assert not new, f"new physically impossible corpus rows: {sorted(new)}"
+
+    def test_the_known_anomaly_is_still_the_only_one(self):
+        """If this fails because the row was fixed, delete it from
+        KNOWN_ANOMALIES -- do not widen the set to make it pass."""
+        found = self._impossible()
+        assert set(found) == self.KNOWN_ANOMALIES
+        assert found["llama3.2-3b|ollama|FP16"] == pytest.approx(1.425, abs=0.01)
+
+    def test_no_prediction_is_ever_above_the_ceiling(self):
+        """The property that actually protects users, over the whole registry."""
+        from chimeraforge.planner.constants import MODEL_PARAMS_B, QUANT_LEVELS
+        from chimeraforge.planner.models import load_bundled_models
+
+        t = load_bundled_models().throughput
+        for hw in ("RTX 4080 12GB", "RTX 4090 24GB", "H100 80GB", "T4 16GB"):
+            for model, params in MODEL_PARAMS_B.items():
+                for quant in QUANT_LEVELS:
+                    for backend in ("ollama", "vllm", "tgi"):
+                        got = t.predict(model, backend, quant, hw)
+                        ceiling = t.bandwidth_ceiling_tps(params, quant, hw)
+                        assert got <= ceiling * 1.001, (
+                            f"{model}|{backend}|{quant} on {hw}: "
+                            f"{got:.1f} tok/s exceeds the {ceiling:.1f} tok/s bus limit"
+                        )
+
+    def test_the_extrapolated_8b_is_bounded(self):
+        """`plan --model-size 8b` is a documented invocation and llama3.1-8b has
+        no measured row, so it takes the power law -- which has an exponent of
+        0.089 where bandwidth-bound decode needs ~1.0, and returned 59.9 tok/s
+        against a 26.9 tok/s ceiling."""
+        from chimeraforge.planner.models import load_bundled_models
+
+        t = load_bundled_models().throughput
+        got = t.predict("llama3.1-8b", "ollama", "FP16", "RTX 4080 12GB")
+        ceiling = t.bandwidth_ceiling_tps(8.03, "FP16", "RTX 4080 12GB")
+        assert got == pytest.approx(ceiling, rel=0.01)
+        assert got < 30.0, "an 8B at FP16 cannot decode at 59.9 tok/s on a 432 GB/s card"

@@ -201,9 +201,17 @@ class TestEngineUsesTheRightCount:
             _moe_spec(num_experts=None, experts_per_token=None, moe_intermediate_size=None)
         )
         assert moe and dense
-        m, d = moe[0], dense[0]
-        # Every expert is resident either way -> identical VRAM.
-        assert m.vram_gb == pytest.approx(d.vram_gb)
+        # Compare the SAME cell, not the two winners. Comparing winners assumed
+        # both searches pick the same quant, which is not a property of MoE
+        # geometry -- reordering the quant ladder by measured width was enough to
+        # break it, with nothing about VRAM having changed.
+        by_cell = {(c.quant, c.backend): c for c in dense}
+        shared = [c for c in moe if (c.quant, c.backend) in by_cell]
+        assert shared, "no cell in common between the MoE and dense plans"
+        for m in shared:
+            d = by_cell[(m.quant, m.backend)]
+            # Every expert is resident either way -> identical VRAM.
+            assert m.vram_gb == pytest.approx(d.vram_gb), f"{m.quant}/{m.backend}"
         # Only the routed experts are read -> materially faster decode + prefill.
         assert m.throughput_tps > d.throughput_tps * 2
         assert m.ttft_ms < d.ttft_ms
