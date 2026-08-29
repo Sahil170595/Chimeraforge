@@ -186,7 +186,11 @@ class TestOutputEmission:
 class TestActionMetadata:
     @pytest.fixture(scope="class")
     def action(self):
-        yaml = pytest.importorskip("yaml")
+        # Declared in the dev extra, so this guard should not fire in CI. pyyaml
+        # used to arrive only transitively (all -> evaluate -> datasets), so
+        # dropping an unrelated extra would have deleted these five Action
+        # contract tests with a green suite and no signal at all.
+        yaml = pytest.importorskip("yaml", reason="pyyaml is declared in the dev extra")
         return yaml.safe_load(ACTION_YML.read_text(encoding="utf-8"))
 
     def test_is_a_composite_action(self, action):

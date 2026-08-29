@@ -63,9 +63,18 @@ def test_performance_monitor_digest_smoke(monkeypatch):
         pm.aggregator.add_point(MetricPoint("cpu_percent", 1.0, "%"))
 
     pm.capture_snapshot = fake_capture  # type: ignore
-    # Lifecycle: the daemon loop must start and stop cleanly...
+    # Lifecycle: the daemon loop must start and stop cleanly. Asserted, not just
+    # invoked -- reducing start() to `self._running = True` with no thread at all
+    # used to pass this test.
     pm.start()
+    assert pm._running is True
+    thread = pm._thread
+    assert thread is not None and thread.is_alive()
     pm.stop()
+    assert pm._running is False
+    # Hold our own reference: stop() clears pm._thread.
+    thread.join(timeout=5)
+    assert not thread.is_alive(), "the daemon thread outlived stop()"
     # ...then drive capture deterministically so the assertion doesn't race the
     # start/stop of the background thread (which may run fake_capture zero times).
     for _ in range(3):

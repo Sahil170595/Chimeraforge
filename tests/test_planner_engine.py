@@ -763,9 +763,31 @@ class TestQualityTiers:
         tier = bundled_models.quality.quality_tier("llama3.2-3b", "FP16")
         assert tier == "negligible"
 
-    def test_q2_lower_quality(self, bundled_models):
-        tier = bundled_models.quality.quality_tier("llama3.2-3b", "Q2_K")
-        assert tier in ("negligible", "acceptable", "concerning", "unacceptable")
+    def test_q2_tier_is_the_one_the_corpus_actually_records(self, bundled_models):
+        """This asserted the tier was one of the classifier's four values, which is
+        true by construction and pins nothing.
+
+        Three of quality_tier's four branches were covered by no test at all:
+        setting TIERS to {negligible: -1000, acceptable: -2000, concerning: -3000},
+        so every cell reports "negligible", left the whole suite green -- while the
+        registry holds 4 acceptable, 1 concerning and 2 unacceptable cells that
+        would all have flipped silently.
+        """
+        assert bundled_models.quality.quality_tier("llama3.2-3b", "Q2_K") == "negligible"
+
+    def test_every_tier_branch_is_reachable_from_the_registry(self, bundled_models):
+        """Pins the classifier against the corpus rather than against itself: if a
+        threshold moves, the distribution moves with it."""
+        from collections import Counter
+
+        tiers = Counter(
+            bundled_models.quality.quality_tier(*key.split("|"))
+            for key in bundled_models.quality.lookup
+        )
+        assert tiers["negligible"] == 28
+        assert tiers["acceptable"] == 4
+        assert tiers["concerning"] == 1
+        assert tiers["unacceptable"] == 2
 
     def test_quality_values_bounded(self, bundled_models):
         """All quality predictions should be in [0, 1]."""

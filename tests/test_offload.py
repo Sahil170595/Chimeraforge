@@ -11,7 +11,6 @@ measured, and the host link speed stays a scenario input.
 
 from __future__ import annotations
 
-import pytest
 
 from chimeraforge.planner.service import run_plan
 
@@ -58,11 +57,57 @@ class TestItRunsInsteadOfRefusing:
         assert _most_offloaded(_plan(allow_offload=True)).offload_fraction > 0
 
     def test_offloaded_config_is_slower_not_faster(self):
-        # The point of the derate: it runs, and it crawls.
+        """The module's central claim: it runs, and it *crawls*.
+
+        This previously compared against "the same cell in the resident plan",
+        which is empty BY CONSTRUCTION -- offload_fraction > 0 requires the cell
+        not to fit, so it is exactly the cell the resident plan lacks. The
+        `if same_resident:` guard was never entered, making this the only assert
+        in the suite that never executed, and a mis-scaled derate leaving
+        offloaded configs FASTER than resident ones would have passed.
+
+        Compare against the un-derated rate for the same cell instead: that is
+        the quantity the derate is supposed to reduce.
+        """
+        from chimeraforge.planner.models import load_effective_models
+
         c = _most_offloaded(_plan(allow_offload=True))
-        same_resident = [x for x in _plan() if x.quant == c.quant and x.backend == c.backend]
-        if same_resident:
-            assert c.throughput_tps < same_resident[0].throughput_tps
+        assert c.offload_fraction > 0, "precondition: this cell really does offload"
+
+        models = load_effective_models()
+        undermined = models.throughput.predict(c.model, c.backend, c.quant, BASE["hardware"])
+        assert c.throughput_tps < undermined, (
+            f"{c.quant}/{c.backend} offloads {c.offload_fraction:.0%} of its weights "
+            f"but reports {c.throughput_tps:.1f} tok/s against an un-derated "
+            f"{undermined:.1f} -- the derate is not being applied"
+        )
+
+    def test_more_offload_is_strictly_slower(self):
+        """Direction, not just magnitude: the derate must be monotone in the
+        fraction spilled to host RAM.
+
+        A longer context leaves less VRAM for weights, so the same cell offloads
+        progressively more -- which gives a real comparison rather than the
+        vacuous one the previous version of this test relied on.
+        """
+        seen = []
+        for ctx in (2048, 8192, 16384):
+            offloaded = [
+                c
+                for c in _plan(allow_offload=True, context_length=ctx)
+                if c.offload_fraction > 0 and c.quant == "FP16" and c.backend == "ollama"
+            ]
+            assert offloaded, f"expected the FP16/ollama cell to offload at ctx={ctx}"
+            seen.append(max(offloaded, key=lambda c: c.offload_fraction))
+
+        fractions = [c.offload_fraction for c in seen]
+        rates = [c.throughput_tps for c in seen]
+        assert fractions == sorted(fractions), f"offload fraction not monotone: {fractions}"
+        assert rates == sorted(rates, reverse=True), (
+            f"spilling more weights to host RAM did not slow decode: {rates} "
+            f"at fractions {fractions}"
+        )
+        assert rates[0] > rates[-1], "the derate has no effect across the whole range"
 
     def test_fraction_is_a_fraction(self):
         for c in _plan(allow_offload=True):
