@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.8] - 2026-08-28
+
 ### Fixed
 - **Five tests that passed without checking anything.** `test_offload`'s central assertion never executed -- its guard list is empty by construction, so a mis-scaled derate leaving offloaded configs *faster* than resident ones would have passed. Two more checked a value against a re-derivation of itself from the same constants, so mutating `HOURS_PER_MONTH` 720 -> 7200, `POWER_UTILISATION` 0.85 -> 0.10, or `LORA_BYTES_PER_PARAM` 2.0 -> 8.0 each left the whole suite green; all three now fail. One asserted only that a tier was one of the classifier's four values, leaving three of four branches pinned by nothing.
 - **`pytest tests/` now works from a clean checkout.** The documented verify gate failed with `ModuleNotFoundError` unless `PYTHONPATH=src` was set, which hid the breakage from anyone who configured their shell once. Added `pythonpath = ["src"]`.
