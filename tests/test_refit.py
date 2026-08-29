@@ -213,16 +213,36 @@ class TestFitPowerLaw:
         assert a > 0
         assert b > 0
 
-    def test_insufficient_data_returns_defaults(self):
+    def test_insufficient_data_returns_none_not_a_placeholder(self):
+        """This test used to assert the placeholder (100.0, 0.5) was returned.
+
+        That codified a corpus-corrupting bug: merge_fitted_models writes the
+        result when it `is not None`, and a tuple is not None, so one under-
+        determined `measure` run replaced the TR133 fit (a=72.11, b=0.0888) with
+        a=100/b=0.5 -- making a 70B predict 12.0 tok/s instead of 49.5 (-76%) and
+        a 0.5B 141.4 instead of 76.7 (+84%). The summary said power_law_refit:
+        False throughout, so the code already knew no fit had happened.
+        """
         from chimeraforge.refit.fitter import fit_power_law
 
-        throughputs = {
-            "llama3.2-1b|ollama|FP16": 146.0,
-        }
-        a, b = fit_power_law(throughputs)
-        assert (a, b) == (100.0, 0.5)
+        assert fit_power_law({"llama3.2-1b|ollama|FP16": 146.0}) is None
 
-    def test_scipy_unavailable_returns_defaults(self, monkeypatch):
+    def test_an_unfitted_power_law_leaves_the_corpus_coefficients_alone(self):
+        """The property that actually matters: no fit means no write."""
+        from chimeraforge.refit.fitter import merge_fitted_models
+
+        existing = {"throughput": {"size_power_a": 72.11, "size_power_b": 0.0888}}
+        merged = merge_fitted_models(
+            existing,
+            throughput_lookup={},
+            quant_multipliers={},
+            service_times={},
+            power_law=None,
+        )
+        assert merged["throughput"]["size_power_a"] == 72.11
+        assert merged["throughput"]["size_power_b"] == 0.0888
+
+    def test_scipy_unavailable_returns_none(self, monkeypatch):
         from chimeraforge.refit import fitter
 
         # Simulate scipy import failure
@@ -242,8 +262,10 @@ class TestFitPowerLaw:
             "qwen2.5-1.5b|ollama|FP16": 139.0,
             "llama3.2-3b|ollama|FP16": 95.0,
         }
-        a, b = fitter.fit_power_law(throughputs)
-        assert (a, b) == (100.0, 0.5)
+        # Also None rather than the placeholder: writing defaults when scipy is
+        # missing would corrupt the corpus precisely in the environment least
+        # likely to notice.
+        assert fitter.fit_power_law(throughputs) is None
 
 
 # ---------------------------------------------------------------------------

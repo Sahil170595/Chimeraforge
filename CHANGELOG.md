@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **One `measure` run could silently replace the fitted power law with a placeholder.** `fit_power_law` returned `(100.0, 0.5)` when it could not fit, and `merge_fitted_models` writes the result when it `is not None` -- a tuple is not None. The TR133 coefficients (a=72.11, b=0.0888) were overwritten, making a 70B predict **12.0 tok/s instead of 49.5 (-76%)** and a 0.5B **141.4 instead of 76.7 (+84%)**. The summary flag was literally `pl != (100.0, 0.5)`, so the code already knew no fit had happened and reported `power_law_refit: False` while writing the value anyway. Now returns `None`, including on the scipy-unavailable branch, which corrupted the corpus precisely in the environment least likely to notice.
+- **`refit` wrote its output where nothing reads it.** It defaulted to platformdirs' `user_data_dir` while `plan`/`suggest`/MCP read `~/.cache/chimeraforge`, so a successful refit printed "Saved to ...", exited 0, and was completely inert. Both sides now use `measured_corpus_path()`, so `$CHIMERAFORGE_CACHE` moves them together.
+- **`bench --all-quants` produced rows that differ only by noise.** `quant` reaches the result object but never the backend -- no adapter takes a per-request quantization, because a quant is a property of the loaded artifact. Every row of a sweep was the same served model re-run under a different label, including AWQ/GPTQ which Ollama cannot serve, and those rows flow into `refit` and become per-quant corpus keys reported as `measured`. Each row now carries the same disclosure `run_context_sweep` already emits.
+- **`measure` printed a scaling factor the planner does not use as green `(measured)`.** `ScalingModel.predict_eta` has no consumers -- the engine hardcodes `eta = 1.0` deliberately, since replica fan-out is linear. The measurement is real so it stays, but the label now says it is not used by the planner.
+
 ## [0.30.2] - 2026-08-28
 
 ### Changed
 - **The test suite no longer downloads or loads a neural model.** Every test touching the scoring path imported torch, transformers and bert-score and then materialized roberta-large to score two-word strings -- 65s of a 108s suite, and the weight materialization segfaulted intermittently on Windows (`Windows fatal exception: access violation` in `_materialize_copy`), the only place the suite touched native threading. `evaluate` is now stood in for deterministically, so the library path stays wired and exercised in microseconds. **Full suite: 108.19s -> 10.6s, with torch never imported.** No shipped code changed.
 - **The BERTScore and ROUGE-L tests now pin what they claim to.** `test_returns_valid_score` asserted `-0.01 <= score <= 1.01`, which both the real score (1.0) and the missing-dependency sentinel (0.0) satisfy -- it could not tell a working BERTScore from an absent one. And because CI installs `[all,dev]`, `evaluate` was always present there, so the pure-Python LCS fallback inside `compute_rouge_l` was never executed by any test on any machine. Both availability branches are now asserted, the fallback is pinned against hand-derived F1 values, and four mutations to its internals (precision/recall swap, F1 to arithmetic mean, off-by-one recall, wrong rouge type) each fail the suite.
 - **`CLAUDE.md` documented a lint command that does not pass.** Quick Reference said `ruff check src/`, but CI gates on `ruff check src/chimeraforge/`; the documented form also sweeps the ungated legacy `src/python/banterhearts` tree and fails with ~100 pre-existing errors unrelated to any change. Corrected, with the scope explained, and added to the `verify` skill's gate.
-
 ## [0.30.1] - 2026-08-25
 
 ### Fixed
