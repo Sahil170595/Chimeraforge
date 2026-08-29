@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`fitted_models.json` now carries a `_provenance` block** -- `captured_at`, source, method, reference hardware, coverage and limitations. It is the dataset that decides which numbers may say `measured`, and it shipped with none of this while `api_pricing.json` beside it had all of it. Coverage is computed from the file and re-derived by a test, so a drifting claim fails. Recorded plainly: all 23 throughput rows are FP16, the largest model measured is 3.21B, and there are no SGLang rows -- so every quantized number is an FP16 row times a multiplier. No regeneration script was added, because the TR raw artifacts live outside this package and a stub that cannot regenerate anything would be worse than the declared gap.
 
+## [0.30.3] - 2026-08-28
 
 ### Fixed
 - **One `measure` run could silently replace the fitted power law with a placeholder.** `fit_power_law` returned `(100.0, 0.5)` when it could not fit, and `merge_fitted_models` writes the result when it `is not None` -- a tuple is not None. The TR133 coefficients (a=72.11, b=0.0888) were overwritten, making a 70B predict **12.0 tok/s instead of 49.5 (-76%)** and a 0.5B **141.4 instead of 76.7 (+84%)**. The summary flag was literally `pl != (100.0, 0.5)`, so the code already knew no fit had happened and reported `power_law_refit: False` while writing the value anyway. Now returns `None`, including on the scipy-unavailable branch, which corrupted the corpus precisely in the environment least likely to notice.
@@ -21,13 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`bench --all-quants` produced rows that differ only by noise.** `quant` reaches the result object but never the backend -- no adapter takes a per-request quantization, because a quant is a property of the loaded artifact. Every row of a sweep was the same served model re-run under a different label, including AWQ/GPTQ which Ollama cannot serve, and those rows flow into `refit` and become per-quant corpus keys reported as `measured`. Each row now carries the same disclosure `run_context_sweep` already emits.
 - **`measure` printed a scaling factor the planner does not use as green `(measured)`.** `ScalingModel.predict_eta` has no consumers -- the engine hardcodes `eta = 1.0` deliberately, since replica fan-out is linear. The measurement is real so it stays, but the label now says it is not used by the planner.
 
+## [0.30.2] - 2026-08-28
+
+### Changed
+- **The test suite no longer downloads or loads a neural model.** Every test touching the scoring path imported torch, transformers and bert-score and then materialized roberta-large to score two-word strings -- 65s of a 108s suite, and the weight materialization segfaulted intermittently on Windows (`Windows fatal exception: access violation` in `_materialize_copy`), the only place the suite touched native threading. `evaluate` is now stood in for deterministically, so the library path stays wired and exercised in microseconds. **Full suite: 108.19s -> 10.6s, with torch never imported.** No shipped code changed.
+- **The BERTScore and ROUGE-L tests now pin what they claim to.** `test_returns_valid_score` asserted `-0.01 <= score <= 1.01`, which both the real score (1.0) and the missing-dependency sentinel (0.0) satisfy -- it could not tell a working BERTScore from an absent one. And because CI installs `[all,dev]`, `evaluate` was always present there, so the pure-Python LCS fallback inside `compute_rouge_l` was never executed by any test on any machine. Both availability branches are now asserted, the fallback is pinned against hand-derived F1 values, and four mutations to its internals (precision/recall swap, F1 to arithmetic mean, off-by-one recall, wrong rouge type) each fail the suite.
+- **`CLAUDE.md` documented a lint command that does not pass.** Quick Reference said `ruff check src/`, but CI gates on `ruff check src/chimeraforge/`; the documented form also sweeps the ungated legacy `src/python/banterhearts` tree and fails with ~100 pre-existing errors unrelated to any change. Corrected, with the scope explained, and added to the `verify` skill's gate.
+## [0.30.1] - 2026-08-25
 
 ### Fixed
 - **A 405B tag was sized as an 8B model, with quality reported as `measured`.** `resolve_model` short-circuited on a family with exactly one registry model and returned it "regardless of the parsed size" -- the docstring said so, as though it were a feature. So `llama3.1:405b` resolved to `llama3.1-8b`, and the planner returned **params_b 8.03, VRAM 4.55 GB, quality 0.639 (measured)** for a 405-billion-parameter model, because every gate downstream reads the alias's rows. The size was parsed correctly the whole time and then discarded. Only two families have a single member, which is why it survived. A parsed size is now always honoured, and an unresolvable tag is refused with an actionable message rather than answered with a smaller wrong number.
 - **An approximated alias no longer confers `measured` on quality or safety.** Reusing another model's rows for throughput is defensible; quality and safety are properties *of* a model, and reporting another one's as measured attributes a benchmark to weights that never ran.
 - **`measure --quant` is verified against the artifact the backend is actually serving.** The label becomes part of the corpus key, and that key is what `plan` later reports as measured -- so an unchecked label attributed one quantization's rate to another permanently. The served artifact now wins, and the swap is disclosed.
 - **Cached model specs expire.** The spec cache is consulted ahead of the network, so a repo whose `config.json` changed upstream was answered from the stale copy indefinitely with no way to notice. Entries are stamped and expire after `SPEC_CACHE_TTL_DAYS`; entries written before stamping existed are treated as expired rather than trusted.
-
 
 ## [0.30.0] - 2026-08-22
 
@@ -39,7 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - A fifth provenance value, **`extrapolated`**: a real measurement taken on the reference rig and scaled to this GPU by memory bandwidth. It ranks between `measured` and `estimated` -- better grounded than a pure roofline, but not a measurement of the card in hand -- and every such plan states the factor and names the rig.
-
 
 ## [0.29.0] - 2026-08-22
 
@@ -57,7 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - The allocator's capacity quantisation used float floor-division, and `100.0 // 0.05` is 1999 rather than 2000. That shaved a step off every GPU's capacity, forcing a spurious extra unit and quietly inflating the bill with an answer that looked entirely reasonable. Caught by a hand-computed optimum, and pinned by a test.
 
-
 ## [0.28.0] - 2026-08-21
 
 ### Added
@@ -70,7 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A single scrape is not a rate.** `request_rate` is left absent rather than derived by dividing a counter by a process uptime nobody measured.
 - Flag-beats-profile precedence is decided by comparing Click's parameter source **by name**. Typer 0.27 vendors its own Click, so the value is a `typer._click.core.ParameterSource` and an identity test against `click.core.ParameterSource` is False -- which silently made every explicit flag look unset. It passed under Typer 0.25 and failed under 0.27; CI caught it.
 - **An absent field never acquires a default.** It stays a required explicit input to `plan`, so a partial profile cannot smuggle a made-up value in under the profile's `measured` badge. The profile records `captured_at`, source, engine and engine version.
-
 
 ## [0.27.0] - 2026-08-21
 
@@ -86,7 +90,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ollama is not given LoRA flags: llama.cpp merges an adapter into the base weights rather than serving adapters per request, so it gets a note saying so.
 - Adapter paths are a `<adapter-path>` placeholder. The planner does not know where they live, and a command that looks runnable while silently serving the wrong adapter is worse than one that visibly needs filling in.
 
-
 ## [0.26.0] - 2026-08-21
 
 ### Added
@@ -100,7 +103,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `--model` is repeatable, so the brief's reproduction command was handed a list where it expected a string and raised `TypeError` at render time -- after the plan had already run. Found by a test that was passing as a skip.
 
-
 ## [0.25.0] - 2026-08-21
 
 ### Added
@@ -111,7 +113,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API prices are a dated snapshot: `chimeraforge_compare_api` reports the capture date and age in every result and puts STALE in the prose note, not only in a boolean a model may skip over.
 - When nothing fits, the comparison returns `comparable: false` with the rejection reason rather than reporting an API win -- with no feasible fleet there is no self-host cost, and "the API is cheaper" would answer a different question.
 
-
 ## [0.24.0] - 2026-08-21
 
 ### Added
@@ -120,7 +121,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - **W4A16 quality is unscreened and says so.** The TR corpus measures GGUF k-quants; a 4-bit GGUF delta is not evidence about AWQ or GPTQ, which use different calibration and make different errors. Reusing the GGUF number would have been the easy move and would have been wrong, so quality resolves through the FP16-baseline path as `estimated` and every W4A16 plan carries an UNSCREENED warning. VRAM stays exact -- it is arithmetic.
 - Ollama is not offered W4A16: llama.cpp serves GGUF, not AWQ/GPTQ checkpoints.
-
 
 ## [0.23.0] - 2026-08-21
 
@@ -180,7 +180,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   companion test pins the opposite: on a model nobody has measured, unmeasured
   backends agreeing is correct, not a bug.
 
-
 ## [0.22.1] - 2026-08-21
 
 ### Fixed
@@ -202,7 +201,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tools come back. Building proves the image installs; this proves it *serves*.
 - **CI builds the image and probes it**, so a broken Dockerfile fails the build
   rather than the user.
-
 
 ## [0.22.0] - 2026-08-19
 
@@ -238,7 +236,6 @@ so a published audit can be re-derived from its own raw output without a GPU.
 
 - `examples/validation-matrix.json` is a runnable pre-registered example.
 
-
 ## [0.21.0] - 2026-08-18
 
 ### Added
@@ -260,7 +257,6 @@ so a published audit can be re-derived from its own raw output without a GPU.
   not necessarily a broken build.
 - Plan warnings are reproduced in the comment, so an estimate is never presented in
   review as a measurement.
-
 
 ## [0.20.0] - 2026-08-18
 
@@ -291,7 +287,6 @@ so a published audit can be re-derived from its own raw output without a GPU.
 - `SECONDS_PER_MONTH` moved to `constants.py` so a "month" means the same thing in
   the cost model and the API break-even.
 
-
 ## [0.19.0] - 2026-08-18
 
 ### Added
@@ -314,7 +309,6 @@ so a published audit can be re-derived from its own raw output without a GPU.
   that is not there, so the conservative number stands and the warning says so.
 - A fully cached prompt still prefills one token: the newest token runs the stack
   either way, so TTFT never reaches zero.
-
 
 ## [0.18.0] - 2026-08-18
 
@@ -345,7 +339,6 @@ so a published audit can be re-derived from its own raw output without a GPU.
 - Dense MHA/GQA models are unchanged on every path, including bare arch dicts
   passed by library callers and specs cached before 0.18.0.
 
-
 ## [0.17.0] - 2026-08-18
 
 ### Added
@@ -369,7 +362,6 @@ so a published audit can be re-derived from its own raw output without a GPU.
   (different quality tier), so the number cannot be read as apples-to-apples.
 - Prices captured 2026-08-18 from the vendors' own published pages: Together AI
   (hosted open models) and Anthropic.
-
 
 ## [0.16.0] - 2026-08-18
 

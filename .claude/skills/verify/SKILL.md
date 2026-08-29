@@ -12,4 +12,7 @@ A skipped step is reported as skipped, never implied as passing.
 ## Gate
 
 1. `python -m pytest` (CLI + capacity planner tests).
-2. Scene work: `main` autodeploys to chimeraforge.vercel.app — WIP scenes go on a branch, and static gates passing does NOT prove visual correctness; check the rendered scene.
+2. `ruff check src/chimeraforge/` and `ruff format --check src/chimeraforge/`.
+   That scope is deliberate and matches CI. Widening it to `src/` drags in the
+   legacy `src/python/banterhearts` tree, which is not gated and is not clean.
+3. Scene work: `main` autodeploys to chimeraforge.vercel.app — WIP scenes go on a branch, and static gates passing does NOT prove visual correctness; check the rendered scene.

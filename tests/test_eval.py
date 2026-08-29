@@ -20,6 +20,51 @@ import pytest
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def _deterministic_evaluate(monkeypatch):
+    """Stand in for the `evaluate` library across this whole module.
+
+    CI installs `[all,dev]`, so `evaluate` is always importable there, and any
+    test touching the scoring path pulled in torch, transformers and bert-score
+    and then downloaded and materialized roberta-large to score two-word
+    strings. That cost 65s of a 99s suite, and the weight materialization
+    segfaulted intermittently on Windows -- a native crash in a suite that
+    otherwise never touches native threading.
+
+    The stand-in keeps the library path wired and exercised, deterministically
+    and in microseconds. ROUGE delegates to the real pure-Python LCS so scores
+    stay meaningful; BERTScore reuses it as a stand-in, since these tests are
+    about plumbing and aggregation, not about validating BERTScore's semantics.
+
+    Tests that need the library *absent* patch `builtins.__import__`, which runs
+    before this lookup; tests that need different values install their own stub.
+    """
+    import sys
+    import types
+
+    from chimeraforge.eval.metrics import _rouge_l_f1
+
+    class _Rouge:
+        def compute(self, predictions, references, rouge_types):
+            scores = [_rouge_l_f1(p, r) for p, r in zip(predictions, references)]
+            return {"rougeL": sum(scores) / len(scores) if scores else 0.0}
+
+    class _BertScore:
+        def compute(self, predictions, references, lang):
+            return {"f1": [_rouge_l_f1(p, r) for p, r in zip(predictions, references)]}
+
+    def _load(name):
+        if name == "bertscore":
+            return _BertScore()
+        if name == "rouge":
+            return _Rouge()
+        raise ValueError(f"unexpected metric requested: {name}")
+
+    module = types.ModuleType("evaluate")
+    module.load = _load
+    monkeypatch.setitem(sys.modules, "evaluate", module)
+
+
 class TestExactMatch:
     def test_perfect_match(self):
         from chimeraforge.eval.metrics import compute_exact_match
@@ -54,20 +99,84 @@ class TestExactMatch:
 
 
 class TestRougeL:
-    def test_identical_strings(self):
-        from chimeraforge.eval.metrics import compute_rouge_l
+    """`compute_rouge_l` has two implementations -- the `evaluate` library and a
+    pure-Python LCS fallback -- and these tests used to exercise only whichever
+    happened to be installed.
 
-        preds = ["the cat sat on the mat"]
-        refs = ["the cat sat on the mat"]
-        assert compute_rouge_l(preds, refs) == pytest.approx(1.0)
+    CI installs `[all,dev]`, so `evaluate` is always present there and the
+    fallback was never run at all: two implementations under one name, with no
+    test able to say which produced a number or whether they agree. The fallback
+    is now pinned directly against values derived by hand and confirmed equal to
+    the library's, so a divergence fails without importing torch to find out.
+    """
 
-    def test_partial_overlap(self):
-        from chimeraforge.eval.metrics import compute_rouge_l
+    # LCS-based F1, worked through by hand:
+    #   "the cat sat" vs "the cat sat on the mat" -> LCS = 3 tokens.
+    #   precision = 3/3 = 1.0, recall = 3/6 = 0.5
+    #   F1 = 2 * 1.0 * 0.5 / 1.5 = 0.6667
+    # Confirmed equal to evaluate's rougeL on this input.
+    @pytest.mark.parametrize(
+        ("pred", "ref", "expected"),
+        [
+            ("the cat sat on the mat", "the cat sat on the mat", 1.0),
+            ("the cat sat", "the cat sat on the mat", 2 / 3),
+            ("dogs run fast", "the cat sat on the mat", 0.0),
+        ],
+    )
+    def test_fallback_matches_hand_derived_f1(self, pred, ref, expected):
+        from chimeraforge.eval.metrics import _rouge_l_f1
 
-        preds = ["the cat sat"]
-        refs = ["the cat sat on the mat"]
-        score = compute_rouge_l(preds, refs)
-        assert 0.0 < score < 1.0
+        assert _rouge_l_f1(pred, ref) == pytest.approx(expected, abs=1e-4)
+
+    def test_fallback_is_symmetric_in_f1(self):
+        """F1 is symmetric, so swapping prediction and reference cannot change it.
+        A precision/recall mix-up in the fallback would break this."""
+        from chimeraforge.eval.metrics import _rouge_l_f1
+
+        a = _rouge_l_f1("the cat sat", "the cat sat on the mat")
+        b = _rouge_l_f1("the cat sat on the mat", "the cat sat")
+        assert a == pytest.approx(b)
+
+    def test_library_path_is_used_when_available(self, monkeypatch):
+        """Contract of the wiring, without paying ~15s to import torch."""
+        import sys
+        import types
+
+        from chimeraforge.eval import metrics
+
+        seen = {}
+
+        class _Stub:
+            def compute(self, predictions, references, rouge_types):
+                seen["types"] = rouge_types
+                seen["n"] = len(predictions)
+                return {"rougeL": 0.42}
+
+        module = types.ModuleType("evaluate")
+        module.load = lambda name: _Stub()
+        monkeypatch.setitem(sys.modules, "evaluate", module)
+
+        assert metrics.compute_rouge_l(["a b c"], ["a b"]) == pytest.approx(0.42)
+        assert seen["types"] == ["rougeL"]
+
+    def test_falls_back_when_the_library_is_missing(self, monkeypatch):
+        """The fallback must produce the real score, not a sentinel -- this path is
+        what every machine without the `eval` extra actually runs."""
+        import builtins
+
+        from chimeraforge.eval import metrics
+
+        real_import = builtins.__import__
+
+        def _no_evaluate(name, *args, **kwargs):
+            if name == "evaluate":
+                raise ImportError("simulated: evaluate is not installed")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _no_evaluate)
+        assert metrics.compute_rouge_l(["the cat sat"], ["the cat sat on the mat"]) == (
+            pytest.approx(2 / 3, abs=1e-4)
+        )
 
     def test_empty_returns_zero(self):
         from chimeraforge.eval.metrics import compute_rouge_l
@@ -81,17 +190,90 @@ class TestRougeL:
 
 
 class TestBERTScore:
-    def test_returns_valid_score(self):
-        from chimeraforge.eval.metrics import compute_bert_score
+    """These stub `evaluate` rather than scoring for real.
 
-        # If evaluate + bert-score installed, returns actual score;
-        # otherwise warns and returns 0.0.
-        import warnings
+    The previous single test called `compute_bert_score(["hello"], ["hello"])`
+    and asserted `-0.01 <= score <= 1.01`. Both branches satisfy that: the real
+    score is 1.0 and the missing-dependency sentinel is 0.0, so it could not tell
+    a working BERTScore from an absent one -- while downloading and materializing
+    roberta-large to prove it, at 24.1s, a quarter of the whole suite's runtime.
+    That model load is also the only place this suite touches native torch
+    threading, and it segfaulted intermittently on Windows.
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            score = compute_bert_score(["hello"], ["hello"])
-        assert -0.01 <= score <= 1.01  # BERTScore can slightly exceed 1.0 due to FP precision
+    Both branches are now asserted explicitly, and no model is loaded.
+    """
+
+    @staticmethod
+    def _fake_evaluate(monkeypatch, loader):
+        """Inject a stub `evaluate` into sys.modules.
+
+        Importing the real library costs ~17s because it drags in torch and
+        transformers, which is the very thing these tests exist to avoid.
+        `import evaluate` consults sys.modules first, so the stub wins.
+        """
+        import sys
+        import types
+
+        module = types.ModuleType("evaluate")
+        module.load = loader
+        monkeypatch.setitem(sys.modules, "evaluate", module)
+
+    def test_returns_the_mean_f1_across_pairs(self, monkeypatch):
+        from chimeraforge.eval import metrics
+
+        class _Stub:
+            def compute(self, predictions, references, lang):
+                assert lang == "en"
+                assert len(predictions) == len(references)
+                return {"f1": [0.9, 0.7]}
+
+        self._fake_evaluate(monkeypatch, lambda name: _Stub())
+        got = metrics.compute_bert_score(["a", "b"], ["a", "b"])
+        assert got == pytest.approx(0.8)
+
+    def test_pairs_are_truncated_to_the_shorter_list(self, monkeypatch):
+        from chimeraforge.eval import metrics
+
+        seen = {}
+
+        class _Stub:
+            def compute(self, predictions, references, lang):
+                seen["n"] = len(predictions)
+                return {"f1": [1.0] * len(predictions)}
+
+        self._fake_evaluate(monkeypatch, lambda name: _Stub())
+        metrics.compute_bert_score(["a", "b", "c"], ["a"])
+        assert seen["n"] == 1
+
+    def test_missing_dependency_returns_zero_and_warns(self, monkeypatch):
+        """The sentinel the composite keys its reweighting off, so it has to be
+        exactly 0.0 and it has to be audible."""
+        import builtins
+
+        from chimeraforge.eval import metrics
+
+        real_import = builtins.__import__
+
+        def _no_evaluate(name, *args, **kwargs):
+            if name == "evaluate":
+                raise ImportError("simulated: evaluate is not installed")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _no_evaluate)
+        with pytest.warns(UserWarning, match="BERTScore unavailable"):
+            assert metrics.compute_bert_score(["a"], ["a"]) == 0.0
+
+    def test_a_backend_failure_is_caught_not_raised(self, monkeypatch):
+        """OSError/ValueError from a corrupt or partially-downloaded cache must
+        degrade to the sentinel, not take the eval down."""
+        from chimeraforge.eval import metrics
+
+        def _boom(name):
+            raise OSError("simulated: corrupt model cache")
+
+        self._fake_evaluate(monkeypatch, _boom)
+        with pytest.warns(UserWarning, match="BERTScore unavailable"):
+            assert metrics.compute_bert_score(["a"], ["a"]) == 0.0
 
     def test_empty_returns_zero(self):
         from chimeraforge.eval.metrics import compute_bert_score
@@ -231,7 +413,11 @@ class TestEvaluateQuality:
             quant="Q4_K_M",
             fp16_composite=1.0,
         )
-        assert qs.tier in ("negligible", "acceptable", "concerning", "unacceptable")
+        # Not `in (all four values)`, which is true by construction. Identical
+        # prediction and reference against an FP16 baseline of 1.0 is the
+        # no-degradation case, so the tier is pinned to the specific one that means
+        # that -- three of the four branches were otherwise unreachable here.
+        assert qs.tier == "negligible"
 
 
 # ---------------------------------------------------------------------------
