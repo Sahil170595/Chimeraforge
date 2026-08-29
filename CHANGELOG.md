@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.4] - 2026-08-28
+
 ### Fixed
 - **The reference rig was specified as a card it is not, so every cross-GPU number was ~29% off.** `REFERENCE_GPU` is the denominator of every bandwidth extrapolation and of `MBU_DEFAULT`, and it carried 556 GB/s / 285 W -- figures belonging to neither the RTX 4080 **Laptop** the corpus was measured on (192-bit, 432 GB/s, 60-150 W TGP per NVIDIA, fetched 2026-08-22) nor the desktop RTX 4080 (717 GB/s, 320 W). The rig is the laptop part: the README says so, CLAUDE.md pairs it with an i9-13900HX mobile CPU, and no desktop RTX 4080 12GB exists. Corrected to 432 GB/s / 150 W.
 - **`MBU_DEFAULT` re-derived: 0.65 -> 0.84.** It is back-solved from a single calibration point, so correcting the denominator necessarily moves it -- the rig was achieving 84% of its real bandwidth, not 65% of a bandwidth it does not have. **The reference card's own predictions are unchanged** (`0.65 x 556 == 0.84 x 432`, verified to the digit); every other GPU rises ~29%.
