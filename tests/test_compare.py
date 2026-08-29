@@ -152,10 +152,33 @@ class TestComparisonRow:
 
         assert _safe_delta_pct(40.0, 50.0) == pytest.approx(25.0)
 
-    def test_zero_baseline(self):
+    def test_zero_baseline_is_undefined_not_no_change(self):
+        """0 -> 50 is an unbounded regression, not a flat line. Returning 0.0 made
+        the table render it dim as "no change"."""
         from chimeraforge.compare.comparator import _safe_delta_pct
 
-        assert _safe_delta_pct(0.0, 50.0) == 0.0
+        assert _safe_delta_pct(0.0, 50.0) is None
+
+    def test_negative_baseline_is_undefined(self):
+        """The only source of a negative baseline is the -1.0 "not measurable"
+        TTFT sentinel, which produced -85,100% rendered GREEN as an improvement."""
+        from chimeraforge.compare.comparator import _safe_delta_pct
+
+        assert _safe_delta_pct(-1.0, 850.0) is None
+
+    def test_an_undefined_delta_renders_as_na(self):
+        from chimeraforge.compare.comparator import _delta_style
+
+        assert "n/a" in _delta_style(None)
+        assert "%" not in _delta_style(None)
+
+    def test_aggregate_is_a_ratio_of_totals_not_a_mean_of_percentages(self):
+        """100->50 paired with 50->100 is no net change. The mean of -50% and
+        +100% is +25%, which the summary rendered green."""
+        from chimeraforge.compare.comparator import _ratio_delta_pct
+
+        assert _ratio_delta_pct(150.0, 150.0) == pytest.approx(0.0)
+        assert _ratio_delta_pct(0.0, 10.0) is None
 
 
 # ---------------------------------------------------------------------------

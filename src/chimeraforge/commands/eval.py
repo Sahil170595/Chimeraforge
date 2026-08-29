@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json as json_mod
+
 import typer
 from rich.console import Console
 
@@ -78,6 +80,8 @@ def eval_cmd(
             console.print(f"  {name}")
         raise typer.Exit()
 
+    placeholder_predictions = False
+
     if task:
         try:
             t = get_task(task)
@@ -95,6 +99,11 @@ def eval_cmd(
                 raise typer.Exit(code=1)
             preds = pred_path.read_text(encoding="utf-8").strip().splitlines()
         else:
+            # The disclaimer used to be suppressed in --json mode with nothing
+            # else recording it, so a machine-readable result attributed a
+            # composite score and a quality tier to a model that was never
+            # queried. The JSON now carries the fact.
+            placeholder_predictions = True
             if not output_json:
                 console.print(
                     "[yellow]Note:[/] No --predictions file; "
@@ -131,6 +140,28 @@ def eval_cmd(
     if output_json:
         # highlight=False + soft_wrap: clean JSON for `--json | jq`, not broken
         # by Rich syntax highlighting when colour is forced.
-        console.print(format_eval_json([result]), highlight=False, soft_wrap=True)
+        payload = json_mod.loads(format_eval_json([result]))
+        if placeholder_predictions:
+            # The one thing a consumer must not miss: the model was never queried.
+            # Without this, --json emitted a composite and a quality tier
+            # attributed to a model/quant that produced none of it.
+            note = (
+                "predictions are the task prompts themselves -- the model was NOT "
+                "queried. These scores describe the placeholder, not the model."
+            )
+            if isinstance(payload, dict):
+                payload["predictions_source"] = "placeholder"
+                payload.setdefault("warnings", []).append(note)
+            elif isinstance(payload, list):
+                for row in payload:
+                    if isinstance(row, dict):
+                        row["predictions_source"] = "placeholder"
+                        row.setdefault("warnings", []).append(note)
+        console.print(
+            json_mod.dumps(payload, indent=2),
+            highlight=False,
+            soft_wrap=True,
+            markup=False,
+        )
     else:
         format_eval_table([result], console)

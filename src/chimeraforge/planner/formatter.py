@@ -14,6 +14,9 @@ from chimeraforge.planner.constants import MODEL_PARAMS_B, POWER_UTILISATION, QU
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_DB
 
+# Marks that survive being skim-read, matching brief.PROVENANCE_MARK.
+PROVENANCE_MARKS = {"measured": "", "derived": "", "extrapolated": "~", "estimated": "~"}
+
 console = Console()
 
 
@@ -166,8 +169,17 @@ def format_recommendation(
         alt_table.add_column("Quality", justify="right")
         alt_table.add_column("Safety", justify="right")
         alt_table.add_column("p95 ms", justify="right")
+        alt_table.add_column("!", justify="right")
 
         for i, alt in enumerate(alts, 1):
+            # Same ~ / ? marking as format_pareto and format_suggestions. Without
+            # it an unknown quality of 0.5 (the neutral prior) was indistinguishable
+            # from a measured 0.628, and only the WINNER's warnings were shown, so
+            # an alternative carrying "RTSI refusal-instability risk: MODERATE"
+            # displayed nothing at all.
+            prov = alt.provenance or {}
+            q_mark = PROVENANCE_MARKS.get(prov.get("quality", "unknown"), "?")
+            t_mark = PROVENANCE_MARKS.get(prov.get("throughput", "unknown"), "?")
             alt_table.add_row(
                 str(i),
                 alt.model,
@@ -175,11 +187,17 @@ def format_recommendation(
                 alt.backend,
                 str(alt.n_agents),
                 f"${alt.monthly_cost}",
-                str(alt.quality),
+                f"{q_mark}{alt.quality}",
                 f"{alt.safety_refusal}" if alt.safety_refusal is not None else "?",
-                f"{alt.p95_latency_ms}",
+                f"{t_mark}{alt.p95_latency_ms}",
+                f"[yellow]{len(alt.warnings)}[/]" if alt.warnings else "",
             )
         console.print(alt_table)
+        if any(a.warnings for a in alts):
+            console.print(
+                "  [dim]! = warning count on that alternative; `~` estimated, "
+                "`?` unknown. Re-run with --model to see its warnings in full.[/]"
+            )
 
     console.print(f"\n  [dim]{len(candidates)} total viable configurations evaluated[/]\n")
 

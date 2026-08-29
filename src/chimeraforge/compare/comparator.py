@@ -91,9 +91,11 @@ class ComparisonRow:
     candidate_duration: float
     candidate_runs: int
     # Deltas
-    delta_throughput_pct: float
-    delta_ttft_pct: float
-    delta_duration_pct: float
+    # None when the baseline could not support a percentage (zero, or the -1.0
+    # "not measurable" TTFT sentinel). Distinct from 0.0, which means no change.
+    delta_throughput_pct: float | None
+    delta_ttft_pct: float | None
+    delta_duration_pct: float | None
 
 
 # ---------------------------------------------------------------------------
@@ -101,10 +103,24 @@ class ComparisonRow:
 # ---------------------------------------------------------------------------
 
 
-def _safe_delta_pct(base: float, cand: float) -> float:
-    """Percentage change, guarded against division by zero."""
-    if base == 0:
-        return 0.0
+def _ratio_delta_pct(base_total: float, cand_total: float) -> float | None:
+    """Aggregate change as a ratio of totals, which is what a summary should be."""
+    if base_total <= 0:
+        return None
+    return (cand_total - base_total) / base_total * 100
+
+
+def _safe_delta_pct(base: float, cand: float) -> float | None:
+    """Percentage change, or None when the baseline cannot support one.
+
+    Returns None rather than 0.0 for a zero baseline: "no change" is a claim, and
+    0 -> 850ms is an unbounded regression, not a flat line. Also None for a
+    negative baseline, which only arises from the -1.0 "not measurable" TTFT
+    sentinel -- feeding that through produced -85,100%, rendered green as an
+    85,100% improvement.
+    """
+    if base <= 0:
+        return None
     return (cand - base) / base * 100
 
 
@@ -177,8 +193,11 @@ def compare_results(
 # ---------------------------------------------------------------------------
 
 
-def _delta_style(value: float, higher_is_better: bool = True) -> str:
-    """Return a Rich-formatted delta string with colour."""
+def _delta_style(value: float | None, higher_is_better: bool = True) -> str:
+    """Return a Rich-formatted delta string with colour, or n/a when undefined."""
+    if value is None:
+        # Not 0.0%: an undefined comparison must not render as "no change".
+        return "[dim]n/a[/dim]"
     sign = "+" if value >= 0 else ""
     if higher_is_better:
         colour = "green" if value > 0 else ("red" if value < 0 else "dim")
@@ -267,15 +286,28 @@ def format_comparison_summary(rows: list[ComparisonRow], console: Console) -> No
         return
 
     n = len(rows)
-    avg_tp = sum(r.delta_throughput_pct for r in rows) / n
-    avg_dur = sum(r.delta_duration_pct for r in rows) / n
-    improvements = sum(1 for r in rows if r.delta_throughput_pct > 0)
-    regressions = sum(1 for r in rows if r.delta_throughput_pct < 0)
+    # Ratio of totals, not a mean of percentages. Averaging percentages is not a
+    # meaningful aggregate: 100->50 paired with 50->100 is no net change, but the
+    # mean of -50% and +100% reports +25% and renders it green.
+    agg_tp = _ratio_delta_pct(
+        sum(r.baseline_throughput for r in rows), sum(r.candidate_throughput for r in rows)
+    )
+    agg_dur = _ratio_delta_pct(
+        sum(r.baseline_duration for r in rows), sum(r.candidate_duration for r in rows)
+    )
+    improvements = sum(1 for r in rows if (r.delta_throughput_pct or 0) > 0)
+    regressions = sum(1 for r in rows if (r.delta_throughput_pct or 0) < 0)
+    undefined = sum(1 for r in rows if r.delta_throughput_pct is None)
 
     lines = [
         f"Configs compared: {n}",
-        f"Avg throughput delta: {_delta_style(avg_tp)}",
-        f"Avg duration delta:  {_delta_style(avg_dur, higher_is_better=False)}",
+        f"Total throughput delta: {_delta_style(agg_tp)}",
+        f"Total duration delta:  {_delta_style(agg_dur, higher_is_better=False)}",
         f"Improvements: [green]{improvements}[/green]  |  Regressions: [red]{regressions}[/red]",
     ]
+    if undefined:
+        lines.append(
+            f"[yellow]{undefined} config(s) had no comparable baseline[/yellow] "
+            "(zero or unmeasured) and are excluded from the totals."
+        )
     console.print(Panel("\n".join(lines), title="Summary", border_style="blue"))
