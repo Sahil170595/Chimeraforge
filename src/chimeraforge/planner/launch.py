@@ -172,7 +172,7 @@ def _build_ollama(candidate, spec, *, context_length: int, kv_quant: str) -> Lau
             f"(the plan's model came from {_source_of(spec)})."
         )
     notes.extend(_lora_flags(candidate, "ollama")[1])
-    return LaunchCommand(backend="ollama", command=f"ollama run {tag}", env=env, notes=notes)
+    return LaunchCommand(backend="ollama", command=f"ollama run {_q(tag)}", env=env, notes=notes)
 
 
 def _build_tgi(

@@ -93,6 +93,12 @@ HIGH_VARIANCE_CV2 = 4.0
 # own roofline is identical either way (0.65*556 == 0.84*432). What moves is every
 # OTHER GPU: the rig was achieving 84% of its real bandwidth, not 65%, so assuming
 # equal MBU elsewhere predicts ~29% more throughput than the old figure did.
+# The reference rig's memory bandwidth, in decimal GB/s. Kept here so the
+# roofline's no-hardware fallbacks cannot drift from GPU_DB: four of them were
+# left at a stale 556.0 when the reference card was corrected to 432, which
+# combined with MBU_DEFAULT to imply 467 GB/s from a 432 GB/s card.
+REFERENCE_BANDWIDTH_GBPS = 432.0
+
 MBU_DEFAULT = 0.84
 
 # Weights come out of `params_b * bpw / 8` in DECIMAL GB (a billion parameters is

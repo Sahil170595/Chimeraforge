@@ -314,9 +314,6 @@ def from_log(path: str | Path, *, engine: str = "unknown") -> WorkloadProfile:
             "no usable timestamps: expected one of "
             f"{', '.join(LOG_FIELDS['timestamp'])} as epoch seconds or ISO-8601"
         )
-    if profile.workload_cv2 is None and "workload_cv2" not in profile.absent:
-        profile.absent.append("workload_cv2")
-
     # The planner's two-moment wait takes a SERVICE-time CV^2 and hard-codes
     # Poisson arrivals (Ca^2 = 1); WORKLOAD_CV2's presets are documented as output
     # length variability. Feeding it the inter-arrival CV^2 was a category error --
@@ -342,6 +339,13 @@ def from_log(path: str | Path, *, engine: str = "unknown") -> WorkloadProfile:
             f"only {len(decode_vals)} decode lengths (< {MIN_SAMPLES_FOR_VARIANCE}); "
             "a service CV^2 from that few is noise, so it is left absent"
         )
+    # Checked here, AFTER the derivation. Above the derivation it ran against a
+    # value that had not been computed yet, so a log with enough rows to measure
+    # a CV^2 reported it as `measured` and listed it under `absent` at the same
+    # time -- and `plan` then said it was using the value while also saying the
+    # profile had not measured it.
+    if profile.workload_cv2 is None and "workload_cv2" not in profile.absent:
+        profile.absent.append("workload_cv2")
 
     for name, key in (("prompt_tokens", "prompt_tokens"), ("output_tokens", "decode_tokens")):
         vals = [

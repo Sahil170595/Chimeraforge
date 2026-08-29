@@ -51,7 +51,10 @@ class TestLaunchCommandsAreQuoted:
     ids reach here from HF Hub listings and MCP callers -- not only from the
     keyboard of whoever runs it."""
 
-    @pytest.mark.parametrize("backend", ["vllm", "sglang", "tgi"])
+    # ollama was omitted here while ollama was the one backend still interpolating
+    # its tag raw -- and it wins the default plan for most registry queries, so it
+    # is the most-emitted command, not an edge case.
+    @pytest.mark.parametrize("backend", ["vllm", "sglang", "tgi", "ollama"])
     def test_command_substitution_is_neutralised(self, backend):
         cmd = build_launch_command(_cand(backend, "meta/x$(id)"), None, context_length=2048).command
         assert "$(id)" not in cmd or "'meta/x$(id)'" in cmd

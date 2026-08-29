@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from chimeraforge.planner.constants import (
+    REFERENCE_BANDWIDTH_GBPS,
     ACT_DTYPE_BYTES,
     DEFAULT_ARCH,
     DEFAULT_ELECTRICITY_RATE,
@@ -318,7 +319,7 @@ class ThroughputModel:
         if params_b <= 0:
             return 0.1
         gpu = get_gpu(hardware) if hardware else None
-        bandwidth = gpu.bandwidth_gbps if gpu else 556.0  # RTX 4080 reference
+        bandwidth = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         fp16_weight_gb = params_b * 16.0 / 8.0
         base_tps = mbu * bandwidth / fp16_weight_gb
         return max(base_tps * self.quant_multiplier(quant), 0.1)
@@ -348,7 +349,7 @@ class ThroughputModel:
         if batch <= 1 or n1_tps <= 0:
             return max(n1_tps, 0.1)
         gpu = get_gpu(hardware) if hardware else None
-        bandwidth = gpu.bandwidth_gbps if gpu else 556.0
+        bandwidth = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         denom = bandwidth * mbu  # effective GB/s
         weight_eff_gb = denom / n1_tps
         agg = batch * denom / (weight_eff_gb + batch * kv_per_seq_gb)
@@ -388,7 +389,7 @@ class ThroughputModel:
         if n1_tps <= 0:
             return 0.1
         gpu = get_gpu(hardware) if hardware else None
-        bw = gpu.bandwidth_gbps if gpu else 556.0
+        bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         group_bw = tp * bw * mbu  # GB/s aggregate over the group
         weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
         b = max(batch, 1)
@@ -440,7 +441,7 @@ class ThroughputModel:
         if n1_tps <= 0:
             return 0.1
         gpu = get_gpu(hardware) if hardware else None
-        bw = gpu.bandwidth_gbps if gpu else 556.0
+        bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         group_bw = pp * bw * mbu  # GB/s aggregate over the pp stages
         weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
         b = max(batch, 1)
