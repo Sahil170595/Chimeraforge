@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **A prompt longer than the context window produced an impossible plan in silence.** The peak-sequence guard was nested inside `if reasoning_hidden:`, so it only fired when reasoning tokens were non-zero -- and zero is the default. `--prompt-tokens 16000 --context-length 2048` returned a plan with no overflow warning. The overflow does not depend on reasoning at all.
+- **VRAM mixed decimal GB with binary GiB in one sum.** `params_b * bpw / 8` is decimal GB (a billion parameters is 1e9, not 2^30) while `kv_cache_gb` divides by 1024^3, and both were compared against `GPUSpec.vram_gb`, which is GiB. Weights were overstated by **7.37%**, refusing borderline-feasible configs; `max_concurrent_seqs` and the CPU-offload overflow repeated the mix. Fixed at the three capacity sites via a named `GB_TO_GIB`, and deliberately *not* at the roofline, which divides decimal GB/s by decimal GB and is already consistent.
+- **Arrival variance was being fed into the service-time slot.** The two-moment wait takes a service CV^2 and hard-codes Poisson arrivals; `WORKLOAD_CV2`'s presets are documented as output-length variability. But `from_log` derived the *inter-arrival* CV^2, which is ~1 for any Poisson-ish trace -- so real traffic always read as `chatbot` regardless of how uniform its responses were. Now derived from decode lengths, which is the quantity the formula wants. The arrival figure is still reported as `arrival_cv2`, labelled as not used by the planner.
+
 ## [0.30.5] - 2026-08-28
 
 ### Fixed

@@ -10,21 +10,22 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
-    BACKEND_CONTINUOUS_BATCHING,
     BACKENDS,
+    BACKEND_CONTINUOUS_BATCHING,
     DEFAULT_ARCH,
     DEFAULT_ELECTRICITY_RATE,
     DEFAULT_KV_QUANT,
     DEFAULT_LORA_TARGET,
     DEFAULT_PROMPT_TOKENS,
+    GB_TO_GIB,
     HIGH_VARIANCE_CV2,
+    KV_DTYPE_BYTES,
+    KV_QUANT_BYTES,
     LORA_COUNT_UNMODELLED_SPREAD,
     LORA_SOURCE,
     LORA_TARGETS,
     MAX_LORA_ADAPTERS,
     MAX_LORA_RANK,
-    KV_DTYPE_BYTES,
-    KV_QUANT_BYTES,
     MODEL_ARCH,
     MODEL_PARAMS_B,
     NVLINK_DOMAIN_SIZE,
@@ -427,7 +428,10 @@ def enumerate_candidates(
             # visibly running the model, slowly.
             offload_fraction = 0.0
             if vram > hw_vram and allow_offload and host_bw > 0:
-                weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8.0 / max(tp * pp, 1)
+                # GiB: compared against a VRAM overflow, which is GiB.
+                weight_gb = (
+                    params_b * QUANT_BPW.get(quant, 16.0) / 8.0 * GB_TO_GIB / max(tp * pp, 1)
+                )
                 overflow_gb = vram - hw_vram
                 if weight_gb > 0 and overflow_gb < weight_gb:
                     # Only weights spill; KV and activations must stay resident, so a
@@ -777,13 +781,17 @@ def enumerate_candidates(
                         "and latency size on the total; the ratio is your scenario "
                         "input, not a measured property of the model"
                     )
-                    if peak_seq_tokens > context_length:
-                        warnings.append(
-                            f"peak sequence {peak_seq_tokens} tokens (prompt "
-                            f"{prompt_tokens} + decode {decode_tokens}) exceeds "
-                            f"--context-length {context_length}: KV was sized for a "
-                            "window this request cannot finish inside"
-                        )
+                # Un-nested: this was inside `if reasoning_hidden:`, so a prompt
+                # longer than the context window produced a physically impossible
+                # plan in silence whenever reasoning tokens were zero -- which is
+                # the default. The overflow does not depend on reasoning at all.
+                if peak_seq_tokens > context_length:
+                    warnings.append(
+                        f"peak sequence {peak_seq_tokens} tokens (prompt "
+                        f"{prompt_tokens} + decode {decode_tokens}) exceeds "
+                        f"--context-length {context_length}: KV was sized for a "
+                        "window this request cannot finish inside"
+                    )
                 if is_moe:
                     warnings.append(
                         f"MoE: {active_params_b}B of {params_b}B params active per token "

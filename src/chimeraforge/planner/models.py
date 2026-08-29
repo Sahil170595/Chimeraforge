@@ -26,6 +26,7 @@ from chimeraforge.planner.constants import (
     DEFAULT_ARCH,
     DEFAULT_ELECTRICITY_RATE,
     FLOPS_PER_PARAM_PER_TOKEN,
+    GB_TO_GIB,
     HOURS_PER_MONTH,
     INTERCONNECT_EFFICIENCY,
     KV_CACHE_UTILISATION,
@@ -80,7 +81,8 @@ class VRAMModel:
         """
         params = params_b if params_b is not None else MODEL_PARAMS_B.get(model, 3.0)
         bpw = QUANT_BPW.get(quant, 16.0)
-        weight_gb = params * bpw / 8 / (max(tp, 1) * max(pp, 1))
+        # GiB, to match kv_cache_gb and GPUSpec.vram_gb (see GB_TO_GIB).
+        weight_gb = params * bpw / 8 * GB_TO_GIB / (max(tp, 1) * max(pp, 1))
 
         arch = arch or MODEL_ARCH.get(model, DEFAULT_ARCH)
         # KV shards across kv_heads (TP, one-head floor) and across layers (PP).
@@ -159,7 +161,9 @@ class VRAMModel:
         heads, ``pp`` shards weights and KV across layers -- both free room per GPU.
         """
         parallel = max(tp, 1) * max(pp, 1)
-        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8 * self.overhead_factor / parallel
+        weight_gb = (
+            params_b * QUANT_BPW.get(quant, 16.0) / 8 * GB_TO_GIB * self.overhead_factor / parallel
+        )
         act_gb = (
             self.act_coeff * arch["n_layers"] * (context_length / 1024)
         )  # O(ctx), see predict()
