@@ -37,6 +37,7 @@ from chimeraforge.planner.constants import (
     backend_supports_quant,
     quant_family,
 )
+from chimeraforge.planner.hybrid import INFERRED_KINDS
 from chimeraforge.planner.hardware import (
     GPU_DB,
     REFERENCE_GPU,
@@ -791,6 +792,42 @@ def enumerate_candidates(
                             f"model declares a {spec.sliding_window}-token sliding window but "
                             "no layer pattern, so KV is sized at full context (conservative) -- "
                             "the real cache is smaller"
+                        )
+                if spec is not None and spec.attention_layers != spec.n_layers:
+                    warnings.append(
+                        f"hybrid model: only {spec.attention_layers} of {spec.n_layers} layers "
+                        f"cache K/V per token, so KV is "
+                        f"{spec.n_layers / spec.attention_layers:.1f}x smaller than a "
+                        f"same-depth transformer's; the rest hold a fixed recurrent state"
+                    )
+                if spec is not None and spec.recurrent_state_bytes_per_seq > 0:
+                    state_mib = spec.recurrent_state_bytes_per_seq / (1024**2)
+                    if spec.parallel_hybrid:
+                        # Falcon-H1: every layer is BOTH a Mamba mixer and a full
+                        # attention block, so nothing is discounted.
+                        warnings.append(
+                            "parallel hybrid: every layer builds both a Mamba mixer AND a full "
+                            "attention block, so KV is sized on ALL layers (no discount) plus "
+                            f"{state_mib:.0f} MiB/sequence of recurrent state"
+                        )
+                    if spec.recurrent_kind in INFERRED_KINDS:
+                        warnings.append(
+                            f"{spec.recurrent_kind} state size is ESTIMATED: its dims are read "
+                            "from the config but the allocation happens in an external library, "
+                            "so the shape is inferred from the DeltaNet convention. The "
+                            "attention-layer count -- the larger effect -- is exact"
+                        )
+                    if not spec.recurrent_state_dtype_declared:
+                        warnings.append(
+                            "recurrent-state dtype not declared in the config; assumed the "
+                            "model dtype. A config declaring float32 there doubles this term"
+                        )
+                    if best_b > 1:
+                        warnings.append(
+                            f"recurrent state is per SEQUENCE: {state_mib:.0f} MiB x "
+                            f"{best_b} concurrent = "
+                            f"{state_mib * best_b / 1024:.2f} GiB, flat in context "
+                            "length, and it caps concurrency alongside KV"
                         )
                 if reasoning_hidden:
                     warnings.append(
