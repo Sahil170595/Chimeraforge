@@ -86,7 +86,33 @@ def plan(
         "RTX 4080 12GB",
         "--hardware",
         "-hw",
-        help="GPU name from hardware DB.",
+        help="GPU name from the hardware dataset, or 'auto' to read the installed "
+        "card. An unlisted GPU can be planned by supplying --gpu-vram-gb and "
+        "--gpu-bandwidth-gbps.",
+    ),
+    gpu_vram_gb: float = typer.Option(
+        None, "--gpu-vram-gb", help="Override/supply the GPU's VRAM in GB."
+    ),
+    gpu_bandwidth_gbps: float = typer.Option(
+        None,
+        "--gpu-bandwidth-gbps",
+        help="Override/supply memory bandwidth in GB/s. Decode is bandwidth-bound, "
+        "so without this an unlisted card's throughput is unknown, not guessed.",
+    ),
+    gpu_fp16_tflops: float = typer.Option(
+        None, "--gpu-fp16-tflops", help="Override/supply dense FP16 TFLOPS (prefill/TTFT)."
+    ),
+    gpu_tdp_w: float = typer.Option(
+        None, "--gpu-tdp-w", help="Override/supply board TDP in watts (energy, perf/watt)."
+    ),
+    gpu_interconnect_gbps: float = typer.Option(
+        None, "--gpu-interconnect-gbps", help="Override/supply the TP interconnect in GB/s."
+    ),
+    gpu_price_per_hour: float = typer.Option(
+        None,
+        "--gpu-price-per-hour",
+        help="Override/supply $/GPU-hour. Your rate is a rate you were quoted; the "
+        "bundled figures are a dated snapshot on a stated basis.",
     ),
     context_length: int = typer.Option(
         2048,
@@ -408,6 +434,25 @@ def plan(
         _fail("--reasoning-tokens must be non-negative.")
     if not 0.0 <= prefix_cache_hit_rate <= 1.0:
         _fail("--prefix-cache-hit-rate must be between 0.0 and 1.0.")
+    gpu_overrides = {
+        "vram_gb": gpu_vram_gb,
+        "bandwidth_gbps": gpu_bandwidth_gbps,
+        "fp16_tflops": gpu_fp16_tflops,
+        "tdp_watts": gpu_tdp_w,
+        "interconnect_gbps": gpu_interconnect_gbps,
+        "cost_per_hour": gpu_price_per_hour,
+    }
+    for _flag, _value in (
+        ("--gpu-vram-gb", gpu_vram_gb),
+        ("--gpu-bandwidth-gbps", gpu_bandwidth_gbps),
+        ("--gpu-fp16-tflops", gpu_fp16_tflops),
+        ("--gpu-tdp-w", gpu_tdp_w),
+        ("--gpu-interconnect-gbps", gpu_interconnect_gbps),
+        ("--gpu-price-per-hour", gpu_price_per_hour),
+    ):
+        if _value is not None and _value <= 0:
+            _fail(f"{_flag} must be positive.")
+    gpu_overrides = {k: v for k, v in gpu_overrides.items() if v is not None} or None
     if not 0.0 < duty_cycle <= 1.0:
         _fail("--duty-cycle must be greater than 0.0 and at most 1.0.")
     if gpu_price_multiplier <= 0:
@@ -586,6 +631,7 @@ def plan(
             tpot_slo=tpot_slo,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
+            gpu_overrides=gpu_overrides,
             safety_target=safety_target,
             workload_cv2=workload_cv2,
             electricity_rate=electricity_rate,
