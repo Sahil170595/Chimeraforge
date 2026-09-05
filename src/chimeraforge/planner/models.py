@@ -41,6 +41,14 @@ from chimeraforge.planner.constants import (
     PREFILL_MFU,
     QUANT_BPW,
 )
+from chimeraforge.planner.evalstats import (
+    BUNDLED_EVAL_N,
+    BUNDLED_EVAL_SOURCE,
+    BUNDLED_METRIC,
+    OMEGA_SQ_UNIFORM_PAIRED,
+    QualityCell,
+    resolves_to_baseline,
+)
 from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
 
 log = logging.getLogger("chimeraforge.planner.models")
@@ -581,6 +589,14 @@ class QualityModel:
     fp16_baselines: dict[str, float] = field(default_factory=dict)
     quant_deltas: dict[str, float] = field(default_factory=dict)
     fitted: bool = False
+    # Items behind each measured cell, and the metric they were scored against.
+    # Absent from the bundled corpus before P8.4, which is how a 20-item eval
+    # came to report a 4.4pp difference as a fact. `sample_sizes` is keyed the
+    # same way as `lookup`; `default_n` covers the bundled cells, which all come
+    # from the same 20-item run.
+    sample_sizes: dict[str, int] = field(default_factory=dict)
+    default_n: int = BUNDLED_EVAL_N
+    metric: str = BUNDLED_METRIC
 
     TIERS = {
         "negligible": -3.0,
@@ -631,6 +647,34 @@ class QualityModel:
             return fp16
         delta = self.quant_deltas.get(quant, 0.0)
         return max(0.0, min(1.0, fp16 + delta))
+
+    def cell_n(self, model: str, quant: str) -> int:
+        """Items behind this cell. The corpus default when it is not per-cell."""
+        return self.sample_sizes.get(f"{model}|{quant}", self.default_n)
+
+    def cell(self, model: str, quant: str, family: str | None = None) -> QualityCell:
+        """The score with everything needed to know what it can support."""
+        score, _ = self.estimate(model, quant, family)
+        return QualityCell(
+            score=score, n=self.cell_n(model, quant), metric=self.metric, source=BUNDLED_EVAL_SOURCE
+        )
+
+    def baseline_comparison(
+        self, model: str, quant: str, family: str | None = None
+    ) -> tuple[float, bool]:
+        """``(fp16_baseline, is_indistinguishable)`` for a quantized cell.
+
+        ``is_indistinguishable`` is True when the observed gap from the baseline
+        is inside what the sample size can resolve -- which, at n=20, is every
+        quant in the bundled corpus, in both directions.
+        """
+        fp16 = self._fp16_baseline(model, family)
+        if fp16 is None or quant == "FP16":
+            return (fp16 if fp16 is not None else 0.0), False
+        score, _ = self.estimate(model, quant, family)
+        return fp16, resolves_to_baseline(
+            score, fp16, self.cell_n(model, quant), OMEGA_SQ_UNIFORM_PAIRED
+        )
 
     def estimate(self, model: str, quant: str, family: str | None = None) -> tuple[float, str]:
         """Predict quality and report provenance: measured | estimated | unknown.
@@ -690,6 +734,9 @@ class QualityModel:
             "lookup": self.lookup,
             "fp16_baselines": self.fp16_baselines,
             "quant_deltas": self.quant_deltas,
+            "sample_sizes": self.sample_sizes,
+            "default_n": self.default_n,
+            "metric": self.metric,
             "fitted": self.fitted,
         }
 
@@ -699,6 +746,13 @@ class QualityModel:
             lookup=d.get("lookup", {}),
             fp16_baselines=d.get("fp16_baselines", {}),
             quant_deltas=d.get("quant_deltas", {}),
+            sample_sizes=d.get("sample_sizes", {}),
+            # A corpus that does not record its sample size gets the bundled
+            # eval's 20, which is what every existing cell actually came from.
+            # Defaulting to something large would let an unsized cell claim a
+            # precision nobody measured.
+            default_n=int(d.get("default_n", BUNDLED_EVAL_N)),
+            metric=d.get("metric", BUNDLED_METRIC),
         )
         m.fitted = d.get("fitted", False)
         return m

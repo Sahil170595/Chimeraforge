@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-05",
+  "method": "HTTP GET of each source's raw file",
+  "fixtures": [
+    {
+      "file": "lm_eval_results.json",
+      "source_url": "https://raw.githubusercontent.com/pfnet-research/japanese-lm-fin-harness/main/models/openai/gpt-4o-2024-08-06/result-default.json",
+      "captured_at": "2026-09-05",
+      "covers": "lm-evaluation-harness results schema, verbatim: `results -> task -> 'metric,filter'`, `n-samples` with original/effective, and stderr values that are the string 'N/A'"
+    },
+    {
+      "file": "llamacpp_ppl_llama3_8b.json",
+      "source_url": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/tools/perplexity/README.md",
+      "captured_at": "2026-09-05",
+      "covers": "15 non-imatrix rows: monotone in bit width, no quant above FP16"
+    }
+  ]
+}

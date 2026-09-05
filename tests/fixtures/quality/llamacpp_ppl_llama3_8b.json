@@ -1,0 +1,130 @@
+{
+  "model": "Llama-3-8B",
+  "corpus": "Wikitext-2 test set",
+  "metric": "perplexity and KL divergence vs FP16",
+  "note": "A DIFFERENT metric from the bundled composite. It can falsify an ordering; it can never supply a composite score.",
+  "source_url": "https://raw.githubusercontent.com/ggml-org/llama.cpp/master/tools/perplexity/README.md",
+  "captured_at": "2026-09-05",
+  "rows": [
+    {
+      "quant": "f16",
+      "size_gib": 14.97,
+      "ppl": 6.23316,
+      "ppl_err": 0.037828,
+      "delta_ppl": 0.001524,
+      "delta_ppl_err": 0.000755
+    },
+    {
+      "quant": "q8_0",
+      "size_gib": 7.96,
+      "ppl": 6.234284,
+      "ppl_err": 0.037878,
+      "delta_ppl": 0.00265,
+      "delta_ppl_err": 0.001006
+    },
+    {
+      "quant": "q6_K",
+      "size_gib": 6.14,
+      "ppl": 6.253382,
+      "ppl_err": 0.038078,
+      "delta_ppl": 0.021748,
+      "delta_ppl_err": 0.001852
+    },
+    {
+      "quant": "q5_K_M",
+      "size_gib": 5.33,
+      "ppl": 6.288607,
+      "ppl_err": 0.038338,
+      "delta_ppl": 0.056974,
+      "delta_ppl_err": 0.002598
+    },
+    {
+      "quant": "q5_K_S",
+      "size_gib": 5.21,
+      "ppl": 6.336598,
+      "ppl_err": 0.038755,
+      "delta_ppl": 0.104964,
+      "delta_ppl_err": 0.003331
+    },
+    {
+      "quant": "q5_1",
+      "size_gib": 5.65,
+      "ppl": 6.337857,
+      "ppl_err": 0.038677,
+      "delta_ppl": 0.106223,
+      "delta_ppl_err": 0.003476
+    },
+    {
+      "quant": "q5_0",
+      "size_gib": 5.21,
+      "ppl": 6.363224,
+      "ppl_err": 0.038861,
+      "delta_ppl": 0.131591,
+      "delta_ppl_err": 0.003894
+    },
+    {
+      "quant": "q4_K_M",
+      "size_gib": 4.58,
+      "ppl": 6.407115,
+      "ppl_err": 0.039119,
+      "delta_ppl": 0.175482,
+      "delta_ppl_err": 0.00462
+    },
+    {
+      "quant": "q4_K_S",
+      "size_gib": 4.37,
+      "ppl": 6.500529,
+      "ppl_err": 0.039778,
+      "delta_ppl": 0.268895,
+      "delta_ppl_err": 0.005638
+    },
+    {
+      "quant": "q4_1",
+      "size_gib": 4.78,
+      "ppl": 6.682737,
+      "ppl_err": 0.041285,
+      "delta_ppl": 0.451103,
+      "delta_ppl_err": 0.00803
+    },
+    {
+      "quant": "q4_0",
+      "size_gib": 4.34,
+      "ppl": 6.700147,
+      "ppl_err": 0.041226,
+      "delta_ppl": 0.468514,
+      "delta_ppl_err": 0.007951
+    },
+    {
+      "quant": "q3_K_L",
+      "size_gib": 4.03,
+      "ppl": 6.787876,
+      "ppl_err": 0.042104,
+      "delta_ppl": 0.556242,
+      "delta_ppl_err": 0.009171
+    },
+    {
+      "quant": "q3_K_M",
+      "size_gib": 3.74,
+      "ppl": 6.888498,
+      "ppl_err": 0.042669,
+      "delta_ppl": 0.656864,
+      "delta_ppl_err": 0.010071
+    },
+    {
+      "quant": "q3_K_S",
+      "size_gib": 3.41,
+      "ppl": 7.863786,
+      "ppl_err": 0.048885,
+      "delta_ppl": 1.632152,
+      "delta_ppl_err": 0.017733
+    },
+    {
+      "quant": "q2_K",
+      "size_gib": 2.96,
+      "ppl": 9.751568,
+      "ppl_err": 0.063312,
+      "delta_ppl": 3.519934,
+      "delta_ppl_err": 0.033863
+    }
+  ]
+}
