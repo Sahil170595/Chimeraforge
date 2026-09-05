@@ -24,6 +24,7 @@ from chimeraforge.planner.engine import (
     pareto_frontier,
 )
 from chimeraforge.planner.models import load_effective_models, load_models
+from chimeraforge.planner.qualityfile import aggregate, load_quality_file
 from chimeraforge.planner.resolver import ModelSpec, resolve_spec
 
 
@@ -119,6 +120,7 @@ def run_plan(
     tpot_slo: float | None = None,
     context_length: int = 2048,
     prompt_tokens: int = 512,
+    quality_from: str | None = None,
     safety_target: float | None = None,
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
@@ -169,6 +171,13 @@ def run_plan(
     else:
         target_models = find_models_for_size(model_size)
 
+    # An external harness's score replaces the bundled composite wholesale. A
+    # bad path or an unrecognised file is an error here rather than a silent
+    # fallback: the user would otherwise believe their eval was in force.
+    quality_override = None
+    if quality_from:
+        quality_override = aggregate(load_quality_file(quality_from))
+
     trace: list = []
     candidates = enumerate_candidates(
         models=planner_models,
@@ -192,6 +201,7 @@ def run_plan(
         specs=specs,
         trace=trace,
         prompt_tokens=prompt_tokens,
+        quality_override=quality_override,
         workload_cv2=workload_cv2,
         electricity_rate=electricity_rate,
         kv_quant=kv_quant,

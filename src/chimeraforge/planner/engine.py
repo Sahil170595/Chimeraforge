@@ -37,6 +37,14 @@ from chimeraforge.planner.constants import (
     backend_supports_quant,
     quant_family,
 )
+from chimeraforge.planner.evalstats import (
+    BUNDLED_EVAL_CONTEXT,
+    LONG_CONTEXT_SOURCE,
+    LONG_CONTEXT_THRESHOLD,
+    context_licenses_the_cell,
+)
+from chimeraforge.planner.evalstats import SOURCE as EVALSTATS_SOURCE
+from chimeraforge.planner.evalstats import QualityCell
 from chimeraforge.planner.hardware import (
     GPU_DB,
     REFERENCE_GPU,
@@ -94,6 +102,13 @@ class Candidate:
     gpu_price_multiplier: float = 1.0
     cost_per_1m_tok_effective: float = 0.0
     tokens_served_month: float = 0.0
+    # What the quality figure can actually support (P8.4). `quality_mde` is the
+    # smallest difference this cell's sample size can resolve; at the bundled
+    # eval's n=20 it is 0.209, wider than the entire measured quant-delta range,
+    # so every quant in the corpus is indistinguishable from its FP16 baseline.
+    quality_n: int = 0
+    quality_mde: float = 0.0
+    quality_indistinguishable: bool = False
     provenance: dict[str, str] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
     max_concurrent_seqs: int = 0
@@ -212,6 +227,7 @@ def enumerate_candidates(
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
+    quality_override: QualityCell | None = None,
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
     kv_quant: str = DEFAULT_KV_QUANT,
@@ -471,8 +487,40 @@ def enumerate_candidates(
 
             # Gate 2: Quality (with provenance: measured | estimated | unknown)
             quality, quality_source = models.quality.estimate(lookup_name, quant, family)
-            if quality < quality_target:
-                _reject(model, quant, "quality", f"{quality:.2f} < target {quality_target}")
+            quality_cell = models.quality.cell(lookup_name, quant, family)
+            if quality_override is not None:
+                # An externally-measured score REPLACES the bundled composite
+                # rather than being blended into it: the two are different
+                # scales, and averaging them would fabricate a comparison.
+                # --quality-target is read against whichever is in force, and the
+                # metric name travels so a reader can tell which.
+                quality_cell = quality_override
+                quality = quality_override.score
+                quality_source = "measured"
+            quality_n = quality_cell.n
+            quality_mde = quality_cell.mde
+            fp16_baseline, quality_indistinguishable = models.quality.baseline_comparison(
+                lookup_name, quant, family
+            )
+            # A cell measured at 2K context does not license a verdict at 64K: the
+            # same 4-bit config is near-lossless at short context and loses up to
+            # 59% on long inputs. Reported UNKNOWN rather than extrapolated.
+            if quality_source != "unknown" and not context_licenses_the_cell(
+                context_length, QUANT_BPW.get(quant, 16.0)
+            ):
+                quality_source = "unknown"
+                quality_indistinguishable = False
+            # Reject only when the UPPER bound is below the target, so a rejection
+            # is a claim the data can support. At n=20 the interval is +-20.9pp,
+            # and rejecting on the point estimate rejected on noise.
+            if quality_cell.upper < quality_target:
+                _reject(
+                    model,
+                    quant,
+                    "quality",
+                    f"{quality:.2f} +{quality_mde * 100:.1f}pp (n={quality_n}) "
+                    f"is below target {quality_target} even at its upper bound",
+                )
                 continue
 
             quality_tier = models.quality.quality_tier(lookup_name, quant, family)
@@ -883,6 +931,21 @@ def enumerate_candidates(
                         f"params/architecture unknown; assumed {params_b:.1f}B -- "
                         "pass a resolvable --model or manual overrides"
                     )
+                if quality_indistinguishable:
+                    warnings.append(
+                        f"quality {quality:.3f} is INDISTINGUISHABLE from this model's "
+                        f"FP16 baseline {fp16_baseline:.3f}: n={quality_n} resolves only "
+                        f"+-{quality_mde * 100:.1f}pp ({EVALSTATS_SOURCE}), and the gap is "
+                        f"{abs(quality - fp16_baseline) * 100:.1f}pp. Treat the two as equal "
+                        "and choose on cost"
+                    )
+                if context_length >= LONG_CONTEXT_THRESHOLD and QUANT_BPW.get(quant, 16.0) < 8.0:
+                    warnings.append(
+                        f"quality for {quant} is measured at {BUNDLED_EVAL_CONTEXT} context; "
+                        f"4-bit degradation on >={LONG_CONTEXT_THRESHOLD}-token inputs is "
+                        f"reported up to 59% ({LONG_CONTEXT_SOURCE}). This cell is UNKNOWN "
+                        f"at {context_length}"
+                    )
                 if quality_source == "unknown":
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
                 elif quality_source == "estimated" and not use_measured:
@@ -924,6 +987,9 @@ def enumerate_candidates(
                         vram_gb=round(vram, 2),
                         quality=round(quality, 3),
                         quality_tier=quality_tier,
+                        quality_n=quality_n,
+                        quality_mde=round(quality_mde, 4),
+                        quality_indistinguishable=quality_indistinguishable,
                         throughput_tps=round(n1_tps, 1),
                         total_throughput_tps=round(total_tps, 1),
                         eta=round(eta, 3),
@@ -970,7 +1036,15 @@ def enumerate_candidates(
                 )
 
     # Sort by monthly cost (primary), then by quality (secondary, desc)
-    candidates.sort(key=lambda c: (c.monthly_cost, -c.quality))
+    # Cost first, then quality -- but only to the resolution the data supports.
+    # Bucketing by the MDE means two configs whose intervals overlap tie here and
+    # fall through to the next key, instead of being ordered on a difference the
+    # sample size cannot detect.
+    def _rank(c: Candidate) -> tuple:
+        step = c.quality_mde if c.quality_mde > 0 else 1e-9
+        return (c.monthly_cost, -round(c.quality / step), c.p95_latency_ms)
+
+    candidates.sort(key=_rank)
     return candidates
 
 
