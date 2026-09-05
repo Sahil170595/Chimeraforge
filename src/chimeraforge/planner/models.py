@@ -121,10 +121,21 @@ class VRAMModel:
           a window we cannot place would shrink the estimate, and under-estimating
           is the direction that claims a fit that is not there.
 
+        - **Hybrid / linear attention** (P8.2) interleaves attention layers with
+          Mamba or gated-linear ones. Only the attention layers cache per token, so
+          KV is sized over ``n_attention_layers`` -- 4 of Nemotron Nano 2's 56, a
+          14.0x overstatement at every context length before this. The recurrent
+          layers instead hold a fixed state per SEQUENCE
+          (``recurrent_state_bytes_per_seq``), flat in context, which no per-token
+          cache term models and which reaches gigabytes at high batch.
+
         ``kv_bytes`` is the per-element cache size (2 = FP16 default; see
         ``KV_QUANT_BYTES`` for q8/q4).
         """
         n_layers = arch["n_layers"]
+        # Absent means every layer caches -- the conservative default, and the
+        # only honest one when a layer pattern could not be placed.
+        caching_layers = arch.get("n_attention_layers") or n_layers
         per_token = arch.get("kv_elems_per_token_per_layer") or (
             2 * arch["n_kv_heads"] * arch["d_head"]
         )
@@ -136,8 +147,19 @@ class VRAMModel:
             effective_ctx = (global_layers * context_length + local_layers * window) / n_layers
         else:
             effective_ctx = context_length
-        total_bytes = n_layers * batch_size * effective_ctx * per_token * kv_bytes
-        return total_bytes / (1024**3)
+        total_bytes = caching_layers * batch_size * effective_ctx * per_token * kv_bytes
+        return total_bytes / (1024**3) + VRAMModel.recurrent_state_gb(arch, batch_size)
+
+    @staticmethod
+    def recurrent_state_gb(arch: dict[str, int], batch_size: int = 1) -> float:
+        """Recurrent (Mamba/linear-attention) state, in GiB.
+
+        Per sequence and independent of context: a recurrent layer's state does
+        not grow with the prompt, which is exactly why it hides from every
+        long-context sanity check and only bites at concurrency. 0.0 for any model
+        with no recurrent layers, so dense arithmetic is untouched.
+        """
+        return arch.get("recurrent_state_bytes_per_seq", 0.0) * max(batch_size, 0) / (1024**3)
 
     def max_concurrent_seqs(
         self,
@@ -170,9 +192,17 @@ class VRAMModel:
         )  # O(ctx), see predict()
         free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
         kv_shard = min(max(tp, 1), max(arch["n_kv_heads"], 1)) * max(pp, 1)
-        per_seq_gb = (
-            self.kv_cache_gb(arch, context_length, batch_size=1, kv_bytes=kv_bytes) / kv_shard
+        # The two per-sequence terms shard differently, so they are divided
+        # separately rather than summed first. KV shards across KV heads (TP) and
+        # layers (PP); the recurrent state is left whole, which is the
+        # conservative direction -- an over-sharded state would raise the
+        # concurrency ceiling on the strength of an assumption about how the
+        # engine splits a Mamba mixer.
+        state_gb = self.recurrent_state_gb(arch, batch_size=1)
+        kv_only_gb = (
+            self.kv_cache_gb(arch, context_length, batch_size=1, kv_bytes=kv_bytes) - state_gb
         )
+        per_seq_gb = kv_only_gb / kv_shard + state_gb
         if per_seq_gb <= 0 or free_gb <= 0:
             return 0
         return int(free_gb / per_seq_gb)
