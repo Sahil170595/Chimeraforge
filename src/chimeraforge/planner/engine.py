@@ -38,7 +38,11 @@ from chimeraforge.planner.constants import (
     quant_family,
 )
 from chimeraforge.planner.hardware import (
+    AUTO_HARDWARE,
     GPU_DB,
+    GPU_OVERRIDE_FIELDS,
+    PRICE_BASIS_PHRASE,
+    resolve_hardware,
     REFERENCE_GPU,
     bandwidth_ratio,
     get_gpu,
@@ -212,6 +216,7 @@ def enumerate_candidates(
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
+    gpu_overrides: dict | None = None,
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
     kv_quant: str = DEFAULT_KV_QUANT,
@@ -272,7 +277,14 @@ def enumerate_candidates(
             f"unknown lora_target {lora_target!r}; use one of: {', '.join(sorted(LORA_TARGETS))}"
         )
     specs = specs or {}
-    gpu = get_gpu(hardware)
+    # Overrides and `auto` go through the resolver; a bare name still falls to the
+    # dataset lookup below, so the no-override path is byte-identical.
+    hardware_warnings: list[str] = []
+    if gpu_overrides or (hardware or "").strip().lower() == AUTO_HARDWARE:
+        gpu, hardware_warnings = resolve_hardware(hardware, gpu_overrides)
+        hardware = gpu.name
+    else:
+        gpu = get_gpu(hardware)
     if gpu is None:
         # Both shipped callers pre-validate, but enumerate_candidates is exported
         # public API and silently substituted a 12 GB card, $0.035/hr and a
@@ -282,7 +294,9 @@ def enumerate_candidates(
         known = ", ".join(list(GPU_DB)[:6])
         raise ValueError(
             f"unknown GPU {hardware!r}. Known GPUs include: {known}, ... "
-            f"(see chimeraforge.planner.hardware.GPU_DB)"
+            f"(see chimeraforge.planner.hardware.GPU_DB). An unlisted card can "
+            f"still be planned: pass {GPU_OVERRIDE_FIELDS['vram_gb']} and "
+            f"{GPU_OVERRIDE_FIELDS['bandwidth_gbps']}, or --hardware auto."
         )
     hw_vram = gpu.vram_gb
     # A rented GPU bills for wall-clock, not for tokens. A fleet sized for a peak
@@ -792,6 +806,17 @@ def enumerate_candidates(
                             "no layer pattern, so KV is sized at full context (conservative) -- "
                             "the real cache is smaller"
                         )
+                # The bill's basis, stated. `cost_per_hour` used to be one field
+                # mixing an amortised purchase price with a rental rate, and it
+                # drives the budget gate, $/1M-tok and the API break-even -- so a
+                # bare dollar figure means two different things depending on the
+                # card, and the difference is 4-5x on the datacenter entries.
+                warnings.append(
+                    f"priced at ${gpu.cost_per_hour:.3f}/GPU-hour on the "
+                    f"{gpu.price_basis} basis: "
+                    f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
+                )
+                warnings.extend(hardware_warnings)
                 if reasoning_hidden:
                     warnings.append(
                         f"reasoning model: {decode_tokens} tokens decoded per request "
