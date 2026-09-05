@@ -22,6 +22,7 @@ import shlex
 
 from dataclasses import dataclass, field
 
+from chimeraforge.planner.constants import CHUNK_TILE_ALIGNMENT, CHUNKED_PREFILL_SOURCE
 from chimeraforge.planner.resolver import SOURCE_HF, SOURCE_OLLAMA
 
 # vLLM reserves this fraction of VRAM for weights + KV + activations. 0.90 is the
@@ -104,7 +105,14 @@ def _join(parts: list[str]) -> str:
     return " \\\n  ".join(parts)
 
 
-def _build_vllm(candidate, spec, *, context_length: int, kv_quant: str) -> LaunchCommand:
+def _build_vllm(
+    candidate,
+    spec,
+    *,
+    context_length: int,
+    kv_quant: str,
+    max_num_batched_tokens: int | None = None,
+) -> LaunchCommand:
     model_id, placeholder = _hf_repo(candidate, spec)
     parts = [
         f"vllm serve {_q(model_id)}",
@@ -131,6 +139,17 @@ def _build_vllm(candidate, spec, *, context_length: int, kv_quant: str) -> Launc
             notes.append(
                 "vLLM's smallest KV-cache dtype is fp8; the plan modeled q4 KV, so "
                 "real KV VRAM on vLLM will be higher than the plan assumed."
+            )
+    if max_num_batched_tokens:
+        parts.append(f"--max-num-batched-tokens {max_num_batched_tokens}")
+        if max_num_batched_tokens % CHUNK_TILE_ALIGNMENT:
+            # Tile quantization is sharp and not smoothly modelable -- a budget of
+            # 257 costs ~32% more than 256 -- so it is named and never modelled.
+            notes.append(
+                f"--max-num-batched-tokens {max_num_batched_tokens} is not a multiple "
+                f"of {CHUNK_TILE_ALIGNMENT}. Tile quantization makes this cliff-shaped "
+                f"(a budget of 257 measured ~32% slower than 256, {CHUNKED_PREFILL_SOURCE}); "
+                "the plan does not model it. Round to a multiple of 256."
             )
     notes.extend(_quant_note(candidate))
     notes.append(
@@ -319,6 +338,7 @@ def build_launch_command(
     context_length: int,
     prompt_tokens: int = 512,
     kv_quant: str = "fp16",
+    max_num_batched_tokens: int | None = None,
 ) -> LaunchCommand:
     """Build the serve command for ``candidate.backend`` from the plan's parameters.
 
@@ -331,13 +351,23 @@ def build_launch_command(
         context_length: max sequence length the plan sized for (-> max-model-len etc.).
         prompt_tokens: input length the plan sized for (-> TGI --max-input-tokens).
         kv_quant: the plan's KV-cache dtype (``fp16``/``q8``/``q4``).
+        max_num_batched_tokens: the chunked-prefill token budget the plan sized
+            for. Emitted so the served scheduler matches the modelled one -- vLLM
+            V1 chunks by default, so leaving it implicit means serving a config
+            the plan did not price.
 
     Raises:
         ValueError: if ``candidate.backend`` is not a known serving backend.
     """
     backend = candidate.backend
     if backend == "vllm":
-        return _build_vllm(candidate, spec, context_length=context_length, kv_quant=kv_quant)
+        return _build_vllm(
+            candidate,
+            spec,
+            context_length=context_length,
+            kv_quant=kv_quant,
+            max_num_batched_tokens=max_num_batched_tokens,
+        )
     if backend == "ollama":
         return _build_ollama(candidate, spec, context_length=context_length, kv_quant=kv_quant)
     if backend == "sglang":

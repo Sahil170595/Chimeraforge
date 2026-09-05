@@ -335,3 +335,30 @@ LORA_COUNT_UNMODELLED_SPREAD = 0.10
 # vLLM's own ceiling on simultaneously-loaded adapters per batch.
 MAX_LORA_ADAPTERS = 64
 MAX_LORA_RANK = 64
+
+# Chunked prefill (P8.3). vLLM V1 enables it by default whenever possible
+# (`vllm/config/scheduler.py`: `enable_chunked_prefill: bool = True`), so a
+# planner that models only monolithic prefill is modelling a serving
+# configuration that no longer ships. A prompt is split into
+# ceil(prompt / max_num_batched_tokens) chunks and each chunk re-reads the KV of
+# every chunk before it -- split a prefill into N chunks and the first chunk's KV
+# is loaded N-1 times, the second's N-2, and so on. That is arithmetic over
+# inputs the planner already has, not a fitted curve.
+#
+# Sarathi-Serve (arXiv:2403.02310) is used ONLY as an upper bound to clamp the
+# derived overhead against, never as a curve to interpolate: it publishes two
+# endpoints -- "even with the smallest chunk size of 512, we observe a moderate
+# overhead of at most ~25%" and "with the larger token budget of 2048, chunked
+# prefills have almost negligible overhead". Fitting a smooth multiplier through
+# two points and presenting it as physics is the mistake the multi-LoRA rank
+# multiplier already had to guard against.
+CHUNKED_PREFILL_SOURCE = "Sarathi-Serve (arXiv:2403.02310)"
+CHUNK_BUDGET_CALIBRATED_MIN = 512
+CHUNK_BUDGET_CALIBRATED_MAX = 2048
+# The published ceiling at the smallest measured budget. The derived overhead is
+# capped here rather than allowed to run past the only number anyone measured.
+CHUNK_OVERHEAD_CAP = 0.25
+# Tile quantization: "using chunk size of 257 can increase prefill time by 32%
+# compared to that with chunk size 256". Real, sharp, and not smoothly modelable
+# -- so it is warned about and never modelled.
+CHUNK_TILE_ALIGNMENT = 256

@@ -10,6 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
+    CHUNK_BUDGET_CALIBRATED_MAX,
+    CHUNK_BUDGET_CALIBRATED_MIN,
+    CHUNK_OVERHEAD_CAP,
+    CHUNK_TILE_ALIGNMENT,
+    CHUNKED_PREFILL_SOURCE,
     DEFAULT_HOST_LINK_GBPS,
     BACKENDS,
     BACKEND_CONTINUOUS_BATCHING,
@@ -212,6 +217,7 @@ def enumerate_candidates(
     specs: dict[str, ModelSpec] | None = None,
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
+    max_num_batched_tokens: int | None = None,
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
     kv_quant: str = DEFAULT_KV_QUANT,
@@ -365,12 +371,12 @@ def enumerate_candidates(
             round((params_b * 1e9 / (12 * max(arch_model["n_layers"], 1))) ** 0.5)
         )
 
-        # TTFT (prefill) is compute-bound: same for all quants/backends of a model
-        # on this GPU and prompt length, so compute it once. 0.0 when GPU compute
-        # is unknown -> latency falls back to decode-only.
-        # Prefill FLOPs scale with the params a token actually passes through, so
-        # MoE prefill uses active params too.
-        ttft_ms = models.latency.predict_ttft_ms(active_params_b, prefill_tokens_eff, hardware)
+        # TTFT is no longer the same for every quant. Its compute term is (the
+        # prefill FLOPs are quant-independent), but P8.3 puts a memory-bound floor
+        # under it -- a forward pass must stream the weights whatever the prompt
+        # length -- and the weight bytes are exactly what a quant changes. So it is
+        # computed inside the quant loop below. Prefill FLOPs scale with the params
+        # a token actually passes through, so MoE prefill uses active params.
 
         # ``alias`` is the registry model whose measured data we may reuse: the
         # model itself for registry hits, the matched model for offline
@@ -388,6 +394,16 @@ def enumerate_candidates(
         quants = [spec.native_quant] if (spec and spec.native_quant in QUANT_BPW) else QUANT_LEVELS
 
         for quant in quants:
+            # 0.0 when GPU compute is unknown -> latency falls back to decode-only.
+            ttft_ms = models.latency.predict_ttft_ms(
+                active_params_b,
+                prefill_tokens_eff,
+                hardware,
+                quant=quant,
+                arch=arch_model,
+                max_num_batched_tokens=max_num_batched_tokens,
+                kv_bytes=kv_bytes,
+            )
             # TP/PP degree: explicit, or auto = smallest degree that fits VRAM. Only
             # one dimension is engaged (validated above); the other stays 1.
             tp, pp = 1, 1
@@ -791,6 +807,43 @@ def enumerate_candidates(
                             f"model declares a {spec.sliding_window}-token sliding window but "
                             "no layer pattern, so KV is sized at full context (conservative) -- "
                             "the real cache is smaller"
+                        )
+                floor_ms = models.latency.prefill_floor_ms(active_params_b, quant, hardware)
+                chunks = models.latency.prefill_chunks(prefill_tokens_eff, max_num_batched_tokens)
+                if floor_ms > 0 and ttft_ms <= floor_ms * max(chunks, 1) * (1 + 1e-9):
+                    warnings.append(
+                        f"TTFT is at its memory-bound FLOOR ({floor_ms:.1f}ms per forward "
+                        f"pass): at {prefill_tokens_eff} prompt tokens the prefill is too "
+                        "short to saturate compute, so the time to stream the weights "
+                        "dominates. This is a BOUND from MBU (one calibration point), not "
+                        "a prediction -- treat it as 'no faster than'"
+                    )
+                if chunks > 1:
+                    warnings.append(
+                        f"chunked prefill: {prefill_tokens_eff} tokens in {chunks} chunks of "
+                        f"{max_num_batched_tokens}. Each chunk re-reads the earlier chunks' "
+                        f"KV, and the weights are streamed once per chunk. The overhead is "
+                        f"derived from that mechanism and clamped at "
+                        f"{CHUNK_OVERHEAD_CAP:.0%} -- the published ceiling at the smallest "
+                        f"measured budget ({CHUNKED_PREFILL_SOURCE}); it is ESTIMATED"
+                    )
+                    if not (
+                        CHUNK_BUDGET_CALIBRATED_MIN
+                        <= max_num_batched_tokens
+                        <= CHUNK_BUDGET_CALIBRATED_MAX
+                    ):
+                        warnings.append(
+                            f"token budget {max_num_batched_tokens} is outside the "
+                            f"{CHUNK_BUDGET_CALIBRATED_MIN}-{CHUNK_BUDGET_CALIBRATED_MAX} "
+                            "range the published overhead bound covers; the clamp is not "
+                            "calibrated there and the derived term carries it alone"
+                        )
+                    if max_num_batched_tokens % CHUNK_TILE_ALIGNMENT:
+                        warnings.append(
+                            f"token budget {max_num_batched_tokens} is not a multiple of "
+                            f"{CHUNK_TILE_ALIGNMENT}: tile quantization makes this "
+                            "cliff-shaped (257 measured ~32% slower than 256) and it is "
+                            "deliberately NOT modelled. Round to a multiple of 256"
                         )
                 if reasoning_hidden:
                     warnings.append(
