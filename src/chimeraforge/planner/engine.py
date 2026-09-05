@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
+    DEFAULT_HOST_LINK_GBPS,
     BACKENDS,
     BACKEND_CONTINUOUS_BATCHING,
     DEFAULT_ARCH,
@@ -293,7 +294,7 @@ def enumerate_candidates(
     # Host link speed for offloaded weights. Defaults to the GPU's own PCIe figure,
     # which is the transfer bottleneck on consumer cards, but it is a scenario input:
     # real throughput depends on the board, the lanes and the host RAM behind them.
-    host_bw = float(host_bandwidth_gbps or (gpu.interconnect_gbps if gpu else 0.0) or 0.0)
+    host_bw = float(host_bandwidth_gbps or DEFAULT_HOST_LINK_GBPS)
     hw_cost_hr = (gpu.cost_per_hour if gpu else 0.035) * price_mult
     # KV-cache element size: a quantized cache (q8/q4) shrinks KV VRAM and lifts the
     # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
@@ -718,6 +719,11 @@ def enumerate_candidates(
                     for _key in ("quality", "safety"):
                         if provenance.get(_key) == "measured":
                             provenance[_key] = "estimated" if _key == "quality" else "unknown"
+                    # VRAM too. It is first-principles arithmetic, but over the
+                    # ALIAS's architecture -- phi-4 was reported at 6.69 GB with
+                    # vram=measured because it borrowed phi-2's 2.78B geometry.
+                    # Exact arithmetic on the wrong shape is not a measurement.
+                    provenance["vram"] = "estimated"
 
                 warnings = []
                 if quant_family(quant) == "w4a16":

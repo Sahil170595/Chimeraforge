@@ -86,7 +86,19 @@ def refit(
         err_console.print("[red]Error:[/] provide --bench-dir or --bench-files.")
         raise typer.Exit(code=1)
 
-    base_path = Path(base_models) if base_models else None
+    from chimeraforge.planner.resolver import measured_corpus_path
+
+    if base_models:
+        base_path = Path(base_models)
+    else:
+        # Accumulate onto the measured corpus when one exists, which is what
+        # `measure` does. Basing on the bundled snapshot while WRITING to the
+        # measured path meant a refit silently deleted every row `measure` had
+        # accumulated -- throughput rows and serial fractions both -- with no
+        # warning, no backup and exit 0. The two commands share a file, so they
+        # must share its merge semantics.
+        existing = Path(measured_corpus_path())
+        base_path = existing if existing.is_file() else None
     try:
         merged, summary = refit_from_bench(paths, base_path)
     except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
@@ -101,8 +113,6 @@ def refit(
         # This used to default to platformdirs' user_data_dir while the read side
         # used ~/.cache/chimeraforge, so a successful refit printed "Saved to ..."
         # and exited 0 while being completely inert.
-        from chimeraforge.planner.resolver import measured_corpus_path
-
         out = Path(measured_corpus_path())
 
     # Validate BEFORE writing so --validate is a real gate, not advisory: invalid

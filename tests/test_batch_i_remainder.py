@@ -51,11 +51,30 @@ class TestLaunchCommandsAreQuoted:
     ids reach here from HF Hub listings and MCP callers -- not only from the
     keyboard of whoever runs it."""
 
-    @pytest.mark.parametrize("backend", ["vllm", "sglang", "tgi"])
+    # ollama was omitted here while ollama was the one backend still interpolating
+    # its tag raw -- and it wins the default plan for most registry queries, so it
+    # is the most-emitted command, not an edge case.
+    @pytest.mark.parametrize("backend", ["vllm", "sglang", "tgi", "ollama"])
     def test_command_substitution_is_neutralised(self, backend):
-        cmd = build_launch_command(_cand(backend, "meta/x$(id)"), None, context_length=2048).command
-        assert "$(id)" not in cmd or "'meta/x$(id)'" in cmd
-        assert "meta/x$(id) " not in cmd, "the id is interpolated unquoted"
+        """Passing spec=None made the ollama case vacuous: `_ollama_tag` returns a
+        placeholder without a spec, so `$(id)` never reached the command and the
+        `not in cmd` disjunct short-circuited to True. The parametrize covered
+        ollama in name only. An ollama-sourced spec is now supplied so the tag
+        actually lands in the command."""
+        from chimeraforge.planner.resolver import ModelSpec
+
+        spec = ModelSpec(
+            name="meta/x$(id)",
+            params_b=3.2,
+            n_layers=28,
+            n_kv_heads=8,
+            d_head=128,
+            hidden_size=3072,
+            source="ollama" if backend == "ollama" else "hf",
+        )
+        cmd = build_launch_command(_cand(backend, "meta/x$(id)"), spec, context_length=2048).command
+        assert "$(id)" in cmd, "precondition: the hostile id must reach the command"
+        assert "'meta/x$(id)'" in cmd or "'x$(id)'" in cmd, f"unquoted: {cmd!r}"
 
     @pytest.mark.parametrize(
         "hostile",

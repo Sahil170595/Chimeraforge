@@ -114,7 +114,10 @@ class TestMaxConcurrentSeqs:
         p8 = m.predict("x", "Q8_0", 8192, params_b=4.0, arch=arch, tp=8)
         from chimeraforge.planner.constants import GB_TO_GIB
 
-        weight_gb = 4.0 * 8.0 / 8 * GB_TO_GIB  # Q8_0 = 8 bpw, in GiB
+        # Q8_0 is 8.5 bpw, not 8: llama.cpp stores a 2-byte scale per 32-weight
+        # block (34B/32w). The literal is deliberate -- reading it back from
+        # QUANT_BPW would make this test move with the value it is checking.
+        weight_gb = 4.0 * 8.5 / 8 * GB_TO_GIB
         assert (p2 - p8) == pytest.approx(weight_gb / 2 - weight_gb / 8)
 
     def test_pp_shards_weights_no_head_constraint(self):
@@ -163,7 +166,14 @@ class TestMaxConcurrentSeqs:
 class TestThroughputModel:
     def test_exact_lookup(self, bundled_models):
         tps = bundled_models.throughput.predict("llama3.2-3b", "ollama", "FP16")
-        assert tps == pytest.approx(95.86, rel=0.01)
+        # The stored row is 95.86, but it implies 142.5% of the reference card's
+        # bandwidth, so `predict` clamps it to the physical ceiling. The corpus
+        # value is asserted separately, unclamped, so the anomaly stays auditable.
+        ceiling = bundled_models.throughput.bandwidth_ceiling_tps(3.21, "FP16", "RTX 4080 12GB")
+        assert tps == pytest.approx(ceiling, rel=0.01)
+        assert bundled_models.throughput.lookup["llama3.2-3b|ollama|FP16"] == pytest.approx(
+            95.86, rel=0.01
+        )
 
     def test_quant_multiplier_fallback(self, bundled_models):
         fp16 = bundled_models.throughput.predict("llama3.2-3b", "ollama", "FP16")

@@ -70,7 +70,7 @@ GPU_DB: dict[str, GPUSpec] = {
     #
     # Confirm on the rig with:
     #   nvidia-smi --query-gpu=name,memory.total,power.max_limit --format=csv
-    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 432.0, 0.035, 80.2, 150.0, 64.0),
+    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 432.0, 0.035, 67.7, 150.0, 64.0),
     "RTX 4080 16GB": GPUSpec("RTX 4080 16GB", 16.0, 717.0, 0.045, 97.5, 320.0, 64.0),
     "RTX 4090 24GB": GPUSpec("RTX 4090 24GB", 24.0, 1008.0, 0.060, 165.2, 450.0, 64.0),
     # Consumer - NVIDIA Blackwell (GDDR7, PCIe 5.0 = 128 GB/s)
@@ -103,8 +103,16 @@ del _name
 
 
 def get_gpu(name: str) -> GPUSpec | None:
-    """Look up GPU by name (case-insensitive partial match)."""
-    name_lower = name.lower()
+    """Look up GPU by name (case-insensitive partial match).
+
+    A blank name matches nothing. It used to fall through to the substring loop,
+    where `"" in key.lower()` is true for every entry, so `--hardware "$GPU"`
+    with GPU unset returned the first row in GPU_DB and the planner produced a
+    fully provenance-labelled plan for a card the user never named.
+    """
+    if not name or not name.strip():
+        return None
+    name_lower = name.strip().lower()
     for key, spec in GPU_DB.items():
         if key.lower() == name_lower:
             return spec

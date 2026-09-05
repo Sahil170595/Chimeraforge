@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 console = Console()
 
@@ -89,7 +90,7 @@ def measure(
             )
     except (RuntimeError, ValueError) as exc:
         # RuntimeError: backend/model pre-flight failure; ValueError: unknown --backend.
-        console.print(f"[red]Error:[/] {exc}")
+        console.print(f"[red]Error:[/] {escape(str(exc))}")
         console.print(
             "[dim]The model must be served by the backend "
             "(e.g. `ollama pull <model>`) before it can be measured.[/]"

@@ -109,6 +109,23 @@ def parse_identity(identifier: str, quant_override: str | None = None) -> ModelI
     )
 
 
+def _generation_of(name: str) -> str | None:
+    """The family's version marker, if the name carries one.
+
+    `phi-4` vs `phi-2`, `phi3.5` vs `phi-2`: the digits that follow the family
+    stem identify a generation, and two different generations are two different
+    models no matter how similar their names look. Size tokens (`7b`) and quant
+    tags are stripped by the caller's parsing before this is consulted.
+    """
+    stem = name.rsplit("/", 1)[-1].split(":", 1)[0].lower()
+    fam = parse_family(stem)
+    if not fam:
+        return None
+    rest = stem.replace(fam, "", 1).lstrip("-_.")
+    digits = re.match(r"(\d+(?:\.\d+)?)", rest)
+    return digits.group(1) if digits else None
+
+
 def resolve_model(identifier: str) -> str | None:
     """Return the registry model name matching *identifier*, or None.
 
@@ -136,8 +153,21 @@ def resolve_model(identifier: str) -> str | None:
         return None
     params = parse_params_b(identifier)
     if params is None or params <= 0:  # e.g. a degenerate "...0b" token -> no division
-        # Nothing to check the size against. One candidate is a defensible guess
-        # and is labelled registry-approx by the caller; several is not.
-        return candidates[0] if len(candidates) == 1 else None
+        # Nothing to check the size against. A single candidate used to be
+        # returned as "a defensible guess" -- but `phi-4` carries no `Nb` token
+        # and the `phi` family has exactly one member, so it resolved to phi-2
+        # and the planner reported 2.78B / 6.69 GB for a 14.66B model. A guess
+        # that crosses a model generation is not defensible; refuse it and let
+        # the caller ask for a real lookup or explicit overrides.
+        if len(candidates) != 1:
+            return None
+        only = candidates[0]
+        asked = _generation_of(identifier)
+        # Refuse only a generation that DIFFERS. `phi:latest` names no
+        # generation, so the single candidate is still the defensible guess it
+        # always was; `phi-4` names one, and it is not phi-2's.
+        if asked is not None and asked != _generation_of(only):
+            return None
+        return only
     best = min(candidates, key=lambda m: abs(MODEL_PARAMS_B[m] - params))
     return best if abs(MODEL_PARAMS_B[best] - params) / params <= _PARAMS_TOLERANCE else None

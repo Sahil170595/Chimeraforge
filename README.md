@@ -38,11 +38,11 @@ Install for real:
 
 ```bash
 pip install chimeraforge            # planner + model resolution (HF/Ollama) + suggest/measure/safety/bench
-pip install chimeraforge[bench]     # + GPU environment metadata for benchmarks (pynvml)
-pip install chimeraforge[mcp]       # + MCP server so Claude/GPT/Cursor can call the planner
-pip install chimeraforge[eval]      # + quality evaluation (BERTScore, ROUGE-L)
-pip install chimeraforge[refit]     # + coefficient refitting (numpy, scipy)
-pip install chimeraforge[all]       # everything
+pip install "chimeraforge[bench]"     # + GPU environment metadata for benchmarks (pynvml)
+pip install "chimeraforge[mcp]"       # + MCP server so Claude/GPT/Cursor can call the planner
+pip install "chimeraforge[eval]"      # + quality evaluation (ROUGE-L; BERTScore additionally needs `bert-score` + torch)
+pip install "chimeraforge[refit]"     # + coefficient refitting (numpy, scipy)
+pip install "chimeraforge[all]"       # everything
 ```
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). `plan` / `suggest` / `catalog` run fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, or TGI). Windows / macOS / Linux.
@@ -58,7 +58,7 @@ chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"
 chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434
 
 # Split a model too big for one GPU across several (tensor parallelism)
-chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4
+chimeraforge plan --model Qwen/Qwen2.5-72B-Instruct --hardware "H100 80GB" --tp 4
 
 # Shrink the KV-cache, print the cost/latency/quality trade-off menu
 chimeraforge plan --model-size 8b --hardware "RTX 4080 12GB" --kv-quant q8 --pareto
@@ -134,7 +134,7 @@ Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_su
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"   # any HF repo
 chimeraforge plan --model ollama:qwen3:14b --ollama-url http://localhost:11434  # any Ollama tag
-chimeraforge plan --model meta-llama/Llama-3.3-70B-Instruct --hardware "H100 80GB" --tp 4   # multi-GPU
+chimeraforge plan --model Qwen/Qwen2.5-72B-Instruct --hardware "H100 80GB" --tp 4   # multi-GPU
 chimeraforge plan --model-size 3b --kv-quant q4 --pareto                       # smaller KV cache, trade-off menu
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --launch          # + the serve command to actually run it
 chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
@@ -146,11 +146,11 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - **Fits models too big for one GPU:** `--tensor-parallel/--tp {N|auto}` shards weights + KV across N GPUs (Megatron-style, comms-modelled); `--pipeline-parallel/--pp {N|auto}` splits layers across N stages instead (cheaper on slow interconnects, needs batching to fill the pipeline). Not combinable yet.
 - **Serves what the backend serves:** GGUF quants are offered on Ollama; vLLM/TGI get FP16 and **FP8** (only on GPUs with FP8 tensor cores -- Ada/Hopper/Blackwell/CDNA3). The planner no longer suggests a GGUF checkpoint on vLLM priced with a llama.cpp speedup.
 - **KV-cache quantization** (`--kv-quant {fp16,q8,q4}`) shrinks the cache and raises max concurrency -- biggest win at long context.
-- **Heterogeneous fleets** (`--fleet "H100 80GB,A100 80GB,L4 24GB"`): sizes a mix of GPU types instead of N copies of one, because a cheap GPU can win at loose SLOs and small requests while an expensive one wins at tight SLOs and long requests. On an 8B at 64 req/s that is 1x H100 + 1x L4 at **$2,160/mo** against the best single type at **$2,304** -- the last 0.9 req/s is cheaper on a small GPU than on a second big one. A mix presumes a capability-aware router that no serving engine ships, so every mixed plan says so, and the reported provenance is the worst across the types used rather than the best.
-- **Cost realism** (`--duty-cycle`, `--gpu-price-multiplier`): the headline $/1M-tok prices a saturated fleet. You also pay for provisioned headroom and for every idle hour, so the effective figure on an 8B at 2 req/s is **$2.71/1M at full duty and $9.04/1M at 30%**, against $0.92 at capacity. Spot/reserved pricing is your input, not a bundled guess.
+- **Heterogeneous fleets** (`--fleet "H100 80GB,A100 80GB,L4 24GB"`): sizes a mix of GPU types instead of N copies of one, because a cheap GPU can win at loose SLOs and small requests while an expensive one wins at tight SLOs and long requests. On an 8B at 250 req/s that is 3x H100 + 1x L4 at **$5,760/mo** against 6x A100 at **$6,912** -- 16.7% cheaper, because the last few req/s are cheaper on a small GPU than on another big one (`plan --model-size 8b --request-rate 250 --fleet "H100 80GB,A100 80GB,L4 24GB" --budget 100000`). A mix presumes a capability-aware router that no serving engine ships, so every mixed plan says so, and the reported provenance is the worst across the types used rather than the best.
+- **Cost realism** (`--duty-cycle`, `--gpu-price-multiplier`): the headline $/1M-tok prices a saturated fleet. You also pay for provisioned headroom and for every idle hour, so the effective figure on an 8B at 2 req/s on an H100 is **$2.71/1M at full duty and $9.04/1M at 30%**, against $0.71 at capacity (`plan --model-size 8b --request-rate 2 --hardware "H100 80GB" --budget 100000 --duty-cycle 0.3`). Spot/reserved pricing is your input, not a bundled guess.
 - **Self-host vs API break-even** (`--compare-api`): prices your workload against hosted APIs and reports the monthly volume where self-hosting starts winning. Prices are a **dated snapshot with a source URL per provider**, flagged stale past 90 days -- never presented as a live quote -- and a frontier API is labeled as a different quality tier rather than passed off as like-for-like.
-- **Prefix caching** (`--prefix-cache-hit-rate`): chatbot and agent traffic reuse a long system prompt, so most of the prefill is already cached. At a 4k prompt and a 90% hit rate an 8B goes from 166ms to 17ms TTFT. Defaults to 0 and is never inferred, and the KV a shared prefix saves is deliberately not deducted -- under-sizing KV is what turns "it fits" into an OOM.
-- **Reasoning models** (`--reasoning-tokens N`): hidden thinking tokens are decoded by the GPU and held in KV even though the caller never sees them. Counting only visible output under-counts decode by the reasoning ratio -- 1000 hidden tokens took an 8B plan from 363ms to 6128ms p95 in our own check. Defaults to 0 and is never inferred: the ratio is a property of your workload, not the weights.
+- **Prefix caching** (`--prefix-cache-hit-rate`): chatbot and agent traffic reuse a long system prompt, so most of the prefill is already cached. At a 4k prompt and a 90% hit rate an 8B on an H100 goes from 166ms to 17ms TTFT (`plan --model-size 8b --prompt-tokens 4096 --hardware "H100 80GB" --budget 100000 --prefix-cache-hit-rate 0.9`); the same query on the reference RTX 4080 is 2051ms to 205ms. Defaults to 0 and is never inferred, and the KV a shared prefix saves is deliberately not deducted -- under-sizing KV is what turns "it fits" into an OOM.
+- **Reasoning models** (`--reasoning-tokens N`): hidden thinking tokens are decoded by the GPU and held in KV even though the caller never sees them. Counting only visible output under-counts decode by the reasoning ratio -- 1000 hidden tokens take an 8B plan on an H100 from 193ms to 3664ms p95 (`plan --model-size 8b --hardware "H100 80GB" --budget 100000 --reasoning-tokens 1000`). Defaults to 0 and is never inferred: the ratio is a property of your workload, not the weights.
 - **Attention-shape aware KV:** MLA (DeepSeek-V2/V3) caches a compressed latent rather than per-head K/V -- sizing it as GQA overstates DeepSeek-V3's cache by **57x** -- and sliding-window models stop growing the cache past the window. A window whose layer pattern isn't declared is *not* applied, because under-sizing KV is what turns "it fits" into an OOM.
 - **Mixture-of-Experts aware:** VRAM sizes on *total* params (every expert stays resident) while throughput and TTFT use *active* params (a token only reads the experts it routes to). Treating an MoE model as dense under-predicts its throughput by 3.6x on Mixtral-8x7B and ~18x on DeepSeek-V3. Active counts are derived from the model's real expert geometry and match published figures.
 - **Energy** (`--electricity-rate`): monthly kWh cost, `$/1M-tok (+energy)`, and tok/s-per-watt, reported alongside (not folded into) the budget gate.
@@ -195,7 +195,7 @@ Metric names are per-engine and explicit; an unknown `--engine` is an error and 
 chimeraforge validate --matrix matrix.json --measurements captured.json
 ```
 
-Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent), so a matrix edited after seeing results no longer matches its own report -- pre-registration, not post-hoc selection. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
+Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent). Pass that hash back with `--expect-fingerprint <hash>` and the command fails unless the matrix still hashes to it, so a matrix edited after seeing results cannot be passed off as the one that was registered -- pre-registration, not post-hoc selection. Without the flag the fingerprint is recomputed from whatever matrix was loaded and only printed, which proves nothing on its own. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
 
 ### `catalog` -- local model catalog
 
@@ -280,7 +280,7 @@ Runs the stdio MCP server described above. Requires `pip install "chimeraforge[m
 | Energy | TDP-driven monthly kWh, $/1M-tok (+energy), tok/s-per-watt | estimated |
 | Safety | TR134/TR142 refusal-rate lookup (opt-in gate) | measured / unknown |
 
-**Hardware:** 22 GPUs -- consumer Ada + Blackwell (RTX 30/40/50-series), datacenter (A100 40/80GB, H100, H200, B200, L4, T4), and AMD MI300X -- each with VRAM, bandwidth, FP16 TFLOPS, TDP, and interconnect (NVLink/Infinity Fabric/PCIe).
+**Hardware:** 22 GPUs -- consumer Ampere/Ada/Blackwell (RTX 30/40/50-series), datacenter (A100 40/80GB, H100, H200, B200, L4, T4), and AMD MI300X -- each with VRAM, bandwidth, FP16 TFLOPS, TDP, and interconnect (NVLink/Infinity Fabric/PCIe).
 
 **Known limits (honest):** Speculative decoding is not yet modeled. Prefix caching models the prefill saving but not the KV saving (deliberately conservative). Reasoning tokens are modeled but the ratio is your input (`--reasoning-tokens`), never inferred. For MoE, active-vs-total params *are* modeled, but expert parallelism and routing load-imbalance are not. Multi-LoRA sizes adapter VRAM exactly, but its decode cost is a rank-indexed estimate from a single published sweep, and per-adapter KV fragmentation is not modeled. Heterogeneous fleets solve the allocation exactly but assume a request router that no engine currently provides, and inherit the throughput-estimate error of every GPU type in the mix. Quant coverage for vLLM/TGI/SGLang is FP16 + FP8 + AWQ/GPTQ; FP8 and W4A16 quality are estimated, not measured -- the TR quality corpus only covers GGUF k-quants. TP and PP throughput are comms-modelled *estimates*, not measured, and can't be combined in one plan. Queueing is analytical (variance-aware), not a discrete-event simulator. The bundled corpus is fit primarily on one rig (RTX 4080 12GB); other GPUs scale from bandwidth/compute until you `measure` on yours. The MCP server is stdio-only (Claude Code/Desktop, local Cursor) -- no hosted remote transport yet.
 
@@ -311,7 +311,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **1,489 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **1,571 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

@@ -22,8 +22,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install build twine
 
+      # Runs on BOTH triggers. Behind `if: github.event_name == 'release'`
+      # a workflow_dispatch from any branch skipped the only version check and
+      # would publish whatever that branch's pyproject.toml said.
       - name: Verify tag matches pyproject version
-        if: github.event_name == 'release'
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PKG=$(python -c "import tomllib,pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")

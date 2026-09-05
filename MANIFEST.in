@@ -1,0 +1,22 @@
+# The sdist shipped every tests/test_*.py but not conftest.py, helpers.py or
+# fixtures/, so `pytest tests/` from an unpacked sdist failed collection with
+# ModuleNotFoundError. Downstream packagers build from the sdist and run the
+# suite as their gate, so they saw four collection errors on a package whose
+# README advertises the suite as its evidence.
+recursive-include tests *.py *.jsonl *.txt *.json
+include CHANGELOG.md
+include CLAUDE.md
+include MANIFEST.in
+
+# test_monitoring.py exercises src/python/banterhearts, which is not part of
+# this distribution and is never shipped -- excluded rather than shipped broken.
+exclude tests/test_monitoring.py
+
+# Repo artifacts the suite asserts against. Without these the sdist ships a
+# suite that reports failures for files it was never given, which is worse than
+# shipping no suite at all.
+include server.json
+include glama.json
+recursive-include scripts *.py *.ps1
+recursive-include examples *.json
+recursive-include .github *.yml *.yaml *.py

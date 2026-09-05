@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from chimeraforge.planner.constants import (
+    REFERENCE_BANDWIDTH_GBPS,
     ACT_DTYPE_BYTES,
     DEFAULT_ARCH,
     DEFAULT_ELECTRICITY_RATE,
@@ -291,7 +292,49 @@ class ThroughputModel:
         if hardware:
             tps *= bandwidth_ratio(hardware)
 
-        return max(tps, 0.1)
+        return max(self._clamp_to_bandwidth(tps, model, quant, hardware), 0.1)
+
+    def bandwidth_ceiling_tps(
+        self,
+        params_b: float,
+        quant: str = "FP16",
+        hardware: str | None = None,
+    ) -> float:
+        """The hard physical limit: bandwidth / weight bytes, at MBU = 1.0.
+
+        Decode streams every weight once per token, so no serving stack on this
+        hardware can exceed this rate. Unlike ``roofline_tps`` this carries no
+        efficiency factor and no measured multiplier -- it is not a prediction,
+        it is the bound a prediction may not cross.
+        """
+        gpu = get_gpu(hardware) if hardware else None
+        bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
+        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8
+        if weight_gb <= 0:
+            return float("inf")
+        return bw / weight_gb
+
+    def _clamp_to_bandwidth(
+        self, tps: float, model: str, quant: str, hardware: str | None
+    ) -> float:
+        """Refuse to report a decode rate the memory bus cannot deliver.
+
+        The fitted power law has an exponent of 0.089, so it is nearly flat in
+        model size where bandwidth-bound decode requires ~1.0. Extrapolated to
+        an 8B -- a registry model with no measured row, and the model behind the
+        documented `plan --model-size 8b` -- it returned 59.9 tok/s against a
+        26.9 tok/s ceiling, 2.2x faster than the hardware can physically go.
+        One bundled row is above the bound too (`llama3.2-3b|ollama|FP16` implies
+        142.5% of peak), so this guards measured lookups as well as fallbacks.
+
+        Clamping is the conservative direction and it is honest: the ceiling is
+        arithmetic over published bandwidth, not another fitted guess.
+        """
+        params = MODEL_PARAMS_B.get(model)
+        if params is None:
+            return tps
+        ceiling = self.bandwidth_ceiling_tps(params, quant, hardware)
+        return min(tps, ceiling)
 
     def roofline_tps(
         self,
@@ -318,7 +361,7 @@ class ThroughputModel:
         if params_b <= 0:
             return 0.1
         gpu = get_gpu(hardware) if hardware else None
-        bandwidth = gpu.bandwidth_gbps if gpu else 556.0  # RTX 4080 reference
+        bandwidth = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         fp16_weight_gb = params_b * 16.0 / 8.0
         base_tps = mbu * bandwidth / fp16_weight_gb
         return max(base_tps * self.quant_multiplier(quant), 0.1)
@@ -348,7 +391,7 @@ class ThroughputModel:
         if batch <= 1 or n1_tps <= 0:
             return max(n1_tps, 0.1)
         gpu = get_gpu(hardware) if hardware else None
-        bandwidth = gpu.bandwidth_gbps if gpu else 556.0
+        bandwidth = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         denom = bandwidth * mbu  # effective GB/s
         weight_eff_gb = denom / n1_tps
         agg = batch * denom / (weight_eff_gb + batch * kv_per_seq_gb)
@@ -388,7 +431,7 @@ class ThroughputModel:
         if n1_tps <= 0:
             return 0.1
         gpu = get_gpu(hardware) if hardware else None
-        bw = gpu.bandwidth_gbps if gpu else 556.0
+        bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         group_bw = tp * bw * mbu  # GB/s aggregate over the group
         weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
         b = max(batch, 1)
@@ -440,7 +483,7 @@ class ThroughputModel:
         if n1_tps <= 0:
             return 0.1
         gpu = get_gpu(hardware) if hardware else None
-        bw = gpu.bandwidth_gbps if gpu else 556.0
+        bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         group_bw = pp * bw * mbu  # GB/s aggregate over the pp stages
         weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
         b = max(batch, 1)

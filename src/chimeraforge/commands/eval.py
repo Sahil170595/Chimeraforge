@@ -6,6 +6,7 @@ import json as json_mod
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 console = Console()
 
@@ -86,7 +87,7 @@ def eval_cmd(
         try:
             t = get_task(task)
         except KeyError as exc:
-            console.print(f"[red]Error:[/] {exc}")
+            console.print(f"[red]Error:[/] {escape(str(exc))}")
             raise typer.Exit(code=1)
         refs = t.references
         task_name = t.name
