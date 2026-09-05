@@ -37,6 +37,18 @@ from chimeraforge.planner.constants import (
     backend_supports_quant,
     quant_family,
 )
+from chimeraforge.planner.provenance import (
+    COST_BASIS,
+    PROV_ESTIMATED,
+    PROV_EXTRAPOLATED,
+    PROV_MEASURED,
+    PROV_UNKNOWN,
+    VRAM_BASIS_REGISTRY,
+    VRAM_BASIS_RESOLVED,
+    prov_class,
+)
+from chimeraforge.planner.provenance import derived as prov_derived
+from chimeraforge.planner.provenance import from_corpus_row as prov_from_corpus_row
 from chimeraforge.planner.hardware import (
     GPU_DB,
     REFERENCE_GPU,
@@ -517,7 +529,8 @@ def enumerate_candidates(
                 # roofline estimate for a genuinely off-registry model, is
                 # "estimated".
                 used_roofline = False
-                lookup_hit = f"{lookup_name}|{backend}|{quant}" in models.throughput.lookup
+                lookup_hit_key = f"{lookup_name}|{backend}|{quant}"
+                lookup_hit = lookup_hit_key in models.throughput.lookup
                 if lookup_hit:
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
                     # A lookup hit is evidence about the rig the row was measured
@@ -526,16 +539,23 @@ def enumerate_candidates(
                     # through bandwidth_ratio, so it is an extrapolation and saying
                     # "measured" would cite a benchmark that never ran on this card.
                     # It reached 13.8x on a B200 before this was caught.
-                    if is_reference_hardware(hardware):
-                        throughput_source = "measured"
-                    else:
-                        throughput_source = "extrapolated"
+                    #
+                    # The anchor travels with the label rather than the adjective
+                    # alone, and it discloses the bandwidth clamp too: several
+                    # bundled rows sit above the memory-bandwidth ceiling, so on
+                    # those the reported figure is the ceiling and not the row.
+                    throughput_source = prov_from_corpus_row(
+                        measured_on=REFERENCE_GPU,
+                        measured_tps=models.throughput.lookup[lookup_hit_key],
+                        ratio=1.0 if is_reference_hardware(hardware) else bandwidth_ratio(hardware),
+                        reported_tps=n1_tps,
+                    )
                 elif use_measured:
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
-                    throughput_source = "estimated"
+                    throughput_source = PROV_ESTIMATED
                 else:
                     n1_tps = models.throughput.roofline_tps(active_params_b, quant, hardware)
-                    throughput_source = "estimated"
+                    throughput_source = PROV_ESTIMATED
                     used_roofline = True
 
                 # Decode reads every weight once per token. Whatever sits in host RAM
@@ -701,15 +721,23 @@ def enumerate_candidates(
                 )
                 ppw = models.cost.perf_per_watt(total_tps, tdp_watts, total_gpus)
 
-                safety_source = "measured" if safety_refusal is not None else "unknown"
-                # VRAM is first-principles either way; it's "measured" when arch
-                # came from the registry, "estimated" when from a resolved spec.
-                vram_source = "measured" if use_measured else "estimated"
+                safety_source = PROV_MEASURED if safety_refusal is not None else PROV_UNKNOWN
+                # VRAM is arithmetic over the architecture, never a benchmark
+                # reading -- so it is `derived`, not `measured`, when the shape is
+                # exact, and `estimated` when the shape itself was resolved with
+                # guesswork. Filing exact arithmetic under `measured` cited the TR
+                # corpus as the source of a number that corpus never measured.
+                vram_source = prov_derived(
+                    VRAM_BASIS_REGISTRY if use_measured else VRAM_BASIS_RESOLVED
+                )
                 provenance = {
                     "vram": vram_source,
                     "throughput": throughput_source,
                     "quality": quality_source,
                     "safety": safety_source,
+                    # The bill is multiplication over a dated price snapshot and a
+                    # GPU count. Exact given its inputs, and never measured.
+                    "cost": prov_derived(COST_BASIS),
                 }
                 if model_source == SOURCE_REGISTRY_APPROX:
                     # The alias is a different model. Its rows are a reasonable
@@ -717,13 +745,13 @@ def enumerate_candidates(
                     # properties OF a model -- reporting another one's as
                     # measured attributes a benchmark to weights that never ran.
                     for _key in ("quality", "safety"):
-                        if provenance.get(_key) == "measured":
-                            provenance[_key] = "estimated" if _key == "quality" else "unknown"
-                    # VRAM too. It is first-principles arithmetic, but over the
-                    # ALIAS's architecture -- phi-4 was reported at 6.69 GB with
-                    # vram=measured because it borrowed phi-2's 2.78B geometry.
-                    # Exact arithmetic on the wrong shape is not a measurement.
-                    provenance["vram"] = "estimated"
+                        if prov_class(provenance.get(_key)) == PROV_MEASURED:
+                            provenance[_key] = PROV_ESTIMATED if _key == "quality" else PROV_UNKNOWN
+                    # VRAM too. It is exact arithmetic, but over the ALIAS's
+                    # architecture -- phi-4 was reported at 6.69 GB because it
+                    # borrowed phi-2's 2.78B geometry. Arithmetic on the wrong
+                    # shape is not `derived`; the shape itself is the guess.
+                    provenance["vram"] = PROV_ESTIMATED
 
                 warnings = []
                 if quant_family(quant) == "w4a16":
@@ -887,7 +915,7 @@ def enumerate_candidates(
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
                 elif quality_source == "estimated" and not use_measured:
                     warnings.append("quality estimated from family prior, not measured")
-                if throughput_source == "extrapolated":
+                if prov_class(throughput_source) == PROV_EXTRAPOLATED:
                     ratio = bandwidth_ratio(hardware)
                     warnings.append(
                         f"throughput is a {ratio:.1f}x memory-bandwidth extrapolation of a "

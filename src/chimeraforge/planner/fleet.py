@@ -40,6 +40,8 @@ from dataclasses import dataclass, field
 
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_DB, get_gpu
+from chimeraforge.planner.provenance import PROVENANCE_ORDER as _PROVENANCE_ORDER
+from chimeraforge.planner.provenance import worst as prov_worst
 
 # Ceiling on GPUs of a single type in one mix. Not a physical limit -- a guard so
 # a badly-posed demand cannot spin the solver into an enormous allocation nobody
@@ -63,7 +65,10 @@ _MAX_SINGLE_GPU_RATE = 4096.0
 # reference rig, so it outranks a pure roofline estimate but is not measurement
 # of the card in hand. Unknown labels sort worst, so a value this list has never
 # heard of can never be reported as the best of a mix.
-PROVENANCE_ORDER = ("measured", "extrapolated", "estimated", "unknown")
+# Re-exported from the one place that defines the classes, so a class added
+# there cannot go missing from the worst-across-types rule and silently rank as
+# the best-grounded member of a mix.
+PROVENANCE_ORDER = _PROVENANCE_ORDER
 
 
 class FleetError(ValueError):
@@ -140,22 +145,18 @@ class FleetPlan:
         return len([n for n in self.units.values() if n > 0]) > 1
 
     def provenance(self) -> dict[str, str]:
-        """Worst provenance across the GPU types actually used.
+        """Worst provenance class across the GPU types actually used.
 
         A mix is only as trustworthy as its least-grounded member, and reporting
-        the best would let one measured GPU launder several estimated ones.
+        the best would let one measured GPU launder several estimated ones. The
+        anchors are deliberately dropped here: they describe one member's number,
+        and a fleet-level field carrying one member's anchor would misattribute it.
         """
         used = [self.options[g] for g, n in self.units.items() if n > 0]
-        out: dict[str, str] = {}
-        for key in ("vram", "throughput", "quality"):
-            ranks = [
-                PROVENANCE_ORDER.index(o.provenance[key])
-                if o.provenance.get(key) in PROVENANCE_ORDER
-                else len(PROVENANCE_ORDER) - 1
-                for o in used
-            ]
-            out[key] = PROVENANCE_ORDER[max(ranks)] if ranks else "unknown"
-        return out
+        return {
+            key: prov_worst([o.provenance.get(key) for o in used])
+            for key in ("vram", "throughput", "quality")
+        }
 
     def to_dict(self) -> dict:
         return {
