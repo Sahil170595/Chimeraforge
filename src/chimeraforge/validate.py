@@ -34,12 +34,20 @@ import statistics
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from chimeraforge.planner.provenance import PROV_EXTRAPOLATED, PROV_MEASURED, prov_class
+
 # Provenance classes, in the order the report presents them. The estimated paths
 # lead because they are the only ones making an out-of-sample claim.
 CLASS_ROOFLINE = "roofline-estimate"
 CLASS_PARALLEL = "parallel-estimate"
+# A corpus row scaled to a GPU it was never measured on. This is the audit's
+# sharpest class -- the prediction is genuinely out-of-sample for THIS card, and
+# the only thing being tested is the bandwidth-ratio assumption. Folding it into
+# `measured-lookup` filed the most out-of-sample predictions in the tool under
+# the heading that says they are not predictions at all.
+CLASS_EXTRAPOLATED = "bandwidth-extrapolated"
 CLASS_LOOKUP = "measured-lookup"
-CLASS_ORDER = (CLASS_ROOFLINE, CLASS_PARALLEL, CLASS_LOOKUP)
+CLASS_ORDER = (CLASS_ROOFLINE, CLASS_PARALLEL, CLASS_EXTRAPOLATED, CLASS_LOOKUP)
 LEAD_CLASS = CLASS_ROOFLINE
 
 # Metrics compared when both sides report them.
@@ -152,7 +160,12 @@ def classify(
     """
     if max(tensor_parallel, 1) > 1 or max(pipeline_parallel, 1) > 1:
         return CLASS_PARALLEL
-    return CLASS_LOOKUP if provenance.get("throughput") == "measured" else CLASS_ROOFLINE
+    cls = prov_class(provenance.get("throughput"))
+    if cls == PROV_MEASURED:
+        return CLASS_LOOKUP
+    if cls == PROV_EXTRAPOLATED:
+        return CLASS_EXTRAPOLATED
+    return CLASS_ROOFLINE
 
 
 def relative_error(predicted: float, measured: float) -> float | None:
@@ -360,6 +373,13 @@ def format_markdown(audit: Audit) -> str:
                 "_Not an out-of-sample test: for these cells the measured corpus **is** "
                 "the prediction. Reported for completeness, not as evidence of "
                 "predictive accuracy._",
+            ]
+        elif cls == CLASS_EXTRAPOLATED:
+            out += [
+                "",
+                "_Out-of-sample for this GPU: a corpus row measured on the reference "
+                "rig, scaled by memory bandwidth. What is under test here is the "
+                "extrapolation, not the measurement._",
             ]
         elif cls == LEAD_CLASS:
             out += [

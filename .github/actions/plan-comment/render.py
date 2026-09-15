@@ -67,6 +67,23 @@ def parse_plan(stdout: str) -> tuple[list[dict], dict | None]:
     raise RuntimeError(f"unexpected plan payload: {type(payload).__name__}")
 
 
+def _prov(best: dict, key: str) -> str:
+    """Render one provenance field, whichever shape the payload uses.
+
+    A value is either a bare class string or a dict carrying the class plus its
+    anchor. This action shells out to the CLI rather than importing the package,
+    so it reads both shapes itself; an unreadable value is `unknown`, never the
+    strongest available claim.
+    """
+    value = (best.get("provenance") or {}).get(key)
+    if isinstance(value, dict):
+        cls = str(value.get("class", "unknown"))
+        if "measured_on" in value:
+            return f"{cls} from {value['measured_on']} x{value.get('ratio', 1):.2f}"
+        return cls
+    return str(value) if value else "unknown"
+
+
 def _money(value: float) -> str:
     return f"${value:,.2f}"
 
@@ -90,7 +107,10 @@ def render(candidates: list[dict], api: dict | None, argv: list[str]) -> str:
         ("Model", f"`{best['model']}` @ `{best['quant']}` on `{best['backend']}`"),
         ("Fleet", f"{best.get('n_agents', 1)} replica(s), {gpus} GPU(s)"),
         ("VRAM / GPU", f"{best['vram_gb']} GB"),
-        ("Throughput", f"{best['total_throughput_tps']:,.1f} tok/s total"),
+        (
+            "Throughput",
+            f"{best['total_throughput_tps']:,.1f} tok/s total ({_prov(best, 'throughput')})",
+        ),
         ("p95 latency", f"{best['p95_latency_ms']:,.1f} ms"),
         ("Monthly cost", _money(best["monthly_cost"])),
         ("$/1M tok", f"{_money(best['cost_per_1m_tok'])} at capacity"),
@@ -99,8 +119,9 @@ def render(candidates: list[dict], api: dict | None, argv: list[str]) -> str:
     if effective and effective > best["cost_per_1m_tok"]:
         duty = best.get("duty_cycle", 1.0)
         rows.append(("$/1M tok (effective)", f"{_money(effective)} at {duty:.0%} duty"))
-    quality = best.get("provenance", {}).get("quality", "measured")
-    rows.append(("Quality", f"{best['quality']} ({quality})"))
+    # Absent must fail to the WEAKEST claim: defaulting to "measured" let a
+    # payload with no provenance render a PR comment asserting a benchmark.
+    rows.append(("Quality", f"{best['quality']} ({_prov(best, 'quality')})"))
 
     out = [f"## {MARKER_TITLE}", ""]
     out.append("| | |")
