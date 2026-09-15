@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-09-15
+
 ### Fixed
 - **The GPU table was the last hand-typed dataset in the product, and it drives more of the answer than any other.** 22 `GPUSpec` literals with a prose comment block -- no `captured_at`, no per-entry source URL, no regeneration path -- against the project's own rule that a dataset without a capture date and a source is not shippable, in the one dataset every throughput number depends on (decode is modelled as bandwidth-bound). It is now `data/hardware.json`, regenerated and strictly validated by `scripts/build_hardware_data.py`, with a source URL and capture date per entry. **Every value is the value the literals carried** -- a test pins all 22 GPUs across all 7 fields against the old numbers, so no plan changes on the refactor alone.
 - **`cost_per_hour` mixed two incompatible quantities under one name.** Its own comment said datacenter values are "approximate on-demand cloud rates" and consumer values are "amortised card cost", and the field drives the budget gate, `$/1M-tok` and the self-host-vs-API break-even. Each entry now records a `price_basis`, and the plan states which one it priced against. The datacenter values also did not match the basis they claimed -- H100 at $2.50/hr and B200 at $5.50/hr track GPU *marketplace* rates, roughly 4-5x below hyperscaler on-demand -- so they are relabelled `marketplace`. Relabelled, not changed: repricing them is a decision, and burying it in a migration would hide it.
