@@ -10,6 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
+    CHUNK_BUDGET_CALIBRATED_MAX,
+    CHUNK_BUDGET_CALIBRATED_MIN,
+    CHUNK_OVERHEAD_CAP,
+    CHUNK_TILE_ALIGNMENT,
+    CHUNKED_PREFILL_SOURCE,
     DEFAULT_HOST_LINK_GBPS,
     BACKENDS,
     BACKEND_CONTINUOUS_BATCHING,
@@ -45,6 +50,19 @@ from chimeraforge.planner.evalstats import (
 )
 from chimeraforge.planner.evalstats import SOURCE as EVALSTATS_SOURCE
 from chimeraforge.planner.evalstats import QualityCell
+from chimeraforge.planner.hybrid import INFERRED_KINDS
+from chimeraforge.planner.provenance import (
+    COST_BASIS,
+    PROV_ESTIMATED,
+    PROV_EXTRAPOLATED,
+    PROV_MEASURED,
+    PROV_UNKNOWN,
+    VRAM_BASIS_REGISTRY,
+    VRAM_BASIS_RESOLVED,
+    prov_class,
+)
+from chimeraforge.planner.provenance import derived as prov_derived
+from chimeraforge.planner.provenance import from_corpus_row as prov_from_corpus_row
 from chimeraforge.planner.hardware import (
     GPU_DB,
     REFERENCE_GPU,
@@ -228,6 +246,7 @@ def enumerate_candidates(
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
     quality_override: QualityCell | None = None,
+    max_num_batched_tokens: int | None = None,
     workload_cv2: float = 0.0,
     electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
     kv_quant: str = DEFAULT_KV_QUANT,
@@ -381,12 +400,12 @@ def enumerate_candidates(
             round((params_b * 1e9 / (12 * max(arch_model["n_layers"], 1))) ** 0.5)
         )
 
-        # TTFT (prefill) is compute-bound: same for all quants/backends of a model
-        # on this GPU and prompt length, so compute it once. 0.0 when GPU compute
-        # is unknown -> latency falls back to decode-only.
-        # Prefill FLOPs scale with the params a token actually passes through, so
-        # MoE prefill uses active params too.
-        ttft_ms = models.latency.predict_ttft_ms(active_params_b, prefill_tokens_eff, hardware)
+        # TTFT is no longer the same for every quant. Its compute term is (the
+        # prefill FLOPs are quant-independent), but P8.3 puts a memory-bound floor
+        # under it -- a forward pass must stream the weights whatever the prompt
+        # length -- and the weight bytes are exactly what a quant changes. So it is
+        # computed inside the quant loop below. Prefill FLOPs scale with the params
+        # a token actually passes through, so MoE prefill uses active params.
 
         # ``alias`` is the registry model whose measured data we may reuse: the
         # model itself for registry hits, the matched model for offline
@@ -404,6 +423,16 @@ def enumerate_candidates(
         quants = [spec.native_quant] if (spec and spec.native_quant in QUANT_BPW) else QUANT_LEVELS
 
         for quant in quants:
+            # 0.0 when GPU compute is unknown -> latency falls back to decode-only.
+            ttft_ms = models.latency.predict_ttft_ms(
+                active_params_b,
+                prefill_tokens_eff,
+                hardware,
+                quant=quant,
+                arch=arch_model,
+                max_num_batched_tokens=max_num_batched_tokens,
+                kv_bytes=kv_bytes,
+            )
             # TP/PP degree: explicit, or auto = smallest degree that fits VRAM. Only
             # one dimension is engaged (validated above); the other stays 1.
             tp, pp = 1, 1
@@ -565,7 +594,8 @@ def enumerate_candidates(
                 # roofline estimate for a genuinely off-registry model, is
                 # "estimated".
                 used_roofline = False
-                lookup_hit = f"{lookup_name}|{backend}|{quant}" in models.throughput.lookup
+                lookup_hit_key = f"{lookup_name}|{backend}|{quant}"
+                lookup_hit = lookup_hit_key in models.throughput.lookup
                 if lookup_hit:
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
                     # A lookup hit is evidence about the rig the row was measured
@@ -574,16 +604,23 @@ def enumerate_candidates(
                     # through bandwidth_ratio, so it is an extrapolation and saying
                     # "measured" would cite a benchmark that never ran on this card.
                     # It reached 13.8x on a B200 before this was caught.
-                    if is_reference_hardware(hardware):
-                        throughput_source = "measured"
-                    else:
-                        throughput_source = "extrapolated"
+                    #
+                    # The anchor travels with the label rather than the adjective
+                    # alone, and it discloses the bandwidth clamp too: several
+                    # bundled rows sit above the memory-bandwidth ceiling, so on
+                    # those the reported figure is the ceiling and not the row.
+                    throughput_source = prov_from_corpus_row(
+                        measured_on=REFERENCE_GPU,
+                        measured_tps=models.throughput.lookup[lookup_hit_key],
+                        ratio=1.0 if is_reference_hardware(hardware) else bandwidth_ratio(hardware),
+                        reported_tps=n1_tps,
+                    )
                 elif use_measured:
                     n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
-                    throughput_source = "estimated"
+                    throughput_source = PROV_ESTIMATED
                 else:
                     n1_tps = models.throughput.roofline_tps(active_params_b, quant, hardware)
-                    throughput_source = "estimated"
+                    throughput_source = PROV_ESTIMATED
                     used_roofline = True
 
                 # Decode reads every weight once per token. Whatever sits in host RAM
@@ -749,15 +786,23 @@ def enumerate_candidates(
                 )
                 ppw = models.cost.perf_per_watt(total_tps, tdp_watts, total_gpus)
 
-                safety_source = "measured" if safety_refusal is not None else "unknown"
-                # VRAM is first-principles either way; it's "measured" when arch
-                # came from the registry, "estimated" when from a resolved spec.
-                vram_source = "measured" if use_measured else "estimated"
+                safety_source = PROV_MEASURED if safety_refusal is not None else PROV_UNKNOWN
+                # VRAM is arithmetic over the architecture, never a benchmark
+                # reading -- so it is `derived`, not `measured`, when the shape is
+                # exact, and `estimated` when the shape itself was resolved with
+                # guesswork. Filing exact arithmetic under `measured` cited the TR
+                # corpus as the source of a number that corpus never measured.
+                vram_source = prov_derived(
+                    VRAM_BASIS_REGISTRY if use_measured else VRAM_BASIS_RESOLVED
+                )
                 provenance = {
                     "vram": vram_source,
                     "throughput": throughput_source,
                     "quality": quality_source,
                     "safety": safety_source,
+                    # The bill is multiplication over a dated price snapshot and a
+                    # GPU count. Exact given its inputs, and never measured.
+                    "cost": prov_derived(COST_BASIS),
                 }
                 if model_source == SOURCE_REGISTRY_APPROX:
                     # The alias is a different model. Its rows are a reasonable
@@ -765,13 +810,13 @@ def enumerate_candidates(
                     # properties OF a model -- reporting another one's as
                     # measured attributes a benchmark to weights that never ran.
                     for _key in ("quality", "safety"):
-                        if provenance.get(_key) == "measured":
-                            provenance[_key] = "estimated" if _key == "quality" else "unknown"
-                    # VRAM too. It is first-principles arithmetic, but over the
-                    # ALIAS's architecture -- phi-4 was reported at 6.69 GB with
-                    # vram=measured because it borrowed phi-2's 2.78B geometry.
-                    # Exact arithmetic on the wrong shape is not a measurement.
-                    provenance["vram"] = "estimated"
+                        if prov_class(provenance.get(_key)) == PROV_MEASURED:
+                            provenance[_key] = PROV_ESTIMATED if _key == "quality" else PROV_UNKNOWN
+                    # VRAM too. It is exact arithmetic, but over the ALIAS's
+                    # architecture -- phi-4 was reported at 6.69 GB because it
+                    # borrowed phi-2's 2.78B geometry. Arithmetic on the wrong
+                    # shape is not `derived`; the shape itself is the guess.
+                    provenance["vram"] = PROV_ESTIMATED
 
                 warnings = []
                 if quant_family(quant) == "w4a16":
@@ -839,6 +884,79 @@ def enumerate_candidates(
                             f"model declares a {spec.sliding_window}-token sliding window but "
                             "no layer pattern, so KV is sized at full context (conservative) -- "
                             "the real cache is smaller"
+                        )
+                floor_ms = models.latency.prefill_floor_ms(active_params_b, quant, hardware)
+                chunks = models.latency.prefill_chunks(prefill_tokens_eff, max_num_batched_tokens)
+                if floor_ms > 0 and ttft_ms <= floor_ms * max(chunks, 1) * (1 + 1e-9):
+                    warnings.append(
+                        f"TTFT is at its memory-bound FLOOR ({floor_ms:.1f}ms per forward "
+                        f"pass): at {prefill_tokens_eff} prompt tokens the prefill is too "
+                        "short to saturate compute, so the time to stream the weights "
+                        "dominates. This is a BOUND from MBU (one calibration point), not "
+                        "a prediction -- treat it as 'no faster than'"
+                    )
+                if chunks > 1:
+                    warnings.append(
+                        f"chunked prefill: {prefill_tokens_eff} tokens in {chunks} chunks of "
+                        f"{max_num_batched_tokens}. Each chunk re-reads the earlier chunks' "
+                        f"KV, and the weights are streamed once per chunk. The overhead is "
+                        f"derived from that mechanism and clamped at "
+                        f"{CHUNK_OVERHEAD_CAP:.0%} -- the published ceiling at the smallest "
+                        f"measured budget ({CHUNKED_PREFILL_SOURCE}); it is ESTIMATED"
+                    )
+                    if not (
+                        CHUNK_BUDGET_CALIBRATED_MIN
+                        <= max_num_batched_tokens
+                        <= CHUNK_BUDGET_CALIBRATED_MAX
+                    ):
+                        warnings.append(
+                            f"token budget {max_num_batched_tokens} is outside the "
+                            f"{CHUNK_BUDGET_CALIBRATED_MIN}-{CHUNK_BUDGET_CALIBRATED_MAX} "
+                            "range the published overhead bound covers; the clamp is not "
+                            "calibrated there and the derived term carries it alone"
+                        )
+                    if max_num_batched_tokens % CHUNK_TILE_ALIGNMENT:
+                        warnings.append(
+                            f"token budget {max_num_batched_tokens} is not a multiple of "
+                            f"{CHUNK_TILE_ALIGNMENT}: tile quantization makes this "
+                            "cliff-shaped (257 measured ~32% slower than 256) and it is "
+                            "deliberately NOT modelled. Round to a multiple of 256"
+                        )
+                if spec is not None and spec.attention_layers != spec.n_layers:
+                    warnings.append(
+                        f"hybrid model: only {spec.attention_layers} of {spec.n_layers} layers "
+                        f"cache K/V per token, so KV is "
+                        f"{spec.n_layers / spec.attention_layers:.1f}x smaller than a "
+                        f"same-depth transformer's; the rest hold a fixed recurrent state"
+                    )
+                if spec is not None and spec.recurrent_state_bytes_per_seq > 0:
+                    state_mib = spec.recurrent_state_bytes_per_seq / (1024**2)
+                    if spec.parallel_hybrid:
+                        # Falcon-H1: every layer is BOTH a Mamba mixer and a full
+                        # attention block, so nothing is discounted.
+                        warnings.append(
+                            "parallel hybrid: every layer builds both a Mamba mixer AND a full "
+                            "attention block, so KV is sized on ALL layers (no discount) plus "
+                            f"{state_mib:.0f} MiB/sequence of recurrent state"
+                        )
+                    if spec.recurrent_kind in INFERRED_KINDS:
+                        warnings.append(
+                            f"{spec.recurrent_kind} state size is ESTIMATED: its dims are read "
+                            "from the config but the allocation happens in an external library, "
+                            "so the shape is inferred from the DeltaNet convention. The "
+                            "attention-layer count -- the larger effect -- is exact"
+                        )
+                    if not spec.recurrent_state_dtype_declared:
+                        warnings.append(
+                            "recurrent-state dtype not declared in the config; assumed the "
+                            "model dtype. A config declaring float32 there doubles this term"
+                        )
+                    if best_b > 1:
+                        warnings.append(
+                            f"recurrent state is per SEQUENCE: {state_mib:.0f} MiB x "
+                            f"{best_b} concurrent = "
+                            f"{state_mib * best_b / 1024:.2f} GiB, flat in context "
+                            "length, and it caps concurrency alongside KV"
                         )
                 if reasoning_hidden:
                     warnings.append(
@@ -950,7 +1068,7 @@ def enumerate_candidates(
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
                 elif quality_source == "estimated" and not use_measured:
                     warnings.append("quality estimated from family prior, not measured")
-                if throughput_source == "extrapolated":
+                if prov_class(throughput_source) == PROV_EXTRAPOLATED:
                     ratio = bandwidth_ratio(hardware)
                     warnings.append(
                         f"throughput is a {ratio:.1f}x memory-bandwidth extrapolation of a "

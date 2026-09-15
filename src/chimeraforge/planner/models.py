@@ -31,6 +31,7 @@ from chimeraforge.planner.constants import (
     HOURS_PER_MONTH,
     INTERCONNECT_EFFICIENCY,
     KV_CACHE_UTILISATION,
+    CHUNK_OVERHEAD_CAP,
     KV_DTYPE_BYTES,
     LORA_RANK_THROUGHPUT,
     MBU_DEFAULT,
@@ -129,10 +130,21 @@ class VRAMModel:
           a window we cannot place would shrink the estimate, and under-estimating
           is the direction that claims a fit that is not there.
 
+        - **Hybrid / linear attention** (P8.2) interleaves attention layers with
+          Mamba or gated-linear ones. Only the attention layers cache per token, so
+          KV is sized over ``n_attention_layers`` -- 4 of Nemotron Nano 2's 56, a
+          14.0x overstatement at every context length before this. The recurrent
+          layers instead hold a fixed state per SEQUENCE
+          (``recurrent_state_bytes_per_seq``), flat in context, which no per-token
+          cache term models and which reaches gigabytes at high batch.
+
         ``kv_bytes`` is the per-element cache size (2 = FP16 default; see
         ``KV_QUANT_BYTES`` for q8/q4).
         """
         n_layers = arch["n_layers"]
+        # Absent means every layer caches -- the conservative default, and the
+        # only honest one when a layer pattern could not be placed.
+        caching_layers = arch.get("n_attention_layers") or n_layers
         per_token = arch.get("kv_elems_per_token_per_layer") or (
             2 * arch["n_kv_heads"] * arch["d_head"]
         )
@@ -144,8 +156,19 @@ class VRAMModel:
             effective_ctx = (global_layers * context_length + local_layers * window) / n_layers
         else:
             effective_ctx = context_length
-        total_bytes = n_layers * batch_size * effective_ctx * per_token * kv_bytes
-        return total_bytes / (1024**3)
+        total_bytes = caching_layers * batch_size * effective_ctx * per_token * kv_bytes
+        return total_bytes / (1024**3) + VRAMModel.recurrent_state_gb(arch, batch_size)
+
+    @staticmethod
+    def recurrent_state_gb(arch: dict[str, int], batch_size: int = 1) -> float:
+        """Recurrent (Mamba/linear-attention) state, in GiB.
+
+        Per sequence and independent of context: a recurrent layer's state does
+        not grow with the prompt, which is exactly why it hides from every
+        long-context sanity check and only bites at concurrency. 0.0 for any model
+        with no recurrent layers, so dense arithmetic is untouched.
+        """
+        return arch.get("recurrent_state_bytes_per_seq", 0.0) * max(batch_size, 0) / (1024**3)
 
     def max_concurrent_seqs(
         self,
@@ -178,9 +201,17 @@ class VRAMModel:
         )  # O(ctx), see predict()
         free_gb = hw_vram_gb * utilisation - weight_gb - act_gb
         kv_shard = min(max(tp, 1), max(arch["n_kv_heads"], 1)) * max(pp, 1)
-        per_seq_gb = (
-            self.kv_cache_gb(arch, context_length, batch_size=1, kv_bytes=kv_bytes) / kv_shard
+        # The two per-sequence terms shard differently, so they are divided
+        # separately rather than summed first. KV shards across KV heads (TP) and
+        # layers (PP); the recurrent state is left whole, which is the
+        # conservative direction -- an over-sharded state would raise the
+        # concurrency ceiling on the strength of an assumption about how the
+        # engine splits a Mamba mixer.
+        state_gb = self.recurrent_state_gb(arch, batch_size=1)
+        kv_only_gb = (
+            self.kv_cache_gb(arch, context_length, batch_size=1, kv_bytes=kv_bytes) - state_gb
         )
+        per_seq_gb = kv_only_gb / kv_shard + state_gb
         if per_seq_gb <= 0 or free_gb <= 0:
             return 0
         return int(free_gb / per_seq_gb)
@@ -856,25 +887,133 @@ class LatencyModel:
     fitted: bool = False
 
     @staticmethod
+    def prefill_floor_ms(
+        params_b: float,
+        quant: str = "FP16",
+        hardware: str | None = None,
+        mbu: float = MBU_DEFAULT,
+        chunks: int = 1,
+    ) -> float:
+        """The memory-bound floor under a prefill, in ms.
+
+        Prefill is not purely compute-bound. A forward pass has to stream every
+        weight out of memory regardless of how few tokens it processes, so the
+        time to read them is a floor no prompt length can go under:
+
+            floor = weight_bytes / (bandwidth * MBU)
+
+        the same roofline ``roofline_tps`` already applies to decode. Without it
+        TTFT was linear in prompt length all the way to zero -- an 8B on an RTX
+        4090 predicted 0.242 ms for a 1-token prompt, a single forward pass
+        streaming 16 GB of weights in 242 microseconds.
+
+        This is a BOUND, not a prediction: ``MBU_DEFAULT`` is calibrated on a
+        single datapoint, so it is applied as ``max(compute, floor)`` and never
+        replaces the compute term. Under chunked prefill each chunk is its own
+        forward pass, so the weights are streamed once per chunk.
+
+        0.0 when the GPU is unknown, so the caller omits the term rather than
+        defaulting to the reference card's bandwidth.
+        """
+        gpu = get_gpu(hardware) if hardware else None
+        if gpu is None or gpu.bandwidth_gbps <= 0 or params_b <= 0:
+            return 0.0
+        weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8
+        return weight_gb / (gpu.bandwidth_gbps * mbu) * 1000.0 * max(chunks, 1)
+
+    @staticmethod
+    def prefill_chunks(prompt_tokens: int, max_num_batched_tokens: int | None) -> int:
+        """Chunks a prompt is split into. 1 when chunking is off or unnecessary."""
+        if not max_num_batched_tokens or max_num_batched_tokens <= 0:
+            return 1
+        if prompt_tokens <= max_num_batched_tokens:
+            return 1
+        return math.ceil(prompt_tokens / max_num_batched_tokens)
+
+    @staticmethod
+    def chunk_kv_reread_ms(
+        prompt_tokens: int,
+        max_num_batched_tokens: int | None,
+        arch: dict[str, int] | None,
+        hardware: str | None = None,
+        kv_bytes: float = KV_DTYPE_BYTES,
+        mbu: float = MBU_DEFAULT,
+    ) -> float:
+        """Time spent re-reading earlier chunks' KV, in ms.
+
+        The mechanism is stated by Sarathi-Serve rather than fitted: split a
+        prefill into N chunks and the first chunk's KV is loaded N-1 times, the
+        second's N-2, and so on -- ``N*(N-1)/2`` chunk-loads of extra traffic.
+        Every term is arithmetic over inputs the planner already holds.
+
+        0.0 without an arch (no KV shape to read) or on an unknown GPU.
+        """
+        chunks = LatencyModel.prefill_chunks(prompt_tokens, max_num_batched_tokens)
+        gpu = get_gpu(hardware) if hardware else None
+        if chunks <= 1 or not arch or gpu is None or gpu.bandwidth_gbps <= 0:
+            return 0.0
+        per_token = arch.get("kv_elems_per_token_per_layer") or (
+            2 * arch.get("n_kv_heads", 0) * arch.get("d_head", 0)
+        )
+        caching_layers = arch.get("n_attention_layers") or arch.get("n_layers", 0)
+        chunk_bytes = max_num_batched_tokens * per_token * caching_layers * kv_bytes
+        extra_loads = chunks * (chunks - 1) / 2
+        return extra_loads * chunk_bytes / (gpu.bandwidth_gbps * 1e9 * mbu) * 1000.0
+
+    @staticmethod
     def predict_ttft_ms(
         params_b: float,
         prompt_tokens: int,
         hardware: str | None = None,
         mfu: float = PREFILL_MFU,
+        quant: str = "FP16",
+        max_num_batched_tokens: int | None = None,
+        arch: dict[str, int] | None = None,
+        kv_bytes: float = KV_DTYPE_BYTES,
     ) -> float:
-        """Time-to-first-token = prefill compute time (compute-bound, ms).
+        """Time-to-first-token = prefill time (ms).
 
-        Prefill does ~2 FLOPs/param/token over the prompt; time = FLOPs /
-        (peak_TFLOPS * MFU). Returns 0.0 when the GPU's compute is unknown (so the
-        caller omits a prefill term rather than guessing). Decode/TPOT is modelled
-        separately via throughput (bandwidth-bound).
+        Prefill does ~2 FLOPs/param/token over the prompt, so the compute term is
+        ``FLOPs / (peak_TFLOPS * MFU)``. Two corrections sit on top, both
+        derivations rather than fits:
+
+        1. A **memory-bound floor** (``prefill_floor_ms``). Below the crossover the
+           old formula was optimistic, and *unboundedly* so as prompts shrink --
+           which matters more than it looks, because the two features that make
+           TTFT look best (``--prefix-cache-hit-rate`` and short agent prompts)
+           are exactly the ones that drive effective prompt length into that
+           regime.
+        2. **Chunked prefill**, which vLLM V1 enables by default. The extra cost is
+           earlier chunks' KV being re-read, clamped to the only published bound
+           rather than extrapolated past it.
+
+        Returns 0.0 when the GPU's compute is unknown, so the caller omits a
+        prefill term rather than guessing.
         """
         gpu = get_gpu(hardware) if hardware else None
         tflops = gpu.fp16_tflops if gpu else 0.0
         if tflops <= 0 or params_b <= 0 or prompt_tokens <= 0:
             return 0.0
         flops = FLOPS_PER_PARAM_PER_TOKEN * params_b * 1e9 * prompt_tokens
-        return flops / (tflops * 1e12 * mfu) * 1000.0
+        compute_ms = flops / (tflops * 1e12 * mfu) * 1000.0
+
+        chunks = LatencyModel.prefill_chunks(prompt_tokens, max_num_batched_tokens)
+        base_ms = max(
+            compute_ms,
+            LatencyModel.prefill_floor_ms(params_b, quant, hardware, chunks=chunks),
+        )
+        if chunks <= 1:
+            return base_ms
+
+        reread_ms = LatencyModel.chunk_kv_reread_ms(
+            prompt_tokens, max_num_batched_tokens, arch, hardware, kv_bytes
+        )
+        unchunked_ms = max(
+            compute_ms, LatencyModel.prefill_floor_ms(params_b, quant, hardware, chunks=1)
+        )
+        # Clamp against the published ceiling instead of letting a derived
+        # quadratic run past the only overhead anyone has measured.
+        return min(base_ms + reread_ms, unchunked_ms * (1.0 + CHUNK_OVERHEAD_CAP))
 
     def predict_p95(
         self,

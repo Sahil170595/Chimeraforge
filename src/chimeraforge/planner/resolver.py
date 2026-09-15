@@ -49,6 +49,7 @@ from chimeraforge.planner.constants import (
     SWA_PATTERN_KEYS,
     SWA_WINDOW_KEYS,
 )
+from chimeraforge.planner.hybrid import hybrid_from_config, unwrap_text_config
 from chimeraforge.planner.identity import parse_identity, parse_quant, resolve_model
 
 log = logging.getLogger("chimeraforge.planner.resolver")
@@ -122,6 +123,16 @@ class ModelSpec:
     qk_rope_head_dim: int | None = None  # MLA: decoupled RoPE key cached alongside it
     sliding_window: int | None = None  # SWA: attention window, when layers are local
     swa_global_every: int = 0  # SWA: 1 full-attention layer every N (0 = unknown)
+    # Hybrid / linear-attention geometry (P8.2). A hybrid's layers are not all the
+    # same kind of layer: only some cache K/V per token, and the rest hold a
+    # fixed-size recurrent state per SEQUENCE that no per-token cache models.
+    # `None` for n_attention_layers means "every layer caches" -- the conservative
+    # default, and the only honest one when a pattern cannot be placed.
+    n_attention_layers: int | None = None
+    recurrent_state_bytes_per_seq: float = 0.0
+    recurrent_kind: str | None = None
+    recurrent_state_dtype_declared: bool = False
+    parallel_hybrid: bool = False
 
     @property
     def is_moe(self) -> bool:
@@ -220,6 +231,18 @@ class ModelSpec:
             return self.kv_lora_rank + self.qk_rope_head_dim
         return 2 * self.n_kv_heads * self.d_head
 
+    @property
+    def attention_layers(self) -> int:
+        """Layers that actually cache K/V. Falls back to every layer.
+
+        The fallback is the whole safety property: a model whose layer pattern
+        could not be placed is sized as if every layer were attention, because
+        under-sizing KV is what turns "it fits" into an OOM.
+        """
+        if self.n_attention_layers and 0 < self.n_attention_layers <= self.n_layers:
+            return self.n_attention_layers
+        return self.n_layers
+
     def arch(self) -> dict[str, int]:
         """Return the arch dict consumed by ``VRAMModel.predict``."""
         arch: dict[str, int] = {
@@ -228,6 +251,12 @@ class ModelSpec:
             "d_head": self.d_head,
             "kv_elems_per_token_per_layer": self.kv_elems_per_token_per_layer,
         }
+        # Emitted only when it actually differs, so a dense model's arch dict --
+        # and therefore every number downstream of it -- is byte-identical.
+        if self.attention_layers != self.n_layers:
+            arch["n_attention_layers"] = self.attention_layers
+        if self.recurrent_state_bytes_per_seq > 0:
+            arch["recurrent_state_bytes_per_seq"] = self.recurrent_state_bytes_per_seq
         # Only advertise a window when the interleave pattern is known too. Applying
         # a window we cannot place would SHRINK the predicted cache, and an
         # under-estimate is the direction that says "it fits" when it does not.
@@ -382,6 +411,7 @@ def attention_from_config(config: dict) -> dict:
     it -- an unplaceable window would shrink the cache estimate, and under-sizing
     KV is what turns "it fits" into an OOM.
     """
+    config = unwrap_text_config(config)
     out: dict = {}
     lora = _first_key(config, MLA_LORA_RANK_KEYS)
     rope = _first_key(config, MLA_ROPE_DIM_KEYS)
@@ -409,6 +439,9 @@ def spec_from_hf(repo: str, config: dict, params_b: float | None) -> ModelSpec:
     Handles the real-world case where ``head_dim`` is ``null`` (compute it from
     ``hidden_size / num_attention_heads``) and GQA absent (MHA: kv == heads).
     """
+    # Multimodal wrappers (Qwen3.5, Gemma 4) nest every architecture key under
+    # `text_config`; reading the top level made both lines unplannable outright.
+    config = unwrap_text_config(config)
     n_layers = config.get("num_hidden_layers")
     n_heads = config.get("num_attention_heads")
     n_kv_heads = config.get("num_key_value_heads") or n_heads
@@ -448,6 +481,7 @@ def spec_from_hf(repo: str, config: dict, params_b: float | None) -> ModelSpec:
         source=SOURCE_HF,
         **moe_from_config(config),
         **attention_from_config(config),
+        **hybrid_from_config(config, n_layers),
     )
 
 

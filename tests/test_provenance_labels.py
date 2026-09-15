@@ -25,23 +25,32 @@ import pytest
 from chimeraforge.planner.brief import PROVENANCE_MARK, PROVENANCE_PHRASE, PROV_DERIVED
 from chimeraforge.planner.fleet import PROVENANCE_ORDER
 from chimeraforge.planner.hardware import REFERENCE_GPU, bandwidth_ratio, is_reference_hardware
+from chimeraforge.planner.provenance import MARK_EXTRAPOLATED, prov_anchor, prov_class
 from chimeraforge.planner.service import run_plan
-from chimeraforge.validate import CLASS_LOOKUP, CLASS_ROOFLINE, classify
+from chimeraforge.validate import CLASS_EXTRAPOLATED, CLASS_LOOKUP, CLASS_ROOFLINE, classify
 
 # Non-reference GPUs whose corpus rows do not exist, spanning a wide bandwidth
 # range so the extrapolation factor is unmistakable.
 FAR_GPUS = ["B200 180GB", "MI300X 192GB", "H100 80GB", "A100 80GB"]
 
 
-def _ollama_fp16(gpu: str):
+def _fp16_on(model: str, gpu: str):
     r = run_plan(
-        models=["llama3.2-3b"],
+        models=[model],
         hardware=gpu,
         budget=1e9,
         quality_target=0.0,
         allow_network=False,
     )
     return next(c for c in r.candidates if c.backend == "ollama" and c.quant == "FP16")
+
+
+def _ollama_fp16(gpu: str):
+    return _fp16_on("llama3.2-3b", gpu)
+
+
+# The bundled `llama3.2-3b|ollama|FP16` row, which every anchor below must name.
+REFERENCE_ROW_TPS = 95.86
 
 
 class TestReferenceHardware:
@@ -70,14 +79,61 @@ class TestReferenceHardware:
 class TestThroughputLabel:
     def test_reference_gpu_keeps_measured(self):
         c = _ollama_fp16(REFERENCE_GPU)
-        assert c.provenance["throughput"] == "measured"
+        assert prov_class(c.provenance["throughput"]) == "measured"
 
     @pytest.mark.parametrize("gpu", FAR_GPUS)
     def test_other_gpus_are_extrapolated_not_measured(self, gpu):
         c = _ollama_fp16(gpu)
-        assert c.provenance["throughput"] == "extrapolated", (
+        assert prov_class(c.provenance["throughput"]) == "extrapolated", (
             f"{gpu} reports {c.provenance['throughput']!r}; the corpus has no row for "
             "this GPU, only a bandwidth-scaled reference measurement"
+        )
+
+    @pytest.mark.parametrize("gpu", FAR_GPUS)
+    def test_the_extrapolation_carries_its_anchor(self, gpu):
+        """A bare `extrapolated` reads, to a skimming reader, as stronger than
+        `estimated`. The anchor is what makes the label self-describing, so its
+        absence is the same defect in a quieter form."""
+        c = _ollama_fp16(gpu)
+        anchor = prov_anchor(c.provenance["throughput"])
+        assert anchor["measured_on"] == REFERENCE_GPU
+        assert anchor["basis"] == "memory bandwidth"
+        assert anchor["ratio"] == pytest.approx(bandwidth_ratio(gpu), rel=1e-3)
+        # The anchor is the row itself, before transport -- not the number it
+        # was turned into.
+        assert anchor["measured_tps"] == pytest.approx(REFERENCE_ROW_TPS, rel=1e-3)
+
+    @pytest.mark.parametrize("gpu", FAR_GPUS + [REFERENCE_GPU])
+    def test_the_anchor_reconstructs_the_reported_value(self, gpu):
+        """The point of an anchor is that a reader can check it. `llama3.2-3b`'s
+        ollama row sits at 142.5% of the reference card's memory-bandwidth
+        ceiling, so the reported figure is the CLAMP, not the row -- an anchor
+        naming only `measured_tps x ratio` would publish a product that does not
+        equal the value it is attached to."""
+        c = _ollama_fp16(gpu)
+        anchor = prov_anchor(c.provenance["throughput"])
+        transported = anchor["measured_tps"] * anchor.get("ratio", 1.0)
+        assert anchor["clamped_to_bandwidth_ceiling"] is True
+        assert anchor["reported_tps"] == pytest.approx(c.throughput_tps, rel=0.01)
+        assert anchor["reported_tps"] < transported
+
+    def test_an_unclamped_reference_row_is_plain_measured(self):
+        """The common case stays a bare string: 20 of the 23 bundled rows are
+        under the ceiling, and a row that was neither transported nor clamped IS
+        the measurement, with nothing to disclose."""
+        c = _fp16_on("llama3.2-1b", REFERENCE_GPU)
+        assert c.provenance["throughput"] == "measured"
+        assert prov_anchor(c.provenance["throughput"]) == {}
+
+    def test_an_unclamped_row_transported_reconstructs_exactly(self):
+        ref = _fp16_on("llama3.2-1b", REFERENCE_GPU)
+        far = _fp16_on("llama3.2-1b", "A100 80GB")
+        anchor = prov_anchor(far.provenance["throughput"])
+        assert prov_class(far.provenance["throughput"]) == "extrapolated"
+        assert "clamped_to_bandwidth_ceiling" not in anchor
+        assert anchor["measured_tps"] == pytest.approx(ref.throughput_tps, rel=0.01)
+        assert anchor["measured_tps"] * anchor["ratio"] == pytest.approx(
+            far.throughput_tps, rel=0.01
         )
 
     @pytest.mark.parametrize("gpu", FAR_GPUS)
@@ -109,7 +165,24 @@ class TestDownstreamGuardsReArm:
 
     def test_validate_does_not_file_extrapolated_as_in_sample(self):
         assert classify({"throughput": "measured"}) == CLASS_LOOKUP
-        assert classify({"throughput": "extrapolated"}) == CLASS_ROOFLINE
+        # Nor as a roofline: an extrapolated cell IS a prediction (unlike a
+        # lookup) but it is not a first-principles one, and averaging it into the
+        # roofline row would hide which of the two the error belongs to.
+        assert classify({"throughput": "extrapolated"}) == CLASS_EXTRAPOLATED
+        assert classify({"throughput": "estimated"}) == CLASS_ROOFLINE
+        assert CLASS_EXTRAPOLATED not in (CLASS_LOOKUP, CLASS_ROOFLINE)
+
+    def test_validate_classes_the_anchored_form_the_same_way(self):
+        """The class must come from the value's `class`, not from its shape --
+        otherwise adding the anchor silently reclassifies every cell."""
+        anchored = {
+            "class": "extrapolated",
+            "measured_on": REFERENCE_GPU,
+            "measured_tps": 95.9,
+            "ratio": 13.83,
+            "basis": "memory bandwidth",
+        }
+        assert classify({"throughput": anchored}) == CLASS_EXTRAPOLATED
 
     def test_fleet_reports_the_weaker_label_and_warns(self):
         from chimeraforge.planner.fleet import parse_fleet, plan_fleet
@@ -127,7 +200,7 @@ class TestDownstreamGuardsReArm:
                 context_length=2048,
             ),
         )
-        assert plan.provenance()["throughput"] != "measured"
+        assert prov_class(plan.provenance()["throughput"]) != "measured"
         assert any("compounds throughput error" in w for w in plan.warnings)
 
     def test_extrapolated_ranks_between_measured_and_estimated(self):
@@ -197,14 +270,18 @@ class TestBriefLabels:
         # Quality is a genuine corpus lookup and is hardware-independent, so it may
         # stay measured. Nothing derived from throughput may.
         for label in ("Throughput (fleet)", "p95 latency", "TTFT", "TPOT"):
-            assert rows[label].provenance != "measured"
+            assert prov_class(rows[label].provenance) != "measured"
 
     def test_extrapolated_has_prose_and_a_marker(self):
         # A label with no phrase renders as the unknown fallback, which would
         # understate a real measurement; one with no marker reads as measured.
         assert "extrapolated" in PROVENANCE_PHRASE
         assert "bandwidth" in PROVENANCE_PHRASE["extrapolated"]
-        assert PROVENANCE_MARK["extrapolated"] == "~"
+        # Its own mark, not `~`. Sharing one glyph with `estimated` collapsed two
+        # different claims: "a model said so" and "a benchmark said so, about
+        # another card".
+        assert PROVENANCE_MARK["extrapolated"] == MARK_EXTRAPOLATED
+        assert PROVENANCE_MARK["extrapolated"] != PROVENANCE_MARK["estimated"]
 
 
 class TestFormatterFailsClosed:
