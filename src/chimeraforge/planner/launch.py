@@ -132,6 +132,24 @@ def _build_vllm(candidate, spec, *, context_length: int, kv_quant: str) -> Launc
                 "vLLM's smallest KV-cache dtype is fp8; the plan modeled q4 KV, so "
                 "real KV VRAM on vLLM will be higher than the plan assumed."
             )
+    # A hybrid's recurrent state is a separate memory pool in vLLM, sized by its
+    # own dtype: `mamba_ssm_cache_dtype` defaults to following the model dtype, and
+    # several configs declare float32, which doubles the term. Emitting the flag
+    # explicitly makes the served config match the one that was planned instead of
+    # depending on a default.
+    if spec is not None and getattr(spec, "recurrent_state_bytes_per_seq", 0.0) > 0:
+        ssm_dtype = "float32" if spec.recurrent_state_dtype_declared else "auto"
+        parts.append(f"--mamba-ssm-cache-dtype {ssm_dtype}")
+        notes.append(
+            "This model holds a recurrent state per sequence in a pool separate from "
+            "the KV cache. `--mamba-ssm-cache-dtype` is emitted so the served state "
+            "dtype matches the one the plan sized"
+            + (
+                " (the config declares it)."
+                if spec.recurrent_state_dtype_declared
+                else "; the config does not declare it, so `auto` follows the model dtype."
+            )
+        )
     notes.extend(_quant_note(candidate))
     notes.append(
         f"--gpu-memory-utilization {RECOMMENDED_GPU_MEM_UTIL} is a starting point: "

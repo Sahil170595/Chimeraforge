@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **VRAM and KV-cache were labelled `exact` and were not, for a whole class of 2026 models.** The planner sized every layer as an attention layer. A hybrid interleaves attention with Mamba or gated-linear layers, and only the attention layers cache K/V per token -- so `NVIDIA-Nemotron-Nano-9B-v2` (4 attention layers of 56) got a cache **14.0x too large at every context length**, `granite-4.0-h-small` 10.0x, `Qwen3-Next-80B` 4.0x and `Kimi-Linear-48B` 3.9x, with no warning and provenance reporting the number as exact. KV is now sized over the attention layers, from the model's own config. Pinned to a vendor claim rather than to the tool's own arithmetic: NVIDIA publishes that Nemotron Nano 2 does 128k-token inference on a single 22 GiB A10G, and the planner predicted **46.21 GiB** for it -- refusing a configuration the vendor ships. It now predicts 20.28 GiB.
+- **The recurrent state had no slot at all.** A Mamba or linear-attention layer holds a fixed state per *sequence*, flat in context length -- so it never appears in a long-context check and only bites at concurrency, which is exactly where a hybrid gets chosen. It is now sized from config geometry (Mamba-2, Mamba-1 and gated DeltaNet read from transformers 5.10.1 source; Kimi's KDA inferred from the DeltaNet convention and labelled as such), and it enters `max_concurrent_seqs` as well as the footprint. Granite 4.0-H holds 74 MiB per sequence: negligible at batch 1, **4.6 GiB at batch 64**.
+- **The SSM state dtype is read, not assumed.** `Qwen3.5-9B` declares `mamba_ssm_dtype: float32` while the model itself is bfloat16; taking the model dtype would have halved the term that dominates.
+- **Two model lines could not be planned at all.** `Qwen/Qwen3.5-9B` and `google/gemma-4-31B-it` nest every architecture key under `text_config`, and the resolver read the top level and raised `ResolverError`. It now descends into the wrapper; a flat config is passed through untouched.
+- **Falcon-H1 is a parallel hybrid and must not be discounted.** Every one of its 72 layers builds both a Mamba mixer *and* a full attention block, and its config declares no layer pattern. Treating "has mamba keys" as evidence of interleaving would have under-sized it by 72x -- the direction that turns "it fits" into an OOM. Classification is from a placed pattern only; absent one, every layer stays full attention, and the state is still charged on all of them.
+
 ## [0.31.0] - 2026-09-15
 
 ### Changed
