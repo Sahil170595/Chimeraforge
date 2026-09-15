@@ -693,6 +693,7 @@ def plan(
                     context_length=context_length,
                     prompt_tokens=prompt_tokens,
                     max_num_batched_tokens=chunk_budget,
+                    quality_from=quality_from,
                     safety_target=safety_target,
                     workload_cv2=workload_cv2,
                     electricity_rate=electricity_rate,

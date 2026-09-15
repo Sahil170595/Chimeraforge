@@ -441,3 +441,32 @@ class TestPlanCliFleet:
         r = self._run("--request-rate", "2", "--budget", "5000")
         assert r.exit_code == 0
         assert "Heterogeneous fleet" not in r.output
+
+    def test_quality_from_reaches_the_fleet_search(self):
+        """`--quality-from` was forwarded to the single-GPU plan but not to the
+        fleet's per-type plans, so a mix was sized on the bundled 20-item
+        composite while the user believed their harness score was in force."""
+        from pathlib import Path
+
+        from chimeraforge.planner.qualityfile import aggregate, load_quality_file
+
+        fixture = Path(__file__).parent / "fixtures" / "quality" / "lm_eval_results.json"
+        expected = aggregate(load_quality_file(fixture)).score
+        r = self._run(
+            "--fleet",
+            "H100 80GB,L4 24GB",
+            "--request-rate",
+            "64",
+            "--budget",
+            "1e9",
+            "--quality-target",
+            "0",
+            "--quality-from",
+            str(fixture),
+            "--json",
+        )
+        assert r.exit_code == 0, r.output
+        data = json.loads(r.output[r.output.index("{") : r.output.rindex("}") + 1])
+        qualities = [o["quality"] for o in data["fleet"]["per_gpu"]]
+        assert qualities
+        assert all(q == pytest.approx(expected, abs=1e-3) for q in qualities), qualities
