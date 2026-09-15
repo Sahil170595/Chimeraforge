@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-09-15
+
+### Changed
+- **`provenance` in `plan --json` and the MCP payload can now be an object, not only a string.** A value with an anchor to carry -- `derived` VRAM and cost, `extrapolated` throughput, a bandwidth-clamped `measured` row -- is `{"class": ..., ...}`; a value with nothing to anchor stays a bare string. A consumer comparing `provenance["vram"] == "measured"` must read `["class"]` instead, which is why this is a minor release rather than a patch.
+
 ### Fixed
 - **VRAM was labelled `measured`, citing a benchmark corpus that never weighed a byte.** Weights + KV-cache + activations is arithmetic over an architecture; `brief.py` had said so since 0.26.0 and defined a `derived` class for exactly this, and the engine never emitted it. `plan --json` now reports VRAM and monthly cost as `derived`, each naming the arithmetic it came out of. Nothing about the numbers changed -- what changed is that they stop claiming to be observations.
 - **`extrapolated` shipped as a bare adjective.** It contains the word "measured" in its own definition, so on a skim it lands as a *stronger* claim than `estimated`. It now always carries the anchor that makes it self-describing -- the corpus row, the rig it came off, the ratio applied, and the basis -- and gets its own `^` mark instead of sharing `~` with `estimated`, which had collapsed "a model said so" and "a benchmark said so, about another card" into one glyph.
