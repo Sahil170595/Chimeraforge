@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **TTFT had no floor, so it was linear in prompt length all the way to zero.** Prefill was modelled as pure compute, `2 * params * prompt_tokens / (fp16_tflops * MFU)`, which predicted **0.242 ms for a 1-token prompt on an 8B/RTX 4090** -- a forward pass that has to stream 16 GB of weights, finishing in 242 microseconds. A pass reads the weights whatever the prompt length, so that read time is a floor: `max(compute, weight_bytes / (bandwidth * MBU))`, the same roofline decode already uses. Below the crossover (78 tokens on an RTX 4090, 192 on an L4, 140 on an H100, re-derived at the current `MBU_DEFAULT`) the old model was optimistic and *unboundedly* so as prompts shrink -- which matters because the two features that make TTFT look best, `--prefix-cache-hit-rate` and short agent prompts, are exactly what drives effective prompt length into that regime. It is applied as a **bound**, never as a replacement: long prompts are still compute predictions, byte-for-byte.
+
+### Added
+- **`plan --max-num-batched-tokens N`: chunked prefill.** vLLM V1 enables chunking by default (`vllm/config/scheduler.py`, `enable_chunked_prefill: bool = True`), so the planner had been modelling a serving configuration that no longer ships. A prompt longer than the budget is split into `ceil(prompt / budget)` chunks; each chunk re-reads the earlier chunks' KV (`N*(N-1)/2` extra chunk-loads) and streams the weights again. Both terms are arithmetic over inputs the planner already holds. Sarathi-Serve's published endpoints are used **only as a ceiling to clamp against** -- fitting a smooth multiplier through two measured points and presenting it as physics is the mistake the multi-LoRA rank multiplier already had to guard against -- and a budget outside the 512-2048 range it covers says the clamp is not calibrated there. The tile-quantization cliff (a 257-token budget measured ~32% slower than 256) is not modelled, only warned about, because it is not smoothly modelable. Default off: `--max-num-batched-tokens` at or above the prompt reproduces the unchunked number exactly. Emitted in the vLLM launch export, and exposed on the MCP `plan` tool.
+
 ## [0.31.1] - 2026-09-15
 
 ### Fixed

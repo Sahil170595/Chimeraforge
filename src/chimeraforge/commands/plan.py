@@ -156,6 +156,13 @@ def plan(
         "--prompt-tokens",
         help="Average input prompt length in tokens (drives prefill / TTFT).",
     ),
+    max_num_batched_tokens: int = typer.Option(
+        0,
+        "--max-num-batched-tokens",
+        help="Chunked-prefill token budget per scheduler step (vLLM V1 enables "
+        "chunking by default). A prompt longer than this is split, and each chunk "
+        "re-reads the earlier chunks' KV. 0 = model an unchunked prefill.",
+    ),
     workload: str = typer.Option(
         "steady",
         "--workload",
@@ -408,6 +415,11 @@ def plan(
         _fail("--reasoning-tokens must be non-negative.")
     if not 0.0 <= prefix_cache_hit_rate <= 1.0:
         _fail("--prefix-cache-hit-rate must be between 0.0 and 1.0.")
+    if max_num_batched_tokens < 0:
+        _fail("--max-num-batched-tokens must be non-negative (0 = unchunked).")
+    # 0 means "model an unchunked prefill", which is the pre-P8.3 behaviour and
+    # must stay reachable; None is what the engine reads as off.
+    chunk_budget = max_num_batched_tokens or None
     if not 0.0 < duty_cycle <= 1.0:
         _fail("--duty-cycle must be greater than 0.0 and at most 1.0.")
     if gpu_price_multiplier <= 0:
@@ -586,6 +598,7 @@ def plan(
             tpot_slo=tpot_slo,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
+            max_num_batched_tokens=chunk_budget,
             safety_target=safety_target,
             workload_cv2=workload_cv2,
             electricity_rate=electricity_rate,
@@ -636,6 +649,7 @@ def plan(
                 context_length=context_length,
                 prompt_tokens=prompt_tokens,
                 kv_quant=kv_quant,
+                max_num_batched_tokens=chunk_budget,
             )
         except ValueError as exc:
             # A backend with no template must not kill an otherwise-valid plan.
@@ -670,6 +684,7 @@ def plan(
                     tpot_slo=tpot_slo,
                     context_length=context_length,
                     prompt_tokens=prompt_tokens,
+                    max_num_batched_tokens=chunk_budget,
                     safety_target=safety_target,
                     workload_cv2=workload_cv2,
                     electricity_rate=electricity_rate,
