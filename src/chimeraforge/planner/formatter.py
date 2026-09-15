@@ -13,9 +13,13 @@ from rich.table import Table
 from chimeraforge.planner.constants import MODEL_PARAMS_B, POWER_UTILISATION, QUANT_BPW
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_DB
-
-# Marks that survive being skim-read, matching brief.PROVENANCE_MARK.
-PROVENANCE_MARKS = {"measured": "", "derived": "", "extrapolated": "~", "estimated": "~"}
+from chimeraforge.planner.provenance import (
+    PROV_MEASURED,
+    PROVENANCE_LEGEND,
+    prov_anchor,
+    prov_class,
+    prov_mark,
+)
 
 
 def _finite(obj):
@@ -108,9 +112,22 @@ def format_recommendation(
     perf.add_column("Value")
     # Absent label must fail to the WEAKEST claim, not the strongest: a Candidate
     # built without provenance rendered as "(measured)".
-    tp_basis = best.provenance.get("throughput", "unknown")
-    tp_color = "green" if tp_basis == "measured" else "yellow"
-    perf.add_row("N=1 throughput", f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis})[/]")
+    tp_basis = prov_class(best.provenance.get("throughput"))
+    tp_color = "green" if tp_basis == PROV_MEASURED else "yellow"
+    # The anchor travels with the label. "(extrapolated)" alone reads as a
+    # stronger claim than "(estimated)"; naming the row it came from and the
+    # ratio applied makes it self-describing instead.
+    anchor = prov_anchor(best.provenance.get("throughput"))
+    tp_note = (
+        f" {anchor['measured_tps']} tok/s on {anchor['measured_on']} "
+        f"x{anchor['ratio']:.2f} {anchor['basis']}"
+        if "measured_tps" in anchor
+        else ""
+    )
+    perf.add_row(
+        "N=1 throughput",
+        f"{best.throughput_tps} tok/s  [{tp_color}]({tp_basis}){tp_note}[/]",
+    )
     perf.add_row("Total throughput", f"{best.total_throughput_tps} tok/s")
     if best.effective_batch > 1:
         perf.add_row("Batch per GPU", f"{best.effective_batch} concurrent (continuous batching)")
@@ -142,7 +159,7 @@ def format_recommendation(
     refusal_str = (
         f"{best.safety_refusal}" if best.safety_refusal is not None else "n/a (unscreened)"
     )
-    q_basis = best.provenance.get("quality", "unknown")
+    q_basis = prov_class(best.provenance.get("quality"))
     q_color = {"measured": "green", "estimated": "yellow", "unknown": "red"}.get(q_basis, "white")
     cost_table.add_row("Quality score", f"{best.quality}  [{q_color}]({q_basis})[/]")
     cost_table.add_row("Quality tier", f"[{tier_color}]{best.quality_tier}[/]")
@@ -198,8 +215,8 @@ def format_recommendation(
             # an alternative carrying "RTSI refusal-instability risk: MODERATE"
             # displayed nothing at all.
             prov = alt.provenance or {}
-            q_mark = PROVENANCE_MARKS.get(prov.get("quality", "unknown"), "?")
-            t_mark = PROVENANCE_MARKS.get(prov.get("throughput", "unknown"), "?")
+            q_mark = prov_mark(prov.get("quality"))
+            t_mark = prov_mark(prov.get("throughput"))
             alt_table.add_row(
                 str(i),
                 alt.model,
@@ -213,10 +230,11 @@ def format_recommendation(
                 f"[yellow]{len(alt.warnings)}[/]" if alt.warnings else "",
             )
         console.print(alt_table)
+        console.print(f"  [dim]{PROVENANCE_LEGEND}[/]")
         if any(a.warnings for a in alts):
             console.print(
-                "  [dim]! = warning count on that alternative; `~` estimated, "
-                "`?` unknown. Re-run with --model to see its warnings in full.[/]"
+                "  [dim]! = warning count on that alternative. "
+                "Re-run with --model to see its warnings in full.[/]"
             )
 
     console.print(f"\n  [dim]{len(candidates)} total viable configurations evaluated[/]\n")
@@ -280,10 +298,8 @@ def format_suggestions(
     table.add_column("p95 ms", justify="right")
 
     for i, c in enumerate(ranked, 1):
-        q_basis = c.provenance.get("quality", "unknown")
-        q_mark = "" if q_basis == "measured" else "~"
-        tp_basis = c.provenance.get("throughput", "unknown")
-        tp_mark = "" if tp_basis == "measured" else "~"
+        q_mark = prov_mark(c.provenance.get("quality"))
+        tp_mark = prov_mark(c.provenance.get("throughput"))
         table.add_row(
             str(i),
             c.model,
@@ -301,7 +317,7 @@ def format_suggestions(
     console.print(
         f"  [dim]{len(ranked)} of {considered} considered models fit; "
         f"{dropped} dropped (VRAM/budget/latency/quality). "
-        f"~ = estimated, not measured.[/]"
+        f"{PROVENANCE_LEGEND}[/]"
     )
     _print_resolve_errors(errors)
 
@@ -369,7 +385,7 @@ def format_pareto(frontier: list[Candidate], hardware: str) -> None:
             tags.append("fastest")
         if c is best_q:
             tags.append("best-quality")
-        q_mark = "" if c.provenance.get("quality") == "measured" else "~"
+        q_mark = prov_mark(c.provenance.get("quality"))
         table.add_row(
             c.model,
             c.quant,

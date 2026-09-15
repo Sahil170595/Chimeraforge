@@ -26,7 +26,19 @@ from dataclasses import dataclass, field
 from chimeraforge import __version__
 from chimeraforge.planner.engine import Candidate
 
-PROV_DERIVED = "derived"
+from chimeraforge.planner.provenance import (
+    MARK_EXTRAPOLATED,
+    PROV_DERIVED,
+    PROVENANCE_MARK,
+    prov_anchor,
+    prov_class,
+    prov_mark,
+)
+
+# Re-exported: the mark table used to live here, and it is the natural import
+# site for anything rendering a brief. It is now defined once, next to the
+# classes, so the two cannot drift.
+__all__ = ["PROVENANCE_MARK", "PROVENANCE_PHRASE", "PROV_DERIVED"]
 
 # Prose keyed to the provenance label, so the sentence cannot outrun the evidence.
 PROVENANCE_PHRASE = {
@@ -42,14 +54,6 @@ PROVENANCE_PHRASE = {
     # source of a number it never measured -- the precise confabulation this
     # module exists to make impossible.
     PROV_DERIVED: "derived (exact arithmetic over the inputs, not a prediction)",
-}
-# Marks a value in a table so the qualifier survives being skim-read.
-PROVENANCE_MARK = {
-    "measured": "",
-    "extrapolated": "~",
-    "estimated": "~",
-    "unknown": "?",
-    PROV_DERIVED: "",
 }
 
 # A brief without a date is undatable evidence; a brief whose prices are older than
@@ -160,7 +164,7 @@ class MetricRow:
 
     @property
     def marked(self) -> str:
-        return f"{PROVENANCE_MARK.get(self.provenance, '?')}{self.value}"
+        return f"{prov_mark(self.provenance)}{self.value}"
 
     def to_dict(self) -> dict:
         return {
@@ -246,8 +250,20 @@ def build_brief(
 
     w = candidates[0]
     prov = w.provenance or {}
-    tput_p = prov.get("throughput", "estimated")
-    qual_p = prov.get("quality", "unknown")
+    tput_raw = prov.get("throughput", "estimated")
+    tput_p = prov_class(tput_raw)
+    qual_p = prov_class(prov.get("quality", "unknown"))
+    # An extrapolation names the row it was transported from, in the same cell as
+    # the number. A brief is read by people who will never see the JSON, so an
+    # anchor that only exists in the payload does not reach them at all.
+    tput_anchor = prov_anchor(tput_raw)
+    tput_note = (
+        f"{w.throughput_tps:.1f} tok/s per replica; from "
+        f"{tput_anchor['measured_tps']:.1f} tok/s measured on "
+        f"{tput_anchor['measured_on']}, x{tput_anchor['ratio']:.2f} {tput_anchor['basis']}"
+        if "measured_tps" in tput_anchor
+        else f"{w.throughput_tps:.1f} tok/s per replica"
+    )
 
     gpus = w.gpus_total or w.n_agents
     metrics = [
@@ -270,7 +286,7 @@ def build_brief(
             "Throughput (fleet)",
             f"{w.total_throughput_tps:.1f} tok/s",
             tput_p,
-            f"{w.throughput_tps:.1f} tok/s per replica",
+            tput_note,
         ),
         # Latency is a queueing model layered on a throughput number, so it cannot
         # be better-grounded than "estimated" even when the throughput was measured.
@@ -360,15 +376,17 @@ def render_markdown(brief: Brief) -> str:
         "|---|---|---|",
     ]
     for m in brief.metrics:
-        phrase = PROVENANCE_PHRASE.get(m.provenance, PROVENANCE_PHRASE["unknown"])
+        phrase = PROVENANCE_PHRASE[prov_class(m.provenance)]
         detail = f"{phrase}" + (f" -- {m.note}" if m.note else "")
         out.append(f"| {m.label} | {m.marked} | {detail} |")
 
     out += [
         "",
-        "`~` marks an estimate and `?` an unscreened value. An estimate is a "
-        "first-principles prediction, not a measurement: run `chimeraforge measure` "
-        "on the target rig to replace it with a measured figure.",
+        f"`~` marks an estimate, `{MARK_EXTRAPOLATED}` a measurement taken on a "
+        "different GPU and scaled to this one, and `?` an unscreened value. An "
+        "estimate is a first-principles prediction, not a measurement: run "
+        "`chimeraforge measure` on the target rig to replace it with a measured "
+        "figure.",
         "",
         "## Assumptions",
         "",
@@ -410,8 +428,8 @@ def render_markdown(brief: Brief) -> str:
         ]
         for c in brief.alternatives:
             cp = c.provenance or {}
-            tp = PROVENANCE_MARK.get(cp.get("throughput", "estimated"), "?")
-            qp = PROVENANCE_MARK.get(cp.get("quality", "unknown"), "?")
+            tp = prov_mark(cp.get("throughput", "estimated"))
+            qp = prov_mark(cp.get("quality", "unknown"))
             out.append(
                 f"| {c.model} {c.quant} / {c.backend} | {c.gpus_total or c.n_agents} "
                 f"| {tp}{c.total_throughput_tps:.0f} tok/s | {tp}{c.p95_latency_ms:.0f} ms "
