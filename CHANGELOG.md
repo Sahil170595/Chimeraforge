@@ -14,6 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Two model lines could not be planned at all.** `Qwen/Qwen3.5-9B` and `google/gemma-4-31B-it` nest every architecture key under `text_config`, and the resolver read the top level and raised `ResolverError`. It now descends into the wrapper; a flat config is passed through untouched.
 - **Falcon-H1 is a parallel hybrid and must not be discounted.** Every one of its 72 layers builds both a Mamba mixer *and* a full attention block, and its config declares no layer pattern. Treating "has mamba keys" as evidence of interleaving would have under-sized it by 72x -- the direction that turns "it fits" into an OOM. Classification is from a placed pattern only; absent one, every layer stays full attention, and the state is still charged on all of them.
 
+## [0.31.0] - 2026-09-15
+
+### Changed
+- **`provenance` in `plan --json` and the MCP payload can now be an object, not only a string.** A value with an anchor to carry -- `derived` VRAM and cost, `extrapolated` throughput, a bandwidth-clamped `measured` row -- is `{"class": ..., ...}`; a value with nothing to anchor stays a bare string. A consumer comparing `provenance["vram"] == "measured"` must read `["class"]` instead, which is why this is a minor release rather than a patch.
+
+### Fixed
+- **VRAM was labelled `measured`, citing a benchmark corpus that never weighed a byte.** Weights + KV-cache + activations is arithmetic over an architecture; `brief.py` had said so since 0.26.0 and defined a `derived` class for exactly this, and the engine never emitted it. `plan --json` now reports VRAM and monthly cost as `derived`, each naming the arithmetic it came out of. Nothing about the numbers changed -- what changed is that they stop claiming to be observations.
+- **`extrapolated` shipped as a bare adjective.** It contains the word "measured" in its own definition, so on a skim it lands as a *stronger* claim than `estimated`. It now always carries the anchor that makes it self-describing -- the corpus row, the rig it came off, the ratio applied, and the basis -- and gets its own `^` mark instead of sharing `~` with `estimated`, which had collapsed "a model said so" and "a benchmark said so, about another card" into one glyph.
+- **Three bundled rows are above the memory-bandwidth ceiling, and the clamp that catches them was undisclosed.** Writing the anchor surfaced this: `llama3.2-3b|ollama|FP16` implies 142.5% of the reference card's peak, so `_clamp_to_bandwidth` reports the physical ceiling instead of the row -- 67.3 tok/s against a measured 95.9, on the reference rig itself, under the label `measured`. The anchor now names the clamp and prints the reported value, so `measured_tps x ratio` never appears as a product that fails to reconstruct the number it is attached to.
+- **The audit filed every cross-GPU prediction under "not an out-of-sample test".** `validate.classify()` bucketed anything that was not exactly `measured` as `roofline-estimate` and everything else as `measured-lookup`, so bandwidth-extrapolated cells -- the most out-of-sample predictions the tool makes -- landed in the class whose own report text says it is not a prediction. They now have their own class, `bandwidth-extrapolated`, sorted between the two, so the audit can report what the extrapolation costs separately from what the roofline costs.
+- **The GitHub Action rendered a missing provenance field as `measured`.** `best.get("provenance", {}).get("quality", "measured")` failed open to the strongest available claim, so a payload with no provenance produced a PR comment asserting a benchmark. It fails to `unknown`, and the throughput row now states its provenance too.
+- **The alternatives legend was printed only when some alternative had a warning**, though the `~`/`?` marks render either way -- so the common case showed marks with nothing explaining them.
+
 ## [0.30.10] - 2026-09-04
 
 ### Fixed
