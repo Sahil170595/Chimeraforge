@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] - 2026-09-15
+
 ### Fixed
 - **The quality gate reported a difference it could not support, and this says so plainly.** The bundled eval is **20 items**. The quant deltas derived from it say four of six quantization levels score *above* FP16 -- for llama3.2-3b the lookup returned FP16 0.5376 against Q2_K 0.5819, Q4_K_M 0.6241 and Q8_0 0.6277, every one labelled `measured`. 2-bit is not 8% better than FP16. Miller (arXiv:2411.00640, Eq. 9) gives the arithmetic: **at n=20 the minimum detectable effect is +-20.9 percentage points**, and the corpus's entire delta range (Q2_K -10.40pp through Q4_K_M +1.76pp, a 12.16pp spread) sits inside that noise floor. Not one delta is distinguishable from zero, including the Q2_K value that happens to point the right way. Every quality cell now carries its `n` and its interval; the plan reports "indistinguishable from the FP16 baseline" as an outcome with the sample size attached, rather than ranking on it.
 - **The gate rejected on the point estimate, which meant rejecting on noise.** It now rejects only when a cell's **upper** bound is below the target, so a rejection is a claim the data can support, and the rejection reason names the sample size. Guarded against the opposite failure -- widening intervals until the gate never fires turns a real feature into ceremony -- by making the interval a function of `n` and not a tunable: a target beyond every interval still rejects.
