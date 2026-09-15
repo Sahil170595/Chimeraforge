@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-09-15
+
 ### Fixed
 - **TTFT had no floor, so it was linear in prompt length all the way to zero.** Prefill was modelled as pure compute, `2 * params * prompt_tokens / (fp16_tflops * MFU)`, which predicted **0.242 ms for a 1-token prompt on an 8B/RTX 4090** -- a forward pass that has to stream 16 GB of weights, finishing in 242 microseconds. A pass reads the weights whatever the prompt length, so that read time is a floor: `max(compute, weight_bytes / (bandwidth * MBU))`, the same roofline decode already uses. Below the crossover (78 tokens on an RTX 4090, 192 on an L4, 140 on an H100, re-derived at the current `MBU_DEFAULT`) the old model was optimistic and *unboundedly* so as prompts shrink -- which matters because the two features that make TTFT look best, `--prefix-cache-hit-rate` and short agent prompts, are exactly what drives effective prompt length into that regime. It is applied as a **bound**, never as a replacement: long prompts are still compute predictions, byte-for-byte.
 
