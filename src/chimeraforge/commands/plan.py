@@ -156,6 +156,13 @@ def plan(
         "--prompt-tokens",
         help="Average input prompt length in tokens (drives prefill / TTFT).",
     ),
+    quality_from: str = typer.Option(
+        None,
+        "--quality-from",
+        help="Path to an lm-evaluation-harness results JSON. Its score REPLACES "
+        "the bundled 20-item composite (they are different scales and must not be "
+        "mixed), and --quality-target is then read against that metric.",
+    ),
     max_num_batched_tokens: int = typer.Option(
         0,
         "--max-num-batched-tokens",
@@ -598,6 +605,7 @@ def plan(
             tpot_slo=tpot_slo,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
+            quality_from=quality_from,
             max_num_batched_tokens=chunk_budget,
             safety_target=safety_target,
             workload_cv2=workload_cv2,
@@ -685,6 +693,7 @@ def plan(
                     context_length=context_length,
                     prompt_tokens=prompt_tokens,
                     max_num_batched_tokens=chunk_budget,
+                    quality_from=quality_from,
                     safety_target=safety_target,
                     workload_cv2=workload_cv2,
                     electricity_rate=electricity_rate,
