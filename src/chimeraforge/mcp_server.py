@@ -16,7 +16,7 @@ from dataclasses import asdict
 from chimeraforge import __version__
 from chimeraforge.planner.engine import summarize_trace
 from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE, WORKLOAD_CV2
-from chimeraforge.planner.hardware import GPU_DB, get_gpu
+from chimeraforge.planner.hardware import AUTO_HARDWARE, GPU_DB, get_gpu
 from chimeraforge.planner.launch import build_launch_command
 from chimeraforge.planner.resolver import (
     DEFAULT_OLLAMA_URL,
@@ -144,7 +144,11 @@ def plan_deployment(
             "error": f"unknown workload '{workload}'.",
             "hint": f"use one of: {', '.join(WORKLOAD_CV2)}",
         }
-    if get_gpu(hardware) is None:
+    # Overrides and `auto` are resolved inside run_plan, which raises an
+    # actionable error for a card it cannot size. Rejecting them here, before
+    # they were read, made both unreachable from this tool.
+    needs_lookup = not gpu_overrides and (hardware or "").strip().lower() != AUTO_HARDWARE
+    if needs_lookup and get_gpu(hardware) is None:
         known = ", ".join(list(GPU_DB)[:8])
         return {
             "ok": False,

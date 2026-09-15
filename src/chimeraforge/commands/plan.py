@@ -472,6 +472,15 @@ def plan(
     # 0 means "model an unchunked prefill", which is the pre-P8.3 behaviour and
     # must stay reachable; None is what the engine reads as off.
     chunk_budget = max_num_batched_tokens or None
+    # One override set describes one card, and a fleet is a mix of GPU types:
+    # applying the same figures to each type would fabricate specs, and dropping
+    # them would plan hardware the user did not describe.
+    if fleet and gpu_overrides:
+        _fail(
+            "--gpu-* overrides describe a single card, and --fleet plans a mix of "
+            "GPU types; one set of figures cannot apply to both. Plan the unlisted "
+            "card on its own, or drop the overrides."
+        )
     if not 0.0 < duty_cycle <= 1.0:
         _fail("--duty-cycle must be greater than 0.0 and at most 1.0.")
     if gpu_price_multiplier <= 0:

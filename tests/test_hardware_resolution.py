@@ -438,3 +438,86 @@ class TestGpuSpecDefaults:
         assert spec.price_basis == PRICE_BASIS_AMORTISED
         assert spec.user_supplied is False
         assert spec.source_url == ""
+
+
+class TestOverridesAreNotSilentlyDropped:
+    """`--gpu-*` reached the single-GPU plan and nothing else. Two surfaces lost
+    them without saying so: a `--fleet` plan, whose per-type plans never received
+    them, and the MCP tool, which rejected any unlisted `hardware` before the
+    overrides were read."""
+
+    def _cli(self, *args):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        return CliRunner().invoke(app, ["plan", "--model-size", "3b", *args])
+
+    def test_fleet_with_gpu_overrides_is_refused(self):
+        # One override set cannot describe a mix of GPU types, so combining them
+        # is an error rather than a flag that quietly does nothing.
+        r = self._cli(
+            "--fleet",
+            "H100 80GB,L4 24GB",
+            "--request-rate",
+            "10",
+            # A generous budget, so a budget rejection cannot stand in for the
+            # refusal this asserts -- the unfixed code exited 1 on budget alone.
+            "--budget",
+            "1e9",
+            "--gpu-bandwidth-gbps",
+            "4000",
+        )
+        assert r.exit_code == 1, r.output
+        assert "Traceback" not in r.output
+        assert "--fleet" in r.output and "--gpu-" in r.output
+
+    def test_mcp_plans_an_unlisted_card_from_overrides(self):
+        from chimeraforge.mcp_server import plan_deployment
+
+        out = plan_deployment(
+            hardware="RTX 6090 48GB",
+            model_size="3b",
+            gpu_overrides={"vram_gb": 48.0, "bandwidth_gbps": 1300.0},
+            budget_usd_month=1e9,
+            latency_slo_ms=1e9,
+            quality_target=0.0,
+            allow_network=False,
+        )
+        assert out["ok"] is True, out
+
+    def test_mcp_reports_a_missing_required_override(self):
+        from chimeraforge.mcp_server import plan_deployment
+
+        out = plan_deployment(
+            hardware="RTX 6090 48GB",
+            model_size="3b",
+            gpu_overrides={"vram_gb": 48.0},
+            allow_network=False,
+        )
+        assert out["ok"] is False
+        assert "bandwidth" in out["error"]
+
+    def test_mcp_auto_reaches_detection(self, monkeypatch):
+        from chimeraforge.mcp_server import plan_deployment
+
+        monkeypatch.setattr(
+            "chimeraforge.planner.hardware.detect_local_gpu",
+            lambda: ("NVIDIA GeForce RTX 4090", 24.0),
+        )
+        out = plan_deployment(
+            hardware="auto",
+            model_size="3b",
+            budget_usd_month=1e9,
+            latency_slo_ms=1e9,
+            quality_target=0.0,
+            allow_network=False,
+        )
+        assert out["ok"] is True, out
+
+    def test_mcp_still_rejects_an_unlisted_card_without_overrides(self):
+        from chimeraforge.mcp_server import plan_deployment
+
+        out = plan_deployment(hardware="RTX 6090 48GB", model_size="3b", allow_network=False)
+        assert out["ok"] is False
+        assert "unknown GPU" in out["error"]
