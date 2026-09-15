@@ -8,7 +8,33 @@ untested hardware.
 
 from __future__ import annotations
 
+import json
+import re
+import shutil
+import subprocess
 from dataclasses import dataclass, replace
+from importlib.resources import files
+
+# How a `$/hr` figure was arrived at. These are not the same quantity: an
+# amortised purchase price and a rental rate answer different questions, and the
+# field drives the budget gate, $/1M-tok and the self-host-vs-API break-even. It
+# used to be one field mixing both, with its own comment admitting as much.
+PRICE_BASIS_MARKETPLACE = "marketplace"
+PRICE_BASIS_HYPERSCALER = "hyperscaler-on-demand"
+PRICE_BASIS_AMORTISED = "amortised-purchase"
+
+# Prose for each, so a plan can state which basis it priced against instead of
+# printing a bare dollar figure that means two different things.
+PRICE_BASIS_PHRASE = {
+    PRICE_BASIS_MARKETPLACE: (
+        "GPU marketplace rate -- roughly 4-5x below hyperscaler on-demand for the same part"
+    ),
+    PRICE_BASIS_HYPERSCALER: "hyperscaler on-demand list rate",
+    PRICE_BASIS_AMORTISED: (
+        "amortised card purchase price, not a rental rate -- it excludes power, "
+        "which is reported separately, and every other running cost"
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -16,7 +42,7 @@ class GPUSpec:
     name: str
     vram_gb: float
     bandwidth_gbps: float  # Memory bandwidth in GB/s (decode/TPOT is bound by this)
-    cost_per_hour: float  # $/hr (cloud rental or amortised consumer)
+    cost_per_hour: float  # $/hr -- see `price_basis` for WHICH quantity
     fp16_tflops: float = 0.0  # Dense FP16 Tensor TFLOPS, FP32 accumulate (prefill/TTFT)
     tdp_watts: float = 0.0  # Board TDP in watts (energy cost + perf/watt; 0 = unknown)
     # Per-GPU interconnect bandwidth in GB/s (bidirectional aggregate) for tensor-
@@ -27,79 +53,62 @@ class GPUSpec:
     # will not offer FP8 there. Ada / Hopper / Blackwell / CDNA3 have it; Ampere
     # (RTX 30, A100) and Turing (T4) do not.
     fp8_supported: bool = True
+    # Which quantity `cost_per_hour` is (P8.6). Defaults to the consumer basis so
+    # a hand-built GPUSpec cannot silently claim to be a cloud rate.
+    price_basis: str = PRICE_BASIS_AMORTISED
+    # Which datasheet column `fp16_tflops` came from. A with-sparsity headline
+    # halved is defensible but is not a datasheet row, and the halving heuristic
+    # is not universally safe -- AMD publishes no sparsity figure at all for some
+    # parts, so halving their headline would understate a dense number by 2x.
+    tflops_basis: str = "dense"
+    # Where the figures came from, and when they were read.
+    source_url: str = ""
+    captured_at: str = ""
+    # A user-supplied spec, not a bundled one. Its numbers are the user's claim,
+    # not a vendor-published figure this project checked.
+    user_supplied: bool = False
 
 
 # Reference GPU - all TR measurements collected on this card
 REFERENCE_GPU = "RTX 4080 12GB"
 
-# fp16_tflops: dense FP16 Tensor Core, FP32-accumulate, non-sparse. Datacenter
-# values are official datasheets (A100 312, H100 SXM 989, L4 121, T4 65). H200
-# shares H100's GH100 compute die, so 989 (only its memory differs). B200 and
-# MI300X datasheets print only a with-sparsity figure, so dense = that / 2 (B200
-# 4500 -> 2250; MI300X's sheet also prints the dense 1307 directly). Consumer
-# Ada/Blackwell are derived as dense = 2x FP32 shader, which equals the RTX
-# Blackwell whitepaper's FP32-accumulate row (RTX 4090 165.2, RTX 5090 209.5);
-# consumer Ampere use the FP32-accumulate dense rate (half the FP16-accumulate
-# figure) to stay on one basis. Datacenter $/hr are approximate on-demand cloud
-# rates; consumer $/hr are amortised card cost. B200 uses NVIDIA's HGX B200
-# per-GPU datasheet figures (180 GB / 7.7 TB/s), not the 192 GB raw-stack number.
-# tdp_watts are vendor board-power figures (NVIDIA product pages / AMD datasheet);
-# datacenter SXM uses the max-configurable envelope (H100/H200 700W, B200 1000W,
-# MI300X 750W). interconnect_gbps is the per-GPU tensor-parallel link (bidirectional
-# aggregate): NVLink 3 (A100 600), NVLink 4 (H100/H200 900), NVLink 5 (B200 1800),
-# AMD Infinity Fabric (MI300X 896); consumer cards fall back to PCIe (gen4 64, gen5
-# 128 on RTX 50). Approximate; prefill MFU and the `measure` path absorb the slack.
-GPU_DB: dict[str, GPUSpec] = {
-    # Consumer - NVIDIA Ada (PCIe 4.0 = 64 GB/s)
-    "RTX 4060 8GB": GPUSpec("RTX 4060 8GB", 8.0, 272.0, 0.020, 30.2, 115.0, 64.0),
-    "RTX 4060 Ti 8GB": GPUSpec("RTX 4060 Ti 8GB", 8.0, 288.0, 0.025, 44.1, 160.0, 64.0),
-    "RTX 4060 Ti 16GB": GPUSpec("RTX 4060 Ti 16GB", 16.0, 288.0, 0.030, 44.1, 165.0, 64.0),
-    "RTX 4070 12GB": GPUSpec("RTX 4070 12GB", 12.0, 504.0, 0.030, 58.4, 200.0, 64.0),
-    "RTX 4070 Ti 12GB": GPUSpec("RTX 4070 Ti 12GB", 12.0, 504.0, 0.035, 80.2, 285.0, 64.0),
-    # The reference rig, and the only card the bundled corpus was measured on --
-    # so its bandwidth is the denominator of every cross-GPU extrapolation and
-    # of MBU_DEFAULT. It is the RTX 4080 LAPTOP GPU (README: "on an RTX 4080
-    # Laptop (12 GB)"; the rig pairs it with an i9-13900HX, an HX-series mobile
-    # part, and no desktop RTX 4080 12GB exists -- the desktop card is 16 GB).
-    #
-    # It previously carried 556 GB/s and 285 W, which are neither the laptop part
-    # nor the desktop one. NVIDIA publishes 12 GB GDDR6 on a 192-bit bus at a
-    # 60-150 W TGP (nvidia.com/en-us/geforce/laptops/compare, fetched 2026-08-22);
-    # 192-bit at the 18 Gbps GDDR6 these Ada mobile parts ship with is 432 GB/s.
-    # TGP is the 150 W ceiling, since the sustained figure depends on the chassis.
-    #
-    # Confirm on the rig with:
-    #   nvidia-smi --query-gpu=name,memory.total,power.max_limit --format=csv
-    "RTX 4080 12GB": GPUSpec("RTX 4080 12GB", 12.0, 432.0, 0.035, 67.7, 150.0, 64.0),
-    "RTX 4080 16GB": GPUSpec("RTX 4080 16GB", 16.0, 717.0, 0.045, 97.5, 320.0, 64.0),
-    "RTX 4090 24GB": GPUSpec("RTX 4090 24GB", 24.0, 1008.0, 0.060, 165.2, 450.0, 64.0),
-    # Consumer - NVIDIA Blackwell (GDDR7, PCIe 5.0 = 128 GB/s)
-    "RTX 5070 12GB": GPUSpec("RTX 5070 12GB", 12.0, 672.0, 0.030, 61.7, 250.0, 128.0),
-    "RTX 5070 Ti 16GB": GPUSpec("RTX 5070 Ti 16GB", 16.0, 896.0, 0.038, 87.9, 300.0, 128.0),
-    "RTX 5080 16GB": GPUSpec("RTX 5080 16GB", 16.0, 960.0, 0.045, 112.6, 360.0, 128.0),
-    "RTX 5090 32GB": GPUSpec("RTX 5090 32GB", 32.0, 1792.0, 0.075, 209.5, 575.0, 128.0),
-    # Consumer - NVIDIA Ampere (PCIe 4.0)
-    "RTX 3090 24GB": GPUSpec("RTX 3090 24GB", 24.0, 936.0, 0.040, 71.0, 350.0, 64.0),
-    "RTX 3080 10GB": GPUSpec("RTX 3080 10GB", 10.0, 760.0, 0.025, 59.5, 320.0, 64.0),
-    # Data-center - NVIDIA (NVLink)
-    "A100 40GB": GPUSpec("A100 40GB", 40.0, 1555.0, 1.10, 312.0, 400.0, 600.0),
-    "A100 80GB": GPUSpec("A100 80GB", 80.0, 2039.0, 1.60, 312.0, 400.0, 600.0),
-    "H100 80GB": GPUSpec("H100 80GB", 80.0, 3352.0, 2.50, 989.0, 700.0, 900.0),
-    "H200 141GB": GPUSpec("H200 141GB", 141.0, 4800.0, 3.50, 989.0, 700.0, 900.0),
-    "B200 180GB": GPUSpec("B200 180GB", 180.0, 7700.0, 5.50, 2250.0, 1000.0, 1800.0),
-    "L4 24GB": GPUSpec("L4 24GB", 24.0, 300.0, 0.50, 121.0, 72.0, 64.0),
-    "T4 16GB": GPUSpec("T4 16GB", 16.0, 320.0, 0.35, 65.0, 70.0, 64.0),
-    # Data-center - AMD (Infinity Fabric)
-    "MI300X 192GB": GPUSpec("MI300X 192GB", 192.0, 5300.0, 2.00, 1307.0, 750.0, 896.0),
-}
+# Provenance lives in the dataset, per entry: `source_url`, `captured_at`,
+# `tflops_basis` (which datasheet column the TFLOPS figure came from) and
+# `price_basis` (whether $/hr is a rental rate or an amortised purchase).
+# Regenerate with scripts/build_hardware_data.py, which validates it.
 
-# Pre-Ada NVIDIA parts have no FP8 tensor cores: Ampere (RTX 30, A100) and Turing
-# (T4). Everything else in the DB (Ada, Hopper, Blackwell, CDNA3 MI300X) does.
-# Applied as a post-pass so the table above stays one readable line per GPU.
-NO_FP8_GPUS = frozenset({"RTX 3090 24GB", "RTX 3080 10GB", "A100 40GB", "A100 80GB", "T4 16GB"})
-for _name in NO_FP8_GPUS:
-    GPU_DB[_name] = replace(GPU_DB[_name], fp8_supported=False)
-del _name
+
+def _load_bundled() -> dict[str, GPUSpec]:
+    """Load the dataset, which is regenerated by scripts/build_hardware_data.py.
+
+    The table used to be 22 hand-typed literals with a prose comment for
+    provenance -- no capture date, no per-entry source, no regeneration path --
+    in the one dataset that drives every throughput number, since decode is
+    modelled as bandwidth-bound.
+    """
+    raw = json.loads(
+        files("chimeraforge.planner.data").joinpath("hardware.json").read_text(encoding="utf-8")
+    )
+    out: dict[str, GPUSpec] = {}
+    for entry in raw["gpus"]:
+        out[entry["name"]] = GPUSpec(
+            name=entry["name"],
+            vram_gb=entry["vram_gb"],
+            bandwidth_gbps=entry["bandwidth_gbps"],
+            cost_per_hour=entry["cost_per_hour"],
+            fp16_tflops=entry["fp16_tflops"] or 0.0,
+            tdp_watts=entry["tdp_watts"] or 0.0,
+            interconnect_gbps=entry["interconnect_gbps"] or 0.0,
+            fp8_supported=entry["fp8_supported"],
+            price_basis=entry["price_basis"],
+            tflops_basis=entry["tflops_basis"],
+            source_url=entry["source_url"],
+            captured_at=entry["captured_at"],
+        )
+    return out
+
+
+GPU_DB: dict[str, GPUSpec] = _load_bundled()
 
 
 def get_gpu(name: str) -> GPUSpec | None:
@@ -153,3 +162,230 @@ def bandwidth_ratio(target_gpu: str) -> float:
     if ref is None or target is None:
         return 1.0
     return target.bandwidth_gbps / ref.bandwidth_gbps
+
+
+# Fields a caller may supply for a GPU the dataset does not carry, mapped to the
+# CLI flag that sets each. The planner is model-agnostic by design and was
+# hardware-locked by accident: an unlisted model can be planned with --params-b,
+# and an unlisted GPU could not be planned at all.
+GPU_OVERRIDE_FIELDS = {
+    "vram_gb": "--gpu-vram-gb",
+    "bandwidth_gbps": "--gpu-bandwidth-gbps",
+    "fp16_tflops": "--gpu-fp16-tflops",
+    "tdp_watts": "--gpu-tdp-w",
+    "interconnect_gbps": "--gpu-interconnect-gbps",
+    "cost_per_hour": "--gpu-price-per-hour",
+}
+# Without these two nothing can be sized or priced, so they are the minimum for
+# an unlisted card. Everything else degrades one specific prediction rather than
+# blocking the plan.
+GPU_OVERRIDE_REQUIRED = ("vram_gb", "bandwidth_gbps")
+
+AUTO_HARDWARE = "auto"
+
+
+class HardwareError(ValueError):
+    """The requested hardware cannot be resolved as specified."""
+
+
+def spec_from_overrides(name: str, overrides: dict) -> GPUSpec:
+    """Build a GPUSpec from user-supplied figures.
+
+    The result is marked ``user_supplied`` and carries no source URL, because
+    these are the caller's numbers and this project has not checked them against
+    a vendor page. A field left out stays 0.0, which reads as "unknown" to every
+    consumer -- it disables the prediction that depends on it rather than
+    silently inheriting the reference card's value.
+    """
+    supplied = {k: v for k, v in overrides.items() if k in GPU_OVERRIDE_FIELDS and v is not None}
+    missing = [GPU_OVERRIDE_FIELDS[k] for k in GPU_OVERRIDE_REQUIRED if not supplied.get(k)]
+    if missing:
+        optional = ", ".join(
+            flag for key, flag in GPU_OVERRIDE_FIELDS.items() if key not in GPU_OVERRIDE_REQUIRED
+        )
+        raise HardwareError(
+            f"{name!r} is not in the GPU database, and sizing it needs at least "
+            f"{' and '.join(missing)}. Pass those (plus any of {optional}) to plan "
+            f"an unlisted card."
+        )
+    return GPUSpec(
+        name=name,
+        vram_gb=float(supplied["vram_gb"]),
+        bandwidth_gbps=float(supplied["bandwidth_gbps"]),
+        cost_per_hour=float(supplied.get("cost_per_hour", 0.0)),
+        fp16_tflops=float(supplied.get("fp16_tflops", 0.0)),
+        tdp_watts=float(supplied.get("tdp_watts", 0.0)),
+        interconnect_gbps=float(supplied.get("interconnect_gbps", 0.0)),
+        # An unlisted card's FP8 support is not knowable from the figures given,
+        # and offering FP8 on a part that emulates it hands out a config that
+        # does not run. Refused rather than assumed.
+        fp8_supported=False,
+        price_basis=PRICE_BASIS_AMORTISED,
+        tflops_basis="unlabeled-by-vendor",
+        user_supplied=True,
+    )
+
+
+# Trailing capacity token in a database key ("RTX 4090 24GB" -> "RTX 4090"), so a
+# driver name can be matched on the model alone and disambiguated by the VRAM the
+# driver actually reported.
+_CAPACITY_TOKEN = re.compile(r"\s*\d+(?:\.\d+)?\s*GB\s*$", re.I)
+# Vendor and brand words a driver prepends. Dropped so "NVIDIA GeForce RTX 4090"
+# and "NVIDIA A100-SXM4-80GB" both reduce to something the keys can be found in.
+_DRIVER_NOISE = re.compile(r"\b(nvidia|geforce|tesla|quadro|advanced micro devices|amd)\b", re.I)
+
+
+def match_driver_name(driver_name: str, vram_gb: float | None = None) -> GPUSpec | None:
+    """Match a driver-reported GPU name to a database entry, or None.
+
+    `get_gpu` is a substring match in either direction, which cannot connect
+    ``"NVIDIA GeForce RTX 4090"`` to the key ``"RTX 4090 24GB"`` -- neither
+    contains the other. So `--hardware auto` would have failed to recognise the
+    most common consumer card in the database.
+
+    Matching is on the model portion of the key, longest first, so ``RTX 4060``
+    cannot claim a driver that said ``RTX 4060 Ti``. Where several capacities of
+    one model exist, the driver's reported VRAM picks between them; without a
+    VRAM figure an ambiguous model is **not** matched, because guessing 8 GB for
+    a 16 GB card silently halves every VRAM verdict.
+    """
+    if not driver_name or not driver_name.strip():
+        return None
+    haystack = _DRIVER_NOISE.sub(" ", driver_name).lower()
+    haystack = re.sub(r"[-_]+", " ", haystack)
+    haystack = re.sub(r"\s+", " ", haystack).strip()
+
+    matches: list[tuple[int, GPUSpec]] = []
+    for key, spec in GPU_DB.items():
+        model = _CAPACITY_TOKEN.sub("", key).strip().lower()
+        if model and model in haystack:
+            matches.append((len(model), spec))
+    if not matches:
+        return None
+
+    longest = max(n for n, _ in matches)
+    best = [spec for n, spec in matches if n == longest]
+    if len(best) == 1:
+        return best[0]
+    if vram_gb is None:
+        return None
+    return min(best, key=lambda s: abs(s.vram_gb - vram_gb))
+
+
+def detect_local_gpu() -> tuple[str, float] | None:
+    """The installed GPU's driver-reported name and VRAM, or None.
+
+    Tries pynvml, then ``nvidia-smi``. Reports only what the driver actually
+    says: the name and the memory. Bandwidth and TFLOPS are NOT inferred from
+    the name, because a name match that is wrong is worse than no match -- it
+    produces a fully provenance-labelled plan for a card the user does not have.
+    """
+    try:  # pragma: no cover - depends on a local driver
+        import pynvml
+
+        pynvml.nvmlInit()
+        try:
+            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+            raw = pynvml.nvmlDeviceGetName(handle)
+            name = raw.decode() if isinstance(raw, bytes) else str(raw)
+            vram = pynvml.nvmlDeviceGetMemoryInfo(handle).total / (1024**3)
+            return name, round(vram, 1)
+        finally:
+            pynvml.nvmlShutdown()
+    except Exception:  # noqa: BLE001 - no driver is not an error here
+        pass
+
+    exe = shutil.which("nvidia-smi")
+    if not exe:
+        return None
+    try:  # pragma: no cover - depends on a local driver
+        out = subprocess.run(
+            [exe, "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=True,
+        ).stdout.strip()
+    except Exception:  # noqa: BLE001 - reported by the caller as "not detected"
+        return None
+    if not out:
+        return None
+    name, _, mib = out.splitlines()[0].partition(",")
+    try:
+        vram = float(mib.strip()) / 1024.0
+    except ValueError:
+        return None
+    return name.strip(), round(vram, 1)
+
+
+def resolve_hardware(name: str, overrides: dict | None = None) -> tuple[GPUSpec, list[str]]:
+    """Resolve a hardware name to a spec, with the warnings resolution earned.
+
+    Priority: ``auto`` detection, then the bundled dataset, then user-supplied
+    figures for a card the dataset does not carry. ``auto`` that matches a known
+    part uses the dataset's full figures; ``auto`` that does not falls back to
+    the driver's name and VRAM with bandwidth left UNKNOWN, rather than
+    borrowing another card's numbers.
+    """
+    overrides = overrides or {}
+    warnings: list[str] = []
+    supplied = {k: v for k, v in overrides.items() if k in GPU_OVERRIDE_FIELDS and v is not None}
+
+    if name and name.strip().lower() == AUTO_HARDWARE:
+        detected = detect_local_gpu()
+        if detected is None:
+            raise HardwareError(
+                "--hardware auto found no NVIDIA GPU (pynvml is absent or failed, "
+                "and nvidia-smi is absent or returned nothing). Name the card "
+                f"explicitly, or supply {GPU_OVERRIDE_FIELDS['vram_gb']} and "
+                f"{GPU_OVERRIDE_FIELDS['bandwidth_gbps']}."
+            )
+        driver_name, driver_vram = detected
+        known = match_driver_name(driver_name, driver_vram)
+        if known is not None:
+            warnings.append(
+                f"--hardware auto detected {driver_name!r}, matched to "
+                f"{known.name!r} in the database"
+            )
+            return known, warnings
+        merged = {"vram_gb": driver_vram, **supplied}
+        if not merged.get("bandwidth_gbps"):
+            raise HardwareError(
+                f"detected {driver_name!r} ({driver_vram} GB), which is not in the "
+                "GPU database, and its memory bandwidth is not knowable from the "
+                f"driver. Pass {GPU_OVERRIDE_FIELDS['bandwidth_gbps']} to plan it -- "
+                "decode is bandwidth-bound, so without it throughput is unknown."
+            )
+        warnings.append(
+            f"--hardware auto detected {driver_name!r} ({driver_vram} GB), which is "
+            "not in the database. VRAM is the driver's figure; the rest are yours"
+        )
+        return spec_from_overrides(driver_name, merged), warnings
+
+    known = get_gpu(name)
+    if known is not None:
+        if supplied:
+            # An override on a known card is a deliberate correction, not a
+            # fallback, and it makes the entry the user's claim rather than the
+            # dataset's -- so the provenance fields are cleared with it.
+            spec = replace(
+                known,
+                user_supplied=True,
+                source_url="",
+                captured_at="",
+                **{k: float(v) for k, v in supplied.items()},
+            )
+            flags = ", ".join(sorted(GPU_OVERRIDE_FIELDS[k] for k in supplied))
+            warnings.append(
+                f"{flags} override the bundled figures for {known.name}; those are "
+                "your numbers, not vendor-sourced"
+            )
+            return spec, warnings
+        return known, warnings
+
+    spec = spec_from_overrides(name, supplied)
+    warnings.append(
+        f"{name!r} is not in the GPU database; its specs are yours, not "
+        "vendor-published, so every prediction downstream rests on them"
+    )
+    return spec, warnings
