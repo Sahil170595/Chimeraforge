@@ -15,7 +15,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
-**Every number is labeled `measured`, `extrapolated`, `derived`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are `derived` -- exact arithmetic over the model's real architecture, not a measurement. Throughput is a measured lookup only on the rig the corpus was measured on; on any other GPU that row is scaled by memory bandwidth and reported as `extrapolated`, with the factor named, because a 13.8x bandwidth extrapolation is not a measurement of your card. Failing that it is an explicit roofline `estimate` -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
+**Every number is labeled `measured`, `extrapolated`, `derived`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are `derived` -- exact arithmetic over the model's real architecture, not a measurement. Throughput is a measured lookup only on the rig the corpus was measured on; on any other GPU that row is scaled by memory bandwidth and reported as `extrapolated`, carrying the row it came from, the rig it was measured on and the ratio applied, because a 17.8x bandwidth extrapolation (RTX 4080 Laptop 432 GB/s -> B200 7700 GB/s) is not a measurement of your card. Failing that it is an explicit roofline `estimate` -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
@@ -273,10 +273,10 @@ Runs the stdio MCP server described above. Requires `pip install "chimeraforge[m
 |-----------|-------------------|------------|
 | VRAM / KV-cache | First-principles from real model architecture; KV-quant and TP/PP-aware sharding | derived (exact arithmetic) |
 | Max concurrency | KV-cache-bound sequences per GPU | exact |
-| Throughput (decode) | Measured lookup on the reference rig; bandwidth-scaled off it elsewhere; else roofline | measured / extrapolated / estimated |
+| Throughput (decode) | Measured lookup on the reference rig; bandwidth-scaled off it elsewhere; else roofline. An `extrapolated` value carries its anchor: the row, the rig, the ratio | measured / extrapolated / estimated |
 | TTFT (prefill) | Compute-bound, GPU FP16 TFLOPS x MFU | estimated |
 | Quality | Measured composite lookup, family-prior estimate, or unknown | measured / estimated / unknown |
-| Cost | GPU $/hr x fleet size ($/1M-tok invariant in replica count) | exact |
+| Cost | GPU $/hr x fleet size ($/1M-tok invariant in replica count) | derived (exact arithmetic) |
 | Energy | TDP-driven monthly kWh, $/1M-tok (+energy), tok/s-per-watt | estimated |
 | Safety | TR134/TR142 refusal-rate lookup (opt-in gate) | measured / unknown |
 
