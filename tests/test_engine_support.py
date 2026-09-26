@@ -221,6 +221,8 @@ class TestSdistCarriesWhatTheSuiteReads:
     (corpora/, scripts/*.json, tests/**/*.csv and *.md were not in MANIFEST.in)."""
 
     def test_manifest_covers_fixtures_corpora_and_script_data(self, monkeypatch):
+        # setuptools is a dev dependency (pyproject `dev`), not skipped when absent:
+        # Python 3.12+ venvs no longer bundle it, and a skipped gate is no gate.
         from setuptools._distutils.filelist import FileList
 
         # FileList matches template patterns against paths relative to the cwd.
