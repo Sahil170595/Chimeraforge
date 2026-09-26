@@ -109,11 +109,11 @@ def plan(
         None, "--gpu-interconnect-gbps", help="Override/supply the TP interconnect in GB/s."
     ),
     platform: str = typer.Option(
-        "linux",
+        None,
         "--platform",
         help="OS the deployment runs on: linux, windows, wsl2 or macos. Each engine is "
         "offered only where its own docs say it runs (e.g. vLLM has no native "
-        "Windows support). Default linux.",
+        "Windows support). Default: linux, or this machine's OS with --hardware auto.",
     ),
     gpu_price_per_hour: float = typer.Option(
         None,
@@ -632,7 +632,11 @@ def plan(
     if model and any(v is not None for v in overrides.values()) and len(model) != 1:
         _fail("manual overrides require exactly one --model.")
 
-    if get_gpu(hardware) is None:
+    # `auto` and an unlisted card described with --gpu-* are resolved by the
+    # engine's resolver, which raises its own actionable HardwareError. This guard
+    # ran first and refused both since 0.34.0, so neither ever worked from the CLI.
+    resolved_elsewhere = gpu_overrides or (hardware or "").strip().lower() == "auto"
+    if not resolved_elsewhere and get_gpu(hardware) is None:
         # Refused, not substituted. This used to warn and then plan on RTX 4080 12GB
         # specs, returning a full result set about a GPU nobody asked for -- and the
         # warning went to STDOUT, so a caller stripping non-JSON lines to recover the
@@ -829,7 +833,7 @@ def plan(
         # engine offers were checked against.
         row = candidates[0].platform or "unknown GPU vendor: not checked"
         console.print(
-            f"[dim]Engines checked against their docs for {escape(platform)} ({row}); "
+            f"[dim]Engines checked against their docs for {escape(result.platform)} ({row}); "
             "--platform linux|windows|wsl2|macos to change.[/]"
         )
 

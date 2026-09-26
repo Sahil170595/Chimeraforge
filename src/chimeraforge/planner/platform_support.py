@@ -125,6 +125,24 @@ _SCOPE_NOTE = {
 }
 
 
+def local_plan_platform() -> str:
+    """This machine's OS as a plan platform -- the default when the plan targets
+    this machine (`--hardware auto`)."""
+    import os
+    import platform as _platform
+
+    from chimeraforge.doctor import _read_text, detect_wsl
+
+    system = _platform.system()
+    if system == "Windows":
+        return "windows"
+    if system == "Darwin":
+        return "macos"
+    if system == "Linux" and detect_wsl(dict(os.environ), _read_text):
+        return "wsl2"
+    return PLAN_PLATFORM_LINUX
+
+
 class PlatformError(ValueError):
     """A plan platform that cannot describe the requested hardware."""
 

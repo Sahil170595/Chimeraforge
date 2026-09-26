@@ -24,7 +24,8 @@ from chimeraforge.planner.engine import (
     pareto_frontier,
 )
 from chimeraforge.planner.models import load_effective_models, load_models
-from chimeraforge.planner.platform_support import DEFAULT_PLAN_PLATFORM
+from chimeraforge.planner.hardware import AUTO_HARDWARE
+from chimeraforge.planner.platform_support import DEFAULT_PLAN_PLATFORM, local_plan_platform
 from chimeraforge.planner.qualityfile import aggregate, load_quality_file
 from chimeraforge.planner.resolver import ModelSpec, resolve_spec
 
@@ -124,7 +125,7 @@ def run_plan(
     context_length: int = 2048,
     prompt_tokens: int = 512,
     gpu_overrides: dict | None = None,
-    platform: str = DEFAULT_PLAN_PLATFORM,
+    platform: str | None = None,
     quality_from: str | None = None,
     max_num_batched_tokens: int | None = None,
     safety_target: float | None = None,
@@ -161,6 +162,12 @@ def run_plan(
         kv_quant = kv_quant.lower()
 
     planner_models = load_models(models_path) if models_path else load_effective_models()
+
+    # The deployment OS. Unset means Linux -- the OS the matrix's GPU rows
+    # describe -- unless the plan is for THIS machine (`auto`), whose OS is known.
+    if platform is None:
+        is_auto = (hardware or "").strip().lower() == AUTO_HARDWARE
+        platform = local_plan_platform() if is_auto else DEFAULT_PLAN_PLATFORM
 
     specs: dict[str, ModelSpec] = {}
     if models:

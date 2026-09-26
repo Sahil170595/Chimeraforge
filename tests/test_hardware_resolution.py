@@ -350,49 +350,122 @@ class TestOverridingAKnownCard:
         assert overridden.monthly_cost == plain.monthly_cost
 
 
+def _device(name, vram, vendor="nvidia", source="nvidia-smi", **kw):
+    from chimeraforge.doctor import DetectedGPU
+
+    return DetectedGPU(vendor, name, vram, None, source, **kw)
+
+
 class TestAutoDetection:
+    """`--hardware auto` reads the local GPU through `doctor`'s per-vendor probes
+    (it read NVIDIA only until per-platform step 3b)."""
+
+    def _patch(self, monkeypatch, device):
+        monkeypatch.setattr("chimeraforge.planner.hardware.detect_local_device", lambda: device)
+
     def test_auto_reports_a_match_when_the_driver_names_a_known_card(self, monkeypatch):
-        monkeypatch.setattr(
-            "chimeraforge.planner.hardware.detect_local_gpu",
-            lambda: ("NVIDIA GeForce RTX 4090", 24.0),
-        )
+        self._patch(monkeypatch, _device("NVIDIA GeForce RTX 4090", 24.0))
         spec, warnings = resolve_hardware(AUTO_HARDWARE)
         assert spec.name == "RTX 4090 24GB"
-        assert any("auto detected" in w for w in warnings)
+        assert any("auto detected" in w and "nvidia-smi" in w for w in warnings)
+
+    def test_an_amd_card_found_by_amd_smi_is_matched(self, monkeypatch):
+        self._patch(monkeypatch, _device("AMD Instinct MI300X", 192.0, "amd", "amd-smi"))
+        spec, _ = resolve_hardware(AUTO_HARDWARE)
+        assert spec.name == "MI300X 192GB"
 
     def test_auto_on_an_unmatched_device_refuses_rather_than_guessing_bandwidth(self, monkeypatch):
         """The driver reports VRAM; it does not report memory bandwidth. Inferring
         it from the name would produce a confident plan for a card nobody sized."""
-        monkeypatch.setattr(
-            "chimeraforge.planner.hardware.detect_local_gpu",
-            lambda: ("NVIDIA Imaginary 9000", 48.0),
-        )
+        self._patch(monkeypatch, _device("NVIDIA Imaginary 9000", 48.0))
         with pytest.raises(HardwareError, match="--gpu-bandwidth-gbps"):
             resolve_hardware(AUTO_HARDWARE)
 
-    def test_auto_plus_a_supplied_bandwidth_uses_the_driver_vram(self, monkeypatch):
-        monkeypatch.setattr(
-            "chimeraforge.planner.hardware.detect_local_gpu",
-            lambda: ("NVIDIA Imaginary 9000", 48.0),
+    def test_bandwidth_the_tool_reported_is_used_and_said(self, monkeypatch):
+        """amd-smi reports vram.max_bandwidth; that is the device's own figure."""
+        self._patch(
+            monkeypatch,
+            _device("AMD Instinct MI999", 256.0, "amd", "amd-smi", bandwidth_gbps=7000.0),
         )
+        spec, warnings = resolve_hardware(AUTO_HARDWARE)
+        assert spec.bandwidth_gbps == 7000.0
+        assert any("as amd-smi reports it" in w for w in warnings)
+
+    def test_an_unmatched_card_keeps_its_detected_vendor(self, monkeypatch):
+        """So the engine-support gate still applies to it."""
+        self._patch(
+            monkeypatch,
+            _device("AMD Radeon RX 9999", 32.0, "amd", "windows-cim", bandwidth_gbps=900.0),
+        )
+        spec, _ = resolve_hardware(AUTO_HARDWARE)
+        assert spec.vendor == "amd" and spec.user_supplied
+
+    def test_auto_plus_a_supplied_bandwidth_uses_the_driver_vram(self, monkeypatch):
+        self._patch(monkeypatch, _device("NVIDIA Imaginary 9000", 48.0))
         spec, warnings = resolve_hardware(AUTO_HARDWARE, {"bandwidth_gbps": 1300.0})
         assert spec.vram_gb == 48.0
         assert spec.bandwidth_gbps == 1300.0
         assert spec.user_supplied is True
-        assert any("driver's figure" in w for w in warnings)
+        assert any("tool's figure" in w for w in warnings)
 
-    def test_auto_with_no_gpu_is_an_actionable_error(self, monkeypatch):
-        monkeypatch.setattr("chimeraforge.planner.hardware.detect_local_gpu", lambda: None)
-        with pytest.raises(HardwareError, match="found no NVIDIA GPU"):
+    def test_unified_memory_is_refused_by_name_not_planned_as_vram(self, monkeypatch):
+        self._patch(
+            monkeypatch,
+            _device("Apple M2", 16.0, "apple", "system_profiler", unified_memory=True),
+        )
+        with pytest.raises(HardwareError, match="unified-memory"):
             resolve_hardware(AUTO_HARDWARE)
 
-    def test_detect_returns_none_rather_than_raising_without_a_driver(self):
-        # Never an exception on an ordinary machine: absence of a GPU is a fact,
-        # not a failure.
-        from chimeraforge.planner.hardware import detect_local_gpu
+    def test_auto_with_no_gpu_is_an_actionable_error(self, monkeypatch):
+        self._patch(monkeypatch, None)
+        with pytest.raises(HardwareError, match="chimeraforge doctor"):
+            resolve_hardware(AUTO_HARDWARE)
 
-        result = detect_local_gpu()
-        assert result is None or (isinstance(result, tuple) and len(result) == 2)
+    def test_the_discrete_card_wins_over_an_igpu_aperture(self, monkeypatch):
+        from chimeraforge import doctor as doc
+        from chimeraforge.planner.hardware import detect_local_device
+
+        igpu = _device("Intel(R) UHD Graphics", 2.0, "intel", "windows-cim")
+        igpu.notes.append("shared-memory aperture")
+        dgpu = _device("NVIDIA GeForce RTX 4090", 24.0)
+
+        class Report:
+            gpus = [igpu, dgpu]
+
+        monkeypatch.setattr(doc, "run_doctor", lambda check_engines=False: Report())
+        assert detect_local_device() is dgpu
+
+    def test_detection_on_this_machine_never_raises(self):
+        # Absence of a GPU is a fact, not a failure.
+        from chimeraforge.planner.hardware import detect_local_device
+
+        device = detect_local_device()
+        assert device is None or device.name
+
+
+class TestAutoDefaultsThePlatformToThisMachine:
+    def _plan(self, monkeypatch, **kw):
+        from chimeraforge.planner.service import run_plan
+
+        monkeypatch.setattr(
+            "chimeraforge.planner.hardware.detect_local_device",
+            lambda: _device("NVIDIA GeForce RTX 4090", 24.0),
+        )
+        monkeypatch.setattr("chimeraforge.planner.service.local_plan_platform", lambda: "windows")
+        return run_plan(model_size="8b", budget=1e9, quality_target=0.0, latency_slo=1e9, **kw)
+
+    def test_auto_plans_for_the_local_os(self, monkeypatch):
+        plan = self._plan(monkeypatch, hardware="auto")
+        assert plan.platform == "windows"
+        assert "vllm" not in {c.backend for c in plan.candidates}
+
+    def test_an_explicit_platform_wins(self, monkeypatch):
+        plan = self._plan(monkeypatch, hardware="auto", platform="linux")
+        assert plan.platform == "linux" and "vllm" in {c.backend for c in plan.candidates}
+
+    def test_a_named_card_defaults_to_linux_not_this_machine(self, monkeypatch):
+        plan = self._plan(monkeypatch, hardware="RTX 4090 24GB")
+        assert plan.platform == "linux"
 
 
 class TestDriverNameMatching:
@@ -508,8 +581,8 @@ class TestOverridesAreNotSilentlyDropped:
         from chimeraforge.mcp_server import plan_deployment
 
         monkeypatch.setattr(
-            "chimeraforge.planner.hardware.detect_local_gpu",
-            lambda: ("NVIDIA GeForce RTX 4090", 24.0),
+            "chimeraforge.planner.hardware.detect_local_device",
+            lambda: _device("NVIDIA GeForce RTX 4090", 24.0),
         )
         out = plan_deployment(
             hardware="auto",
@@ -527,3 +600,61 @@ class TestOverridesAreNotSilentlyDropped:
         out = plan_deployment(hardware="RTX 6090 48GB", model_size="3b", allow_network=False)
         assert out["ok"] is False
         assert "unknown GPU" in out["error"]
+
+
+class TestTheCliReachesTheResolver:
+    """The CLI's own guard refused `--hardware auto` and every unlisted card --
+    even with --gpu-* figures -- from 0.34.0, before the resolver ever ran. The
+    library and MCP paths worked, and every test called run_plan directly."""
+
+    def _cli(self, *args):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        return CliRunner().invoke(
+            app,
+            [
+                "plan",
+                "--model-size",
+                "3b",
+                "--budget",
+                "1e9",
+                "--quality-target",
+                "0",
+                "--json",
+                *args,
+            ],
+        )
+
+    def test_an_unlisted_card_with_figures_is_planned(self):
+        r = self._cli(
+            "--hardware",
+            "RTX 6090 48GB",
+            "--gpu-vram-gb",
+            "48",
+            "--gpu-bandwidth-gbps",
+            "1300",
+            "--gpu-price-per-hour",
+            "0.05",
+        )
+        assert r.exit_code == 0, r.output
+        assert json.loads(r.output)
+
+    def test_auto_is_planned(self, monkeypatch):
+        monkeypatch.setattr(
+            "chimeraforge.planner.hardware.detect_local_device",
+            lambda: _device("NVIDIA GeForce RTX 4090", 24.0),
+        )
+        r = self._cli("--hardware", "auto", "--platform", "linux")
+        assert r.exit_code == 0, r.output
+        assert {c["platform"] for c in json.loads(r.output)} == {"linux-cuda"}
+
+    def test_auto_with_no_gpu_fails_cleanly(self, monkeypatch):
+        monkeypatch.setattr("chimeraforge.planner.hardware.detect_local_device", lambda: None)
+        r = self._cli("--hardware", "auto")
+        assert r.exit_code == 1 and "chimeraforge doctor" in r.output
+
+    def test_an_unlisted_card_without_figures_is_still_refused(self):
+        r = self._cli("--hardware", "RTX 6090 48GB")
+        assert r.exit_code == 1 and "not in the hardware DB" in r.output

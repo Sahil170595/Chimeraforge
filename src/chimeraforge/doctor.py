@@ -600,11 +600,7 @@ def assess(gpu: DetectedGPU) -> PlannerStatus:
             missing.append("no vendor price (pass --gpu-price-per-hour)")
         if spec.fp16_tflops <= 0:
             missing.append("no vendor FP16 figure (TTFT is a floor)")
-        how = (
-            "--hardware auto"
-            if gpu.vendor == VENDOR_NVIDIA
-            else f'--hardware "{spec.name}" (auto reads NVIDIA only)'
-        )
+        how = f'--hardware auto (or --hardware "{spec.name}")'
         detail = f"plan with {how}" + (f"; {'; '.join(missing)}" if missing else "")
         return PlannerStatus(gpu.name, "matched", spec.name, detail)
     # Only a dedicated-VRAM reading is offered as a flag value; an aperture or
