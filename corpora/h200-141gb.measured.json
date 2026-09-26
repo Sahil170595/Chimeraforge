@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "hardware": "H200 141GB",
+  "cells": {
+    "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14978771",
+      "captured_at": "2026-09-25",
+      "underspecified": false,
+      "config_quote": "llama-bench -m llama-2-7b.Q4_0.gguf -ngl 99 -fa 0,1 (thread instructions); this cell = fa 0 (flash attention off); llama-bench defaults n_batch=2048, n_ubatch=512, 5 repetitions, mean +/- sd",
+      "engine_version": "build 1411d9275 (7073)",
+      "notes": "llama.cpp llama-bench (CUDA backend); GPU as stated: NVIDIA H200; model as stated: Llama 2 7B (llama-2-7b.Q4_0.gguf from TheBloke/Llama-2-7B-GGUF) (Q4_0 GGUF); raw cells C033, C034",
+      "metrics": [
+        {
+          "definition": "prefill_tps",
+          "value": 10428.65,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           pp512 |     10428.65 \u00b1 12.38 |",
+          "prompt_tokens": 512
+        },
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 307.79,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           tg128 |        307.79 \u00b1 0.26 |"
+        }
+      ]
+    }
+  }
+}

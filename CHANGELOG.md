@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **The audit has been run, and it is published.** `chimeraforge validate` shipped in 0.22.0 and had never been scored against a real measurement. `corpora/` now holds 17 per-GPU matrices (42 cells) built from 8 published third-party benchmark sources. Every cell carries a URL, a verbatim quote and a capture date. Every consulted source is listed, including the 11 that yielded nothing, each with its reason, and the list is fingerprinted into each matrix. `corpora/exclusions.json` gives the rule that removed each of the 36 excluded raw cells. The other 67 merge into the 42 audit cells, since one run's prefill and decode figures form a single cell. The matrices, bands and source list were committed before the audit first ran. Write-up: [TR147](outputs/publish_ready/reports/Technical_Report_147.md). Scorecard: `corpora/SCORECARD.md`.
+- **What it found.** On fully specified cells, roofline decode is inside +-25% only 13% of the time, with a median absolute error of 35.9% and a GMFE of 1.63x (n=15). The headline bias of -26.8% hides two populations with opposite signs:
+  - **HBM datacenter parts** are over-predicted by a median of **+57.8%**, up to +206% on a B200. llama.cpp measures 200-308 tok/s across A100/H100/H200/B200/MI300X, while the roofline scales with bandwidth.
+  - **GDDR consumer cards** are under-predicted by a median of **-35.9%**.
+  - TTFT runs the other way on each class.
+
+  The errors are published, not corrected. Fitting a fix to 15 cells would be fitting noise.
+- **`scripts/build_validation_corpus.py`** (`--check` / `--write` / `--audit`) applies seven inclusion rules by code, not by hand. They were fixed before any error was computed: single GPU; batch 1; a stated metric definition; the GPU variant must match the planner entry (PCIe cells are not scored against SXM figures); CUDA/ROCm llama.cpp only; default engine config; and one source per cell. It validates every source run with the loader's own rules, including runs later superseded by rule 7, so a bad record cannot hide in a dropped duplicate.
+- **Regression gates.** The published scorecard must re-derive from its own committed per-GPU JSON, with no planner, network or GPU, and must match a fresh audit against today's planner, so a stale audit fails CI. The TR147 headline bands are typed into `test_accuracy.py`, so widening them takes a reviewed edit rather than a regenerated file.
+
+### Fixed
+- **The audit was sizing a fleet.** It predicted at 1 req/s, so a cell with 512 output tokens needed 512 tok/s of capacity, and a 70B that fits an 80 GB card was skipped as "gated out". It now predicts at a negligible rate, so only gates that describe the cell itself can bind.
+- **A refused cell now names the gate that refused it** (e.g. `vram: 16.7GB/GPU > 16GB`). When a published source ran that configuration, the refusal is itself a finding.
+- **The report said a positive error means "optimistic".** That is true for throughput and backwards for TTFT and latency, where a positive error means the planner predicted slower than measured.
+- **`validate`'s audit loop moved from the CLI into `chimeraforge.validate.audit_cells`**, so the published corpus is scored by exactly the code path `chimeraforge validate` runs.
+
 ## [0.36.0] - 2026-09-25
 
 ### Changed
