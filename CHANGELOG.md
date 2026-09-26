@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] - 2026-09-25
+
 ### Added
 - **The audit has been run, and it is published.** `chimeraforge validate` shipped in 0.22.0 and had never been scored against a real measurement. `corpora/` now holds 17 per-GPU matrices (42 cells) built from 8 published third-party benchmark sources. Every cell carries a URL, a verbatim quote and a capture date. Every consulted source is listed, including the 11 that yielded nothing, each with its reason, and the list is fingerprinted into each matrix. `corpora/exclusions.json` gives the rule that removed each of the 36 excluded raw cells. The other 67 merge into the 42 audit cells, since one run's prefill and decode figures form a single cell. The matrices, bands and source list were committed before the audit first ran. Write-up: [TR147](outputs/publish_ready/reports/Technical_Report_147.md). Scorecard: `corpora/SCORECARD.md`.
 - **What it found.** On fully specified cells, roofline decode is inside +-25% only 13% of the time, with a median absolute error of 35.9% and a GMFE of 1.63x (n=15). The headline bias of -26.8% hides two populations with opposite signs:
