@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`chimeraforge doctor`: a read-only check of the local GPU platform, per vendor.** This is the first step of per-platform support: check first, then fix. Each vendor's own tool detects the hardware, and each probe names the tool it used; a missing tool is reported as a finding, not an error. Every device then gets a planner status:
+  - `matched`: a database entry, and the flag to plan it with. `--hardware auto` reads NVIDIA only today, so other vendors get the entry name to pass.
+  - `supply-figures`: the `--gpu-*` flags it needs.
+  - `not-representable`: unified memory, not modelled yet.
+
+  Local serving engines are probed on the URLs `bench` uses. Nothing is changed. `check` stays reserved for plan drift detection.
+- **Windows reads VRAM correctly.** `Win32_VideoController.AdapterRAM` is a uint32. On the dev machine it reports a 12 GB RTX 4080 as 4,293,918,720 bytes, while the driver's `qwMemorySize` in the display-class registry key holds the real 12,878,610,432. The doctor reads the QWORD. An adapter at the cap with no QWORD is reported as unknown VRAM, not 4 GB. An integrated GPU's `AdapterRAM` is labelled a shared-memory aperture and never offered as a `--gpu-vram-gb` value.
+- **An engine counts as running only when it identifies itself.** On the dev machine, a generic uvicorn app on :8000 answered `/health` with 200, and the vLLM adapter's health check read that as "vLLM is running". The doctor now requires a version from the engine's own version endpoint. A port that merely answers is reported as exactly that.
+- **CUDA version from NVML, with the header as a fallback.** The fallback parses both header spellings, because current drivers print `CUDA UMD Version:`, not `CUDA Version:`.
+- **AMD, Apple Silicon and Intel paths**, each golden-tested against real captures whose sources and licenses are listed in `tests/fixtures/doctor/SOURCES.md`:
+  - **amd-smi** handles both JSON shapes: a list before ROCm 7.0, `{"gpu_data": [...]}` from 7.0. It reads the tool's own `vram.max_bandwidth`, so an unlisted AMD card gets a real `--gpu-bandwidth-gbps`, and it skips the permission banner printed without render-group access.
+  - **rocm-smi** is the fallback. Its board strings are reported as given, and its exit code is not trusted: it exits 0 with "No JSON data to report".
+  - **Apple Silicon** is detected via `system_profiler` and reported as unified memory, `not-representable` until that device class lands.
+  - **Intel `xpu-smi`** takes memory from the per-device query, and its PCI-ID names (`Intel(R) Graphics [0xe211]`) are not guessed into a product.
+  - **WSL** is detected from `WSL` in `/proc/sys/kernel/osrelease`, on Microsoft staff's advice that "microsoft" alone appears in non-WSL kernels.
+
 ## [0.38.1] - 2026-09-25
 
 ### Fixed

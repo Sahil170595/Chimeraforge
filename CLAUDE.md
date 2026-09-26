@@ -92,13 +92,16 @@ chimeraforge plan --model qwen3:14b --measure   # bench live first, then plan (p
 # Export the serve command for the winning config (vllm/ollama/tgi)
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --launch
 
+# Read-only check of this machine: GPUs per vendor, what the planner can model, local engines
+chimeraforge doctor
+
 # Run benchmarks (requires live Ollama)
 chimeraforge bench --model llama3.2-3b --runs 5
 
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2340 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2391 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -187,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 60 files, 2340 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 61 files, 2391 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -336,11 +339,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2340 total tests
+pytest tests/ -v                    # 2391 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2340 tests, 60 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2391 tests, 61 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -404,6 +407,10 @@ pytest tests/ --cov=src             # With coverage
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **Doctor** (48): test_doctor.py - read-only platform check per vendor (nvidia-smi/NVML,
+  amd-smi + rocm-smi, system_profiler, xpu-smi, Windows CIM+registry, WSL osrelease), golden-
+  tested on real captures (tests/fixtures/doctor/SOURCES.md), planner status per device,
+  engines count as running only when they identify via their version endpoint
 - **2026 GPU parts** (46): test_gpu_2026.py - 13 parts pinned to vendor figures, unlabeled
   headline not halved, AMD SEP amortisation, lookup/driver-name disambiguation, and
   unknown-is-not-zero (no price refuses at budget, no FP16 gives a floor TTFT + refuses a

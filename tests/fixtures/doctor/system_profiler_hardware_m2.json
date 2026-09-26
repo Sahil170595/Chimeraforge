@@ -1,0 +1,33 @@
+{
+  "SPHardwareDataType": [
+    {
+      "_name": "hardware_overview",
+      "activation_lock_status": "activation_lock_enabled",
+      "boot_rom_version": "10151.101.3",
+      "chip_type": "Apple M2",
+      "machine_model": "Mac14,2",
+      "machine_name": "MacBook Air",
+      "model_number": "REDACTED",
+      "number_processors": "proc 8:4:4",
+      "os_loader_version": "10151.101.3",
+      "physical_memory": "16 GB",
+      "platform_UUID": "REDACTED",
+      "provisioning_UDID": "REDACTED",
+      "serial_number": "REDACTED"
+    }
+  ],
+  "SPSoftwareDataType": [
+    {
+      "_name": "os_overview",
+      "boot_mode": "normal_boot",
+      "boot_volume": "Macintosh HD",
+      "kernel_version": "Darwin 23.4.0",
+      "local_host_name": "REDACTED",
+      "os_version": "macOS 14.4 (23E214)",
+      "secure_vm": "secure_vm_enabled",
+      "system_integrity": "integrity_enabled",
+      "uptime": "up 4:13:45:17",
+      "user_name": "REDACTED"
+    }
+  ]
+}
