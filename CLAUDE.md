@@ -98,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (1571 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2085 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -187,7 +187,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 50 files, 1571 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 56 files, 2085 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -336,11 +336,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 1571 total tests
+pytest tests/ -v                    # 2085 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (1571 tests, 50 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2085 tests, 56 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -384,7 +384,9 @@ pytest tests/ --cov=src             # With coverage
   on any cell edit (anti-cherry-pick), provenance classing, MAPE does not cancel,
   worst cell survives aggregation, underpowered rows labeled, CLI offline scoring
 - **SGLang** (17): test_sglang.py - registration, and the negative property that
-  an unmeasured backend never inherits a measured one's rows
+  an unmeasured backend never inherits a measured one's rows; test_sglang_bench.py (17) -
+  streamed decode-rate adapter against a MockTransport server, usage-or-fail, and a
+  measured SGLang row flipping provenance (only for the cell that was measured)
 - **Goodput SLOs** (18): test_goodput.py - TTFT/TPOT gated separately inside the
   (N x B) search, actionable rejection reasons, point-estimate-not-attainment
 - **CPU offload** (16): test_offload.py - priced instead of refused, bandwidth-

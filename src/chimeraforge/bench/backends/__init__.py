@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from chimeraforge.bench.backends.base import Backend
 from chimeraforge.bench.backends.ollama import OllamaBackend
+from chimeraforge.bench.backends.sglang import SGLangBackend
 from chimeraforge.bench.backends.tgi import TGIBackend
 from chimeraforge.bench.backends.vllm import VLLMBackend
 
@@ -11,6 +12,7 @@ BACKEND_REGISTRY: dict[str, type[Backend]] = {
     "ollama": OllamaBackend,
     "vllm": VLLMBackend,
     "tgi": TGIBackend,
+    "sglang": SGLangBackend,
 }
 
 
@@ -18,7 +20,7 @@ def get_backend(name: str, **kwargs: object) -> Backend:
     """Instantiate a backend by name.
 
     Args:
-        name: Backend identifier ("ollama", "vllm", or "tgi").
+        name: Backend identifier ("ollama", "vllm", "tgi", or "sglang").
         **kwargs: Passed to the backend constructor (e.g. base_url).
 
     Returns:
