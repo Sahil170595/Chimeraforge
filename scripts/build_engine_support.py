@@ -80,6 +80,34 @@ SCOPE = {
 }
 SCOPES = set(SCOPE.values())
 
+# Planner quant labels an engine's docs say it cannot serve on a platform, keyed
+# to the quantization record they are read from. Only unambiguous statements:
+#   vLLM hardware table: AWQ "AMD GPU no", GPTQ "AMD GPU no"; FP8 W8A8 "Intel GPU no".
+#   TGI installation_amd.md: "Loading AWQ checkpoints" is listed as unsupported on ROCm.
+_VLLM_QUANT_TABLE = (
+    "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/features/quantization/README.md"
+)
+QUANT_UNSUPPORTED = {
+    ("vllm", "linux-rocm"): (("AWQ", "GPTQ"), _VLLM_QUANT_TABLE + "#L69-L70"),
+    ("vllm", "linux-xpu"): (("FP8",), _VLLM_QUANT_TABLE + "#L74"),
+    ("tgi", "linux-rocm"): (
+        ("AWQ",),
+        "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/"
+        "docs/source/installation_amd.md#L43",
+    ),
+}
+# The engine's own pages disagree, so neither verdict is enforced; the plan warns
+# and names the conflict. SGLang: the quantization matrix says plain gptq is
+# "Removed on NVIDIA and AMD GPUs" and gptq_marlin is CUDA-only, while
+# amd_gpu.mdx says GPTQ works on AMD.
+QUANT_CONFLICT = {
+    ("sglang", "linux-rocm"): (
+        ("GPTQ",),
+        "https://github.com/sgl-project/sglang/blob/v0.5.20/"
+        "docs/docs/advanced_features/quantization.mdx#L23",
+    ),
+}
+
 
 class EngineSupportError(Exception):
     """The extraction record or the built dataset failed validation."""
@@ -121,12 +149,26 @@ def build() -> dict:
             scope = SCOPE.get((engine, platform))
             if scope and status not in CLAIMS:
                 raise EngineSupportError(f"{where}: a scope on an undocumented cell")
+            quant_rules = {}
+            for table, key in (
+                (QUANT_UNSUPPORTED, "unsupported_quants"),
+                (QUANT_CONFLICT, "quant_conflicts"),
+            ):
+                rule = table.get((engine, platform))
+                if not rule:
+                    continue
+                quants, source = rule
+                if f"/blob/{tag}/" not in source:
+                    raise EngineSupportError(f"{where}: {key} source not pinned to {tag}")
+                quant_rules[key] = list(quants)
+                quant_rules[f"{key}_url"] = source
             platforms_out[platform] = {
                 "status": status,
                 "scope": scope,
                 "quote": quote,
                 "url": url,
                 "detail": cell.get("detail"),
+                **quant_rules,
             }
         engines_out[engine] = {
             "version": tag,
@@ -134,7 +176,8 @@ def build() -> dict:
             "quantization": src.get("quantization"),
             "platforms": platforms_out,
         }
-    unused = set(SCOPE) - {(e, p) for e in ENGINES for p in PLATFORMS}
+    cells = {(e, p) for e in ENGINES for p in PLATFORMS}
+    unused = (set(SCOPE) | set(QUANT_UNSUPPORTED) | set(QUANT_CONFLICT)) - cells
     if unused:
         raise EngineSupportError(f"scope set for cells that do not exist: {sorted(unused)}")
     return {

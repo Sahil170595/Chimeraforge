@@ -100,6 +100,127 @@ def engine_support(engine: str, platform: str) -> EngineSupport:
     )
 
 
+# Operating systems a plan can target. A plan describes a deployment, not this
+# machine, so the OS is an input; Linux is the default because the matrix's GPU
+# rows are Linux rows, and the plan states which it assumed.
+PLAN_PLATFORM_LINUX = "linux"
+PLAN_PLATFORMS = ("linux", "windows", "wsl2", "macos")
+DEFAULT_PLAN_PLATFORM = PLAN_PLATFORM_LINUX
+
+# What each scope requires of the GPU, where it restricts GPUs at all. Scopes not
+# listed narrow features, not hardware, and are reported as notes.
+_SCOPE_REQUIRES = {
+    "instinct-only": ("amd", "instinct"),
+    "max-only": ("intel", "datacenter-max"),
+    "arc-b-series": ("intel", "arc-pro"),
+    "docker-nvidia-only": ("nvidia", None),
+}
+_SCOPE_NOTE = {
+    "basic": "basic inference only, per its docs",
+    "mlx": "through the MLX runtime",
+    "vulkan-only": "through Vulkan",
+    "full-on-h100-a100-a10g-t4": (
+        "full features (flash/paged attention) only on H100/A100/A10G/T4, per its docs"
+    ),
+}
+
+
+class PlatformError(ValueError):
+    """A plan platform that cannot describe the requested hardware."""
+
+
+def plan_platform_key(plan_platform: str, vendor: str) -> str | None:
+    """The matrix row for a planned deployment, or None when the GPU vendor is
+    unknown (a user-supplied card) and no row can be chosen honestly."""
+    if plan_platform not in PLAN_PLATFORMS:
+        raise PlatformError(
+            f"unknown platform {plan_platform!r}; use one of: {', '.join(PLAN_PLATFORMS)}"
+        )
+    if plan_platform == "windows":
+        return PLATFORM_WINDOWS
+    if plan_platform == "wsl2":
+        return PLATFORM_WSL2
+    if plan_platform == "macos":
+        if vendor and vendor != "apple":
+            raise PlatformError(
+                f"--platform macos with a {vendor} GPU: a Mac GPU is Apple Silicon, and "
+                "unified-memory devices cannot be planned yet"
+            )
+        return PLATFORM_MACOS
+    return _LINUX_BY_VENDOR.get(vendor) if vendor else None
+
+
+@dataclass(frozen=True)
+class EngineVerdict:
+    """Whether a plan may offer this engine here, and what it must say if so."""
+
+    allowed: bool
+    reason: str | None = None  # the rejection, with its source
+    warnings: tuple[str, ...] = ()
+
+
+def check_engine(
+    engine: str, platform: str | None, vendor: str, product_line: str, quant: str
+) -> EngineVerdict:
+    """Apply the engine's own documentation to one (engine, platform, GPU, quant).
+
+    Refuses only on a documented statement: `unsupported`, a scope the GPU does
+    not meet, or a quant the docs say the engine cannot serve there. Silence and
+    `experimental` are warnings -- the docs not mentioning a platform is not
+    evidence it fails -- and so is an unknown GPU vendor, since no row applies.
+    """
+    if platform is None:
+        return EngineVerdict(
+            True,
+            warnings=(
+                "GPU vendor unknown (a user-supplied card), so engine support for this "
+                "platform was not checked against the engines' docs",
+            ),
+        )
+    s = engine_support(engine, platform)
+    cell = load_engine_support()["engines"].get(engine, {}).get("platforms", {}).get(platform, {})
+    tag = f"{engine} {s.engine_version}".strip()
+    if s.status == STATUS_UNSUPPORTED:
+        return EngineVerdict(False, f'{tag} does not support {platform}: "{s.quote}" ({s.url})')
+    need = _SCOPE_REQUIRES.get(s.scope or "")
+    if need:
+        need_vendor, need_line = need
+        if vendor != need_vendor or (need_line and product_line != need_line):
+            return EngineVerdict(
+                False,
+                f"{tag} on {platform} is documented for {s.scope} hardware only, not a "
+                f"{vendor} {product_line} GPU ({s.url})",
+            )
+    if s.scope == "cpu-only":
+        return EngineVerdict(
+            False, f"{tag} on {platform} runs on the CPU only, not the GPU ({s.url})"
+        )
+    if quant in (cell.get("unsupported_quants") or []):
+        return EngineVerdict(
+            False,
+            f"{tag} does not serve {quant} on {platform}, per its docs "
+            f"({cell.get('unsupported_quants_url')})",
+        )
+
+    warnings = []
+    if s.status == STATUS_UNDOCUMENTED:
+        warnings.append(
+            f"{tag} does not document {platform} support; this configuration is unverified"
+        )
+    elif s.status == STATUS_EXPERIMENTAL:
+        warnings.append(f"{tag} support for {platform} is experimental, per its docs ({s.url})")
+    if s.scope in _SCOPE_NOTE:
+        warnings.append(f"{tag} on {platform}: {_SCOPE_NOTE[s.scope]} ({s.url})")
+    if quant in (cell.get("quant_conflicts") or []):
+        warnings.append(
+            f"{tag}'s own docs disagree on {quant} for {platform}; unverified "
+            f"({cell.get('quant_conflicts_url')})"
+        )
+    if s.maintenance:
+        warnings.append(f"{tag}: {s.maintenance}")
+    return EngineVerdict(True, warnings=tuple(warnings))
+
+
 def platform_support(platform: str) -> list[EngineSupport]:
     return [engine_support(e, platform) for e in load_engine_support()["engines"]]
 

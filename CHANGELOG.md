@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`plan` offers an engine only where that engine's own docs say it runs.** Until now it offered every engine on every GPU. The new `--platform linux|windows|wsl2|macos` flag (default `linux`, and in the MCP `plan` tool) names the deployment OS; together with the GPU's vendor it selects the row of the 0.40.0 engine-support matrix. Only a documented statement causes a refusal, and each refusal cites the doc at its pinned release:
+  - vLLM on native Windows ("vLLM does not support Windows natively").
+  - SGLang or TGI on a consumer Radeon card, since their ROCm docs cover Instinct only.
+  - TGI on Intel Arc, since it documents Data Center GPU Max only.
+  - Ollama in WSL2 on a non-NVIDIA card, since its WSL route is documented through the NVIDIA container toolkit.
+  - vLLM on a Mac GPU, since it runs CPU-only there.
+  - Documented quant gaps: vLLM AWQ/GPTQ on AMD ("AMD GPU no" in its hardware table), vLLM FP8 on Intel, and TGI AWQ on ROCm.
+
+  Refusals appear in the trace as a new `platform` gate.
+
+  Silence is not a verdict. An engine whose docs never mention a platform, like SGLang or TGI on native Windows, is kept with a warning that the configuration is unverified. So is a quant the engine's own pages disagree on, like SGLang GPTQ on AMD. TGI's archived, maintenance-mode status is stated on every TGI candidate. A user-supplied card has no known vendor, so no row applies: nothing is refused, and every candidate says engine support was not checked.
+
+  **Behaviour change:** plans for consumer Radeon cards, Intel Arc cards and `--platform windows` now offer fewer engines than before, which is the point.
+
+### Added
+- **Vendor and product line on every GPU** (`vendor`, `product_line` in `data/hardware.json`, e.g. `amd`/`instinct` vs `amd`/`radeon`). They are derived from the vendor's product naming by one rule in `scripts/build_hardware_data.py` and validated against a closed vocabulary; an unrecognised name fails the build.
+- **Each plan candidate carries the matrix row it was checked against** (`platform`, e.g. `linux-rocm`). The MCP response reports the `platform` that was planned, and the Rich output names it.
+
 ## [0.40.0] - 2026-09-26
 
 ### Added
