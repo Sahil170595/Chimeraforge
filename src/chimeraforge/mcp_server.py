@@ -44,7 +44,9 @@ _PLAN_DESC = (
     "workload, or report why nothing fits. Returns candidates with per-number "
     "provenance (measured/extrapolated/estimated/unknown). Use for: "
     "'what GPU do I need for <model>', "
-    "'will <model> fit on <gpu>', 'how many GPUs for N req/s', 'what will it cost'."
+    "'will <model> fit on <gpu>', 'how many GPUs for N req/s', 'what will it cost'. "
+    "Set platform (linux/windows/wsl2/macos) to the deployment OS: engines are offered "
+    "only where their own docs say they run."
 )
 
 _COMPARE_DESC = (
@@ -115,6 +117,7 @@ def plan_deployment(
     tpot_slo_ms: float | None = None,
     prompt_tokens: int = 512,
     gpu_overrides: dict | None = None,
+    platform: str = "linux",
     quality_from: str | None = None,
     max_num_batched_tokens: int | None = None,
     context_length: int = 2048,
@@ -192,6 +195,7 @@ def plan_deployment(
             tpot_slo=tpot_slo_ms,
             prompt_tokens=prompt_tokens,
             gpu_overrides=gpu_overrides,
+            platform=platform,
             quality_from=quality_from,
             max_num_batched_tokens=max_num_batched_tokens,
             context_length=context_length,
@@ -227,6 +231,7 @@ def plan_deployment(
         return {
             "ok": True,
             "hardware": hardware,
+            "platform": platform,
             "recommended": None,
             "launch": None,
             "alternatives": [],
@@ -255,6 +260,7 @@ def plan_deployment(
     return {
         "ok": True,
         "hardware": hardware,
+        "platform": platform,
         "recommended": _candidate_summary(best),
         "launch": launch,
         "alternatives": [_candidate_summary(c) for c in result.candidates[1:_MAX_CANDIDATES]],

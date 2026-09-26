@@ -107,14 +107,23 @@
           "scope": null,
           "quote": "- GPU: MI200s (gfx90a), MI300 (gfx942), MI350 (gfx950), Radeon RX 7900 series (gfx1100/1101), Radeon RX 9000 series (gfx1200/1201), Ryzen AI MAX / AI 300 Series (gfx1151/1150)\n- ROCm 6.3 or above\n    - MI350 requires ROCm 7.0 or above\n    - Ryzen AI MAX / AI 300 Series requires ROCm 7.0.2 or above",
           "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.rocm.inc.md#L16",
-          "detail": "Consumer RDNA3 (RX 7900, gfx1100/1101) and RDNA4 (RX 9000, gfx1200/1201) ARE listed. Note gfx1102 (RX 7600) is not in the list. Prebuilt ROCm wheels: Python 3.12 only; the prebuilt-wheel table lists rocm700 for vLLM 0.14.0-0.18.0 and rocm721 for nightlies, so v0.30.0 on ROCm may require nightly or source build."
+          "detail": "Consumer RDNA3 (RX 7900, gfx1100/1101) and RDNA4 (RX 9000, gfx1200/1201) ARE listed. Note gfx1102 (RX 7600) is not in the list. Prebuilt ROCm wheels: Python 3.12 only; the prebuilt-wheel table lists rocm700 for vLLM 0.14.0-0.18.0 and rocm721 for nightlies, so v0.30.0 on ROCm may require nightly or source build.",
+          "unsupported_quants": [
+            "AWQ",
+            "GPTQ"
+          ],
+          "unsupported_quants_url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/features/quantization/README.md#L69-L70"
         },
         "linux-xpu": {
           "status": "supported",
           "scope": "basic",
           "quote": "vLLM initially supports basic model inference and serving on Intel GPU platform. ... - Supported Hardware: Intel Data Center GPU, Intel ARC GPU",
           "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.xpu.inc.md#L9",
-          "detail": "Wording is 'initially supports basic' -- treat as basic/limited. Python 3.12 required (vllm-xpu-kernels wheel)."
+          "detail": "Wording is 'initially supports basic' -- treat as basic/limited. Python 3.12 required (vllm-xpu-kernels wheel).",
+          "unsupported_quants": [
+            "FP8"
+          ],
+          "unsupported_quants_url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/features/quantization/README.md#L74"
         },
         "windows-native": {
           "status": "unsupported",
@@ -178,7 +187,11 @@
           "scope": "instinct-only",
           "quote": "TGI is supported and tested on AMD Instinct MI210, MI250 and MI300 GPUs. The support may be extended in the future.",
           "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/installation_amd.md#L3",
-          "detail": "Instinct only; no consumer Radeon. No ROCm version requirement stated (only an aside about 'ROCm 6.1 and PyTorch 2.3' for TunableOp). Unsupported on ROCm: AWQ checkpoints, sliding-window attention kernel (L43-44)."
+          "detail": "Instinct only; no consumer Radeon. No ROCm version requirement stated (only an aside about 'ROCm 6.1 and PyTorch 2.3' for TunableOp). Unsupported on ROCm: AWQ checkpoints, sliding-window attention kernel (L43-44).",
+          "unsupported_quants": [
+            "AWQ"
+          ],
+          "unsupported_quants_url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/installation_amd.md#L43"
         },
         "linux-xpu": {
           "status": "supported",
@@ -245,7 +258,11 @@
           "scope": "instinct-only",
           "quote": "When using AMD GPUs (such as MI300X), certain system-level optimizations help ensure stable performance.",
           "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/hardware-platforms/amd_gpu.mdx#L8",
-          "detail": "Docs give no gfx list and no ROCm version. Quantization matrix column header is 'AMD GPUs (MI300X/MI325X/MI350X)' (quantization.mdx L32). Source rocm.Dockerfile at the tag builds only gfx942 (MI30x), gfx950 (MI35x), gfx1250 (MI45x) against ROCm 7.0/7.2/7.2.4/10.0 bases; a separate docker/rocm-gfx1151.Dockerfile targets Strix Halo iGPU. Consumer discrete RDNA3/RDNA4 (RX 7900 XTX, RX 9070) are NOT listed anywhere."
+          "detail": "Docs give no gfx list and no ROCm version. Quantization matrix column header is 'AMD GPUs (MI300X/MI325X/MI350X)' (quantization.mdx L32). Source rocm.Dockerfile at the tag builds only gfx942 (MI30x), gfx950 (MI35x), gfx1250 (MI45x) against ROCm 7.0/7.2/7.2.4/10.0 bases; a separate docker/rocm-gfx1151.Dockerfile targets Strix Halo iGPU. Consumer discrete RDNA3/RDNA4 (RX 7900 XTX, RX 9070) are NOT listed anywhere.",
+          "quant_conflicts": [
+            "GPTQ"
+          ],
+          "quant_conflicts_url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/advanced_features/quantization.mdx#L23"
         },
         "linux-xpu": {
           "status": "supported",

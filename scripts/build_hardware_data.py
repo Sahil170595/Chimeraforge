@@ -359,8 +359,35 @@ GPUS += [
 REQUIRED = (
     "name", "vram_gb", "bandwidth_gbps", "cost_per_hour", "price_basis",
     "fp16_tflops", "tflops_basis", "tdp_watts", "interconnect_gbps",
-    "fp8_supported", "source_url", "captured_at",
+    "fp8_supported", "source_url", "captured_at", "vendor", "product_line",
 )
+
+# Vendor and product line, which the engine-support gate needs: SGLang and TGI
+# document ROCm on Instinct only, TGI on Intel covers Data Center GPU Max only.
+# Derived from the vendor's own product naming by one rule rather than typed per
+# entry, and validated against a closed vocabulary.
+PRODUCT_LINES = {
+    "nvidia": {"geforce", "rtx-pro", "datacenter"},
+    "amd": {"instinct", "radeon"},
+    "intel": {"arc-pro", "datacenter-max"},
+}
+
+
+def vendor_line(name: str) -> tuple[str, str]:
+    """(vendor, product_line) from a database name; raises on anything unknown."""
+    if name.startswith("RTX PRO "):
+        return "nvidia", "rtx-pro"
+    if name.startswith("RTX "):
+        return "nvidia", "geforce"
+    if name.split()[0] in {"A100", "H100", "H200", "B200", "L4", "T4"}:
+        return "nvidia", "datacenter"
+    if name.startswith("MI"):
+        return "amd", "instinct"
+    if name.startswith(("RX ", "Radeon ")):
+        return "amd", "radeon"
+    if name.startswith("Arc Pro "):
+        return "intel", "arc-pro"
+    raise ValidationError(f"{name}: no vendor/product-line rule matches this name")
 
 # Sanity bounds. Anything outside these is far more likely to be a typo or a
 # unit mix-up than a real part, so it fails the build rather than shipping.
@@ -426,6 +453,11 @@ def validate(data: dict) -> list[str]:
                 raise ValidationError(f"{name}: {field} is not a number")
             if not lo <= value <= hi:
                 raise ValidationError(f"{name}: {field}={value} outside [{lo}, {hi}]")
+        if entry["product_line"] not in PRODUCT_LINES.get(entry["vendor"], set()):
+            raise ValidationError(
+                f"{name}: vendor/product_line {entry['vendor']}/{entry['product_line']} "
+                "not in the vocabulary"
+            )
         if not isinstance(entry["fp8_supported"], bool):
             raise ValidationError(f"{name}: fp8_supported must be a bool")
         # A null TFLOPS figure must say why, and a reason-for-null must not sit
@@ -458,7 +490,9 @@ def build() -> dict:
             "depends on it rather than defaulting. Regenerate with "
             "scripts/build_hardware_data.py."
         ),
-        "gpus": GPUS,
+        "gpus": [
+            {**g, **dict(zip(("vendor", "product_line"), vendor_line(g["name"])))} for g in GPUS
+        ],
     }
 
 

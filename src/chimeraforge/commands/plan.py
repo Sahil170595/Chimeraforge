@@ -108,6 +108,13 @@ def plan(
     gpu_interconnect_gbps: float = typer.Option(
         None, "--gpu-interconnect-gbps", help="Override/supply the TP interconnect in GB/s."
     ),
+    platform: str = typer.Option(
+        "linux",
+        "--platform",
+        help="OS the deployment runs on: linux, windows, wsl2 or macos. Each engine is "
+        "offered only where its own docs say it runs (e.g. vLLM has no native "
+        "Windows support). Default linux.",
+    ),
     gpu_price_per_hour: float = typer.Option(
         None,
         "--gpu-price-per-hour",
@@ -660,6 +667,7 @@ def plan(
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             gpu_overrides=gpu_overrides,
+            platform=platform,
             quality_from=quality_from,
             max_num_batched_tokens=chunk_budget,
             safety_target=safety_target,
@@ -748,6 +756,7 @@ def plan(
                     context_length=context_length,
                     prompt_tokens=prompt_tokens,
                     max_num_batched_tokens=chunk_budget,
+                    platform=platform,
                     quality_from=quality_from,
                     safety_target=safety_target,
                     workload_cv2=workload_cv2,
@@ -814,6 +823,15 @@ def plan(
         from chimeraforge.planner.formatter import format_launch
 
         format_launch(launch_cmd)
+
+    if not output_json and candidates:
+        # The OS is an input, not something the planner can see; say which one the
+        # engine offers were checked against.
+        row = candidates[0].platform or "unknown GPU vendor: not checked"
+        console.print(
+            f"[dim]Engines checked against their docs for {escape(platform)} ({row}); "
+            "--platform linux|windows|wsl2|macos to change.[/]"
+        )
 
     if api_cmp is not None and not output_json:
         from chimeraforge.planner.formatter import format_api_comparison

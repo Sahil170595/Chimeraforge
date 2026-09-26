@@ -15,7 +15,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4060 Ti 8GB",
@@ -29,7 +31,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4060 Ti 16GB",
@@ -43,7 +47,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4070 12GB",
@@ -57,7 +63,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4070 Ti 12GB",
@@ -71,7 +79,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4080 12GB",
@@ -85,7 +95,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
-      "captured_at": "2026-08-22"
+      "captured_at": "2026-08-22",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4080 16GB",
@@ -99,7 +111,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 4090 24GB",
@@ -113,7 +127,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 5070 12GB",
@@ -127,7 +143,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 5070 Ti 16GB",
@@ -141,7 +159,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 5080 16GB",
@@ -155,7 +175,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 5090 32GB",
@@ -169,7 +191,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 3090 24GB",
@@ -183,7 +207,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": false,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "RTX 3080 10GB",
@@ -197,7 +223,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": false,
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "geforce"
     },
     {
       "name": "A100 40GB",
@@ -211,7 +239,9 @@
       "interconnect_gbps": 600.0,
       "fp8_supported": false,
       "source_url": "https://www.nvidia.com/en-us/data-center/a100/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "A100 80GB",
@@ -225,7 +255,9 @@
       "interconnect_gbps": 600.0,
       "fp8_supported": false,
       "source_url": "https://www.nvidia.com/en-us/data-center/a100/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "H100 80GB",
@@ -239,7 +271,9 @@
       "interconnect_gbps": 900.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/data-center/h100/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "H200 141GB",
@@ -253,7 +287,9 @@
       "interconnect_gbps": 900.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/data-center/h200/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "B200 180GB",
@@ -267,7 +303,9 @@
       "interconnect_gbps": 1800.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/data-center/dgx-b200/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "L4 24GB",
@@ -281,7 +319,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/data-center/l4/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "T4 16GB",
@@ -295,7 +335,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": false,
       "source_url": "https://www.nvidia.com/en-us/data-center/tesla-t4/",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "nvidia",
+      "product_line": "datacenter"
     },
     {
       "name": "MI300X 192GB",
@@ -309,7 +351,9 @@
       "interconnect_gbps": 896.0,
       "fp8_supported": true,
       "source_url": "https://www.amd.com/en/products/accelerators/instinct/mi300/mi300x.html",
-      "captured_at": "2026-09-05"
+      "captured_at": "2026-09-05",
+      "vendor": "amd",
+      "product_line": "instinct"
     },
     {
       "name": "RTX PRO 6000 Blackwell Workstation 96GB",
@@ -327,7 +371,9 @@
       "field_sources": {
         "fp16_tflops": "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf",
         "fp8_supported": "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf"
-      }
+      },
+      "vendor": "nvidia",
+      "product_line": "rtx-pro"
     },
     {
       "name": "RTX PRO 6000 Blackwell Max-Q 96GB",
@@ -345,7 +391,9 @@
       "field_sources": {
         "fp16_tflops": "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf",
         "fp8_supported": "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf"
-      }
+      },
+      "vendor": "nvidia",
+      "product_line": "rtx-pro"
     },
     {
       "name": "RTX PRO 6000 Blackwell Server 96GB",
@@ -359,7 +407,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": true,
       "source_url": "https://www.nvidia.com/en-us/data-center/rtx-pro-6000-blackwell-server-edition/",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "nvidia",
+      "product_line": "rtx-pro"
     },
     {
       "name": "MI325X 256GB",
@@ -373,7 +423,9 @@
       "interconnect_gbps": 896.0,
       "fp8_supported": true,
       "source_url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/instinct-mi325x-datasheet.pdf",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "amd",
+      "product_line": "instinct"
     },
     {
       "name": "MI350X 288GB",
@@ -387,7 +439,9 @@
       "interconnect_gbps": 1075.2,
       "fp8_supported": true,
       "source_url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi350x-gpu-brochure.pdf",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "amd",
+      "product_line": "instinct"
     },
     {
       "name": "MI355X 288GB",
@@ -401,7 +455,9 @@
       "interconnect_gbps": 1075.2,
       "fp8_supported": true,
       "source_url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi355x-gpu-brochure.pdf",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "amd",
+      "product_line": "instinct"
     },
     {
       "name": "MI455X 432GB",
@@ -418,7 +474,9 @@
       "captured_at": "2026-09-25",
       "field_sources": {
         "interconnect_gbps": "https://www.amd.com/en/products/accelerators/instinct/mi400/mi455x.html"
-      }
+      },
+      "vendor": "amd",
+      "product_line": "instinct"
     },
     {
       "name": "Arc Pro B60 24GB",
@@ -432,7 +490,9 @@
       "interconnect_gbps": 64.0,
       "fp8_supported": false,
       "source_url": "https://www.intel.com/content/www/us/en/products/sku/243916/intel-arc-pro-b60-graphics/specifications.html",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "intel",
+      "product_line": "arc-pro"
     },
     {
       "name": "Arc Pro B65 32GB",
@@ -446,7 +506,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": false,
       "source_url": "https://www.intel.com/content/www/us/en/products/sku/245796/intel-arc-pro-b65-graphics/specifications.html",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "intel",
+      "product_line": "arc-pro"
     },
     {
       "name": "RX 9070 16GB",
@@ -463,7 +525,9 @@
       "captured_at": "2026-09-25",
       "field_sources": {
         "cost_per_hour": "https://ir.amd.com/news-events/press-releases/detail/1238/amd-unveils-next-generation-amd-rdna-4-architecture-with-the-launch-of-amd-radeon-rx-9000-series-graphics-cards"
-      }
+      },
+      "vendor": "amd",
+      "product_line": "radeon"
     },
     {
       "name": "RX 9070 XT 16GB",
@@ -480,7 +544,9 @@
       "captured_at": "2026-09-25",
       "field_sources": {
         "cost_per_hour": "https://ir.amd.com/news-events/press-releases/detail/1238/amd-unveils-next-generation-amd-rdna-4-architecture-with-the-launch-of-amd-radeon-rx-9000-series-graphics-cards"
-      }
+      },
+      "vendor": "amd",
+      "product_line": "radeon"
     },
     {
       "name": "RX 9060 XT 16GB",
@@ -498,7 +564,9 @@
       "field_sources": {
         "cost_per_hour": "https://www.amd.com/en/newsroom/press-releases/2025-5-20-amd-introduces-new-radeon-graphics-cards-and-ryzen.html",
         "fp8_supported": "https://www.amd.com/en/newsroom/press-releases/2025-5-20-amd-introduces-new-radeon-graphics-cards-and-ryzen.html"
-      }
+      },
+      "vendor": "amd",
+      "product_line": "radeon"
     },
     {
       "name": "Radeon AI PRO R9700 32GB",
@@ -512,7 +580,9 @@
       "interconnect_gbps": 128.0,
       "fp8_supported": true,
       "source_url": "https://www.amd.com/en/products/graphics/workstations/radeon-ai-pro/ai-9000-series/amd-radeon-ai-pro-r9700.html",
-      "captured_at": "2026-09-25"
+      "captured_at": "2026-09-25",
+      "vendor": "amd",
+      "product_line": "radeon"
     }
   ]
 }

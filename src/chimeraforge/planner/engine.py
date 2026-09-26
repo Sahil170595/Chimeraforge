@@ -75,6 +75,11 @@ from chimeraforge.planner.hardware import (
     is_reference_hardware,
 )
 from chimeraforge.planner.models import PlannerModels
+from chimeraforge.planner.platform_support import (
+    DEFAULT_PLAN_PLATFORM,
+    check_engine,
+    plan_platform_key,
+)
 from chimeraforge.planner.resolver import (
     SOURCE_MANUAL,
     SOURCE_REGISTRY,
@@ -145,6 +150,9 @@ class Candidate:
     tdp_watts: float = 0.0
     energy_cost_month: float = 0.0
     energy_cost_per_1m_tok: float = 0.0
+    # The engine-support row the backend was checked against (e.g. "linux-rocm");
+    # "" when the GPU vendor was unknown and no row could be chosen.
+    platform: str = ""
     perf_per_watt: float = 0.0
     # Multi-GPU parallelism (0.10.0 TP / 0.11.0 PP): degrees per replica, and total
     # fleet GPUs (N * tp * pp).
@@ -250,6 +258,7 @@ def enumerate_candidates(
     trace: list[tuple[str, str, str, str]] | None = None,
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
     gpu_overrides: dict | None = None,
+    platform: str = DEFAULT_PLAN_PLATFORM,
     quality_override: QualityCell | None = None,
     max_num_batched_tokens: int | None = None,
     workload_cv2: float = 0.0,
@@ -351,6 +360,10 @@ def enumerate_candidates(
     # reported TTFT 0.0 ms. Unknown disables the prediction instead.
     price_known = gpu is None or gpu.cost_per_hour > 0
     compute_known = gpu is None or gpu.fp16_tflops > 0
+    # Which engine-support row this deployment is: the OS the plan targets plus
+    # the GPU's vendor. None when the vendor is unknown -- then nothing is refused
+    # on platform grounds, and every candidate says so.
+    engine_platform = plan_platform_key(platform, gpu.vendor if gpu else "")
     # KV-cache element size: a quantized cache (q8/q4) shrinks KV VRAM and lifts the
     # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
     kv_bytes = KV_QUANT_BYTES.get(kv_quant, KV_DTYPE_BYTES)
@@ -607,6 +620,18 @@ def enumerate_candidates(
                 # refused outright, so it is not a config to hand someone.
                 if quant == "FP8" and gpu is not None and not gpu.fp8_supported:
                     _reject(model, quant, "format", f"{hardware} has no FP8 tensor cores")
+                    continue
+                # The engine's own docs: does it run on this OS + GPU, and serve
+                # this quant there? Refused only on a documented statement.
+                verdict = check_engine(
+                    backend,
+                    engine_platform,
+                    gpu.vendor if gpu else "",
+                    gpu.product_line if gpu else "",
+                    quant,
+                )
+                if not verdict.allowed:
+                    _reject(model, quant, "platform", verdict.reason)
                     continue
 
                 # Predict N=1 throughput, recording provenance. A direct
@@ -936,6 +961,7 @@ def enumerate_candidates(
                     f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
                 )
                 warnings.extend(hardware_warnings)
+                warnings.extend(verdict.warnings)
                 if not compute_known:
                     warnings.append(
                         f"no vendor dense FP16 figure for {gpu.name}: TTFT is the memory-bound "
@@ -1195,6 +1221,7 @@ def enumerate_candidates(
                         ttft_slo_ms=float(ttft_slo or 0.0),
                         tpot_slo_ms=float(tpot_slo or 0.0),
                         effective_batch=best_b,
+                        platform=engine_platform or "",
                         tdp_watts=round(tdp_watts, 1),
                         energy_cost_month=round(energy_month, 2),
                         energy_cost_per_1m_tok=round(energy_1m, 4),
@@ -1266,7 +1293,17 @@ def _batch_grid(b_max: int) -> list[int]:
 
 # Order in which a (model, quant) cell is tested; used to pick the *binding*
 # gate (the furthest one reached) when summarising a failed search.
-_GATE_ORDER = ["vram", "quality", "safety", "throughput", "latency", "budget"]
+# format and platform are per-backend checks made after safety and before throughput.
+_GATE_ORDER = [
+    "vram",
+    "quality",
+    "safety",
+    "format",
+    "platform",
+    "throughput",
+    "latency",
+    "budget",
+]
 
 
 def summarize_trace(trace: list[tuple[str, str, str, str]]) -> list[str]:

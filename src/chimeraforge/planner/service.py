@@ -24,6 +24,7 @@ from chimeraforge.planner.engine import (
     pareto_frontier,
 )
 from chimeraforge.planner.models import load_effective_models, load_models
+from chimeraforge.planner.platform_support import DEFAULT_PLAN_PLATFORM
 from chimeraforge.planner.qualityfile import aggregate, load_quality_file
 from chimeraforge.planner.resolver import ModelSpec, resolve_spec
 
@@ -37,6 +38,8 @@ class PlanResult:
     specs: dict[str, ModelSpec] = field(default_factory=dict)
     trace: list[tuple[str, str, str, str]] = field(default_factory=list)
     frontier: list[Candidate] | None = None
+    # The OS the plan targeted (--platform). Engine support is checked against it.
+    platform: str = DEFAULT_PLAN_PLATFORM
 
 
 def validate_plan_inputs(
@@ -121,6 +124,7 @@ def run_plan(
     context_length: int = 2048,
     prompt_tokens: int = 512,
     gpu_overrides: dict | None = None,
+    platform: str = DEFAULT_PLAN_PLATFORM,
     quality_from: str | None = None,
     max_num_batched_tokens: int | None = None,
     safety_target: float | None = None,
@@ -204,6 +208,7 @@ def run_plan(
         trace=trace,
         prompt_tokens=prompt_tokens,
         gpu_overrides=gpu_overrides,
+        platform=platform,
         quality_override=quality_override,
         max_num_batched_tokens=max_num_batched_tokens,
         workload_cv2=workload_cv2,
@@ -222,4 +227,5 @@ def run_plan(
         specs=specs,
         trace=trace,
         frontier=frontier,
+        platform=platform,
     )

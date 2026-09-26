@@ -69,6 +69,10 @@ class GPUSpec:
     # A user-supplied spec, not a bundled one. Its numbers are the user's claim,
     # not a vendor-published figure this project checked.
     user_supplied: bool = False
+    # Vendor and product line ("amd"/"instinct", "intel"/"arc-pro", ...), which
+    # decide the engine-support row. "" = unknown (a user-supplied card).
+    vendor: str = ""
+    product_line: str = ""
 
 
 def known_or_none(value: float) -> float | None:
@@ -113,6 +117,8 @@ def _load_bundled() -> dict[str, GPUSpec]:
             tflops_basis=entry["tflops_basis"],
             source_url=entry["source_url"],
             captured_at=entry["captured_at"],
+            vendor=entry["vendor"],
+            product_line=entry["product_line"],
         )
     return out
 
