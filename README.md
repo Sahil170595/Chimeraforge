@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**13 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**14 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -228,6 +228,32 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
 
+### `doctor` -- check this machine (read-only)
+
+```bash
+chimeraforge doctor            # detected GPUs, what the planner can do with each, local engines
+chimeraforge doctor --json     # the same report as JSON
+```
+
+This command detects the local platform with each vendor's own tool and changes nothing. Each probe names the tool it used, and a missing tool is reported as a finding, not an error.
+
+- **NVIDIA:** `nvidia-smi` for devices, pynvml for the CUDA version.
+- **AMD on Linux:** `amd-smi`, or the deprecated `rocm-smi`. When a card is unlisted, its own reported bandwidth fills `--gpu-bandwidth-gbps`.
+- **Apple Silicon:** `system_profiler`, reported as unified memory.
+- **Intel:** `xpu-smi`. Its PCI-ID device names are never guessed into a product.
+- **Windows, any vendor:** CIM plus the display-class registry. `Win32_VideoController.AdapterRAM` is a uint32 and caps at 4 GB, so the driver's `qwMemorySize` is read instead. An integrated GPU's figure is labelled a shared-memory aperture, not VRAM.
+- **WSL:** detected from `WSL` in the kernel release. Microsoft notes "microsoft" alone appears in non-WSL kernels.
+
+Exit codes are not trusted, since `rocm-smi` exits 0 with nothing to report. The parsers are golden-tested against real captures, with each source and license listed in `tests/fixtures/doctor/SOURCES.md`.
+
+Every device gets a planner status:
+
+- `matched`: a database entry, plus the flag to plan it with.
+- `supply-figures`: not in the database, so the `--gpu-*` flags it needs are listed. A number is filled in only where the tool reported dedicated VRAM.
+- `not-representable`: for example unified memory, which the planner cannot model yet.
+
+Local serving engines are probed on the same default URLs `bench` uses. An engine counts as running only when it identifies itself through its version endpoint. A generic web app answering `/health` on :8000 is reported as "answers but did not identify as vllm", not as vLLM. (`check` is reserved for plan drift detection.)
+
 ### `catalog` -- local model catalog
 
 ```bash
@@ -353,7 +379,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **2,340 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **2,391 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

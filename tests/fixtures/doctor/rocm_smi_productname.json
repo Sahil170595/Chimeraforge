@@ -1,0 +1,13 @@
+{
+  "card0": {
+    "Card Series": "AMD INSTINCT MI200 (MCM) OAM LC MBA HPE C2",
+    "Card Model": "0x7408",
+    "Card Vendor": "Advanced Micro Devices, Inc. [AMD/ATI]",
+    "Card SKU": "D65201",
+    "Subsystem ID": "0x0b0c",
+    "Device Rev": "0x00",
+    "Node ID": "7",
+    "GUID": "58294",
+    "GFX Version": "gfx9010"
+  }
+}
