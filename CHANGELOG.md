@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-09-25
+
 ### Added
 - **SGLang can now acquire a measured row.** The planner has offered SGLang since 0.23.0, and its warning told the user to "run `measure` on your own box to replace the estimate with a measurement". But the bench registry held only ollama/vllm/tgi, so that could not be done, and SGLang could never be anything but a first-principles estimate. `bench` / `measure --backend sglang` now work. Endpoint names, the default port (30000) and the streamed usage chunk were read from SGLang source at v0.5.20, not from its rendered docs, which list at least one metric the source no longer has. A folded row flips provenance to `measured` only for the quant that was benchmarked: FP8 on the same server stays an estimate.
 - **The adapter measures the quantity the planner predicts.** The planner's throughput is a single-stream **decode** rate. Completion tokens over wall clock, which is what a non-streaming adapter can report, folds prefill into that number and under-reports it more as the prompt grows. The SGLang adapter streams, times the first and last token, and reports `(tokens - 1) / decode interval`, with TTFT kept separate. The token count comes from the server's `usage` block and never from counting chunks, since one chunk can carry several tokens. A response without `usage` is a failed run, not an estimate.
