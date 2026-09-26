@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-09-26
+
 ### Added
 - **A per-platform serving-engine support matrix, read from each engine's own docs.** The planner has offered every engine on every GPU. `data/engine_support.json` now records, for vLLM v0.30.0, SGLang v0.5.20, TGI v3.3.7 and Ollama v0.34.4, whether each is supported, experimental, unsupported or not documented on seven platforms: linux-cuda, linux-rocm, linux-xpu, windows-native, windows-wsl2, macos-apple-silicon and cpu.
   - Every claim carries a verbatim quote and a URL pinned to the engine's release tag. Where a doc was silent, the cell is `not documented`, not a guess.
