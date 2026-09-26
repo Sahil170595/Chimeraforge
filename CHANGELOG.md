@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.1] - 2026-09-25
+
 ### Fixed
 - **Unlisted-card planning (0.34.0) returned the reference laptop's numbers, labelled `measured`.** The engine resolved `--gpu-*` overrides and unlisted cards into a correct `GPUSpec`, then passed only its name onward, and every throughput/latency model re-looked the card up with `get_gpu(name)`.
   - **For an unlisted card**, that lookup found nothing and fell back to the reference rig. An "RTX 6090 48GB" described at 1,300 GB/s and one at 2,600 GB/s both planned at **146.3 tok/s**, the RTX 4080 Laptop's own corpus row, with provenance `measured`. TTFT was **0.0 ms** despite `--gpu-fp16-tflops 200`. This is the silent default 0.34.0's changelog said it had closed.
