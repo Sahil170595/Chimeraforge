@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-09-26
+
 ### Changed
 - **`plan` offers an engine only where that engine's own docs say it runs.** Until now it offered every engine on every GPU. The new `--platform linux|windows|wsl2|macos` flag (default `linux`, and in the MCP `plan` tool) names the deployment OS; together with the GPU's vendor it selects the row of the 0.40.0 engine-support matrix. Only a documented statement causes a refusal, and each refusal cites the doc at its pinned release:
   - vLLM on native Windows ("vLLM does not support Windows natively").
