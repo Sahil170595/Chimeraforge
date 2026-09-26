@@ -50,7 +50,7 @@ from chimeraforge.planner.evalstats import (
     QualityCell,
     resolves_to_baseline,
 )
-from chimeraforge.planner.hardware import bandwidth_ratio, get_gpu
+from chimeraforge.planner.hardware import GPUSpec, as_spec, bandwidth_ratio
 
 log = logging.getLogger("chimeraforge.planner.models")
 
@@ -311,7 +311,7 @@ class ThroughputModel:
         model: str,
         backend: str,
         quant: str = "FP16",
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
     ) -> float:
         """Predict N=1 tok/s."""
         key = f"{model}|{backend}|{quant}"
@@ -337,7 +337,7 @@ class ThroughputModel:
         self,
         params_b: float,
         quant: str = "FP16",
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
     ) -> float:
         """The hard physical limit: bandwidth / weight bytes, at MBU = 1.0.
 
@@ -346,7 +346,7 @@ class ThroughputModel:
         efficiency factor and no measured multiplier -- it is not a prediction,
         it is the bound a prediction may not cross.
         """
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8
         if weight_gb <= 0:
@@ -354,7 +354,7 @@ class ThroughputModel:
         return bw / weight_gb
 
     def _clamp_to_bandwidth(
-        self, tps: float, model: str, quant: str, hardware: str | None
+        self, tps: float, model: str, quant: str, hardware: str | GPUSpec | None
     ) -> float:
         """Refuse to report a decode rate the memory bus cannot deliver.
 
@@ -379,7 +379,7 @@ class ThroughputModel:
         self,
         params_b: float,
         quant: str = "FP16",
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         mbu: float = MBU_DEFAULT,
     ) -> float:
         """Memory-bandwidth-bound decode throughput for an off-registry model.
@@ -399,7 +399,7 @@ class ThroughputModel:
         """
         if params_b <= 0:
             return 0.1
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         bandwidth = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         fp16_weight_gb = params_b * 16.0 / 8.0
         base_tps = mbu * bandwidth / fp16_weight_gb
@@ -410,7 +410,7 @@ class ThroughputModel:
         n1_tps: float,
         kv_per_seq_gb: float,
         batch: int,
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         params_b: float | None = None,
         mbu: float = MBU_DEFAULT,
     ) -> float:
@@ -429,7 +429,7 @@ class ThroughputModel:
         """
         if batch <= 1 or n1_tps <= 0:
             return max(n1_tps, 0.1)
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         bandwidth = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         denom = bandwidth * mbu  # effective GB/s
         weight_eff_gb = denom / n1_tps
@@ -450,7 +450,7 @@ class ThroughputModel:
         hidden_size: int,
         n_layers: int,
         interconnect_gbps: float,
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         params_b: float | None = None,
         mbu: float = MBU_DEFAULT,
     ) -> float:
@@ -469,7 +469,7 @@ class ThroughputModel:
             return self.batched_decode_tps(n1_tps, kv_per_seq_gb, batch, hardware, params_b, mbu)
         if n1_tps <= 0:
             return 0.1
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         group_bw = tp * bw * mbu  # GB/s aggregate over the group
         weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
@@ -502,7 +502,7 @@ class ThroughputModel:
         pp: int,
         hidden_size: int,
         interconnect_gbps: float,
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         params_b: float | None = None,
         mbu: float = MBU_DEFAULT,
     ) -> float:
@@ -521,7 +521,7 @@ class ThroughputModel:
             return self.batched_decode_tps(n1_tps, kv_per_seq_gb, batch, hardware, params_b, mbu)
         if n1_tps <= 0:
             return 0.1
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         bw = gpu.bandwidth_gbps if gpu else REFERENCE_BANDWIDTH_GBPS
         group_bw = pp * bw * mbu  # GB/s aggregate over the pp stages
         weight_eff_gb = bw * mbu / n1_tps  # full-model effective weight bytes (anchor)
@@ -890,7 +890,7 @@ class LatencyModel:
     def prefill_floor_ms(
         params_b: float,
         quant: str = "FP16",
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         mbu: float = MBU_DEFAULT,
         chunks: int = 1,
     ) -> float:
@@ -915,7 +915,7 @@ class LatencyModel:
         0.0 when the GPU is unknown, so the caller omits the term rather than
         defaulting to the reference card's bandwidth.
         """
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         if gpu is None or gpu.bandwidth_gbps <= 0 or params_b <= 0:
             return 0.0
         weight_gb = params_b * QUANT_BPW.get(quant, 16.0) / 8
@@ -935,7 +935,7 @@ class LatencyModel:
         prompt_tokens: int,
         max_num_batched_tokens: int | None,
         arch: dict[str, int] | None,
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         kv_bytes: float = KV_DTYPE_BYTES,
         mbu: float = MBU_DEFAULT,
     ) -> float:
@@ -949,7 +949,7 @@ class LatencyModel:
         0.0 without an arch (no KV shape to read) or on an unknown GPU.
         """
         chunks = LatencyModel.prefill_chunks(prompt_tokens, max_num_batched_tokens)
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         if chunks <= 1 or not arch or gpu is None or gpu.bandwidth_gbps <= 0:
             return 0.0
         per_token = arch.get("kv_elems_per_token_per_layer") or (
@@ -964,7 +964,7 @@ class LatencyModel:
     def predict_ttft_ms(
         params_b: float,
         prompt_tokens: int,
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         mfu: float = PREFILL_MFU,
         quant: str = "FP16",
         max_num_batched_tokens: int | None = None,
@@ -990,7 +990,7 @@ class LatencyModel:
         Returns 0.0 when the GPU's compute is unknown, so the caller omits a
         prefill term rather than guessing.
         """
-        gpu = get_gpu(hardware) if hardware else None
+        gpu = as_spec(hardware)
         tflops = gpu.fp16_tflops if gpu else 0.0
         if tflops <= 0 or params_b <= 0 or prompt_tokens <= 0:
             return 0.0
@@ -1025,7 +1025,7 @@ class LatencyModel:
         quant: str = "FP16",
         throughput_model: ThroughputModel | None = None,
         scaling_model: ScalingModel | None = None,
-        hardware: str | None = None,
+        hardware: str | GPUSpec | None = None,
         n1_tps: float | None = None,
         ttft_ms: float = 0.0,
         concurrent_per_agent: int = 1,

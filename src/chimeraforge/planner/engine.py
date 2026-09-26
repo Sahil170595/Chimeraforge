@@ -441,7 +441,7 @@ def enumerate_candidates(
             ttft_ms = models.latency.predict_ttft_ms(
                 active_params_b,
                 prefill_tokens_eff,
-                hardware,
+                gpu,
                 quant=quant,
                 arch=arch_model,
                 max_num_batched_tokens=max_num_batched_tokens,
@@ -611,7 +611,7 @@ def enumerate_candidates(
                 lookup_hit_key = f"{lookup_name}|{backend}|{quant}"
                 lookup_hit = lookup_hit_key in models.throughput.lookup
                 if lookup_hit:
-                    n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
+                    n1_tps = models.throughput.predict(lookup_name, backend, quant, gpu)
                     # A lookup hit is evidence about the rig the row was measured
                     # on, and the key carries no hardware -- every row came off the
                     # reference GPU. On any other GPU the number has already been
@@ -626,14 +626,14 @@ def enumerate_candidates(
                     throughput_source = prov_from_corpus_row(
                         measured_on=REFERENCE_GPU,
                         measured_tps=models.throughput.lookup[lookup_hit_key],
-                        ratio=1.0 if is_reference_hardware(hardware) else bandwidth_ratio(hardware),
+                        ratio=1.0 if is_reference_hardware(gpu) else bandwidth_ratio(gpu),
                         reported_tps=n1_tps,
                     )
                 elif use_measured:
-                    n1_tps = models.throughput.predict(lookup_name, backend, quant, hardware)
+                    n1_tps = models.throughput.predict(lookup_name, backend, quant, gpu)
                     throughput_source = PROV_ESTIMATED
                 else:
-                    n1_tps = models.throughput.roofline_tps(active_params_b, quant, hardware)
+                    n1_tps = models.throughput.roofline_tps(active_params_b, quant, gpu)
                     throughput_source = PROV_ESTIMATED
                     used_roofline = True
 
@@ -680,7 +680,7 @@ def enumerate_candidates(
                             hidden_size,
                             arch_eff["n_layers"],
                             interconnect_gbps,
-                            hardware,
+                            gpu,
                             active_params_b,
                         )
                     if pp > 1:
@@ -691,11 +691,11 @@ def enumerate_candidates(
                             pp,
                             hidden_size,
                             interconnect_gbps,
-                            hardware,
+                            gpu,
                             active_params_b,
                         )
                     return models.throughput.batched_decode_tps(
-                        n1_tps, kv_per_seq_gb, b, hardware, active_params_b
+                        n1_tps, kv_per_seq_gb, b, gpu, active_params_b
                     )
 
                 best = None  # (n, b, per_gpu_tps, per_req_tps, lat)
@@ -712,7 +712,7 @@ def enumerate_candidates(
                             n_agents=n,
                             avg_tokens=decode_tokens,
                             quant=quant,
-                            hardware=hardware,
+                            hardware=gpu,
                             n1_tps=per_req,
                             ttft_ms=ttft_ms,
                             concurrent_per_agent=b,
@@ -910,7 +910,7 @@ def enumerate_candidates(
                     f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
                 )
                 warnings.extend(hardware_warnings)
-                floor_ms = models.latency.prefill_floor_ms(active_params_b, quant, hardware)
+                floor_ms = models.latency.prefill_floor_ms(active_params_b, quant, gpu)
                 chunks = models.latency.prefill_chunks(prefill_tokens_eff, max_num_batched_tokens)
                 if floor_ms > 0 and ttft_ms <= floor_ms * max(chunks, 1) * (1 + 1e-9):
                     warnings.append(
@@ -1094,7 +1094,7 @@ def enumerate_candidates(
                 elif quality_source == "estimated" and not use_measured:
                     warnings.append("quality estimated from family prior, not measured")
                 if prov_class(throughput_source) == PROV_EXTRAPOLATED:
-                    ratio = bandwidth_ratio(hardware)
+                    ratio = bandwidth_ratio(gpu)
                     warnings.append(
                         f"throughput is a {ratio:.1f}x memory-bandwidth extrapolation of a "
                         f"{REFERENCE_GPU} measurement, not a measurement of this GPU -- "
