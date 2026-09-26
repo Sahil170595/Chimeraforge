@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-09-26
+
 ### Added
 - **Unified-memory devices can be planned (P8.6 item 4): Apple Silicon, AMD Ryzen AI Max+ 395 (Strix Halo), and NVIDIA DGX Spark.** Their CPU and GPU share one pool, and the tempting reading, that the whole pool is VRAM, claims memory the OS and every other app also need. So:
   - `--unified-memory-fraction` (0-1], also on the MCP `plan` tool, states the share the GPU may use. It is **required, with no default**: how much the GPU may take is a platform setting and a user choice. A fraction on a discrete card is an error, not ignored, and it is refused with `--fleet`, since one fraction cannot describe a mix of GPU types.
