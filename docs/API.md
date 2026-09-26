@@ -54,7 +54,7 @@ gpu = get_gpu("4080")  # Case-insensitive substring match
 print(gpu.name, gpu.vram_gb, gpu.bandwidth_gbps)
 ```
 
-35 GPUs: RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, RTX 5070/5070Ti/5080/5090 (Blackwell), RTX PRO 6000 Blackwell (Workstation/Max-Q/Server), A100 (40/80GB), H100, H200, B200, L4, T4, AMD MI300X/MI325X/MI350X/MI355X/MI455X, RX 9070/9070 XT/9060 XT, Radeon AI PRO R9700, and Intel Arc Pro B60/B65. A figure the vendor does not publish is reported as null, never 0.
+50 GPUs: RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, RTX 5070/5070Ti/5080/5090 (Blackwell), RTX PRO 6000 Blackwell (Workstation/Max-Q/Server), A100 (40/80GB), H100, H200, B200, L4, T4, AMD MI300X/MI325X/MI350X/MI355X/MI455X, RX 9070/9070 XT/9060 XT, Radeon AI PRO R9700, Intel Arc Pro B60/B65, and unified-memory devices (current Apple Silicon by GPU variant, Ryzen AI Max+ 395, DGX Spark), which need `--unified-memory-fraction`. A figure the vendor does not publish is reported as null, never 0.
 
 ---
 

@@ -108,6 +108,13 @@ def plan(
     gpu_interconnect_gbps: float = typer.Option(
         None, "--gpu-interconnect-gbps", help="Override/supply the TP interconnect in GB/s."
     ),
+    unified_memory_fraction: float = typer.Option(
+        None,
+        "--unified-memory-fraction",
+        help="For a unified-memory device (Apple Silicon, Strix Halo, DGX Spark): the "
+        "share (0-1] of the shared pool the GPU may use. Required there, with no "
+        "default -- the OS and other apps need their share.",
+    ),
     platform: str = typer.Option(
         None,
         "--platform",
@@ -482,6 +489,13 @@ def plan(
     # One override set describes one card, and a fleet is a mix of GPU types:
     # applying the same figures to each type would fabricate specs, and dropping
     # them would plan hardware the user did not describe.
+    if fleet and unified_memory_fraction is not None:
+        # One fraction cannot describe a mix of GPU types, and on a discrete card
+        # it is an error rather than ignored.
+        _fail(
+            "--unified-memory-fraction describes one unified-memory device, and "
+            "--fleet plans a mix of GPU types. Plan the device on its own."
+        )
     if fleet and gpu_overrides:
         _fail(
             "--gpu-* overrides describe a single card, and --fleet plans a mix of "
@@ -672,6 +686,7 @@ def plan(
             prompt_tokens=prompt_tokens,
             gpu_overrides=gpu_overrides,
             platform=platform,
+            unified_memory_fraction=unified_memory_fraction,
             quality_from=quality_from,
             max_num_batched_tokens=chunk_budget,
             safety_target=safety_target,

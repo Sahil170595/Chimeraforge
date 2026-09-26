@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2478 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2668 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -133,7 +133,7 @@ src/
       resolver.py                     # ModelSpec + resolve_spec(): any id -> params/arch (registry/Ollama /api/show/HF config.json/manual). Model-agnostic core.
       discovery.py                    # suggest(): enumerate models from Ollama /api/tags + HF Hub, resolve, rank
       identity.py                     # parse_identity()/resolve_model(): family+param matching; _FAMILIES derived from registry
-      hardware.py                     # GPUSpec dataclass (+ tdp_watts, interconnect_gbps), GPU_DB (35 GPUs), bandwidth_ratio()
+      hardware.py                     # GPUSpec dataclass (+ tdp_watts, interconnect_gbps), GPU_DB (50 GPUs), bandwidth_ratio()
       constants.py                    # QUANT_LEVELS, QUANT_BPW, BACKENDS, MODEL_PARAMS_B, MODEL_ARCH, MBU_DEFAULT
       formatter.py                    # Rich panels/tables output + JSON serialization (plan + suggest)
       launch.py                       # build_launch_command(): Candidate -> vllm/ollama/tgi serve command (0.13.0)
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 63 files, 2478 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 64 files, 2668 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -339,11 +339,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2478 total tests
+pytest tests/ -v                    # 2668 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2478 tests, 63 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2668 tests, 64 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -407,6 +407,9 @@ pytest tests/ --cov=src             # With coverage
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **Unified memory** (38): test_unified_memory.py - Apple Silicon / Strix Halo / DGX Spark from
+  vendor pages, --unified-memory-fraction required (no default), reserve + upper-bound warnings,
+  sold memory configurations, auto matches chip + installed memory, macOS/ROCm/CUDA rows
 - **Platform gate** (41): test_platform_gate.py - plan offers an engine only where its docs
   say it runs (--platform, default linux): unsupported/scope/quant refusals cite the doc,
   silence and conflicts warn, unknown vendor is unchecked-and-said, CLI/fleet/MCP carry the knob
@@ -477,7 +480,7 @@ type: short description
 ## Hardware Context
 
 Primary test rig: RTX 4080 Laptop 12GB (192-bit GDDR6, 432 GB/s, 60-150W TGP), i9-13900HX, 64GB RAM, Windows 11. This is REFERENCE_GPU -- the denominator of every cross-GPU extrapolation and of MBU_DEFAULT.
-GPU database (data/hardware.json, built by scripts/build_hardware_data.py): 35 GPUs — RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, RTX 5070/5070Ti/5080/5090 (Blackwell), RTX PRO 6000 Blackwell (Workstation/Max-Q/Server), A100 (40/80GB), H100, H200, B200, L4, T4, AMD MI300X/MI325X/MI350X/MI355X/MI455X, RDNA4 RX 9070/9070 XT/9060 XT, Radeon AI PRO R9700, Intel Arc Pro B60/B65. A vendor-unpublished field is null -> 0.0 in GPUSpec = unknown: no price refuses at the budget gate, no FP16 figure gives a floor-only TTFT. Reference GPU: RTX 4080 12GB (bandwidth ratio baseline).
+GPU database (data/hardware.json, built by scripts/build_hardware_data.py): 50 GPUs — RTX 3080/3090/4060/4060Ti/4070/4070Ti/4080/4090, RTX 5070/5070Ti/5080/5090 (Blackwell), RTX PRO 6000 Blackwell (Workstation/Max-Q/Server), A100 (40/80GB), H100, H200, B200, L4, T4, AMD MI300X/MI325X/MI350X/MI355X/MI455X, RDNA4 RX 9070/9070 XT/9060 XT, Radeon AI PRO R9700, Intel Arc Pro B60/B65, and unified-memory devices (every Apple Silicon chip in a current Mac by GPU variant, Ryzen AI Max+ 395, DGX Spark; plan on --unified-memory-fraction). A vendor-unpublished field is null -> 0.0 in GPUSpec = unknown: no price refuses at the budget gate, no FP16 figure gives a floor-only TTFT. Reference GPU: RTX 4080 12GB (bandwidth ratio baseline).
 
 ---
 

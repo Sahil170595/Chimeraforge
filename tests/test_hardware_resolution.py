@@ -91,8 +91,10 @@ class TestMigrationChangedNothing:
 
         # The 22 migrated entries, plus exactly the 2026 parts P8.6 item 6 added
         # (pinned field by field in test_gpu_2026.py) -- nothing else appeared.
-        assert set(GPU_DB) == {row[0] for row in LEGACY} | set(PARTS_2026)
-        assert len(GPU_DB) == 22 + len(PARTS_2026)
+        from test_unified_memory import UNIFIED
+
+        assert set(GPU_DB) == {row[0] for row in LEGACY} | set(PARTS_2026) | set(UNIFIED)
+        assert len(GPU_DB) == 22 + len(PARTS_2026) + len(UNIFIED)
 
     @pytest.mark.parametrize("row", LEGACY, ids=[r[0] for r in LEGACY])
     def test_every_field_survives(self, row):
@@ -408,12 +410,12 @@ class TestAutoDetection:
         assert spec.user_supplied is True
         assert any("tool's figure" in w for w in warnings)
 
-    def test_unified_memory_is_refused_by_name_not_planned_as_vram(self, monkeypatch):
+    def test_an_unsold_unified_configuration_is_refused_not_planned_as_vram(self, monkeypatch):
         self._patch(
             monkeypatch,
             _device("Apple M2", 16.0, "apple", "system_profiler", unified_memory=True),
         )
-        with pytest.raises(HardwareError, match="unified-memory"):
+        with pytest.raises(HardwareError, match="matches no configuration"):
             resolve_hardware(AUTO_HARDWARE)
 
     def test_auto_with_no_gpu_is_an_actionable_error(self, monkeypatch):

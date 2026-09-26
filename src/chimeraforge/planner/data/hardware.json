@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "captured_at": "2026-09-25",
+  "captured_at": "2026-09-26",
   "note": "GPU specifications with per-entry source and capture date. Values are vendor-published figures; `tflops_basis` records which column each TFLOPS number came from, since a with-sparsity headline halved is not a datasheet row. `price_basis` distinguishes an amortised purchase price from a rental rate -- the two are not the same quantity, and the field drives the budget gate and the self-host-vs-API break-even. A null field means no vendor source; it disables the prediction that depends on it rather than defaulting. Regenerate with scripts/build_hardware_data.py.",
   "gpus": [
     {
@@ -17,7 +17,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4060 Ti 8GB",
@@ -33,7 +35,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4060 Ti 16GB",
@@ -49,7 +53,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4070 12GB",
@@ -65,7 +71,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4070 Ti 12GB",
@@ -81,7 +89,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4080 12GB",
@@ -97,7 +107,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/laptops/compare/",
       "captured_at": "2026-08-22",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4080 16GB",
@@ -113,7 +125,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 4090 24GB",
@@ -129,7 +143,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 5070 12GB",
@@ -145,7 +161,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 5070 Ti 16GB",
@@ -161,7 +179,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 5080 16GB",
@@ -177,7 +197,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 5090 32GB",
@@ -193,7 +215,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 3090 24GB",
@@ -209,7 +233,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX 3080 10GB",
@@ -225,7 +251,9 @@
       "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "geforce"
+      "product_line": "geforce",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "A100 40GB",
@@ -241,7 +269,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/a100/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "A100 80GB",
@@ -257,7 +287,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/a100/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "H100 80GB",
@@ -273,7 +305,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/h100/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "H200 141GB",
@@ -289,7 +323,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/h200/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "B200 180GB",
@@ -305,7 +341,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/dgx-b200/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "L4 24GB",
@@ -321,7 +359,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/l4/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "T4 16GB",
@@ -337,7 +377,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/tesla-t4/",
       "captured_at": "2026-09-05",
       "vendor": "nvidia",
-      "product_line": "datacenter"
+      "product_line": "datacenter",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "MI300X 192GB",
@@ -353,7 +395,9 @@
       "source_url": "https://www.amd.com/en/products/accelerators/instinct/mi300/mi300x.html",
       "captured_at": "2026-09-05",
       "vendor": "amd",
-      "product_line": "instinct"
+      "product_line": "instinct",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX PRO 6000 Blackwell Workstation 96GB",
@@ -373,7 +417,9 @@
         "fp8_supported": "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf"
       },
       "vendor": "nvidia",
-      "product_line": "rtx-pro"
+      "product_line": "rtx-pro",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX PRO 6000 Blackwell Max-Q 96GB",
@@ -393,7 +439,9 @@
         "fp8_supported": "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf"
       },
       "vendor": "nvidia",
-      "product_line": "rtx-pro"
+      "product_line": "rtx-pro",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RTX PRO 6000 Blackwell Server 96GB",
@@ -409,7 +457,9 @@
       "source_url": "https://www.nvidia.com/en-us/data-center/rtx-pro-6000-blackwell-server-edition/",
       "captured_at": "2026-09-25",
       "vendor": "nvidia",
-      "product_line": "rtx-pro"
+      "product_line": "rtx-pro",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "MI325X 256GB",
@@ -425,7 +475,9 @@
       "source_url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/instinct-mi325x-datasheet.pdf",
       "captured_at": "2026-09-25",
       "vendor": "amd",
-      "product_line": "instinct"
+      "product_line": "instinct",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "MI350X 288GB",
@@ -441,7 +493,9 @@
       "source_url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi350x-gpu-brochure.pdf",
       "captured_at": "2026-09-25",
       "vendor": "amd",
-      "product_line": "instinct"
+      "product_line": "instinct",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "MI355X 288GB",
@@ -457,7 +511,9 @@
       "source_url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/product-briefs/amd-instinct-mi355x-gpu-brochure.pdf",
       "captured_at": "2026-09-25",
       "vendor": "amd",
-      "product_line": "instinct"
+      "product_line": "instinct",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "MI455X 432GB",
@@ -476,7 +532,9 @@
         "interconnect_gbps": "https://www.amd.com/en/products/accelerators/instinct/mi400/mi455x.html"
       },
       "vendor": "amd",
-      "product_line": "instinct"
+      "product_line": "instinct",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "Arc Pro B60 24GB",
@@ -492,7 +550,9 @@
       "source_url": "https://www.intel.com/content/www/us/en/products/sku/243916/intel-arc-pro-b60-graphics/specifications.html",
       "captured_at": "2026-09-25",
       "vendor": "intel",
-      "product_line": "arc-pro"
+      "product_line": "arc-pro",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "Arc Pro B65 32GB",
@@ -508,7 +568,9 @@
       "source_url": "https://www.intel.com/content/www/us/en/products/sku/245796/intel-arc-pro-b65-graphics/specifications.html",
       "captured_at": "2026-09-25",
       "vendor": "intel",
-      "product_line": "arc-pro"
+      "product_line": "arc-pro",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RX 9070 16GB",
@@ -527,7 +589,9 @@
         "cost_per_hour": "https://ir.amd.com/news-events/press-releases/detail/1238/amd-unveils-next-generation-amd-rdna-4-architecture-with-the-launch-of-amd-radeon-rx-9000-series-graphics-cards"
       },
       "vendor": "amd",
-      "product_line": "radeon"
+      "product_line": "radeon",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RX 9070 XT 16GB",
@@ -546,7 +610,9 @@
         "cost_per_hour": "https://ir.amd.com/news-events/press-releases/detail/1238/amd-unveils-next-generation-amd-rdna-4-architecture-with-the-launch-of-amd-radeon-rx-9000-series-graphics-cards"
       },
       "vendor": "amd",
-      "product_line": "radeon"
+      "product_line": "radeon",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "RX 9060 XT 16GB",
@@ -566,7 +632,9 @@
         "fp8_supported": "https://www.amd.com/en/newsroom/press-releases/2025-5-20-amd-introduces-new-radeon-graphics-cards-and-ryzen.html"
       },
       "vendor": "amd",
-      "product_line": "radeon"
+      "product_line": "radeon",
+      "unified_memory": false,
+      "memory_options_gb": null
     },
     {
       "name": "Radeon AI PRO R9700 32GB",
@@ -582,7 +650,322 @@
       "source_url": "https://www.amd.com/en/products/graphics/workstations/radeon-ai-pro/ai-9000-series/amd-radeon-ai-pro-r9700.html",
       "captured_at": "2026-09-25",
       "vendor": "amd",
-      "product_line": "radeon"
+      "product_line": "radeon",
+      "unified_memory": false,
+      "memory_options_gb": null
+    },
+    {
+      "name": "Apple A18 Pro 5-core GPU 8GB",
+      "vram_gb": 8.0,
+      "memory_options_gb": [
+        8.0
+      ],
+      "bandwidth_gbps": 60.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-neo/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M4 8-core GPU 24GB",
+      "vram_gb": 24.0,
+      "memory_options_gb": [
+        16.0,
+        24.0
+      ],
+      "bandwidth_gbps": 120.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/imac/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M4 10-core GPU 32GB",
+      "vram_gb": 32.0,
+      "memory_options_gb": [
+        16.0,
+        24.0,
+        32.0
+      ],
+      "bandwidth_gbps": 120.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/imac/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 8-core GPU 16GB",
+      "vram_gb": 16.0,
+      "memory_options_gb": [
+        16.0
+      ],
+      "bandwidth_gbps": 153.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-air/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 10-core GPU 32GB",
+      "vram_gb": 32.0,
+      "memory_options_gb": [
+        16.0,
+        24.0,
+        32.0
+      ],
+      "bandwidth_gbps": 153.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-air/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M6 16GB",
+      "vram_gb": 16.0,
+      "memory_options_gb": [
+        16.0
+      ],
+      "bandwidth_gbps": 153.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/mac-mini/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M6 32GB",
+      "vram_gb": 32.0,
+      "memory_options_gb": [
+        24.0,
+        32.0
+      ],
+      "bandwidth_gbps": 170.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/mac-mini/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 Pro 16-core GPU 48GB",
+      "vram_gb": 48.0,
+      "memory_options_gb": [
+        24.0,
+        48.0
+      ],
+      "bandwidth_gbps": 307.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-pro/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 Pro 20-core GPU 64GB",
+      "vram_gb": 64.0,
+      "memory_options_gb": [
+        24.0,
+        48.0,
+        64.0
+      ],
+      "bandwidth_gbps": 307.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-pro/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 Max 32-core GPU 36GB",
+      "vram_gb": 36.0,
+      "memory_options_gb": [
+        36.0
+      ],
+      "bandwidth_gbps": 460.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-pro/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 Max 40-core GPU 128GB",
+      "vram_gb": 128.0,
+      "memory_options_gb": [
+        48.0,
+        64.0,
+        128.0
+      ],
+      "bandwidth_gbps": 614.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/macbook-pro/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 Ultra 64-core GPU 256GB",
+      "vram_gb": 256.0,
+      "memory_options_gb": [
+        96.0,
+        256.0
+      ],
+      "bandwidth_gbps": 1200.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/mac-studio/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Apple M5 Ultra 80-core GPU 256GB",
+      "vram_gb": 256.0,
+      "memory_options_gb": [
+        96.0,
+        256.0
+      ],
+      "bandwidth_gbps": 1200.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": null,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.apple.com/mac-studio/specs/",
+      "captured_at": "2026-09-26",
+      "vendor": "apple",
+      "product_line": "apple-silicon",
+      "unified_memory": true
+    },
+    {
+      "name": "Ryzen AI Max+ 395 128GB",
+      "vram_gb": 128.0,
+      "memory_options_gb": [
+        128.0
+      ],
+      "bandwidth_gbps": 256.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "unlabeled-by-vendor",
+      "tdp_watts": 120.0,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://www.amd.com/en/products/processors/desktops/ryzen/ryzen-ai-halo/ryzen-ai-max-plus-395.html",
+      "captured_at": "2026-09-26",
+      "vendor": "amd",
+      "product_line": "ryzen-ai-max",
+      "unified_memory": true
+    },
+    {
+      "name": "DGX Spark 128GB",
+      "vram_gb": 128.0,
+      "memory_options_gb": [
+        128.0
+      ],
+      "bandwidth_gbps": 273.0,
+      "cost_per_hour": null,
+      "price_basis": "amortised-purchase",
+      "fp16_tflops": null,
+      "tflops_basis": "not-published",
+      "tdp_watts": 140.0,
+      "interconnect_gbps": null,
+      "fp8_supported": false,
+      "source_url": "https://docs.nvidia.com/dgx/dgx-spark/hardware.html",
+      "captured_at": "2026-09-26",
+      "vendor": "nvidia",
+      "product_line": "dgx-spark",
+      "unified_memory": true
     }
   ]
 }

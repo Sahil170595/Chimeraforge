@@ -16,7 +16,7 @@ from rich.table import Table
 
 console = Console()
 
-_STATUS_STYLE = {"matched": "green", "supply-figures": "yellow", "not-representable": "red"}
+_STATUS_STYLE = {"matched": "green", "supply-figures": "yellow"}
 _SUPPORT_STYLE = {
     "supported": "green",
     "experimental": "yellow",

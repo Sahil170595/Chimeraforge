@@ -24,7 +24,7 @@ from chimeraforge.planner.engine import (
     pareto_frontier,
 )
 from chimeraforge.planner.models import load_effective_models, load_models
-from chimeraforge.planner.hardware import AUTO_HARDWARE
+from chimeraforge.planner.hardware import AUTO_HARDWARE, get_gpu
 from chimeraforge.planner.platform_support import DEFAULT_PLAN_PLATFORM, local_plan_platform
 from chimeraforge.planner.qualityfile import aggregate, load_quality_file
 from chimeraforge.planner.resolver import ModelSpec, resolve_spec
@@ -126,6 +126,7 @@ def run_plan(
     prompt_tokens: int = 512,
     gpu_overrides: dict | None = None,
     platform: str | None = None,
+    unified_memory_fraction: float | None = None,
     quality_from: str | None = None,
     max_num_batched_tokens: int | None = None,
     safety_target: float | None = None,
@@ -167,7 +168,13 @@ def run_plan(
     # describe -- unless the plan is for THIS machine (`auto`), whose OS is known.
     if platform is None:
         is_auto = (hardware or "").strip().lower() == AUTO_HARDWARE
-        platform = local_plan_platform() if is_auto else DEFAULT_PLAN_PLATFORM
+        named = None if is_auto else get_gpu(hardware)
+        if is_auto:
+            platform = local_plan_platform()
+        elif named is not None and named.vendor == "apple":
+            platform = "macos"  # Apple Silicon runs macOS; its engines are the macOS row
+        else:
+            platform = DEFAULT_PLAN_PLATFORM
 
     specs: dict[str, ModelSpec] = {}
     if models:
@@ -216,6 +223,7 @@ def run_plan(
         prompt_tokens=prompt_tokens,
         gpu_overrides=gpu_overrides,
         platform=platform,
+        unified_memory_fraction=unified_memory_fraction,
         quality_override=quality_override,
         max_num_batched_tokens=max_num_batched_tokens,
         workload_cv2=workload_cv2,

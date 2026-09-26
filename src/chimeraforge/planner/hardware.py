@@ -71,6 +71,12 @@ class GPUSpec:
     # decide the engine-support row. "" = unknown (a user-supplied card).
     vendor: str = ""
     product_line: str = ""
+    # CPU and GPU share one memory pool (Apple Silicon, Strix Halo, DGX Spark).
+    # `vram_gb` is then the whole pool, and only a user-stated share of it is
+    # plannable -- see apply_unified_fraction.
+    unified_memory: bool = False
+    # Every configuration a unified-memory device is sold in (vram_gb is the largest).
+    memory_options_gb: tuple = ()
 
 
 def known_or_none(value: float) -> float | None:
@@ -117,6 +123,8 @@ def _load_bundled() -> dict[str, GPUSpec]:
             captured_at=entry["captured_at"],
             vendor=entry["vendor"],
             product_line=entry["product_line"],
+            unified_memory=entry["unified_memory"],
+            memory_options_gb=tuple(entry["memory_options_gb"] or ()),
         )
     return out
 
@@ -302,6 +310,75 @@ def match_driver_name(driver_name: str, vram_gb: float | None = None) -> GPUSpec
     return min(best, key=lambda s: abs(s.vram_gb - vram_gb))
 
 
+UNIFIED_FRACTION_FLAG = "--unified-memory-fraction"
+
+
+def apply_unified_fraction(gpu: GPUSpec, fraction: float | None) -> tuple[GPUSpec, list[str]]:
+    """The plannable spec for a unified-memory device, with what that assumes.
+
+    There is no default fraction. The OS, the serving process and every other app
+    draw on the same pool, and how much the GPU may take is a platform setting
+    (and a user choice), so treating the whole pool as VRAM would claim memory
+    that is not there. A fraction on a discrete card is an error, not ignored.
+    """
+    if not gpu.unified_memory:
+        if fraction is not None:
+            raise HardwareError(
+                f"{UNIFIED_FRACTION_FLAG} applies to unified-memory devices; "
+                f"{gpu.name} has dedicated VRAM"
+            )
+        return gpu, []
+    if fraction is None:
+        raise HardwareError(
+            f"{gpu.name} is a unified-memory device: its {gpu.vram_gb:g} GB is shared "
+            f"by the CPU and GPU. Pass {UNIFIED_FRACTION_FLAG} (0-1] for the share the "
+            "GPU may use -- there is no default, because the OS and other apps need "
+            "theirs and how much that is depends on your platform settings."
+        )
+    if not 0.0 < fraction <= 1.0:
+        raise HardwareError(f"{UNIFIED_FRACTION_FLAG} must be in (0, 1], got {fraction}")
+    usable = round(gpu.vram_gb * fraction, 2)
+    reserve = round(gpu.vram_gb - usable, 2)
+    configs = ", ".join(f"{m:g}" for m in gpu.memory_options_gb)
+    warnings = [
+        f"unified memory: {gpu.name} is sold with {configs} GB; planned on "
+        f"{gpu.vram_gb:g} GB. If yours differs, pass --gpu-vram-gb",
+        f"unified memory: planned on {usable:g} GB of {gpu.vram_gb:g} GB "
+        f"({fraction:.0%}); the other {reserve:g} GB is left to the OS and other "
+        "apps. That reserve is your figure, not a measured one",
+        "unified memory: one bandwidth figure serves the CPU and GPU together, so "
+        "the decode roofline is an upper bound, not an expectation",
+    ]
+    return replace(gpu, vram_gb=usable), warnings
+
+
+_GPU_CORES = re.compile(r"\s+\d+-core GPU", re.I)
+
+
+def match_unified(chip: str, memory_gb: float | None) -> GPUSpec | None:
+    """A unified-memory device by chip name and installed memory.
+
+    ``system_profiler`` names the chip ("Apple M5 Max") but not the GPU-core
+    variant, and variants differ in bandwidth. The memory sold with each variant
+    picks between them (a 64 GB M5 Max can only be the 40-core part). Where two
+    variants share a size AND differ in bandwidth, nothing is matched rather than
+    guessed; where they share both, either is the same plan.
+    """
+    if not chip or memory_gb is None:
+        return None
+    want = chip.strip().lower()
+    candidates = [
+        s
+        for s in GPU_DB.values()
+        if s.unified_memory
+        and _GPU_CORES.sub("", _CAPACITY_TOKEN.sub("", s.name)).strip().lower() == want
+        and float(memory_gb) in s.memory_options_gb
+    ]
+    if not candidates or len({s.bandwidth_gbps for s in candidates}) > 1:
+        return None
+    return candidates[0]
+
+
 def detect_local_device():
     """The local GPU `--hardware auto` plans against, via `doctor`'s per-vendor
     probes, or None when no probe found one.
@@ -342,11 +419,20 @@ def resolve_hardware(name: str, overrides: dict | None = None) -> tuple[GPUSpec,
             )
         via = f"via {device.source}"
         if device.unified_memory:
-            raise HardwareError(
-                f"--hardware auto detected {device.name!r} ({via}), a unified-memory "
-                "device: the CPU and GPU share one pool, which the planner cannot "
-                "model yet. Planning it as if the pool were VRAM would overstate it."
+            known = match_unified(device.name, device.vram_gb)
+            if known is None:
+                raise HardwareError(
+                    f"--hardware auto detected {device.name!r} with {device.vram_gb} GB "
+                    f"unified memory ({via}), which matches no configuration in the "
+                    "database. Name the device, or supply --gpu-vram-gb and "
+                    "--gpu-bandwidth-gbps."
+                )
+            warnings.append(
+                f"--hardware auto detected {device.name!r} with {device.vram_gb:g} GB "
+                f"unified memory {via}, matched to {known.name!r}"
             )
+            # The installed configuration, not the largest one sold.
+            return replace(known, vram_gb=float(device.vram_gb)), warnings
         known = match_driver_name(device.name, device.vram_gb)
         if known is not None:
             warnings.append(

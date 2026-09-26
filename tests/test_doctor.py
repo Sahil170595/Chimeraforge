@@ -178,7 +178,8 @@ class TestAppleAndIntelParsers:
     def test_apple_silicon_is_unified_memory(self):
         [g] = parse_system_profiler_hardware(_fixture("system_profiler_hardware_m2.json"))
         assert (g.name, g.vram_gb, g.unified_memory) == ("Apple M2", 16.0, True)
-        assert assess(g).status == "not-representable"
+        # M2 is no longer sold, so no configuration matches: the flags, not a guess.
+        assert assess(g).status == "supply-figures"
 
     def test_intel_mac_reports_no_apple_chip(self):
         doc = json.dumps({"SPHardwareDataType": [{"cpu_type": "Quad-Core Intel Core i7"}]})
@@ -232,11 +233,19 @@ class TestMergeAndAssess:
         g.notes.append("shared-memory aperture")
         assert "--gpu-vram-gb <GB>" in assess(g).detail
 
-    def test_unified_memory_device_is_not_representable_yet(self):
+    def test_a_sold_mac_configuration_is_matched(self):
+        g = DetectedGPU(
+            "apple", "Apple M5 Max", 128.0, None, "system_profiler", unified_memory=True
+        )
+        s = assess(g)
+        assert s.status == "matched" and s.database_entry == "Apple M5 Max 40-core GPU 128GB"
+        assert "--unified-memory-fraction" in s.detail
+
+    def test_an_unsold_mac_configuration_is_not_guessed(self):
         g = DetectedGPU(
             "apple", "Apple M4 Max", 128.0, None, "system_profiler", unified_memory=True
         )
-        assert assess(g).status == "not-representable"
+        assert assess(g).status == "supply-figures"
 
 
 def _fake(outputs: dict[str, tuple[int, str, str]]):
@@ -332,7 +341,8 @@ class TestRunDoctor:
         r = _offline(
             run=run, which=lambda n: n if n == "system_profiler" else None, system="Darwin"
         )
-        assert r.gpus[0].unified_memory and r.planner[0].status == "not-representable"
+        assert r.gpus[0].unified_memory and r.planner[0].status == "supply-figures"
+        assert r.platform == "macos-apple-silicon"
 
     def test_no_tools_is_a_finding_not_an_error(self):
         r = _offline()
