@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Unlisted-card planning (0.34.0) returned the reference laptop's numbers, labelled `measured`.** The engine resolved `--gpu-*` overrides and unlisted cards into a correct `GPUSpec`, then passed only its name onward, and every throughput/latency model re-looked the card up with `get_gpu(name)`.
+  - **For an unlisted card**, that lookup found nothing and fell back to the reference rig. An "RTX 6090 48GB" described at 1,300 GB/s and one at 2,600 GB/s both planned at **146.3 tok/s**, the RTX 4080 Laptop's own corpus row, with provenance `measured`. TTFT was **0.0 ms** despite `--gpu-fp16-tflops 200`. This is the silent default 0.34.0's changelog said it had closed.
+  - **For a listed card**, an override was warned about as in force and then ignored: `--gpu-bandwidth-gbps 504` on an RTX 4090 left throughput at 341.4 tok/s.
+
+  Models now take the resolved spec (`hardware.as_spec` accepts a `GPUSpec` or a name), and the engine passes the one it resolved. The reference card with any figure overridden is no longer treated as the measured rig: equality, not name. Pinned by the property the roadmap stated for P8.6 and nothing tested: a card described by another card's published figures plans identically to it, and different figures plan differently.
+
 ## [0.38.0] - 2026-09-25
 
 ### Added

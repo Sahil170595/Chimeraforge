@@ -140,7 +140,20 @@ def get_gpu(name: str) -> GPUSpec | None:
     return None
 
 
-def is_reference_hardware(target_gpu: str | None) -> bool:
+def as_spec(hardware: str | GPUSpec | None) -> GPUSpec | None:
+    """A model argument resolved to a spec: a GPUSpec as given, a name looked up.
+
+    The engine resolves overrides and unlisted cards into a GPUSpec and must pass
+    THAT onward. Passing only its name made every model re-look it up, which
+    found the dataset entry (dropping the override) or nothing at all (falling
+    back to the reference rig, labelled measured).
+    """
+    if isinstance(hardware, GPUSpec):
+        return hardware
+    return get_gpu(hardware) if hardware else None
+
+
+def is_reference_hardware(target_gpu: str | GPUSpec | None) -> bool:
     """True when this GPU is the rig the bundled corpus was actually measured on.
 
     Every row in the corpus came off ``REFERENCE_GPU``; the lookup key is
@@ -153,21 +166,23 @@ def is_reference_hardware(target_gpu: str | None) -> bool:
     """
     if target_gpu is None:
         return True
-    target = get_gpu(target_gpu)
+    target = as_spec(target_gpu)
     ref = GPU_DB.get(REFERENCE_GPU)
     if target is None or ref is None:
         return False
-    return target.name == ref.name
+    # Equality, not name: the reference card with overridden figures is a card
+    # the corpus did not measure.
+    return target == ref
 
 
-def bandwidth_ratio(target_gpu: str) -> float:
+def bandwidth_ratio(target_gpu: str | GPUSpec) -> float:
     """Throughput scaling ratio: target bandwidth / reference bandwidth.
 
     Used to extrapolate throughput from RTX 4080 measurements to other GPUs.
     Returns 1.0 for the reference GPU or unknown GPUs.
     """
     ref = GPU_DB.get(REFERENCE_GPU)
-    target = get_gpu(target_gpu)
+    target = as_spec(target_gpu)
     if ref is None or target is None:
         return 1.0
     return target.bandwidth_gbps / ref.bandwidth_gbps

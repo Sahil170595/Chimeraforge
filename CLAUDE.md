@@ -98,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2330 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2340 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -187,7 +187,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 59 files, 2330 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 60 files, 2340 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -336,11 +336,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2330 total tests
+pytest tests/ -v                    # 2340 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2330 tests, 59 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2340 tests, 60 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -408,6 +408,10 @@ pytest tests/ --cov=src             # With coverage
   headline not halved, AMD SEP amortisation, lookup/driver-name disambiguation, and
   unknown-is-not-zero (no price refuses at budget, no FP16 gives a floor TTFT + refuses a
   TTFT SLO, listings emit null)
+- **Spec propagation** (9): test_hardware_spec_propagation.py - the RESOLVED GPUSpec reaches
+  the models (hardware.as_spec): unlisted-card throughput follows its bandwidth and is never
+  `measured`, a supplied FP16 gives a real TTFT, overrides on listed cards move the numbers,
+  an overridden reference card is not a measurement, published figures reproduce the card
 - **Monitoring** (5): test_monitoring.py - SLO eval, log parsing, thread-safe aggregation,
   recommender, monitor lifecycle
 - **MCP/service** (12): test_mcp.py - run_plan shared core + MCP tool layer
