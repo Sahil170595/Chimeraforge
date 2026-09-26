@@ -1,0 +1,124 @@
+{
+  "schema_version": 2,
+  "hardware": "MI300X 192GB",
+  "cells": {
+    "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15021#discussioncomment-14003622",
+      "captured_at": "2026-09-25",
+      "underspecified": false,
+      "config_quote": "llama-bench -m llama-2-7b.Q4_0.gguf -ngl 99 -fa 0,1 (thread instructions); this cell = fa 0 (flash attention off); llama-bench defaults n_batch=2048, n_ubatch=512, 5 repetitions, mean +/- sd",
+      "engine_version": "build ee3a9fcf (6090)",
+      "notes": "llama.cpp llama-bench (ROCm backend); GPU as stated: AMD Instinct MI300X VF (cloud VF, gfx942); model as stated: Llama 2 7B (llama-2-7b.Q4_0.gguf from TheBloke/Llama-2-7B-GGUF) (Q4_0 GGUF); raw cells C035, C036",
+      "metrics": [
+        {
+          "definition": "prefill_tps",
+          "value": 11021.13,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | ROCm       |  99 |  0 |           pp512 |    11021.13 \u00b1 210.87 |",
+          "prompt_tokens": 512
+        },
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 232.92,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | ROCm       |  99 |  0 |           tg128 |        232.92 \u00b1 0.53 |"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-70B|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: AMD MI300X (192GB); model as stated: meta-llama/Meta-Llama-3-70B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C085",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 7126.654,
+          "quote": "AMD MI300X GPU,1,vLLM,meta-llama/Meta-Llama-3-70B,128,1,7.126654238993069,35.92148453047028"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-70B|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: AMD MI300X (192GB); model as stated: meta-llama/Meta-Llama-3-70B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C086",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 55496.404,
+          "quote": "AMD MI300X GPU,1,vLLM,meta-llama/Meta-Llama-3-70B,1024,1,55.49640403200465,36.90329194696873"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-8B|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: AMD MI300X (192GB); model as stated: meta-llama/Meta-Llama-3-8B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C087",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 2169.916,
+          "quote": "AMD MI300X GPU,1,vLLM,meta-llama/Meta-Llama-3-8B,128,1,2.1699159779964248,117.97691827513783"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-8B|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: AMD MI300X (192GB); model as stated: meta-llama/Meta-Llama-3-8B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C088",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 10540.255,
+          "quote": "AMD MI300X GPU,1,vLLM,meta-llama/Meta-Llama-3-8B,1024,1,10.54025542599993,194.3026916547149"
+        }
+      ]
+    },
+    "mistralai/Mistral-7B-v0.1|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: AMD MI300X (192GB); model as stated: mistralai/Mistral-7B-v0.1 (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C089",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 998.538,
+          "quote": "AMD MI300X GPU,1,vLLM,mistralai/Mistral-7B-v0.1,128,1,0.9985380650032312,256.37480329722996"
+        }
+      ]
+    },
+    "mistralai/Mistral-7B-v0.1|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: AMD MI300X (192GB); model as stated: mistralai/Mistral-7B-v0.1 (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C090",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 10805.147,
+          "quote": "AMD MI300X GPU,1,vLLM,mistralai/Mistral-7B-v0.1,1024,1,10.805147435996332,189.53929246511535"
+        }
+      ]
+    }
+  }
+}

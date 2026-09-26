@@ -8,7 +8,6 @@ per-provenance-class error scorecard.
 from __future__ import annotations
 
 import json as json_mod
-from contextlib import contextmanager
 
 import typer
 from rich.console import Console
@@ -81,13 +80,14 @@ def validate(
     Each prediction is already labeled measured / estimated / unknown. This checks
     how wrong each of those labels actually is, and publishes every cell.
     """
-    from chimeraforge.planner.service import run_plan
     from chimeraforge.validate import (
         Matrix,
         ValidationError,
+        audit_cells,
         build_audit,
         format_markdown,
         load_measurements,
+        models_file,
     )
 
     def _fail(msg: str) -> None:
@@ -152,14 +152,17 @@ def validate(
     # A published audit has to be reproducible by anyone, so predictions come from
     # the bundled corpus unless a corpus is named -- never from whatever `measure`
     # left in this user's cache, which run_plan would otherwise prefer.
-    with _models_file(models_path) as effective_models_path:
-        outcomes = _audit_cells(
-            matrix,
-            captured,
-            effective_models_path,
-            ollama_url if measure_live else None,
-            runs,
-            run_plan,
+    def _live(cell):
+        if cell.backend != "ollama":
+            return None, (
+                f"live measurement runs on Ollama only; a {cell.backend} cell needs "
+                "a captured --measurements file"
+            )
+        return _measure_cell(cell, ollama_url, runs, err_console), "live measurement failed"
+
+    with models_file(models_path) as effective_models_path:
+        outcomes = audit_cells(
+            matrix, captured, effective_models_path, measure=_live if measure_live else None
         )
 
     audit = build_audit(matrix, outcomes, models_basis=models_path if models_path else "bundled")
@@ -180,144 +183,6 @@ def validate(
         return
 
     _print_table(audit)
-
-
-@contextmanager
-def _models_file(models_path: str | None):
-    """Yield the corpus path predictions are made from: the given one, else bundled."""
-    if models_path:
-        yield models_path
-        return
-    import importlib.resources as pkg_resources
-
-    bundled = pkg_resources.files("chimeraforge.planner") / "data" / "fitted_models.json"
-    with pkg_resources.as_file(bundled) as p:
-        yield str(p)
-
-
-def _audit_cells(matrix, captured, models_path, ollama_url, runs, run_plan) -> list:
-    from chimeraforge.validate import (
-        CellOutcome,
-        ValidationError,
-        classify,
-        outcome_from_measurement,
-    )
-
-    outcomes: list[CellOutcome] = []
-    for cell in matrix.cells:
-        if cell.batch != 1:
-            # The audit predicts a single stream. Comparing a batch-B measurement
-            # to it would grade the planner on a quantity it did not predict.
-            outcomes.append(
-                CellOutcome(
-                    key=cell.key,
-                    cell=cell,
-                    provenance_class="unknown",
-                    skipped=(
-                        f"batch {cell.batch}: the audit compares against a single-stream "
-                        "prediction, so a batched measurement is not comparable"
-                    ),
-                )
-            )
-            continue
-        # Predict: pin the search to exactly this cell so the audit compares what it
-        # registered, not whatever the planner would have preferred instead.
-        try:
-            result = run_plan(
-                models=[cell.model],
-                hardware=matrix.hardware,
-                quality_target=0.0,
-                budget=1e12,
-                latency_slo=1e9,
-                request_rate=1.0,
-                avg_tokens=cell.avg_tokens,
-                prompt_tokens=cell.prompt_tokens,
-                context_length=cell.context_length,
-                models_path=models_path,
-                allow_network=False,
-                overrides=cell.spec_dict or None,
-            )
-        except Exception as exc:  # noqa: BLE001 - one bad cell must not kill the audit
-            outcomes.append(
-                CellOutcome(
-                    key=cell.key,
-                    cell=cell,
-                    provenance_class="unknown",
-                    skipped=f"prediction failed: {type(exc).__name__}: {exc}",
-                )
-            )
-            continue
-
-        picked = next(
-            (c for c in result.candidates if c.quant == cell.quant and c.backend == cell.backend),
-            None,
-        )
-        if picked is None:
-            outcomes.append(
-                CellOutcome(
-                    key=cell.key,
-                    cell=cell,
-                    provenance_class="unknown",
-                    skipped=(
-                        f"no candidate for {cell.quant} on {cell.backend} "
-                        "(gated out; see `plan` for the binding gate)"
-                    ),
-                )
-            )
-            continue
-
-        predicted = {
-            "throughput_tps": picked.throughput_tps,
-            "ttft_ms": picked.ttft_ms,
-            "p95_latency_ms": picked.p95_latency_ms,
-        }
-        if picked.throughput_tps > 0:
-            # The planner's service time for one request (LatencyModel): what a
-            # single-request, no-queue end-to-end measurement is evidence about.
-            predicted["e2e_latency_ms"] = (
-                picked.ttft_ms + cell.avg_tokens / picked.throughput_tps * 1000.0
-            )
-        cls = classify(picked.provenance, picked.tensor_parallel, picked.pipeline_parallel)
-
-        measurement = captured.get(cell.key)
-        skip_reason = "no measurement for this cell"
-        if ollama_url:
-            if cell.backend == "ollama":
-                measurement = _measure_cell(cell, ollama_url, runs, err_console)
-            else:
-                measurement = None
-                skip_reason = (
-                    f"live measurement runs on Ollama only; a {cell.backend} cell needs "
-                    "a captured --measurements file"
-                )
-
-        if measurement is None:
-            outcomes.append(
-                CellOutcome(
-                    key=cell.key,
-                    cell=cell,
-                    provenance_class=cls,
-                    predicted=predicted,
-                    skipped=skip_reason,
-                )
-            )
-            continue
-
-        try:
-            outcomes.append(outcome_from_measurement(cell, cls, predicted, measurement))
-        except ValidationError as exc:
-            outcomes.append(
-                CellOutcome(
-                    key=cell.key,
-                    cell=cell,
-                    provenance_class=cls,
-                    predicted=predicted,
-                    skipped=str(exc),
-                    measurement=measurement,
-                    evidence=measurement.evidence,
-                )
-            )
-    return outcomes
 
 
 def _measure_cell(cell, ollama_url: str, runs: int, err):

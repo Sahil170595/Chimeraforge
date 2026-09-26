@@ -1,0 +1,38 @@
+{
+  "llama-2-7b": {
+    "params_b": 6.738417664,
+    "n_layers": 32,
+    "n_kv_heads": 32,
+    "d_head": 128,
+    "hidden_size": 4096,
+    "config_url": "https://huggingface.co/NousResearch/Llama-2-7b-hf/blob/main/config.json",
+    "params_url": "https://huggingface.co/api/models/meta-llama/Llama-2-7b-hf?expand[]=safetensors"
+  },
+  "llama-3-8b": {
+    "params_b": 8.030261248,
+    "n_layers": 32,
+    "n_kv_heads": 8,
+    "d_head": 128,
+    "hidden_size": 4096,
+    "config_url": "https://huggingface.co/NousResearch/Meta-Llama-3-8B/blob/main/config.json",
+    "params_url": "https://huggingface.co/api/models/meta-llama/Meta-Llama-3-8B?expand[]=safetensors"
+  },
+  "llama-3-70b": {
+    "params_b": 70.553706496,
+    "n_layers": 80,
+    "n_kv_heads": 8,
+    "d_head": 128,
+    "hidden_size": 8192,
+    "config_url": "https://huggingface.co/NousResearch/Meta-Llama-3-70B/blob/main/config.json",
+    "params_url": "https://huggingface.co/api/models/meta-llama/Meta-Llama-3-70B?expand[]=safetensors"
+  },
+  "mistral-7b-v0.1": {
+    "params_b": 7.241732096,
+    "n_layers": 32,
+    "n_kv_heads": 8,
+    "d_head": 128,
+    "hidden_size": 4096,
+    "config_url": "https://huggingface.co/mistralai/Mistral-7B-v0.1/blob/main/config.json",
+    "params_url": "https://huggingface.co/api/models/mistralai/Mistral-7B-v0.1?expand[]=safetensors"
+  }
+}

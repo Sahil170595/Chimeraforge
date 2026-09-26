@@ -48,6 +48,7 @@ import hashlib
 import json
 import math
 import statistics
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -733,6 +734,144 @@ def build_audit(
         sources=matrix.sources,
         models_basis=models_basis,
     )
+
+
+@contextmanager
+def models_file(models_path: str | None):
+    """Yield the corpus path predictions are made from: the given one, else bundled."""
+    if models_path:
+        yield models_path
+        return
+    import importlib.resources as pkg_resources
+
+    bundled = pkg_resources.files("chimeraforge.planner") / "data" / "fitted_models.json"
+    with pkg_resources.as_file(bundled) as p:
+        yield str(p)
+
+
+def audit_cells(
+    matrix: Matrix,
+    captured: dict[str, MeasuredCell],
+    models_path: str,
+    measure=None,
+) -> list[CellOutcome]:
+    """Predict every registered cell and join it to its measurement.
+
+    ``measure``, when given, is called per cell and returns ``(MeasuredCell |
+    None, reason)``; it replaces the captured measurement (the CLI's live mode).
+    One bad cell is recorded with its reason and never stops the audit.
+    """
+    from chimeraforge.planner.service import run_plan
+
+    outcomes: list[CellOutcome] = []
+    for cell in matrix.cells:
+        if cell.batch != 1:
+            # The audit predicts a single stream. Comparing a batch-B measurement
+            # to it would grade the planner on a quantity it did not predict.
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class="unknown",
+                    skipped=(
+                        f"batch {cell.batch}: the audit compares against a single-stream "
+                        "prediction, so a batched measurement is not comparable"
+                    ),
+                )
+            )
+            continue
+        # Predict: pin the search to exactly this cell so the audit compares what it
+        # registered, not whatever the planner would have preferred instead.
+        try:
+            result = run_plan(
+                models=[cell.model],
+                hardware=matrix.hardware,
+                quality_target=0.0,
+                budget=1e12,
+                latency_slo=1e9,
+                request_rate=1.0,
+                avg_tokens=cell.avg_tokens,
+                prompt_tokens=cell.prompt_tokens,
+                context_length=cell.context_length,
+                models_path=models_path,
+                allow_network=False,
+                overrides=cell.spec_dict or None,
+            )
+        except Exception as exc:  # noqa: BLE001 - one bad cell must not kill the audit
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class="unknown",
+                    skipped=f"prediction failed: {type(exc).__name__}: {exc}",
+                )
+            )
+            continue
+
+        picked = next(
+            (c for c in result.candidates if c.quant == cell.quant and c.backend == cell.backend),
+            None,
+        )
+        if picked is None:
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class="unknown",
+                    skipped=(
+                        f"no candidate for {cell.quant} on {cell.backend} "
+                        "(gated out; see `plan` for the binding gate)"
+                    ),
+                )
+            )
+            continue
+
+        predicted = {
+            "throughput_tps": picked.throughput_tps,
+            "ttft_ms": picked.ttft_ms,
+            "p95_latency_ms": picked.p95_latency_ms,
+        }
+        if picked.throughput_tps > 0:
+            # The planner's service time for one request (LatencyModel): what a
+            # single-request, no-queue end-to-end measurement is evidence about.
+            predicted["e2e_latency_ms"] = (
+                picked.ttft_ms + cell.avg_tokens / picked.throughput_tps * 1000.0
+            )
+        cls = classify(picked.provenance, picked.tensor_parallel, picked.pipeline_parallel)
+
+        measurement = captured.get(cell.key)
+        skip_reason = "no measurement for this cell"
+        if measure is not None:
+            measurement, why = measure(cell)
+            skip_reason = why or skip_reason
+
+        if measurement is None:
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class=cls,
+                    predicted=predicted,
+                    skipped=skip_reason,
+                )
+            )
+            continue
+
+        try:
+            outcomes.append(outcome_from_measurement(cell, cls, predicted, measurement))
+        except ValidationError as exc:
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class=cls,
+                    predicted=predicted,
+                    skipped=str(exc),
+                    measurement=measurement,
+                    evidence=measurement.evidence,
+                )
+            )
+    return outcomes
 
 
 def load_measurements(path: str | Path) -> MeasurementSet:

@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "hardware": "A100 40GB",
+  "cells": {
+    "meta-llama/Meta-Llama-3-8B|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: A100 SXM-40GB; model as stated: meta-llama/Meta-Llama-3-8B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C077",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 1826.268,
+          "quote": "Nvidia A100 GPU,1,vLLM,meta-llama/Meta-Llama-3-8B,128,1,1.8262675674632192,140.17661188365588"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-8B|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: A100 SXM-40GB; model as stated: meta-llama/Meta-Llama-3-8B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C078",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 14935.715,
+          "quote": "Nvidia A100 GPU,1,vLLM,meta-llama/Meta-Llama-3-8B,1024,1,14.935714729130268,137.12099066846991"
+        }
+      ]
+    },
+    "mistralai/Mistral-7B-v0.1|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: A100 SXM-40GB; model as stated: mistralai/Mistral-7B-v0.1 (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C079",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 1723.591,
+          "quote": "Nvidia A100 GPU,1,vLLM,mistralai/Mistral-7B-v0.1,128,1,1.7235907139256597,148.52714042357132"
+        }
+      ]
+    },
+    "mistralai/Mistral-7B-v0.1|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: A100 SXM-40GB; model as stated: mistralai/Mistral-7B-v0.1 (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C080",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 14241.764,
+          "quote": "Nvidia A100 GPU,1,vLLM,mistralai/Mistral-7B-v0.1,1024,1,14.241763886995614,143.80241213450128"
+        }
+      ]
+    }
+  }
+}

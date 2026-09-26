@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "hardware": "RTX 4080 16GB",
+  "cells": {
+    "Meta-Llama-3-8B.F16|FP16|ollama|c2048|p512|o512|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "./llama-bench -p 512,1024,4096,8192 -n 512,1024,4096,8192 -m <model>; defaults otherwise (no -fa, so FA off); Ubuntu 22.04.2, CUDA 12.1.1 on RunPod; snapshots May 2024",
+      "engine_version": null,
+      "notes": "llama.cpp llama-bench (CUDA/cuBLAS build: 'LLAMA_CUBLAS=1 make'); GPU as stated: 4080 16GB; model as stated: Meta Llama 3 8B (8B F16), converted locally ('./models/8B-v3/ggml-model-Q4_K_M.gguf' pattern) (F16 GGUF); raw cells C050, C051",
+      "metrics": [
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 40.58,
+          "quote": "|                 | 8B F16     | 40.58   | 40.29    | 39.44    | OOM      | 7246.97 | 6758.90  | 4720.22  | OOM      |  [model-group row for 4080 16GB]"
+        },
+        {
+          "definition": "prefill_tps",
+          "value": 7246.97,
+          "quote": "|                 | 8B F16     | 40.58   | 40.29    | 39.44    | OOM      | 7246.97 | 6758.90  | 4720.22  | OOM      |",
+          "prompt_tokens": 512
+        }
+      ]
+    },
+    "Meta-Llama-3-8B.Q4_K_M|Q4_K_M|ollama|c2048|p512|o512|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "./llama-bench -p 512,1024,4096,8192 -n 512,1024,4096,8192 -m <model>; defaults otherwise (no -fa, so FA off); Ubuntu 22.04.2, CUDA 12.1.1 on RunPod; snapshots May 2024",
+      "engine_version": null,
+      "notes": "llama.cpp llama-bench (CUDA/cuBLAS build: 'LLAMA_CUBLAS=1 make'); GPU as stated: 4080 16GB; model as stated: Meta Llama 3 8B (8B Q4_K_M), converted locally ('./models/8B-v3/ggml-model-Q4_K_M.gguf' pattern) (Q4_K_M GGUF); raw cells C048, C049",
+      "metrics": [
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 108.15,
+          "quote": "| 4080 16GB       | 8B Q4_K_M  | 108.15  | 106.22   | 100.44   | 93.71    | 5389.74 | 5064.99  | 3790.96  | 2882.03  |"
+        },
+        {
+          "definition": "prefill_tps",
+          "value": 5389.74,
+          "quote": "| 4080 16GB       | 8B Q4_K_M  | 108.15  | 106.22   | 100.44   | 93.71    | 5389.74 | 5064.99  | 3790.96  | 2882.03  |",
+          "prompt_tokens": 512
+        }
+      ]
+    },
+    "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14032320",
+      "captured_at": "2026-09-25",
+      "underspecified": false,
+      "config_quote": "llama-bench -m llama-2-7b.Q4_0.gguf -ngl 99 -fa 0,1 (thread instructions); this cell = fa 0 (flash attention off); llama-bench defaults n_batch=2048, n_ubatch=512, 5 repetitions, mean +/- sd",
+      "engine_version": "build 20638e4 (2)",
+      "notes": "llama.cpp llama-bench (CUDA backend); GPU as stated: NVIDIA GeForce RTX 4080; model as stated: Llama 2 7B (llama-2-7b.Q4_0.gguf from TheBloke/Llama-2-7B-GGUF) (Q4_0 GGUF); raw cells C011, C012",
+      "metrics": [
+        {
+          "definition": "prefill_tps",
+          "value": 8031.64,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           pp512 |      8031.64 \u00b1 26.49 |",
+          "prompt_tokens": 512
+        },
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 142.49,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           tg128 |        142.49 \u00b1 0.16 |"
+        }
+      ]
+    }
+  }
+}
