@@ -87,8 +87,12 @@ class TestMigrationChangedNothing:
     and it moved for a reason nobody reviewed."""
 
     def test_the_same_gpus_are_present(self):
-        assert set(GPU_DB) == {row[0] for row in LEGACY}
-        assert len(GPU_DB) == 22
+        from test_gpu_2026 import PARTS_2026
+
+        # The 22 migrated entries, plus exactly the 2026 parts P8.6 item 6 added
+        # (pinned field by field in test_gpu_2026.py) -- nothing else appeared.
+        assert set(GPU_DB) == {row[0] for row in LEGACY} | set(PARTS_2026)
+        assert len(GPU_DB) == 22 + len(PARTS_2026)
 
     @pytest.mark.parametrize("row", LEGACY, ids=[r[0] for r in LEGACY])
     def test_every_field_survives(self, row):
@@ -245,10 +249,12 @@ class TestUnlistedGpusAreNoLongerAWall:
         assert warnings and "not in the GPU database" in warnings[0]
 
     def test_it_can_actually_be_planned(self):
+        # A price is part of planning it: without one the budget gate refuses
+        # rather than pricing the card at $0 (test_gpu_2026.TestUnknownIsNotZero).
         r = run_plan(
             models=["llama3.2-3b"],
             hardware="RTX 6090 48GB",
-            gpu_overrides={"vram_gb": 48.0, "bandwidth_gbps": 1300.0},
+            gpu_overrides={"vram_gb": 48.0, "bandwidth_gbps": 1300.0, "cost_per_hour": 0.05},
             budget=1e9,
             latency_slo=1e9,
             quality_target=0.0,

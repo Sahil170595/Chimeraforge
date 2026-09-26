@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **The 2026 parts are in the GPU database (35 GPUs, up from 22).**
+  - NVIDIA RTX PRO 6000 Blackwell: Workstation, Max-Q and Server Editions.
+  - AMD Instinct MI325X, MI350X, MI355X and MI455X.
+  - Intel Arc Pro B60 and B65.
+  - AMD RDNA4: RX 9070, RX 9070 XT and RX 9060 XT, plus the Radeon AI PRO R9700.
+
+  Every figure was read from the vendor's page, datasheet or press release, with per-field sources where they differ. Four parts were re-checked independently against the live source. Units printed in TB/s or PFLOPs are converted, and nothing is derived beyond that. MI325X's dense FP16 (1307.4) matches MI300X's (1307.0), the same CDNA3 compute, which confirms the dense column was read. MI430X is excluded on purpose: AMD says it is "expected to be available in 2027".
+- **An unlabeled headline is not halved into a dense figure.** NVIDIA prints "FP16 Tensor 1 PFLOP" for the RTX PRO 6000 Server Edition without saying dense or sparse. The datasheet omits the figure, and the architecture whitepaper covers only the workstation cards. So the field is null with `tflops_basis: unlabeled-by-vendor`, and the build fails if a null and a numeric basis ever disagree. Intel publishes no FP16 matrix figure for the Arc Pro parts (`not-published`), and no FP8 figure, so FP8 is refused there rather than assumed.
+- **Consumer RDNA4 prices** are AMD's published SEP amortised over `AMORTISATION_HOURS` (3 years of continuous use), a stated scenario. Parts with no vendor price stay unpriced. That covers the R9700 too, whose price appears only in press coverage.
+
+### Fixed
+- **A missing figure was read as zero, and zero is a value.** Since 0.34.0, a spec with no price, whether user-supplied or vendor-unpublished, priced every plan at **$0/month**, labelled `derived`, sorted first and inside any budget. A spec with no FP16 figure reported **TTFT 0.0 ms**. Both now mean unknown:
+  - no price refuses at the budget gate with an actionable reason (`--gpu-price-per-hour`);
+  - no FP16 figure reports TTFT as the memory-bound floor, labelled a lower bound with the decode compute ceiling not applied, and refuses a `--ttft-slo` it cannot verify.
+
+  `list_hardware` (MCP) and `plan --list-hardware --json` emit `null` rather than `0.0`, and the table says "unknown".
+- **Driver-name matching folds hyphens on both sides,** so `Max-Q` in a database key matches the driver's `Max-Q` and does not fall back to the plain Workstation entry.
+
 ## [0.37.0] - 2026-09-25
 
 ### Added

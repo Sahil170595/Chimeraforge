@@ -16,7 +16,7 @@ from dataclasses import asdict
 from chimeraforge import __version__
 from chimeraforge.planner.engine import summarize_trace
 from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE, WORKLOAD_CV2
-from chimeraforge.planner.hardware import AUTO_HARDWARE, GPU_DB, get_gpu
+from chimeraforge.planner.hardware import AUTO_HARDWARE, GPU_DB, get_gpu, known_or_none
 from chimeraforge.planner.launch import build_launch_command
 from chimeraforge.planner.resolver import (
     DEFAULT_OLLAMA_URL,
@@ -281,16 +281,20 @@ def resolve_model(model: str, allow_network: bool = True) -> dict:
 
 
 def list_hardware() -> dict:
-    """List the GPUs ChimeraForge knows, with VRAM / bandwidth / TDP / interconnect."""
+    """List the GPUs ChimeraForge knows, with VRAM / bandwidth / TDP / interconnect.
+
+    A figure the vendor does not publish is ``null``, never 0 -- a model reading
+    ``cost_per_hour_usd: 0.0`` would reasonably conclude the card is free.
+    """
     gpus = [
         {
             "name": s.name,
             "vram_gb": s.vram_gb,
             "bandwidth_gbps": s.bandwidth_gbps,
-            "fp16_tflops": s.fp16_tflops,
-            "tdp_watts": s.tdp_watts,
-            "interconnect_gbps": s.interconnect_gbps,
-            "cost_per_hour_usd": s.cost_per_hour,
+            "fp16_tflops": known_or_none(s.fp16_tflops),
+            "tdp_watts": known_or_none(s.tdp_watts),
+            "interconnect_gbps": known_or_none(s.interconnect_gbps),
+            "cost_per_hour_usd": known_or_none(s.cost_per_hour),
         }
         for s in GPU_DB.values()
     ]
