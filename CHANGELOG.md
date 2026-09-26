@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Operational carbon per token: `plan --grid-region` / `--carbon-intensity`, and on the MCP `plan` tool.** The planner already modelled energy, but not emissions.
+  - **What it reports:** gCO2e per 1M tokens and kg per month. That is the same board-power energy times the grid's carbon intensity, and it is replica-invariant per token. An 8B at 2 req/s on an H100 comes to 60 gCO2e per 1M tokens on the US grid and 6.5 on France's.
+  - **Source:**
+    - `planner/data/carbon_intensity.json` holds Our World in Data's `carbon_intensity_elec`, which is Ember's annual-average lifecycle gCO2e/kWh (CC BY 4.0).
+    - It is read at pinned OWID commit `7e387a1` (2026-04-27): 212 countries, each with its own latest year (90 at 2025, 105 at 2024).
+    - Regenerate it with `scripts/build_carbon_data.py --write`. `--check` confirms that a rebuild at the recorded commit is identical.
+    - The builder validates ranges, required provenance, anchor grids and ASCII, and fails loudly.
+    - CodeCarbon's copy of the same column was considered and not used: it stops at 2023 and is second-hand.
+  - **Excluded, not shipped:** the Central African Republic's source value is 0 gCO2e/kWh for a 100% hydro grid. A lifecycle intensity is never zero, so the value is not the quantity the column defines. It is recorded with that reason, and asking for the region says why.
+  - **Labeled for what it is:**
+    - It is the SCI v1.1 operational term only (O = E x I). Embodied emissions (M) are not modelled, so it is not a full SCI score.
+    - E is board TDP x 0.85, with no host or datacenter PUE, so it is a lower bound.
+    - An unknown TDP gives unknown carbon (null), never zero.
+    - A region figure more than 2 years old is flagged stale with its year. Western Sahara's latest is 2009.
+    - `--carbon-intensity` takes your own figure, for example a marginal or hourly value from your provider.
+  - **Where it shows up:** Candidates carry `co2e_g_per_1m_tok`, `co2e_kg_month` and `carbon_basis` (region, year, source, license, commit). `--report` includes it, and its reproduce command carries the flag. The README credits Ember and OWID.
+
 ## [0.43.0] - 2026-09-26
 
 ### Added

@@ -103,6 +103,8 @@ class BriefInputs:
     lora_target: str = "qv"
     ttft_slo_ms: float | None = None
     tpot_slo_ms: float | None = None
+    grid_region: str | None = None
+    carbon_intensity: float | None = None
 
     @property
     def models(self) -> list[str]:
@@ -146,6 +148,8 @@ class BriefInputs:
             ("--lora-target", self.lora_target, defaults.lora_target),
             ("--ttft-slo", self.ttft_slo_ms, None),
             ("--tpot-slo", self.tpot_slo_ms, None),
+            ("--grid-region", self.grid_region, None),
+            ("--carbon-intensity", self.carbon_intensity, None),
         ]
         for flag, value, default in flags:
             if value != default and value is not None:
@@ -313,6 +317,15 @@ def build_brief(
                 f"${w.energy_cost_month:,.2f}/mo",
                 "estimated",  # board TDP is a rating, not a measured draw
                 f"{w.perf_per_watt:.2f} tok/s per watt, from board TDP",
+            )
+        )
+    if w.co2e_g_per_1m_tok is not None:
+        metrics.append(
+            MetricRow(
+                "Carbon (operational)",
+                f"{w.co2e_g_per_1m_tok:,.1f} gCO2e per 1M tokens, {w.co2e_kg_month:,.1f} kg/mo",
+                "estimated",  # E is board TDP x load, not a metered draw
+                f"SCI O = E x I only, embodied excluded; {w.carbon_basis}",
             )
         )
     if w.lora_adapters:

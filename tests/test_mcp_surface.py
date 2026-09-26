@@ -237,6 +237,7 @@ class TestPlanFlagParity:
             "tpot_slo": "tpot_slo_ms",
             "models": "model",
             "workload_cv2": "workload",
+            "carbon_intensity": "carbon_intensity_g_per_kwh",
         }
         cli_only = {
             "models_path",  # local corpus override: a server-side file path

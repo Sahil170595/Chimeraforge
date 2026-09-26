@@ -24,6 +24,7 @@ from chimeraforge.planner.constants import (
     DEFAULT_LORA_TARGET,
     DEFAULT_PROMPT_TOKENS,
     GB_TO_GIB,
+    GRAMS_PER_KG,
     HIGH_VARIANCE_CV2,
     KV_DTYPE_BYTES,
     KV_QUANT_BYTES,
@@ -35,6 +36,7 @@ from chimeraforge.planner.constants import (
     MODEL_ARCH,
     MODEL_PARAMS_B,
     NVLINK_DOMAIN_SIZE,
+    POWER_UTILISATION,
     QUANT_BPW,
     QUANT_LEVELS,
     SECONDS_PER_MONTH,
@@ -81,6 +83,7 @@ from chimeraforge.planner.platform_support import (
     check_engine,
     plan_platform_key,
 )
+from chimeraforge.planner.carbon import GridIntensity
 from chimeraforge.planner.resolver import (
     SOURCE_MANUAL,
     SOURCE_REGISTRY,
@@ -176,6 +179,11 @@ class Candidate:
     # of the two a config actually fails.
     ttft_slo_ms: float = 0.0
     tpot_slo_ms: float = 0.0
+    # Operational carbon (SCI v1.1 O = E x I, embodied M not modelled). None when no
+    # grid was given, or when the GPU's TDP is unknown -- never 0.0 for unknown.
+    co2e_g_per_1m_tok: float | None = None
+    co2e_kg_month: float | None = None
+    carbon_basis: str = ""
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -268,6 +276,7 @@ def enumerate_candidates(
     kv_quant: str = DEFAULT_KV_QUANT,
     tensor_parallel: int | None = 1,
     pipeline_parallel: int | None = 1,
+    grid: GridIntensity | None = None,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -856,6 +865,17 @@ def enumerate_candidates(
                     total_tps, tdp_watts, total_gpus, electricity_rate
                 )
                 ppw = models.cost.perf_per_watt(total_tps, tdp_watts, total_gpus)
+                # Carbon is the same kWh times the grid's gCO2e/kWh, so the energy
+                # functions price it with the intensity as the "rate".
+                co2e_1m = co2e_month = None
+                if grid is not None and tdp_watts > 0:
+                    co2e_1m = models.cost.energy_cost_per_1m(
+                        total_tps, tdp_watts, total_gpus, grid.gco2e_per_kwh
+                    )
+                    co2e_month = (
+                        models.cost.energy_cost_per_month(tdp_watts, total_gpus, grid.gco2e_per_kwh)
+                        / GRAMS_PER_KG
+                    )
 
                 safety_source = PROV_MEASURED if safety_refusal is not None else PROV_UNKNOWN
                 # VRAM is arithmetic over the architecture, never a benchmark
@@ -1121,6 +1141,8 @@ def enumerate_candidates(
                     warnings.append("VRAM usage > 90% of capacity")
                 if safety_target is not None and safety_refusal is None:
                     warnings.append("safety not screened (no TR134/TR142 data)")
+                if grid is not None:
+                    warnings.extend(_carbon_warnings(grid, tdp_watts, gpu.name))
                 if rtsi_risk in ("HIGH", "MODERATE"):
                     warnings.append(f"RTSI refusal-instability risk: {rtsi_risk}")
                 if model_source == SOURCE_REGISTRY_APPROX:
@@ -1226,6 +1248,9 @@ def enumerate_candidates(
                         tpot_ms=round(tpot_ms, 1),
                         ttft_slo_ms=float(ttft_slo or 0.0),
                         tpot_slo_ms=float(tpot_slo or 0.0),
+                        co2e_g_per_1m_tok=None if co2e_1m is None else round(co2e_1m, 3),
+                        co2e_kg_month=None if co2e_month is None else round(co2e_month, 3),
+                        carbon_basis=grid.basis if grid is not None else "",
                         effective_batch=best_b,
                         platform=engine_platform or "",
                         tdp_watts=round(tdp_watts, 1),
@@ -1283,6 +1308,26 @@ def pareto_frontier(candidates: list[Candidate]) -> list[Candidate]:
     front = [a for a in candidates if not any(dominates(b, a) for b in candidates if b is not a)]
     front.sort(key=lambda c: (c.monthly_cost, c.p95_latency_ms))
     return front
+
+
+def _carbon_warnings(grid: GridIntensity, tdp_watts: float, gpu_name: str) -> list[str]:
+    """What the carbon figure is, and is not."""
+    if tdp_watts <= 0:
+        return [
+            f"carbon unknown: {gpu_name} has no TDP figure, so its energy is unknown; "
+            "pass --gpu-tdp-w"
+        ]
+    out = [
+        "carbon: SCI v1.1 operational term only (O = E x I) -- embodied emissions "
+        "(M) are not modelled, so this is not a full SCI score; E is board power "
+        f"(TDP x {POWER_UTILISATION}) with no host or datacenter PUE, a lower bound"
+    ]
+    if grid.stale:
+        out.append(
+            f"carbon: grid intensity for {grid.name} is from {grid.year} and stale; "
+            "grids change year to year -- pass --carbon-intensity with a current figure"
+        )
+    return out
 
 
 def _batch_grid(b_max: int) -> list[int]:

@@ -180,6 +180,13 @@ def format_recommendation(
         )
         cost_table.add_row("Cost/1M tok +energy", f"${with_energy:.4f}")
         cost_table.add_row("Perf per watt", f"{best.perf_per_watt} tok/s/W")
+    if best.co2e_g_per_1m_tok is not None:
+        cost_table.add_row(
+            "Carbon (operational)",
+            f"{best.co2e_g_per_1m_tok} gCO2e/1M tok, {best.co2e_kg_month} kg/mo  "
+            "[dim](SCI O = E x I only; embodied excluded)[/]",
+        )
+        cost_table.add_row("Grid", f"[dim]{escape(best.carbon_basis)}[/]")
 
     # Assemble main panel
     console.print()

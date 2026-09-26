@@ -160,6 +160,7 @@ DEFAULT_PROMPT_TOKENS = 512
 # steady serving typically draws ~80-90%. Named so the assumption is explicit and
 # tunable, not a magic number buried in the cost math.
 POWER_UTILISATION = 0.85
+GRAMS_PER_KG = 1000.0
 # Default electricity price ($/kWh) -- roughly the US commercial average; override
 # per run with `plan --electricity-rate`. Energy is reported as a SEPARATE line,
 # not folded into the hardware cost or the budget gate, because a cloud `$/hr`
