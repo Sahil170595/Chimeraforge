@@ -300,6 +300,8 @@ chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhos
 
 Three workload profiles (single / batch / server-Poisson); measures throughput, TTFT, and latency with p50/p90/p95/p99; CV-based stability warnings; JSON output.
 
+Before the first request, `bench` (and `measure`) confirms the server at the URL is the engine you named: vLLM through `/version`, TGI through `/info`, SGLang through `/server_info`, and Ollama through its root banner. A port that answers `/health` but does not identify itself is refused, so another web app's numbers are never filed as vLLM.
+
 ### `eval` -- quality evaluation
 
 ```bash

@@ -16,7 +16,7 @@ from collections.abc import Callable
 
 import httpx
 
-from chimeraforge.bench.backends.base import Backend
+from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
 
 logger = logging.getLogger(__name__)
@@ -67,13 +67,19 @@ class SGLangBackend(Backend):
             await self._client.aclose()
 
     async def health_check(self) -> tuple[bool, str]:
-        """GET /health; 200 means the server is up and its scheduler is responsive."""
+        """GET /health, then the server-info version: running means SGLang named
+        itself. A bare 200 on /health is also what any other web app returns."""
         try:
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/health", timeout=PROBE_TIMEOUT_S)
-            if resp.status_code == 200:
-                return True, "SGLang is running"
-            return False, f"SGLang returned status {resp.status_code}"
+            if resp.status_code != 200:
+                return False, f"SGLang returned status {resp.status_code}"
+            version = await self.get_version()
+            if not version:
+                return False, identity_message(
+                    "SGLang", self.base_url, "no version from /server_info or /get_server_info"
+                )
+            return True, f"SGLang {version} is running"
         except httpx.ConnectError:
             return False, f"SGLang not running at {self.base_url}"
         except httpx.TimeoutException:
@@ -180,15 +186,9 @@ class SGLangBackend(Backend):
         """Read the version from the server-info endpoint, trying both names."""
         client = await self._get_client()
         for path in VERSION_ENDPOINTS:
-            try:
-                resp = await client.get(f"{self.base_url}{path}", timeout=PROBE_TIMEOUT_S)
-            except httpx.HTTPError as exc:
-                logger.debug("SGLang version probe %s failed: %s", path, exc)
-                continue
-            if resp.status_code == 200:
-                version = resp.json().get("version")
-                if version:
-                    return str(version)
+            version = await fetch_json_field(client, f"{self.base_url}{path}", "version")
+            if version:
+                return version
         return None
 
 
