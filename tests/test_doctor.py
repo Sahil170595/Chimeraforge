@@ -213,10 +213,10 @@ class TestMergeAndAssess:
         assert s.status == "matched" and s.database_entry == "RTX 4090 24GB"
         assert "--hardware auto" in s.detail
 
-    def test_known_non_nvidia_card_names_the_entry_because_auto_is_nvidia_only(self):
+    def test_known_non_nvidia_card_is_matched_for_auto_too(self):
         s = assess(DetectedGPU("amd", "AMD Radeon RX 9070 XT", 16.0, None, "windows-cim"))
         assert s.database_entry == "RX 9070 XT 16GB"
-        assert '--hardware "RX 9070 XT 16GB"' in s.detail
+        assert "--hardware auto" in s.detail and '"RX 9070 XT 16GB"' in s.detail
 
     def test_matched_part_with_no_vendor_price_says_so(self):
         s = assess(DetectedGPU("amd", "AMD Radeon AI PRO R9700", 32.0, None, "windows-cim"))

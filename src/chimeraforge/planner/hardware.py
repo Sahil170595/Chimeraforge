@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
-import subprocess
 from dataclasses import dataclass, replace
 from importlib.resources import files
 
@@ -304,50 +302,19 @@ def match_driver_name(driver_name: str, vram_gb: float | None = None) -> GPUSpec
     return min(best, key=lambda s: abs(s.vram_gb - vram_gb))
 
 
-def detect_local_gpu() -> tuple[str, float] | None:
-    """The installed GPU's driver-reported name and VRAM, or None.
+def detect_local_device():
+    """The local GPU `--hardware auto` plans against, via `doctor`'s per-vendor
+    probes, or None when no probe found one.
 
-    Tries pynvml, then ``nvidia-smi``. Reports only what the driver actually
-    says: the name and the memory. Bandwidth and TFLOPS are NOT inferred from
-    the name, because a name match that is wrong is worse than no match -- it
-    produces a fully provenance-labelled plan for a card the user does not have.
+    The primary device is the first that is not an integrated adapter reporting a
+    shared-memory aperture: planning an iGPU's aperture as VRAM would size a model
+    against memory that is not there. A unified-memory device is returned as such,
+    so the caller can refuse it by name rather than plan the pool as VRAM.
     """
-    try:  # pragma: no cover - depends on a local driver
-        import pynvml
+    from chimeraforge.doctor import run_doctor
 
-        pynvml.nvmlInit()
-        try:
-            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-            raw = pynvml.nvmlDeviceGetName(handle)
-            name = raw.decode() if isinstance(raw, bytes) else str(raw)
-            vram = pynvml.nvmlDeviceGetMemoryInfo(handle).total / (1024**3)
-            return name, round(vram, 1)
-        finally:
-            pynvml.nvmlShutdown()
-    except Exception:  # noqa: BLE001 - no driver is not an error here
-        pass
-
-    exe = shutil.which("nvidia-smi")
-    if not exe:
-        return None
-    try:  # pragma: no cover - depends on a local driver
-        out = subprocess.run(
-            [exe, "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=True,
-        ).stdout.strip()
-    except Exception:  # noqa: BLE001 - reported by the caller as "not detected"
-        return None
-    if not out:
-        return None
-    name, _, mib = out.splitlines()[0].partition(",")
-    try:
-        vram = float(mib.strip()) / 1024.0
-    except ValueError:
-        return None
-    return name.strip(), round(vram, 1)
+    report = run_doctor(check_engines=False)
+    return next((g for g in report.gpus if not g.notes or g.unified_memory), None)
 
 
 def resolve_hardware(name: str, overrides: dict | None = None) -> tuple[GPUSpec, list[str]]:
@@ -364,35 +331,52 @@ def resolve_hardware(name: str, overrides: dict | None = None) -> tuple[GPUSpec,
     supplied = {k: v for k, v in overrides.items() if k in GPU_OVERRIDE_FIELDS and v is not None}
 
     if name and name.strip().lower() == AUTO_HARDWARE:
-        detected = detect_local_gpu()
-        if detected is None:
+        device = detect_local_device()
+        if device is None:
             raise HardwareError(
-                "--hardware auto found no NVIDIA GPU (pynvml is absent or failed, "
-                "and nvidia-smi is absent or returned nothing). Name the card "
-                f"explicitly, or supply {GPU_OVERRIDE_FIELDS['vram_gb']} and "
+                "--hardware auto found no GPU: nvidia-smi, amd-smi/rocm-smi, xpu-smi, "
+                "system_profiler and (on Windows) the display adapters all came back "
+                "empty -- run `chimeraforge doctor` to see what each reported. Name the "
+                f"card explicitly, or supply {GPU_OVERRIDE_FIELDS['vram_gb']} and "
                 f"{GPU_OVERRIDE_FIELDS['bandwidth_gbps']}."
             )
-        driver_name, driver_vram = detected
-        known = match_driver_name(driver_name, driver_vram)
+        via = f"via {device.source}"
+        if device.unified_memory:
+            raise HardwareError(
+                f"--hardware auto detected {device.name!r} ({via}), a unified-memory "
+                "device: the CPU and GPU share one pool, which the planner cannot "
+                "model yet. Planning it as if the pool were VRAM would overstate it."
+            )
+        known = match_driver_name(device.name, device.vram_gb)
         if known is not None:
             warnings.append(
-                f"--hardware auto detected {driver_name!r}, matched to "
+                f"--hardware auto detected {device.name!r} {via}, matched to "
                 f"{known.name!r} in the database"
             )
             return known, warnings
-        merged = {"vram_gb": driver_vram, **supplied}
-        if not merged.get("bandwidth_gbps"):
+        merged = {"vram_gb": device.vram_gb, **supplied}
+        tool_bandwidth = not merged.get("bandwidth_gbps") and device.bandwidth_gbps
+        if tool_bandwidth:
+            merged["bandwidth_gbps"] = device.bandwidth_gbps
+        if not merged.get("vram_gb") or not merged.get("bandwidth_gbps"):
+            missing = [
+                GPU_OVERRIDE_FIELDS[k] for k in ("vram_gb", "bandwidth_gbps") if not merged.get(k)
+            ]
             raise HardwareError(
-                f"detected {driver_name!r} ({driver_vram} GB), which is not in the "
-                "GPU database, and its memory bandwidth is not knowable from the "
-                f"driver. Pass {GPU_OVERRIDE_FIELDS['bandwidth_gbps']} to plan it -- "
-                "decode is bandwidth-bound, so without it throughput is unknown."
+                f"detected {device.name!r} ({via}), which is not in the GPU database, "
+                f"and {' and '.join(missing)} is not knowable from the tool. Pass it "
+                "to plan the card -- decode is bandwidth-bound, so without it "
+                "throughput is unknown."
             )
         warnings.append(
-            f"--hardware auto detected {driver_name!r} ({driver_vram} GB), which is "
-            "not in the database. VRAM is the driver's figure; the rest are yours"
+            f"--hardware auto detected {device.name!r} ({device.vram_gb} GB, {via}), "
+            "which is not in the database. VRAM is the tool's figure"
+            + (f"; bandwidth is as {device.source} reports it" if tool_bandwidth else "")
+            + "; the rest are yours"
         )
-        return spec_from_overrides(driver_name, merged), warnings
+        # The detected vendor is known even when the model is not, so the
+        # engine-support gate still applies to an unlisted card found this way.
+        return replace(spec_from_overrides(device.name, merged), vendor=device.vendor), warnings
 
     known = get_gpu(name)
     if known is not None:

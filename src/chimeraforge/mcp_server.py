@@ -117,7 +117,7 @@ def plan_deployment(
     tpot_slo_ms: float | None = None,
     prompt_tokens: int = 512,
     gpu_overrides: dict | None = None,
-    platform: str = "linux",
+    platform: str | None = None,
     quality_from: str | None = None,
     max_num_batched_tokens: int | None = None,
     context_length: int = 2048,
@@ -231,7 +231,7 @@ def plan_deployment(
         return {
             "ok": True,
             "hardware": hardware,
-            "platform": platform,
+            "platform": result.platform,
             "recommended": None,
             "launch": None,
             "alternatives": [],
@@ -260,7 +260,7 @@ def plan_deployment(
     return {
         "ok": True,
         "hardware": hardware,
-        "platform": platform,
+        "platform": result.platform,
         "recommended": _candidate_summary(best),
         "launch": launch,
         "alternatives": [_candidate_summary(c) for c in result.candidates[1:_MAX_CANDIDATES]],

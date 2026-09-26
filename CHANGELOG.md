@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`plan --hardware auto` and unlisted cards never worked from the CLI.** Since 0.34.0 the command's own guard ran before the resolver and refused any name not in the database. That included `auto`, and an unlisted card fully described with `--gpu-vram-gb`/`--gpu-bandwidth-gbps`, the headline feature of that release. The library and MCP paths worked, and every test called `run_plan` directly, so nothing caught it. Both now reach the resolver, whose errors are actionable. A card with no figures is still refused. CLI-level tests fail on the old guard.
+
+### Changed
+- **`--hardware auto` detects any vendor, through `doctor`'s probes.** It read NVIDIA only (pynvml / nvidia-smi). It now uses the same per-vendor detection as `doctor`: AMD via amd-smi or rocm-smi, Intel via xpu-smi, and any vendor on Windows via CIM plus the registry.
+  - The primary device is the discrete GPU, never an integrated adapter's shared-memory aperture.
+  - An unlisted card keeps its detected vendor, so the engine-support gate still applies to it.
+  - When the tool reports bandwidth (amd-smi's `max_bandwidth`), that is used and labelled as the tool's figure.
+  - A unified-memory device (Apple Silicon) is refused by name rather than planned with its shared pool treated as VRAM.
+  - With no GPU found, the error points at `chimeraforge doctor`.
+- **`--platform` defaults to this machine's OS under `--hardware auto`.** It stays `linux` for a named card, and an explicit `--platform` always wins. `auto` plans the machine it runs on, and this OS is the one fact the planner can see: on Windows, auto no longer offers vLLM.
+- `doctor` suggests `--hardware auto` for every matched vendor. The old suggestion told non-NVIDIA users auto would not work.
+
 ## [0.41.0] - 2026-09-26
 
 ### Changed
