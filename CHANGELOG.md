@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-09-26
+
 ### Added
 - **`chimeraforge doctor`: a read-only check of the local GPU platform, per vendor.** This is the first step of per-platform support: check first, then fix. Each vendor's own tool detects the hardware, and each probe names the tool it used; a missing tool is reported as a finding, not an error. Every device then gets a planner status:
   - `matched`: a database entry, and the flag to plan it with. `--hardware auto` reads NVIDIA only today, so other vendors get the entry name to pass.
