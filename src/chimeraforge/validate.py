@@ -68,6 +68,12 @@ CLASS_LOOKUP = "measured-lookup"
 CLASS_ORDER = (CLASS_ROOFLINE, CLASS_PARALLEL, CLASS_EXTRAPOLATED, CLASS_LOOKUP)
 LEAD_CLASS = CLASS_ROOFLINE
 
+# The audit predicts ONE stream. At a real request rate the capacity gate sizes
+# a fleet and can refuse a cell that fits the card (1 req/s x 512 tokens needed
+# 512 tok/s, so a 70B on an 80 GB part was skipped). A negligible rate keeps
+# every gate except the ones that describe the cell itself.
+AUDIT_REQUEST_RATE = 1e-3
+
 # Metrics compared when both sides report them.
 # `e2e_latency_ms` is one request at batch 1 with no queue: the planner's own
 # service time, ttft + avg_tokens / throughput (models.py LatencyModel).
@@ -789,7 +795,7 @@ def audit_cells(
                 quality_target=0.0,
                 budget=1e12,
                 latency_slo=1e9,
-                request_rate=1.0,
+                request_rate=AUDIT_REQUEST_RATE,
                 avg_tokens=cell.avg_tokens,
                 prompt_tokens=cell.prompt_tokens,
                 context_length=cell.context_length,
@@ -813,14 +819,29 @@ def audit_cells(
             None,
         )
         if picked is None:
+            # A refusal is itself a finding when a source ran the cell, so say
+            # which gate refused it rather than "gated out".
+            # Backend-specific rejections name their backend first; VRAM/quality/
+            # safety rejections name none and apply to every backend.
+            from chimeraforge.planner.constants import BACKENDS
+
+            gates = [
+                f"{gate}: {detail}"
+                for _m, quant, gate, detail in result.trace
+                if quant == cell.quant
+                and (
+                    detail.startswith(cell.backend)
+                    or not any(detail.startswith(b) for b in BACKENDS)
+                )
+            ]
             outcomes.append(
                 CellOutcome(
                     key=cell.key,
                     cell=cell,
                     provenance_class="unknown",
                     skipped=(
-                        f"no candidate for {cell.quant} on {cell.backend} "
-                        "(gated out; see `plan` for the binding gate)"
+                        f"the planner refuses {cell.quant} on {cell.backend}: "
+                        + ("; ".join(gates) if gates else "no binding gate recorded")
                     ),
                 )
             )
@@ -1014,7 +1035,9 @@ def format_markdown(audit: Audit) -> str:
             out.append(f"- [{s['status']}] {s['url']}{reason}")
         out.append("")
     out += [
-        "Positive error means the planner was **optimistic** (predicted above measured).",
+        "Positive error means predicted above measured: **optimistic** for a rate "
+        "(throughput), **pessimistic** for a latency (TTFT, end-to-end, p95), where "
+        "the planner predicted slower than measured.",
         "GMFE is the geometric mean fold error: 2x too high and 2x too low both score 2.0x.",
         "",
         "Every cell, including the worst, is retained in the raw JSON alongside this "

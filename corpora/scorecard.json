@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-25",
+  "combined_fingerprint": "1db6b1fe4827d5aa9eb1dce6d3682edc4c229822cc47021ae2c4b3f59be483ee",
+  "matrix_fingerprints": {
+    "A100 40GB": "27e7c883d974fc1a23e7964313cab595a06fa80355fb4063d7f1eaa7d1c64651",
+    "A100 80GB": "eb830b850c5df1d7833a70f0fc7b65de1fc7fd1a695f8496dfeaced5dd1df10e",
+    "B200 180GB": "0eab2916e620f07c24e89403d5e1fcf15da70a4e29c9339a9f8fe0e7f1913c8f",
+    "H100 80GB": "14d66639c132b5efc4bcf0939146fad00dee1491564eaad8cee05efda0162985",
+    "H200 141GB": "d91108755517fb5b87f12db27e36003124500c88c97fe79bde5d5041833b488a",
+    "MI300X 192GB": "40c60688c296aa1386172fd4653a35d0afb20e3a887b9df58c58ef1a0ff90c0f",
+    "RTX 3080 10GB": "337ba7cea6620d1e90d4dc217e989acb61156c2d13fbfb793407a7e263eea2de",
+    "RTX 3090 24GB": "011c3be4a89f85112a057c61ba0f364e96b87d8b84cef245bae061d89f282125",
+    "RTX 4060 Ti 8GB": "673dae3a42399ed92e5c75c353bc01cc454ab3e2ac5b77831d55426ddfb45193",
+    "RTX 4070 Ti 12GB": "011d57782d0ae8ad1c2e6e331c192fc6da7efefeb28453dbb84114d59788d25a",
+    "RTX 4080 16GB": "4a4f134755e83985be2b552c20e162fee11734437e3e1a5bc0668f5aedf61500",
+    "RTX 4090 24GB": "b0dfca8ed08899bf3bd684420bfb3b419ff29b095703914a6b1fef2fa7634e2c",
+    "RTX 5070 12GB": "16bbc1e2beb5338962858638adfe801b35aea3fa40d7dce91d26c60ca0cf8c27",
+    "RTX 5070 Ti 16GB": "5b772fc0fb6f13edf24027601276327ddc7c93f5b483b339b4062c931fdbbd0a",
+    "RTX 5080 16GB": "dbb1c0399385df4e91ed720005af60aec524da93aa4739b2d8c3bffed9e93425",
+    "RTX 5090 32GB": "f20f20886ecd59770abae04edfec09be61649e0525db4dfb046d24f43722d430",
+    "T4 16GB": "e91b47e8940d107c53d01e68f2fc5e7dda54e387d17d3268bba635f2d66697bf"
+  },
+  "bands": {
+    "throughput_tps": 0.25,
+    "ttft_ms": 0.5,
+    "e2e_latency_ms": 0.25
+  },
+  "scorecard": [
+    {
+      "evidence": "third-party-measured",
+      "provenance_class": "roofline-estimate",
+      "metric": "throughput_tps",
+      "n": 15,
+      "in_band_pass_rate": 0.1333,
+      "band": 0.25,
+      "median_abs_error": 0.3588,
+      "gmfe": 1.629,
+      "mape": 0.5683,
+      "median_signed_error": -0.2683,
+      "p90_abs_error": 1.6949,
+      "worst_cell": "B200 180GB :: llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+      "worst_error": 2.0634,
+      "underpowered": false
+    },
+    {
+      "evidence": "third-party-measured",
+      "provenance_class": "roofline-estimate",
+      "metric": "ttft_ms",
+      "n": 14,
+      "in_band_pass_rate": 0.1429,
+      "band": 0.5,
+      "median_abs_error": 1.3538,
+      "gmfe": 2.6795,
+      "mape": 1.1577,
+      "median_signed_error": 1.3538,
+      "p90_abs_error": 1.775,
+      "worst_cell": "RTX 3080 10GB :: llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+      "worst_error": 1.8389,
+      "underpowered": false
+    }
+  ],
+  "by_memory": {
+    "HBM": [
+      {
+        "evidence": "third-party-measured",
+        "provenance_class": "roofline-estimate",
+        "metric": "throughput_tps",
+        "n": 6,
+        "in_band_pass_rate": 0.1667,
+        "band": 0.25,
+        "median_abs_error": 0.5783,
+        "gmfe": 1.7739,
+        "mape": 0.9024,
+        "median_signed_error": 0.5783,
+        "p90_abs_error": 1.6949,
+        "worst_cell": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+        "worst_error": 2.0634,
+        "underpowered": false
+      },
+      {
+        "evidence": "third-party-measured",
+        "provenance_class": "roofline-estimate",
+        "metric": "ttft_ms",
+        "n": 5,
+        "in_band_pass_rate": 0.2,
+        "band": 0.5,
+        "median_abs_error": 0.6546,
+        "gmfe": 3.2054,
+        "mape": 0.6642,
+        "median_signed_error": -0.6546,
+        "p90_abs_error": 0.8416,
+        "worst_cell": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+        "worst_error": -0.8416,
+        "underpowered": false
+      }
+    ],
+    "GDDR": [
+      {
+        "evidence": "third-party-measured",
+        "provenance_class": "roofline-estimate",
+        "metric": "throughput_tps",
+        "n": 9,
+        "in_band_pass_rate": 0.1111,
+        "band": 0.25,
+        "median_abs_error": 0.3588,
+        "gmfe": 1.539,
+        "mape": 0.3456,
+        "median_signed_error": -0.3588,
+        "p90_abs_error": 0.4042,
+        "worst_cell": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+        "worst_error": -0.466,
+        "underpowered": false
+      },
+      {
+        "evidence": "third-party-measured",
+        "provenance_class": "roofline-estimate",
+        "metric": "ttft_ms",
+        "n": 9,
+        "in_band_pass_rate": 0.1111,
+        "band": 0.5,
+        "median_abs_error": 1.4827,
+        "gmfe": 2.4255,
+        "mape": 1.4318,
+        "median_signed_error": 1.4827,
+        "p90_abs_error": 1.775,
+        "worst_cell": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+        "worst_error": 1.8389,
+        "underpowered": false
+      }
+    ]
+  },
+  "counts": {
+    "cells": 42,
+    "skipped": 1,
+    "underspecified": 26
+  }
+}

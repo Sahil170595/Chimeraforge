@@ -1,0 +1,296 @@
+{
+  "schema_version": 2,
+  "matrix_fingerprint": "4a4f134755e83985be2b552c20e162fee11734437e3e1a5bc0668f5aedf61500",
+  "registered_at": "2026-09-25",
+  "generated_at": "2026-09-25",
+  "hardware": "RTX 4080 16GB",
+  "models_basis": "bundled",
+  "notes": "Third-party validation matrix (P8.5), built by scripts/build_validation_corpus.py from scripts/validation_sources.json. Every consulted source is listed, including unused ones.",
+  "lead_class": "roofline-estimate",
+  "bands": {
+    "throughput_tps": 0.25,
+    "ttft_ms": 0.5,
+    "e2e_latency_ms": 0.25
+  },
+  "sources": [
+    {
+      "url": "https://github.com/ggml-org/llama.cpp/discussions/15013",
+      "status": "used"
+    },
+    {
+      "url": "https://github.com/ggml-org/llama.cpp/discussions/15021",
+      "status": "used"
+    },
+    {
+      "url": "https://github.com/ggml-org/llama.cpp/discussions/10879",
+      "status": "used"
+    },
+    {
+      "url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "status": "used"
+    },
+    {
+      "url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "status": "used"
+    },
+    {
+      "url": "https://github.com/sgl-project/sglang/issues/1008",
+      "status": "used"
+    },
+    {
+      "url": "https://www.amd.com/en/developer/resources/rocm-hub/dev-ai/performance-results.html",
+      "status": "used"
+    },
+    {
+      "url": "https://www.databasemart.com/blog/ollama-gpu-benchmark-rtx4090",
+      "status": "used"
+    },
+    {
+      "url": "https://github.com/ggml-org/llama.cpp/discussions/4167",
+      "status": "unused",
+      "reason": "no GPU from the planner's database (Apple Silicon)"
+    },
+    {
+      "url": "https://github.com/ggml-org/llama.cpp/discussions/15396",
+      "status": "unused",
+      "reason": "MXFP4 MoE quant, not in the planner's quant set"
+    },
+    {
+      "url": "https://www.localscore.ai/",
+      "status": "unused",
+      "reason": "each figure averages 8 tests of different prompt/output lengths; no engine version; implausible outliers"
+    },
+    {
+      "url": "https://hud.pytorch.org/benchmark/llms",
+      "status": "unused",
+      "reason": "HTTP 403 to automated fetch"
+    },
+    {
+      "url": "https://blog.vllm.ai/2024/09/05/perf-update.html",
+      "status": "unused",
+      "reason": "seen as a search result only, not opened"
+    },
+    {
+      "url": "https://docs.nvidia.com/nim/benchmarking/llm/latest/performance.html",
+      "status": "unused",
+      "reason": "latest URL 404; v1.0.0 page does not state which engine produced the figures"
+    },
+    {
+      "url": "https://modal.com/llm-almanac",
+      "status": "unused",
+      "reason": "interactive only, no raw export; TTFT includes ~150 ms network overhead by the page's own statement"
+    },
+    {
+      "url": "https://github.com/sgl-project/sglang/pull/1341",
+      "status": "unused",
+      "reason": "batch-1 logs without the GPU stated"
+    },
+    {
+      "url": "https://github.com/huggingface/text-generation-inference/issues/1452",
+      "status": "unused",
+      "reason": "batch 4 on 2x RTX 3090; no batch-1 TGI tables found"
+    },
+    {
+      "url": "https://www.databasemart.com/blog/vllm-gpu-benchmark-h100",
+      "status": "unused",
+      "reason": "aggregate throughput over 50-100 concurrent requests"
+    },
+    {
+      "url": "https://techcommunity.microsoft.com/",
+      "status": "unused",
+      "reason": "Azure HPC vLLM blogs: aggregate throughput under load on variable-length datasets, no vLLM version"
+    }
+  ],
+  "scorecard": [
+    {
+      "evidence": "third-party-measured",
+      "provenance_class": "roofline-estimate",
+      "metric": "throughput_tps",
+      "n": 1,
+      "in_band_pass_rate": 0.0,
+      "band": 0.25,
+      "median_abs_error": 0.4042,
+      "gmfe": 1.6783,
+      "mape": 0.4042,
+      "median_signed_error": -0.4042,
+      "p90_abs_error": 0.4042,
+      "worst_cell": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+      "worst_error": -0.4042,
+      "underpowered": true
+    },
+    {
+      "evidence": "third-party-measured",
+      "provenance_class": "roofline-estimate",
+      "metric": "ttft_ms",
+      "n": 1,
+      "in_band_pass_rate": 0.0,
+      "band": 0.5,
+      "median_abs_error": 1.775,
+      "gmfe": 2.775,
+      "mape": 1.775,
+      "median_signed_error": 1.775,
+      "p90_abs_error": 1.775,
+      "worst_cell": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+      "worst_error": 1.775,
+      "underpowered": true
+    }
+  ],
+  "cells": [
+    {
+      "key": "Meta-Llama-3-8B.F16|FP16|ollama|c2048|p512|o512|b1",
+      "cell": {
+        "model": "Meta-Llama-3-8B.F16",
+        "quant": "FP16",
+        "backend": "ollama",
+        "context_length": 2048,
+        "prompt_tokens": 512,
+        "avg_tokens": 512,
+        "batch": 1,
+        "spec": {
+          "d_head": 128,
+          "hidden_size": 4096,
+          "n_kv_heads": 8,
+          "n_layers": 32,
+          "params_b": 8.030261248
+        }
+      },
+      "provenance_class": "unknown",
+      "evidence": null,
+      "underspecified": false,
+      "predicted": {},
+      "measured": {},
+      "measured_basis": {},
+      "errors": {},
+      "unscored": {},
+      "skipped": "the planner refuses FP16 on ollama: vram: 16.7GB/GPU > 16GB",
+      "measurement": null
+    },
+    {
+      "key": "Meta-Llama-3-8B.Q4_K_M|Q4_K_M|ollama|c2048|p512|o512|b1",
+      "cell": {
+        "model": "Meta-Llama-3-8B.Q4_K_M",
+        "quant": "Q4_K_M",
+        "backend": "ollama",
+        "context_length": 2048,
+        "prompt_tokens": 512,
+        "avg_tokens": 512,
+        "batch": 1,
+        "spec": {
+          "d_head": 128,
+          "hidden_size": 4096,
+          "n_kv_heads": 8,
+          "n_layers": 32,
+          "params_b": 8.030261248
+        }
+      },
+      "provenance_class": "roofline-estimate",
+      "evidence": "third-party-measured",
+      "underspecified": true,
+      "predicted": {
+        "throughput_tps": 71.3,
+        "ttft_ms": 210.8,
+        "p95_latency_ms": 7479.4,
+        "e2e_latency_ms": 7391.72566619916
+      },
+      "measured": {
+        "throughput_tps": 108.15,
+        "ttft_ms": 94.99530589601724
+      },
+      "measured_basis": {
+        "throughput_tps": "decode_tps_single_stream",
+        "ttft_ms": "prefill_tps"
+      },
+      "errors": {
+        "throughput_tps": -0.34073,
+        "ttft_ms": 1.219057
+      },
+      "unscored": {},
+      "skipped": null,
+      "measurement": {
+        "evidence": "third-party-measured",
+        "captured_at": "2026-09-25",
+        "underspecified": true,
+        "metrics": [
+          {
+            "definition": "decode_tps_single_stream",
+            "value": 108.15,
+            "quote": "| 4080 16GB       | 8B Q4_K_M  | 108.15  | 106.22   | 100.44   | 93.71    | 5389.74 | 5064.99  | 3790.96  | 2882.03  |"
+          },
+          {
+            "definition": "prefill_tps",
+            "value": 5389.74,
+            "quote": "| 4080 16GB       | 8B Q4_K_M  | 108.15  | 106.22   | 100.44   | 93.71    | 5389.74 | 5064.99  | 3790.96  | 2882.03  |",
+            "prompt_tokens": 512
+          }
+        ],
+        "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+        "config_quote": "./llama-bench -p 512,1024,4096,8192 -n 512,1024,4096,8192 -m <model>; defaults otherwise (no -fa, so FA off); Ubuntu 22.04.2, CUDA 12.1.1 on RunPod; snapshots May 2024",
+        "notes": "llama.cpp llama-bench (CUDA/cuBLAS build: 'LLAMA_CUBLAS=1 make'); GPU as stated: 4080 16GB; model as stated: Meta Llama 3 8B (8B Q4_K_M), converted locally ('./models/8B-v3/ggml-model-Q4_K_M.gguf' pattern) (Q4_K_M GGUF); raw cells C048, C049"
+      }
+    },
+    {
+      "key": "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1",
+      "cell": {
+        "model": "llama-2-7b.Q4_0",
+        "quant": "Q4_0",
+        "backend": "ollama",
+        "context_length": 2048,
+        "prompt_tokens": 512,
+        "avg_tokens": 128,
+        "batch": 1,
+        "spec": {
+          "d_head": 128,
+          "hidden_size": 4096,
+          "n_kv_heads": 32,
+          "n_layers": 32,
+          "params_b": 6.738417664
+        }
+      },
+      "provenance_class": "roofline-estimate",
+      "evidence": "third-party-measured",
+      "underspecified": false,
+      "predicted": {
+        "throughput_tps": 84.9,
+        "ttft_ms": 176.9,
+        "p95_latency_ms": 1688.6,
+        "e2e_latency_ms": 1684.5560659599528
+      },
+      "measured": {
+        "ttft_ms": 63.747877145888005,
+        "throughput_tps": 142.49
+      },
+      "measured_basis": {
+        "ttft_ms": "prefill_tps",
+        "throughput_tps": "decode_tps_single_stream"
+      },
+      "errors": {
+        "throughput_tps": -0.404169,
+        "ttft_ms": 1.774994
+      },
+      "unscored": {},
+      "skipped": null,
+      "measurement": {
+        "evidence": "third-party-measured",
+        "captured_at": "2026-09-25",
+        "underspecified": false,
+        "metrics": [
+          {
+            "definition": "prefill_tps",
+            "value": 8031.64,
+            "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           pp512 |      8031.64 \u00b1 26.49 |",
+            "prompt_tokens": 512
+          },
+          {
+            "definition": "decode_tps_single_stream",
+            "value": 142.49,
+            "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           tg128 |        142.49 \u00b1 0.16 |"
+          }
+        ],
+        "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14032320",
+        "engine_version": "build 20638e4 (2)",
+        "config_quote": "llama-bench -m llama-2-7b.Q4_0.gguf -ngl 99 -fa 0,1 (thread instructions); this cell = fa 0 (flash attention off); llama-bench defaults n_batch=2048, n_ubatch=512, 5 repetitions, mean +/- sd",
+        "notes": "llama.cpp llama-bench (CUDA backend); GPU as stated: NVIDIA GeForce RTX 4080; model as stated: Llama 2 7B (llama-2-7b.Q4_0.gguf from TheBloke/Llama-2-7B-GGUF) (Q4_0 GGUF); raw cells C011, C012"
+      }
+    }
+  ]
+}

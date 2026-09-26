@@ -45,6 +45,7 @@ those cells ``underspecified`` -- published, but kept out of the headline.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import datetime as dt
 import hashlib
 import json
@@ -142,6 +143,14 @@ BENCH_SHAPE = {"S1": (512, 128), "S2": (512, 128), "S3": (512, 128), "S4": (512,
 SXM_ENTRIES = {"H100 80GB", "A100 80GB"}
 VULKAN_SOURCES = {"S3"}
 NON_DEFAULT_FLAGS = ("--enable-torch-compile",)
+
+# Memory technology per the vendor pages hardware.json already cites (A100
+# HBM2e, H100 HBM3, H200/B200 HBM3e, MI300X HBM3); every other audited part is
+# GDDR. The combined headline averages two populations whose errors have
+# opposite signs, so the scorecard also reports each on its own.
+HBM_PARTS = frozenset(
+    {"A100 40GB", "A100 80GB", "H100 80GB", "H200 141GB", "B200 180GB", "MI300X 192GB"}
+)
 
 
 class CorpusError(Exception):
@@ -252,6 +261,11 @@ def build() -> dict:
         p, o = _shape(c)
         key = (c["planner_gpu"], mp["model_key"], mp["quant"], mp["backend"], mp["arch"], p, o)
         groups.setdefault((*key, c["source_url"]), []).append(c)
+
+    # Every source run is validated by the loader's rules BEFORE rule 7 picks one,
+    # so a bad record cannot hide inside a superseded duplicate.
+    for group in groups.values():
+        MeasuredCell.from_dict(group[0]["cell_id"], _record(group))
 
     # Rule 7: one measurement per matrix cell.
     by_cell: dict[tuple, list[list[dict]]] = {}
@@ -383,7 +397,10 @@ def run_audit() -> dict:
 
 def combined(audits: list[Audit]) -> Audit:
     """All hardware in one scorecard; the fingerprint covers every matrix's."""
-    outcomes = [o for a in audits for o in a.outcomes]
+    # Cell keys are unique per GPU, not across GPUs; name the GPU in the joint view.
+    outcomes = [
+        dataclasses.replace(o, key=f"{a.hardware} :: {o.key}") for a in audits for o in a.outcomes
+    ]
     joint = hashlib.sha256(
         "".join(sorted(a.fingerprint for a in audits)).encode("utf-8")
     ).hexdigest()
@@ -403,9 +420,34 @@ def combined(audits: list[Audit]) -> Audit:
     )
 
 
+def by_memory(audits: list[Audit]) -> dict[str, list]:
+    """Headline rows recomputed separately for HBM and GDDR parts."""
+    out = {}
+    for label, members in (("HBM", True), ("GDDR", False)):
+        outcomes = [o for a in audits if (a.hardware in HBM_PARTS) == members for o in a.outcomes]
+        out[label] = score(outcomes, BANDS)
+    return out
+
+
 def scorecard_markdown(audit: Audit, audits: list[Audit]) -> str:
     """The combined report plus a table of every scored cell, worst first."""
-    lines = [format_markdown(audit), "", "## Every scored cell", ""]
+    lines = [format_markdown(audit), "", "## By memory type", ""]
+    lines += [
+        "_The combined rows above average two populations whose errors have opposite "
+        "signs. Fully specified cells only, as above._",
+        "",
+        "| Memory | Metric | n | In-band | Median abs | GMFE | Bias (median signed) |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for label, rows in by_memory(audits).items():
+        for r in rows:
+            in_band = "n/a" if r.pass_rate is None else f"{r.pass_rate:.0%}"
+            gmfe = "n/a" if r.gmfe is None else f"{r.gmfe:.2f}x"
+            lines.append(
+                f"| {label} | {r.metric} | {r.n} | {in_band} | {r.median_abs:.1%} | {gmfe} | "
+                f"{r.median_signed:+.1%} |"
+            )
+    lines += ["", "## Every scored cell", ""]
     lines += [
         "| GPU | Cell | Class | Metric | Predicted | Measured (basis) | Error | Source |",
         "|---|---|---|---|---|---|---|---|",
@@ -449,6 +491,9 @@ def write_audit(result: dict) -> None:
                 "matrix_fingerprints": {a.hardware: a.fingerprint for a in audits},
                 "bands": BANDS,
                 "scorecard": [r.to_dict() for r in joint.rows],
+                "by_memory": {
+                    label: [r.to_dict() for r in rows] for label, rows in by_memory(audits).items()
+                },
                 "counts": {
                     "cells": len(joint.outcomes),
                     "skipped": len(joint.skipped),
