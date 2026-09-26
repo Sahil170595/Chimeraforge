@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-09-25
+
 ### Added
 - **The 2026 parts are in the GPU database (35 GPUs, up from 22).**
   - NVIDIA RTX PRO 6000 Blackwell: Workstation, Max-Q and Server Editions.
