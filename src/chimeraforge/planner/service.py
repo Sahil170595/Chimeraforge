@@ -12,10 +12,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
+    BATCH_LATENCY_REFUSAL,
     DEFAULT_ELECTRICITY_RATE,
     DEFAULT_KV_QUANT,
+    DEFAULT_LATENCY_SLO_MS,
     DEFAULT_LORA_TARGET,
+    DEFAULT_PLAN_MODE,
     KV_QUANT_BYTES,
+    PLAN_MODE_BATCH,
+    PLAN_MODES,
 )
 from chimeraforge.planner.engine import (
     Candidate,
@@ -43,6 +48,14 @@ class PlanResult:
     platform: str = DEFAULT_PLAN_PLATFORM
 
 
+def _check_mode_targets(
+    mode: str, latency_slo: float | None, ttft_slo: float | None, tpot_slo: float | None
+) -> None:
+    """Refuse a latency target in batch mode, where nothing would enforce it."""
+    if mode == PLAN_MODE_BATCH and any(v is not None for v in (latency_slo, ttft_slo, tpot_slo)):
+        raise ValueError(BATCH_LATENCY_REFUSAL)
+
+
 def validate_plan_inputs(
     *,
     request_rate: float,
@@ -57,8 +70,9 @@ def validate_plan_inputs(
     tpot_slo: float | None,
     electricity_rate: float,
     kv_quant: str,
-    latency_slo: float,
+    latency_slo: float | None,
     context_length: int,
+    mode: str = DEFAULT_PLAN_MODE,
 ) -> None:
     """Reject impossible inputs, raising ValueError with an actionable message.
 
@@ -94,12 +108,14 @@ def validate_plan_inputs(
         (ttft_slo is not None and ttft_slo <= 0, "ttft_slo must be positive"),
         (tpot_slo is not None and tpot_slo <= 0, "tpot_slo must be positive"),
         (electricity_rate < 0, "electricity_rate must be non-negative"),
-        (latency_slo <= 0, "latency_slo must be positive"),
+        (latency_slo is not None and latency_slo <= 0, "latency_slo must be positive"),
         (context_length <= 0, "context_length must be positive"),
+        (mode not in PLAN_MODES, f"mode must be one of: {', '.join(PLAN_MODES)}"),
     ]
     for failed, message in checks:
         if failed:
             raise ValueError(message)
+    _check_mode_targets(mode, latency_slo, ttft_slo, tpot_slo)
     if str(kv_quant).lower() not in KV_QUANT_BYTES:
         raise ValueError(f"kv_quant must be one of: {', '.join(KV_QUANT_BYTES)}")
 
@@ -110,7 +126,7 @@ def run_plan(
     model_size: str = "3b",
     hardware: str = "RTX 4080 12GB",
     request_rate: float = 1.0,
-    latency_slo: float = 5000.0,
+    latency_slo: float | None = None,
     quality_target: float = 0.5,
     budget: float = 100.0,
     avg_tokens: int = 128,
@@ -139,6 +155,7 @@ def run_plan(
     lora_rank: int = 16,
     lora_target: str = DEFAULT_LORA_TARGET,
     pareto: bool = False,
+    mode: str = DEFAULT_PLAN_MODE,
     models_path: str | None = None,
     ollama_url: str | None = None,
     hf_token: str | None = None,
@@ -152,7 +169,16 @@ def run_plan(
     exactly those; otherwise it falls back to the registry size-class search on
     ``model_size``. Raises ``ResolverError`` if an id can't be resolved,
     ``FileNotFoundError`` / ``ValueError`` for a bad ``models_path``.
+
+    ``latency_slo`` None means the online default (``DEFAULT_LATENCY_SLO_MS``);
+    ``mode="batch"`` refuses any latency target with ValueError rather than
+    accepting one it would not enforce.
     """
+    if mode not in PLAN_MODES:
+        raise ValueError(f"mode must be one of: {', '.join(PLAN_MODES)}")
+    _check_mode_targets(mode, latency_slo, ttft_slo, tpot_slo)
+    if latency_slo is None:
+        latency_slo = DEFAULT_LATENCY_SLO_MS
     # Normalise the closed-set inputs before anything consumes them. Validation
     # lowercased only for its membership test and then forwarded the raw string,
     # so `kv_quant="Q4"` passed the check and then missed KV_QUANT_BYTES,
@@ -234,6 +260,7 @@ def run_plan(
         lora_adapters=lora_adapters,
         lora_rank=lora_rank,
         lora_target=lora_target,
+        mode=mode,
     )
     frontier = pareto_frontier(candidates) if pareto else None
     return PlanResult(

@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2668 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2692 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 64 files, 2668 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 65 files, 2692 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -237,6 +237,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Attention cache shape (0.18.0):** KV sizing uses the model's real shape, not always GQA. `ModelSpec.kv_elems_per_token_per_layer` returns `kv_lora_rank + qk_rope_head_dim` for **MLA** (DeepSeek-V2/V3 = 576 vs GQA's 32,768 -- a 57x overstatement) else `2*n_kv_heads*d_head`. **SWA** caps local layers at `sliding_window` with 1 full-attention layer every `swa_global_every`, giving a layer-weighted effective context. `arch()` only advertises the window when the pattern is ALSO known -- an unplaceable window would shrink the estimate, and under-sizing KV claims a fit that isn't there (Mistral: window, no pattern -> full context). Dense/bare-arch-dict/legacy-cache paths byte-identical.
 - **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
+- **Batch mode:** `plan --mode batch` (`PLAN_MODES`) plans a backlog drain: no latency gate (a latency/TTFT/TPOT target is REFUSED via `BATCH_LATENCY_REFUSAL`, not ignored), B = smallest batch at a unit's max throughput, N = fewest units draining the rate at 100% utilisation, ranked by `cost_per_1m_tok`; `p95_latency_ms` is service time, no queue. Pareto becomes $/1M-tok vs quality. `latency_slo` defaults to None (= `DEFAULT_LATENCY_SLO_MS` online) so an explicit target is detectable. Online is byte-identical.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
 - Numerical accuracy gates in `tests/test_accuracy.py` pin predictions to ground truth.
 
@@ -339,11 +340,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2668 total tests
+pytest tests/ -v                    # 2692 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2668 tests, 64 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2692 tests, 65 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -401,6 +402,9 @@ pytest tests/ --cov=src             # With coverage
   measured SGLang row flipping provenance (only for the cell that was measured)
 - **Goodput SLOs** (18): test_goodput.py - TTFT/TPOT gated separately inside the
   (N x B) search, actionable rejection reasons, point-estimate-not-attainment
+- **Batch mode** (23): test_batch_mode.py - no latency gate (targets refused), max-
+  throughput B + minimal N, $/1M-tok ranking + Pareto, online byte-identical, CLI/
+  fleet/MCP/report paths each forward the mode
 - **CPU offload** (16): test_offload.py - priced instead of refused, bandwidth-
   driven derate, still refuses when KV alone busts VRAM
 - **Repo conventions** (131): test_repo_conventions.py - per-file ASCII-only guard

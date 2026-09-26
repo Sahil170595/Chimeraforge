@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`plan --mode batch` plans an offline backlog instead of online serving.** Nobody waits on a nightly summarisation job or an embedding backfill, yet the planner still gated every plan on a p95 SLO with 70% utilisation headroom. That forced small batches and extra replicas, and the job paid for latency no one reads. In batch mode:
+  - The latency gate is dropped.
+  - Each unit runs the batch size that maximises its throughput (the smallest such B, so it holds the least KV).
+  - N is the fewest units that drain `--request-rate` at full utilisation.
+  - Results rank by $/1M tokens.
+  - Example: an 8B at 2 req/s on an H100 goes from $0.66/1M (Ollama Q2_K, the cheapest online pick) to $0.065/1M (vLLM AWQ at batch 267) on the same one GPU. That throughput is a roofline estimate and is labeled as one.
+  - **Refused, not ignored:** `--latency-slo`, `--ttft-slo` or `--tpot-slo` with batch mode is an error on the CLI, in `run_plan` and in the MCP `plan` tool.
+  - The candidate's `p95_latency_ms` is service time with no queue wait. A warning says so, and says that `--workload` variance and utilisation headroom do not apply.
+  - `--pareto` trades $/1M tokens against quality.
+  - `--fleet` sizes each GPU type in batch mode.
+  - `--report` states the mode, and its reproduce command includes `--mode batch`.
+  - Every candidate carries `mode`, in JSON and in the MCP summary.
+  - The online default is unchanged, byte for byte.
+- `--latency-slo` (and the MCP `latency_slo_ms`) now defaults to unset, which means 5000 ms online. This lets batch mode tell an explicit latency target from the default. The replica ceiling of 16 is now the named constant `MAX_REPLICAS`.
+
 ## [0.43.0] - 2026-09-26
 
 ### Added
