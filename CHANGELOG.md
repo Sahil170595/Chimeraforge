@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-09-25
+
 ### Changed
 - **`validate --measurements` now requires sourced measurements (schema v2), and refuses bare numbers.** The audit shipped in 0.22.0 with a measurement schema of `{cell_key: {metric: float}}`: bare floats with nowhere to put a source, a date, or what the number actually measures. A published audit on that schema grades the planner against numbers nobody can trace. Every cell now states its evidence class (`own-rig-measured` / `third-party-measured`), a `source_url` (or, for an own-rig run, the recorded bench environment), a `captured_at` date, an explicit `underspecified` decision, and a definition for every metric. A v1 file is an error that names the schema, not an empty ingest. A previous v2 audit's JSON carries each cell's full sourced record, so a published audit re-derives from its own output with no network and no GPU.
 
