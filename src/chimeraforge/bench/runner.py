@@ -147,7 +147,7 @@ async def run_benchmark(
 
     Args:
         model: Model name or tag (e.g. "llama3.2-3b", "gemma3:latest").
-        backend_name: Backend identifier ("ollama", "vllm", "tgi").
+        backend_name: Backend identifier ("ollama", "vllm", "tgi", "sglang").
         quant: Optional quantization level (e.g. "Q4_K_M").
         workload: Workload profile name ("single", "batch", "server").
         runs: Number of benchmark runs (overrides profile default).

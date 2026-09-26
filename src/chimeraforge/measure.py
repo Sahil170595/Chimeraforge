@@ -131,7 +131,7 @@ async def measure_model(
 
     Args:
         model: Identifier to benchmark (Ollama tag / served model name).
-        backend: Serving backend ("ollama", "vllm", "tgi").
+        backend: Serving backend ("ollama", "vllm", "tgi", "sglang").
         quant: Quant label for the lookup key; defaults to the resolved native
             quant, else "FP16". Must match what ``plan`` will pin to.
         runs: N=1 sample count (single workload).

@@ -21,7 +21,7 @@ def bench(
         "ollama",
         "--backend",
         "-B",
-        help="Serving backend: ollama, vllm, tgi.",
+        help="Serving backend: ollama, vllm, tgi, sglang.",
     ),
     quant: str = typer.Option(
         None,
