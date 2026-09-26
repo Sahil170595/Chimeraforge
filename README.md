@@ -45,7 +45,7 @@ pip install "chimeraforge[refit]"     # + coefficient refitting (numpy, scipy)
 pip install "chimeraforge[all]"       # everything
 ```
 
-Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). `plan` / `suggest` / `catalog` run fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, or TGI). Windows / macOS / Linux.
+Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). `plan` / `suggest` / `catalog` run fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
 ## Quickstart
 
@@ -176,6 +176,8 @@ chimeraforge plan --model qwen3:14b --measure   # measure then plan in one step
 ```
 
 Benchmarks the live model (real N=1 throughput, service time, concurrency scaling) and folds it into a local corpus. `plan` / `suggest` then prefer the measured numbers automatically (provenance flips to `measured`).
+
+SGLang ships with no measured rows, and the planner says so rather than borrowing vLLM's. Measure your own: `chimeraforge measure --backend sglang --model <served-model-name> --base-url http://localhost:30000`. The SGLang adapter streams and times first and last token, so it records the **decode** rate the planner predicts rather than tokens over wall clock, which includes prefill. It takes the token count from the server's `usage` block, and a response without one is discarded, not estimated.
 
 ### `workload` -- derive plan inputs from real traffic
 
@@ -311,7 +313,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **1,571 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **2,085 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
