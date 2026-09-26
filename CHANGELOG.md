@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A per-platform serving-engine support matrix, read from each engine's own docs.** The planner has offered every engine on every GPU. `data/engine_support.json` now records, for vLLM v0.30.0, SGLang v0.5.20, TGI v3.3.7 and Ollama v0.34.4, whether each is supported, experimental, unsupported or not documented on seven platforms: linux-cuda, linux-rocm, linux-xpu, windows-native, windows-wsl2, macos-apple-silicon and cpu.
+  - Every claim carries a verbatim quote and a URL pinned to the engine's release tag. Where a doc was silent, the cell is `not documented`, not a guess.
+  - A reviewed, machine-readable `scope` narrows claims such as `instinct-only`.
+  - Findings:
+    - vLLM does not run natively on Windows; it runs under WSL2.
+    - vLLM's ROCm docs list consumer RDNA3/RDNA4 (gfx1100/1101, gfx1200/1201). SGLang and TGI document Instinct only.
+    - Ollama is the only engine documenting native Windows AMD support.
+    - vLLM on a Mac is experimental and CPU-only.
+    - TGI's repository is archived and in maintenance mode.
+  - `scripts/build_engine_support.py` rebuilds it and fails on any claim that is unquoted, not pinned to its tag, or attached to silence. The loader warns once the snapshot is more than 90 days old.
+- **`doctor` shows the matrix row for the detected platform.** On Windows with WSL installed it shows both the native and WSL2 rows, and its JSON carries every quote and source URL. `plan` does not enforce the matrix yet; that is the next step.
+
+### Fixed
+- **The sdist's test suite could not find its own inputs.** `MANIFEST.in` did not ship `corpora/` or `scripts/*.json` (0.37.0), or `tests/**/*.csv` and `*.md` (0.39.0). So `test_validation_corpus`, the audit band gate in `test_accuracy` and `test_doctor` failed from an unpacked sdist. They are included now. A test checks the manifest against every fixture, corpus file and script dataset, and 108 affected tests pass from a freshly built sdist.
+
 ## [0.39.0] - 2026-09-26
 
 ### Added
