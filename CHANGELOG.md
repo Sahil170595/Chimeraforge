@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Unified-memory devices can be planned (P8.6 item 4): Apple Silicon, AMD Ryzen AI Max+ 395 (Strix Halo), and NVIDIA DGX Spark.** Their CPU and GPU share one pool, and the tempting reading, that the whole pool is VRAM, claims memory the OS and every other app also need. So:
+  - `--unified-memory-fraction` (0-1], also on the MCP `plan` tool, states the share the GPU may use. It is **required, with no default**: how much the GPU may take is a platform setting and a user choice. A fraction on a discrete card is an error, not ignored, and it is refused with `--fleet`, since one fraction cannot describe a mix of GPU types.
+  - The plan names the reserve ("the other 32 GB is left to the OS and other apps; that reserve is your figure"). It warns that one bandwidth figure serves the CPU and GPU together, so the decode roofline is an upper bound.
+  - **15 devices, from vendor pages read 2026-09-26.**
+    - **Apple:** every Apple Silicon chip in a Mac sold today, split wherever bandwidth or memory differs by variant. That covers A18 Pro, M4 8/10-core GPU, M5 8/10-core GPU, M6 (153 GB/s at 16 GB, 170 GB/s at 24/32 GB), M5 Pro 16/20-core, M5 Max 32-core (36 GB, 460 GB/s) and 40-core (48/64/128 GB, 614 GB/s), and M5 Ultra 64/80-core (1.2 TB/s).
+    - **AMD:** Ryzen AI Max+ 395, 128 GB and 256 GB/s.
+    - **NVIDIA:** DGX Spark, 128 GB and 273 GB/s.
+    - Each entry lists every memory configuration sold. A named plan uses the largest and says so, and `--gpu-vram-gb` corrects it.
+  - **Nulls stay null:**
+    - Apple publishes no GPU TFLOPS and no chip power (only whole-system figures).
+    - AMD's "60 FP16 TFLOPS" is unlabeled dense/sparse.
+    - NVIDIA gives only "1 PFLOP FP4" with sparsity.
+    - Apple sells configured Macs, not chips, so no per-device price exists.
+  - **Platforms:** Apple Silicon plans against the macOS engine row, where vLLM is CPU-only and so refused, and Ollama serves through Metal. Strix Halo follows the ROCm row (vLLM lists gfx1151; SGLang and TGI document Instinct only). DGX Spark follows the CUDA row. `--platform` other than macos with an Apple chip is an error.
+- **`--hardware auto` on a Mac** matches the chip and its **installed** memory to the variant sold in that configuration (a 64 GB M5 Max can only be the 40-core part), and plans on the installed memory rather than the largest. A size no variant is sold in matches nothing rather than a guess. `doctor` reports a matched Mac as plannable.
+
+### Fixed
+- **`scripts/build_hardware_data.py` could not regenerate the dataset after a schema change.** It imported `chimeraforge.planner`, whose import loads `hardware.json`, so a new required field made the regenerator crash on the file it exists to regenerate. It now loads `constants.py` by path.
+
 ### Fixed
 - **`plan --hardware auto` and unlisted cards never worked from the CLI.** Since 0.34.0 the command's own guard ran before the resolver and refused any name not in the database. That included `auto`, and an unlisted card fully described with `--gpu-vram-gb`/`--gpu-bandwidth-gbps`, the headline feature of that release. The library and MCP paths worked, and every test called `run_plan` directly, so nothing caught it. Both now reach the resolver, whose errors are actionable. A card with no figures is still refused. CLI-level tests fail on the old guard.
 

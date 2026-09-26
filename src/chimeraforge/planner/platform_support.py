@@ -154,6 +154,11 @@ def plan_platform_key(plan_platform: str, vendor: str) -> str | None:
         raise PlatformError(
             f"unknown platform {plan_platform!r}; use one of: {', '.join(PLAN_PLATFORMS)}"
         )
+    if vendor == "apple" and plan_platform != "macos":
+        raise PlatformError(
+            f"--platform {plan_platform} with Apple Silicon: no engine documents a "
+            "non-macOS route for it; use --platform macos"
+        )
     if plan_platform == "windows":
         return PLATFORM_WINDOWS
     if plan_platform == "wsl2":

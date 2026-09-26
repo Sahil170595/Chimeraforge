@@ -68,6 +68,9 @@ class TestHardwareDB:
             "Arc Pro B65 32GB",
             "Radeon AI PRO R9700 32GB",
         }
+        # Unified-memory devices are unpriced too: Apple sells configured Macs,
+        # not chips, and NVIDIA publishes no DGX Spark price.
+        unpriced |= {n for n, s in GPU_DB.items() if s.unified_memory}
         for name, spec in GPU_DB.items():
             assert spec.vram_gb > 0
             assert spec.bandwidth_gbps > 0
@@ -122,7 +125,9 @@ class TestHardwareDB:
         # except where the vendor publishes none (AMD gives no MI455X board power);
         # there energy is unknown rather than defaulted.
         for name, spec in GPU_DB.items():
-            if name == "MI455X 432GB":
+            # AMD gives no MI455X board power; Apple publishes only whole-system
+            # power, never a chip figure.
+            if name == "MI455X 432GB" or spec.vendor == "apple":
                 assert spec.tdp_watts == 0.0
                 continue
             assert spec.tdp_watts > 0, f"{name} missing tdp_watts"
@@ -131,6 +136,10 @@ class TestHardwareDB:
         # 0.10.0: every GPU carries a TP interconnect bandwidth; datacenter NVLink
         # is far faster than consumer PCIe, and NVLink 5 (B200) tops NVLink 4 (H100).
         for name, spec in GPU_DB.items():
+            if spec.unified_memory:
+                # A single device; tensor parallelism across them is not modelled.
+                assert spec.interconnect_gbps == 0.0
+                continue
             assert spec.interconnect_gbps > 0, f"{name} missing interconnect_gbps"
         assert GPU_DB["H100 80GB"].interconnect_gbps > GPU_DB["RTX 4090 24GB"].interconnect_gbps
         assert GPU_DB["B200 180GB"].interconnect_gbps > GPU_DB["H100 80GB"].interconnect_gbps

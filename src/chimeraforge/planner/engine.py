@@ -68,6 +68,7 @@ from chimeraforge.planner.hardware import (
     GPU_DB,
     GPU_OVERRIDE_FIELDS,
     PRICE_BASIS_PHRASE,
+    apply_unified_fraction,
     resolve_hardware,
     REFERENCE_GPU,
     bandwidth_ratio,
@@ -259,6 +260,7 @@ def enumerate_candidates(
     prompt_tokens: int = DEFAULT_PROMPT_TOKENS,
     gpu_overrides: dict | None = None,
     platform: str = DEFAULT_PLAN_PLATFORM,
+    unified_memory_fraction: float | None = None,
     quality_override: QualityCell | None = None,
     max_num_batched_tokens: int | None = None,
     workload_cv2: float = 0.0,
@@ -342,6 +344,10 @@ def enumerate_candidates(
             f"still be planned: pass {GPU_OVERRIDE_FIELDS['vram_gb']} and "
             f"{GPU_OVERRIDE_FIELDS['bandwidth_gbps']}, or --hardware auto."
         )
+    # A unified-memory device shares one pool between CPU and GPU. Only the share
+    # the user leaves the GPU is plannable, and that share is theirs to state.
+    gpu, unified_warnings = apply_unified_fraction(gpu, unified_memory_fraction)
+    hardware_warnings = [*hardware_warnings, *unified_warnings]
     hw_vram = gpu.vram_gb
     # A rented GPU bills for wall-clock, not for tokens. A fleet sized for a peak
     # rate it only sees part of the day still costs the full month, so the

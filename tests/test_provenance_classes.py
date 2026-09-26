@@ -62,6 +62,8 @@ def _plan(gpu: str):
         quality_target=0.0,
         allow_network=False,
         gpu_overrides={"cost_per_hour": 1.0} if unpriced else None,
+        # A unified-memory device needs its GPU share stated; no default exists.
+        unified_memory_fraction=0.75 if GPU_DB[gpu].unified_memory else None,
     )
     hits = [c for c in r.candidates if c.backend == "ollama" and c.quant == "FP16"]
     return hits[0] if hits else r.candidates[0]

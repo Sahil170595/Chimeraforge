@@ -101,7 +101,7 @@ class PlannerStatus:
     """What the planner can do with one detected device today."""
 
     gpu: str
-    status: str  # "matched" | "supply-figures" | "not-representable"
+    status: str  # "matched" | "supply-figures"
     database_entry: str | None
     detail: str
 
@@ -587,11 +587,22 @@ def assess(gpu: DetectedGPU) -> PlannerStatus:
     from chimeraforge.planner.hardware import match_driver_name
 
     if gpu.unified_memory:
+        from chimeraforge.planner.hardware import match_unified
+
+        spec = match_unified(gpu.name, gpu.vram_gb)
+        if spec is None:
+            return PlannerStatus(
+                gpu.name,
+                "supply-figures",
+                None,
+                "unified-memory device with no matching configuration in the database; "
+                "plan it with --gpu-vram-gb and --gpu-bandwidth-gbps",
+            )
         return PlannerStatus(
             gpu.name,
-            "not-representable",
-            None,
-            "unified-memory device: the planner cannot model a shared CPU/GPU pool yet",
+            "matched",
+            spec.name,
+            "plan with --hardware auto --unified-memory-fraction <share the GPU may use>",
         )
     spec = match_driver_name(gpu.name, gpu.vram_gb)
     if spec is not None:
