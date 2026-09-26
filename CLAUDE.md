@@ -98,7 +98,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2085 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2132 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -187,7 +187,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 56 files, 2085 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 56 files, 2132 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -336,11 +336,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2085 total tests
+pytest tests/ -v                    # 2132 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2085 tests, 56 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2132 tests, 56 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -382,7 +382,11 @@ pytest tests/ --cov=src             # With coverage
   metadata, GITHUB_OUTPUT heredoc for multi-line values
 - **Validation audit** (43): test_validate.py - matrix schema, fingerprint moves
   on any cell edit (anti-cherry-pick), provenance classing, MAPE does not cancel,
-  worst cell survives aggregation, underpowered rows labeled, CLI offline scoring
+  worst cell survives aggregation, underpowered rows labeled, CLI offline scoring;
+  test_validate_provenance.py (45) - sourced schema v2 (unsourced/ambiguous/TR-corpus
+  cells refused), evidence classes never pooled, underspecified published-not-scored,
+  metric definitions (prefill->TTFT, e2e kept unscored), GMFE/in-band/bias, bands +
+  sources + spec fingerprinted, audit re-derives from its own JSON, bundled-corpus only
 - **SGLang** (17): test_sglang.py - registration, and the negative property that
   an unmeasured backend never inherits a measured one's rows; test_sglang_bench.py (17) -
   streamed decode-rate adapter against a MockTransport server, usage-or-fail, and a

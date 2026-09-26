@@ -195,7 +195,10 @@ class TestPreRegistrationIsARealGate:
 
         m = self._matrix(tmp_path)
         cap = tmp_path / "c.json"
-        cap.write_text("{}", encoding="utf-8")
+        cap.write_text(
+            json.dumps({"schema_version": 2, "hardware": "RTX 4080 12GB", "cells": {}}),
+            encoding="utf-8",
+        )
         fp = Matrix.load(m).fingerprint()
         r = self._run("--matrix", str(m), "--measurements", str(cap), "--expect-fingerprint", fp)
         assert r.exit_code == 0, r.output

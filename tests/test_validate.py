@@ -238,30 +238,54 @@ class TestReport:
         assert "anecdote" in format_markdown(self._audit())
 
 
+def _sourced(cells: dict[str, float], hardware: str = "RTX 4080 12GB") -> str:
+    """A schema-v2 measurement file: each value a sourced decode-rate record."""
+    return json.dumps(
+        {
+            "schema_version": 2,
+            "hardware": hardware,
+            "cells": {
+                key: {
+                    "evidence": "third-party-measured",
+                    "source_url": "https://example.org/bench",
+                    "captured_at": "2026-09-25",
+                    "underspecified": False,
+                    "metrics": [{"definition": "decode_tps_single_stream", "value": tps}],
+                }
+                for key, tps in cells.items()
+            },
+        }
+    )
+
+
 class TestMeasurementLoading:
-    def test_bare_mapping(self, tmp_path):
+    def test_bare_mapping_is_refused_as_unsourced(self, tmp_path):
         p = tmp_path / "m.json"
         p.write_text(json.dumps({"k": {"throughput_tps": 1.0}}), encoding="utf-8")
-        assert load_measurements(p)["k"]["throughput_tps"] == 1.0
+        with pytest.raises(ValidationError, match="schema_version"):
+            load_measurements(p)
+
+    def test_sourced_file_loads(self, tmp_path):
+        p = tmp_path / "m.json"
+        p.write_text(_sourced({"k": 1.0}), encoding="utf-8")
+        assert load_measurements(p)["k"].metrics[0].value == 1.0
 
     def test_a_previous_audit_can_be_rescored(self, tmp_path):
         # The published raw output must be enough to re-derive the table.
-        audit = build_audit(
-            _matrix(),
-            [
-                CellOutcome(
-                    key="k",
-                    cell=MatrixCell(model="m", quant="FP16", backend="ollama"),
-                    provenance_class=CLASS_ROOFLINE,
-                    predicted={"throughput_tps": 110.0},
-                    measured={"throughput_tps": 100.0},
-                    errors={"throughput_tps": 0.1},
-                )
-            ],
+        from chimeraforge.validate import MeasuredCell, outcome_from_measurement
+
+        src = tmp_path / "m.json"
+        cell = MatrixCell(model="m", quant="FP16", backend="ollama")
+        src.write_text(_sourced({cell.key: 100.0}), encoding="utf-8")
+        o = outcome_from_measurement(
+            cell, CLASS_ROOFLINE, {"throughput_tps": 110.0}, load_measurements(src)[cell.key]
         )
+        audit = build_audit(_matrix(), [o])
         p = tmp_path / "audit.json"
         p.write_text(json.dumps(audit.to_dict()), encoding="utf-8")
-        assert load_measurements(p)["k"]["throughput_tps"] == 100.0
+        reloaded = load_measurements(p)[cell.key]
+        assert isinstance(reloaded, MeasuredCell)
+        assert reloaded.metrics[0].value == 100.0
 
     def test_missing_file_is_actionable(self, tmp_path):
         with pytest.raises(ValidationError, match="not found"):
@@ -309,8 +333,7 @@ class TestCli:
         )
         meas = tmp_path / "meas.json"
         meas.write_text(
-            json.dumps({"llama3.2-1b|FP16|ollama|c2048|p512|o128|b1": {"throughput_tps": 100.0}}),
-            encoding="utf-8",
+            _sourced({"llama3.2-1b|FP16|ollama|c2048|p512|o128|b1": 100.0}), encoding="utf-8"
         )
         out = tmp_path / "audit.json"
         r = self._run(
@@ -335,7 +358,7 @@ class TestCli:
             encoding="utf-8",
         )
         meas = tmp_path / "meas.json"
-        meas.write_text(json.dumps({"some-other-cell": {"throughput_tps": 1.0}}), encoding="utf-8")
+        meas.write_text(_sourced({"some-other-cell": 1.0}), encoding="utf-8")
         out = tmp_path / "audit.json"
         r = self._run(
             "--matrix", str(m), "--measurements", str(meas), "--json", "--output", str(out)
@@ -358,8 +381,7 @@ class TestCli:
         )
         meas = tmp_path / "meas.json"
         meas.write_text(
-            json.dumps({"llama3.2-1b|FP16|ollama|c2048|p512|o128|b1": {"throughput_tps": 100.0}}),
-            encoding="utf-8",
+            _sourced({"llama3.2-1b|FP16|ollama|c2048|p512|o128|b1": 100.0}), encoding="utf-8"
         )
         rep = tmp_path / "report.md"
         r = self._run("--matrix", str(m), "--measurements", str(meas), "--report", str(rep))

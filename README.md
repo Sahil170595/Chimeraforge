@@ -199,6 +199,26 @@ chimeraforge validate --matrix matrix.json --measurements captured.json
 
 Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent). Pass that hash back with `--expect-fingerprint <hash>` and the command fails unless the matrix still hashes to it, so a matrix edited after seeing results cannot be passed off as the one that was registered -- pre-registration, not post-hoc selection. Without the flag the fingerprint is recomputed from whatever matrix was loaded and only printed, which proves nothing on its own. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
 
+Measurements are sourced records, not bare numbers. Each cell states:
+
+- who measured it: `own-rig-measured` or `third-party-measured`, which are separate scorecard rows and never averaged together;
+- where it came from: a `source_url`, or for own-rig runs the recorded bench environment;
+- a `captured_at` date;
+- whether the source omitted its serving config (`underspecified`), which keeps the cell out of the headline rows but still publishes it;
+- which quantity each number is: `decode_tps_single_stream`, `e2e_tps_single_stream`, `prefill_tps` (converted to TTFT at the cell's prompt length), `ttft_ms`, `e2e_latency_ms` (one request, batch 1, scored against the planner's service time), `e2e_latency_p95_ms` or `aggregate_tps_at_concurrency`.
+
+An end-to-end or aggregate rate is kept in the raw output but never scored against the planner's decode prediction, and `ambiguous` does not load. A third-party cell citing the TR corpus the planner was fitted on is refused. The v1 shape, `{cell: {metric: value}}`, is refused as unsourced.
+
+```json
+{"schema_version": 2, "hardware": "RTX 4090 24GB", "cells": {
+  "<model|quant|backend|c..|p..|o..|b1>": {
+    "evidence": "third-party-measured", "source_url": "https://...", "captured_at": "2026-09-25",
+    "underspecified": false, "config_quote": "llama-bench -ngl 99 -fa 1",
+    "metrics": [{"definition": "decode_tps_single_stream", "value": "<tok/s>", "quote": "tg128 | ..."}]}}}
+```
+
+The scorecard reports in-band pass rate (against a `bands` tolerance pre-registered in the matrix; `n/a` when none was), median absolute error, GMFE (geometric mean fold error, so 2x high and 2x low score the same), signed bias, and the worst cell. Bands, the consulted-source list and any per-cell `spec` (architecture pinned for offline prediction) are part of the fingerprint. Predictions always come from the bundled corpus unless `--models-path` is given, so a published audit does not depend on what `measure` left in your cache. A batched cell is skipped rather than compared to a single-stream prediction.
+
 ### `catalog` -- local model catalog
 
 ```bash
@@ -313,7 +333,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **2,085 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **2,132 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

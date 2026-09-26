@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`validate --measurements` now requires sourced measurements (schema v2), and refuses bare numbers.** The audit shipped in 0.22.0 with a measurement schema of `{cell_key: {metric: float}}`: bare floats with nowhere to put a source, a date, or what the number actually measures. A published audit on that schema grades the planner against numbers nobody can trace. Every cell now states its evidence class (`own-rig-measured` / `third-party-measured`), a `source_url` (or, for an own-rig run, the recorded bench environment), a `captured_at` date, an explicit `underspecified` decision, and a definition for every metric. A v1 file is an error that names the schema, not an empty ingest. A previous v2 audit's JSON carries each cell's full sourced record, so a published audit re-derives from its own output with no network and no GPU.
+
+### Fixed
+- **Evidence classes were not a dimension at all.** A third-party figure (different silicon, driver and engine build) and an own-rig figure would have been averaged into one row. Evidence is now a scorecard dimension, and rows are never pooled across it.
+- **A "tokens/sec" figure has no single meaning.** It can be per-request decode, end-to-end including prefill, or aggregate under concurrency, and scoring the wrong one against a decode prediction fabricates an error rate in either direction. The planner-comparable definitions are scored: decode, TTFT, prefill (converted to TTFT at the cell's own prompt length, and refused if measured at another), single-request end-to-end latency (against the planner's service time), and p95. End-to-end and aggregate rates are kept in the raw output with the reason they are not comparable. `ambiguous` does not load, and two measurements of one quantity are an error rather than a silent pick.
+- **Nothing stopped the audit grading the planner against the TR corpus it was fitted on.** A third-party cell citing it is refused at load.
+- **Underspecified sources** (engine version or serving flags missing) are published in the JSON and report with their errors, and kept out of every headline row.
+- **Batched cells were compared to a single-stream prediction.** `MatrixCell.batch` was part of the key and otherwise ignored. A batch-B cell is now skipped with the reason.
+- **Predictions depended on the auditor's cache.** `validate` went through `run_plan`, which prefers the local `measure` corpus over the bundled one, so the same matrix and measurements could score differently on two machines. Predictions now come from the bundled corpus unless `--models-path` is given, and the audit records which.
+- **Live measurement ignored the cell's backend.** `--ollama-url` benchmarked every cell on Ollama, including cells registered for vLLM or TGI. Non-Ollama cells are now skipped with the reason.
+- **Pipe-delimited cell keys split the markdown table row** they were printed in.
+
+### Added
+- **Headline audit metrics:** in-band pass rate against a `bands` tolerance pre-registered in the matrix (`n/a` when none was registered, since a band chosen after seeing the errors is not a pass rate), median absolute error, GMFE (geometric mean fold error, so 2x high and 2x low are the same size of mistake), signed bias, and the worst cell.
+- **More of the pre-registration is fingerprinted:** the matrix's `bands`, its consulted-`sources` list (choosing which benchmarks to look for is cherry-picking by another name), and a per-cell `spec` that pins an off-registry model's architecture so it is predicted offline from the same numbers everywhere. A matrix using none of these hashes exactly as before.
+
 ## [0.35.0] - 2026-09-25
 
 ### Added
