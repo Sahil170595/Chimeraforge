@@ -584,6 +584,9 @@ class TestOverridesAreNotSilentlyDropped:
             "chimeraforge.planner.hardware.detect_local_device",
             lambda: _device("NVIDIA GeForce RTX 4090", 24.0),
         )
+        # auto defaults the platform to THIS machine's OS; a faked NVIDIA card on
+        # a macOS CI runner is (correctly) refused, so pin the OS the test is about.
+        monkeypatch.setattr("chimeraforge.planner.service.local_plan_platform", lambda: "linux")
         out = plan_deployment(
             hardware="auto",
             model_size="3b",
