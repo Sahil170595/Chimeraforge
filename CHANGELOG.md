@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **`scripts/build_hardware_data.py` could not regenerate the dataset after a schema change.** It imported `chimeraforge.planner`, whose import loads `hardware.json`, so a new required field made the regenerator crash on the file it exists to regenerate. It now loads `constants.py` by path.
 
+## [0.42.0] - 2026-09-26
+
 ### Fixed
 - **`plan --hardware auto` and unlisted cards never worked from the CLI.** Since 0.34.0 the command's own guard ran before the resolver and refused any name not in the database. That included `auto`, and an unlisted card fully described with `--gpu-vram-gb`/`--gpu-bandwidth-gbps`, the headline feature of that release. The library and MCP paths worked, and every test called `run_plan` directly, so nothing caught it. Both now reach the resolver, whose errors are actionable. A card with no figures is still refused. CLI-level tests fail on the old guard.
 
