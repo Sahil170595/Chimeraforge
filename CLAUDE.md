@@ -187,7 +187,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 58 files, 2330 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 59 files, 2330 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -340,7 +340,7 @@ pytest tests/ -v                    # 2330 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2330 tests, 58 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2330 tests, 59 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
