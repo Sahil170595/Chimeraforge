@@ -15,6 +15,8 @@ import subprocess
 from dataclasses import dataclass, replace
 from importlib.resources import files
 
+from chimeraforge.planner.constants import AMORTISATION_HOURS  # noqa: F401 (re-export)
+
 # How a `$/hr` figure was arrived at. These are not the same quantity: an
 # amortised purchase price and a rental rate answer different questions, and the
 # field drives the budget gate, $/1M-tok and the self-host-vs-API break-even. It
@@ -42,7 +44,7 @@ class GPUSpec:
     name: str
     vram_gb: float
     bandwidth_gbps: float  # Memory bandwidth in GB/s (decode/TPOT is bound by this)
-    cost_per_hour: float  # $/hr -- see `price_basis` for WHICH quantity
+    cost_per_hour: float  # $/hr -- see `price_basis` for WHICH quantity; 0.0 = unknown
     fp16_tflops: float = 0.0  # Dense FP16 Tensor TFLOPS, FP32 accumulate (prefill/TTFT)
     tdp_watts: float = 0.0  # Board TDP in watts (energy cost + perf/watt; 0 = unknown)
     # Per-GPU interconnect bandwidth in GB/s (bidirectional aggregate) for tensor-
@@ -67,6 +69,11 @@ class GPUSpec:
     # A user-supplied spec, not a bundled one. Its numbers are the user's claim,
     # not a vendor-published figure this project checked.
     user_supplied: bool = False
+
+
+def known_or_none(value: float) -> float | None:
+    """A spec figure for output: the value, or None where 0.0 means unknown."""
+    return value if value and value > 0 else None
 
 
 # Reference GPU - all TR measurements collected on this card
@@ -95,7 +102,9 @@ def _load_bundled() -> dict[str, GPUSpec]:
             name=entry["name"],
             vram_gb=entry["vram_gb"],
             bandwidth_gbps=entry["bandwidth_gbps"],
-            cost_per_hour=entry["cost_per_hour"],
+            # A null (no vendor figure) becomes the 0.0 sentinel every consumer
+            # reads as unknown; the engine refuses to price or time against it.
+            cost_per_hour=entry["cost_per_hour"] or 0.0,
             fp16_tflops=entry["fp16_tflops"] or 0.0,
             tdp_watts=entry["tdp_watts"] or 0.0,
             interconnect_gbps=entry["interconnect_gbps"] or 0.0,
@@ -257,7 +266,9 @@ def match_driver_name(driver_name: str, vram_gb: float | None = None) -> GPUSpec
 
     matches: list[tuple[int, GPUSpec]] = []
     for key, spec in GPU_DB.items():
-        model = _CAPACITY_TOKEN.sub("", key).strip().lower()
+        # Normalised like the haystack, so a key such as "... Max-Q 96GB" still
+        # matches the driver's "Max-Q" after both have hyphens folded to spaces.
+        model = re.sub(r"[-_]+", " ", _CAPACITY_TOKEN.sub("", key)).strip().lower()
         if model and model in haystack:
             matches.append((len(model), spec))
     if not matches:

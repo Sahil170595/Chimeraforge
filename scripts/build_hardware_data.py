@@ -45,6 +45,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATASET = ROOT / "src" / "chimeraforge" / "planner" / "data" / "hardware.json"
+sys.path.insert(0, str(ROOT / "src"))
+
+from chimeraforge.planner.constants import AMORTISATION_HOURS  # noqa: E402
 
 SCHEMA_VERSION = 1
 
@@ -74,7 +77,14 @@ TFLOPS_DENSE = "dense"
 TFLOPS_HALVED = "halved-with-sparsity"
 TFLOPS_2X_FP32 = "derived-2x-fp32"
 TFLOPS_FP32_ACCUM = "fp32-accumulate-dense"
-TFLOPS_BASES = {TFLOPS_DENSE, TFLOPS_HALVED, TFLOPS_2X_FP32, TFLOPS_FP32_ACCUM}
+# The two reasons `fp16_tflops` is null. `unlabeled-by-vendor`: the vendor prints
+# a figure without saying whether it is dense or with-sparsity, so neither using
+# nor halving it is a reading of the datasheet. `not-published`: no FP16 matrix
+# figure at all. Either way the value stays null and TTFT is only a floor.
+TFLOPS_UNLABELED = "unlabeled-by-vendor"
+TFLOPS_UNPUBLISHED = "not-published"
+TFLOPS_NULL_BASES = {TFLOPS_UNLABELED, TFLOPS_UNPUBLISHED}
+TFLOPS_BASES = {TFLOPS_DENSE, TFLOPS_HALVED, TFLOPS_2X_FP32, TFLOPS_FP32_ACCUM} | TFLOPS_NULL_BASES
 
 NVIDIA_GEFORCE = "https://www.nvidia.com/en-us/geforce/graphics-cards/"
 NVIDIA_LAPTOPS = "https://www.nvidia.com/en-us/geforce/laptops/compare/"
@@ -197,6 +207,155 @@ GPUS: list[dict] = [
          source_url=AMD_MI300X, captured_at=_ASSEMBLED),
 ]
 
+# -- 2026 parts (P8.6 item 6) ------------------------------------------------
+# Every figure read from the vendor page, datasheet or press release in its
+# `field_sources` entry on 2026-09-25; RX 9070 XT, MI355X, RTX PRO 6000 Max-Q
+# and Arc Pro B65 were re-read independently against the live source. Units
+# the vendor prints in TB/s or PFLOPs are converted x1000, nothing else.
+#
+# Conventions carried from the entries above: interconnect is the per-GPU
+# bidirectional aggregate (PCIe 5.0 x16 = 128, x8 = 64; Infinity Fabric = links x
+# per-link rate as the datasheet states it). A field the vendor does not
+# publish is null. Excluded on purpose: MI430X, which AMD says is "expected to be
+# available in 2027" -- not a 2026 planning part.
+_2026 = "2026-09-25"
+NV_RTXPRO_WP = (
+    "https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/"
+    "quadro-product-literature/NVIDIA-RTX-Blackwell-PRO-GPU-Architecture-v1.0.pdf"
+)
+NV_RTXPRO_WS = (
+    "https://www.nvidia.com/content/dam/en-zz/Solutions/data-center/"
+    "rtx-pro-6000-blackwell-workstation-edition/"
+    "workstation-blackwell-rtx-pro-6000-workstation-edition-nvidia-us-3519208-web.pdf"
+)
+NV_RTXPRO_MAXQ = (
+    "https://www.nvidia.com/content/dam/en-zz/Solutions/products/workstations/"
+    "professional-desktop-gpus/rtx-pro-6000-max-q/"
+    "workstation-datasheet-blackwell-rtx-pro-6000-max-q-nvidia-us-5349650-web.pdf"
+)
+NV_RTXPRO_SERVER = "https://www.nvidia.com/en-us/data-center/rtx-pro-6000-blackwell-server-edition/"
+AMD_DOCS = "https://www.amd.com/content/dam/amd/en/documents/"
+AMD_MI325X = AMD_DOCS + "instinct-tech-docs/product-briefs/instinct-mi325x-datasheet.pdf"
+AMD_MI350X = AMD_DOCS + "instinct-tech-docs/product-briefs/amd-instinct-mi350x-gpu-brochure.pdf"
+AMD_MI355X = AMD_DOCS + "instinct-tech-docs/product-briefs/amd-instinct-mi355x-gpu-brochure.pdf"
+AMD_MI455X = AMD_DOCS + "products/accelerators/instinct/amd-instinct-mi455x_brochure.pdf"
+AMD_MI455X_PAGE = "https://www.amd.com/en/products/accelerators/instinct/mi400/mi455x.html"
+INTEL_ARK = "https://www.intel.com/content/www/us/en/products/sku/"
+INTEL_B60 = INTEL_ARK + "243916/intel-arc-pro-b60-graphics/specifications.html"
+INTEL_B65 = INTEL_ARK + "245796/intel-arc-pro-b65-graphics/specifications.html"
+AMD_RADEON = "https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/"
+AMD_RDNA4_PR = (
+    "https://ir.amd.com/news-events/press-releases/detail/1238/"
+    "amd-unveils-next-generation-amd-rdna-4-architecture-with-the-launch-of-amd-radeon-"
+    "rx-9000-series-graphics-cards"
+)
+AMD_9060XT_PR = (
+    "https://www.amd.com/en/newsroom/press-releases/"
+    "2025-5-20-amd-introduces-new-radeon-graphics-cards-and-ryzen.html"
+)
+AMD_R9700 = (
+    "https://www.amd.com/en/products/graphics/workstations/radeon-ai-pro/ai-9000-series/"
+    "amd-radeon-ai-pro-r9700.html"
+)
+
+# AMD's published suggested e-tail prices (press releases above), USD.
+SEP_USD = {"RX 9070 16GB": 549.0, "RX 9070 XT 16GB": 599.0, "RX 9060 XT 16GB": 349.0}
+
+
+def _amortised(name: str) -> float:
+    """Vendor SEP spread over AMORTISATION_HOURS, rounded to the stored precision."""
+    return round(SEP_USD[name] / AMORTISATION_HOURS, 4)
+
+
+GPUS += [
+    # NVIDIA prints dense and with-sparsity as one "dense/sparse" pair; the first
+    # figure is the dense one, FP16 tensor with FP32 accumulate.
+    dict(name="RTX PRO 6000 Blackwell Workstation 96GB", vram_gb=96.0, bandwidth_gbps=1792.0,
+         cost_per_hour=None, price_basis=BASIS_AMORTISED,
+         fp16_tflops=503.8, tflops_basis=TFLOPS_FP32_ACCUM,
+         tdp_watts=600.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=NV_RTXPRO_WS, captured_at=_2026,
+         field_sources={"fp16_tflops": NV_RTXPRO_WP, "fp8_supported": NV_RTXPRO_WP}),
+    dict(name="RTX PRO 6000 Blackwell Max-Q 96GB", vram_gb=96.0, bandwidth_gbps=1792.0,
+         cost_per_hour=None, price_basis=BASIS_AMORTISED,
+         fp16_tflops=438.9, tflops_basis=TFLOPS_FP32_ACCUM,
+         tdp_watts=300.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=NV_RTXPRO_MAXQ, captured_at=_2026,
+         field_sources={"fp16_tflops": NV_RTXPRO_WP, "fp8_supported": NV_RTXPRO_WP}),
+    # The page prints "FP16 | BF16 Tensor Core 1 PFLOP" with no dense/sparse label,
+    # the datasheet omits FP16 tensor entirely, and the architecture whitepaper
+    # covers only the workstation cards. Neither using nor halving it is a reading.
+    dict(name="RTX PRO 6000 Blackwell Server 96GB", vram_gb=96.0, bandwidth_gbps=1597.0,
+         cost_per_hour=None, price_basis=BASIS_MARKETPLACE,
+         fp16_tflops=None, tflops_basis=TFLOPS_UNLABELED,
+         tdp_watts=600.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=NV_RTXPRO_SERVER, captured_at=_2026),
+    # MI325X dense FP16 1307.4 matches MI300X's 1307.0: same CDNA3 compute, which
+    # confirms the dense column was read.
+    dict(name="MI325X 256GB", vram_gb=256.0, bandwidth_gbps=6000.0,
+         cost_per_hour=None, price_basis=BASIS_MARKETPLACE,
+         fp16_tflops=1307.4, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=1000.0, interconnect_gbps=7 * 128.0, fp8_supported=True,
+         source_url=AMD_MI325X, captured_at=_2026),
+    dict(name="MI350X 288GB", vram_gb=288.0, bandwidth_gbps=8000.0,
+         cost_per_hour=None, price_basis=BASIS_MARKETPLACE,
+         fp16_tflops=2309.6, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=1000.0, interconnect_gbps=round(7 * 153.6, 1), fp8_supported=True,
+         source_url=AMD_MI350X, captured_at=_2026),
+    dict(name="MI355X 288GB", vram_gb=288.0, bandwidth_gbps=8000.0,
+         cost_per_hour=None, price_basis=BASIS_MARKETPLACE,
+         fp16_tflops=2516.6, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=1400.0, interconnect_gbps=round(7 * 153.6, 1), fp8_supported=True,
+         source_url=AMD_MI355X, captured_at=_2026),
+    # AMD publishes no board power and no PCIe spec for MI455X. Its interconnect
+    # is the UALoE scale-up figure, stated by AMD as bidirectional.
+    dict(name="MI455X 432GB", vram_gb=432.0, bandwidth_gbps=23300.0,
+         cost_per_hour=None, price_basis=BASIS_MARKETPLACE,
+         fp16_tflops=5033.0, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=None, interconnect_gbps=3600.0, fp8_supported=True,
+         source_url=AMD_MI455X, captured_at=_2026,
+         field_sources={"interconnect_gbps": AMD_MI455X_PAGE}),
+    # Intel publishes FP32 (12.28 TFLOPS) and INT8 TOPS, but no FP16 matrix or
+    # FP8 figure. FP8 is therefore refused rather than assumed.
+    dict(name="Arc Pro B60 24GB", vram_gb=24.0, bandwidth_gbps=456.0,
+         cost_per_hour=None, price_basis=BASIS_AMORTISED,
+         fp16_tflops=None, tflops_basis=TFLOPS_UNPUBLISHED,
+         tdp_watts=200.0, interconnect_gbps=64.0, fp8_supported=False,
+         source_url=INTEL_B60, captured_at=_2026),
+    dict(name="Arc Pro B65 32GB", vram_gb=32.0, bandwidth_gbps=608.0,
+         cost_per_hour=None, price_basis=BASIS_AMORTISED,
+         fp16_tflops=None, tflops_basis=TFLOPS_UNPUBLISHED,
+         tdp_watts=200.0, interconnect_gbps=128.0, fp8_supported=False,
+         source_url=INTEL_B65, captured_at=_2026),
+    # RDNA4: AMD prints a dense and a with-structured-sparsity row; the dense row
+    # is used. Board power is AMD's "Typical Board Power (Desktop)".
+    dict(name="RX 9070 16GB", vram_gb=16.0, bandwidth_gbps=640.0,
+         cost_per_hour=_amortised("RX 9070 16GB"), price_basis=BASIS_AMORTISED,
+         fp16_tflops=145.0, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=220.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=AMD_RADEON + "amd-radeon-rx-9070.html", captured_at=_2026,
+         field_sources={"cost_per_hour": AMD_RDNA4_PR}),
+    dict(name="RX 9070 XT 16GB", vram_gb=16.0, bandwidth_gbps=640.0,
+         cost_per_hour=_amortised("RX 9070 XT 16GB"), price_basis=BASIS_AMORTISED,
+         fp16_tflops=195.0, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=304.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=AMD_RADEON + "amd-radeon-rx-9070xt.html", captured_at=_2026,
+         field_sources={"cost_per_hour": AMD_RDNA4_PR}),
+    dict(name="RX 9060 XT 16GB", vram_gb=16.0, bandwidth_gbps=320.0,
+         cost_per_hour=_amortised("RX 9060 XT 16GB"), price_basis=BASIS_AMORTISED,
+         fp16_tflops=103.0, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=160.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=AMD_RADEON + "amd-radeon-rx-9060xt.html", captured_at=_2026,
+         field_sources={"cost_per_hour": AMD_9060XT_PR, "fp8_supported": AMD_9060XT_PR}),
+    # AMD's standalone price for the R9700 appears only in press coverage, not on
+    # an AMD page, so it stays null.
+    dict(name="Radeon AI PRO R9700 32GB", vram_gb=32.0, bandwidth_gbps=640.0,
+         cost_per_hour=None, price_basis=BASIS_AMORTISED,
+         fp16_tflops=191.0, tflops_basis=TFLOPS_DENSE,
+         tdp_watts=300.0, interconnect_gbps=128.0, fp8_supported=True,
+         source_url=AMD_R9700, captured_at=_2026),
+]
+
 REQUIRED = (
     "name", "vram_gb", "bandwidth_gbps", "cost_per_hour", "price_basis",
     "fp16_tflops", "tflops_basis", "tdp_watts", "interconnect_gbps",
@@ -269,6 +428,18 @@ def validate(data: dict) -> list[str]:
                 raise ValidationError(f"{name}: {field}={value} outside [{lo}, {hi}]")
         if not isinstance(entry["fp8_supported"], bool):
             raise ValidationError(f"{name}: fp8_supported must be a bool")
+        # A null TFLOPS figure must say why, and a reason-for-null must not sit
+        # beside a number -- otherwise an unlabeled headline could ship as dense.
+        if (entry["fp16_tflops"] is None) != (entry["tflops_basis"] in TFLOPS_NULL_BASES):
+            raise ValidationError(
+                f"{name}: fp16_tflops={entry['fp16_tflops']!r} does not agree with "
+                f"tflops_basis={entry['tflops_basis']!r}"
+            )
+        for field, url in (entry.get("field_sources") or {}).items():
+            if field not in REQUIRED:
+                raise ValidationError(f"{name}: field_sources names unknown field {field!r}")
+            if not str(url).startswith("https://"):
+                raise ValidationError(f"{name}: field_sources[{field}] must be https")
     return notes
 
 

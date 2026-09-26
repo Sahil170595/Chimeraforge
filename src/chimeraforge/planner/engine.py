@@ -345,6 +345,12 @@ def enumerate_candidates(
     # real throughput depends on the board, the lanes and the host RAM behind them.
     host_bw = float(host_bandwidth_gbps or DEFAULT_HOST_LINK_GBPS)
     hw_cost_hr = (gpu.cost_per_hour if gpu else 0.035) * price_mult
+    # 0.0 in a GPUSpec means the vendor publishes no figure. Zero is a value, not
+    # an unknown: a spec with no price priced every plan at $0/month (labelled
+    # `derived`, sorted first, inside any budget) and one with no FP16 figure
+    # reported TTFT 0.0 ms. Unknown disables the prediction instead.
+    price_known = gpu is None or gpu.cost_per_hour > 0
+    compute_known = gpu is None or gpu.fp16_tflops > 0
     # KV-cache element size: a quantized cache (q8/q4) shrinks KV VRAM and lifts the
     # concurrency cap. Only VRAM is affected -- KV-quant quality impact is unscreened.
     kv_bytes = KV_QUANT_BYTES.get(kv_quant, KV_DTYPE_BYTES)
@@ -437,7 +443,8 @@ def enumerate_candidates(
         quants = [spec.native_quant] if (spec and spec.native_quant in QUANT_BPW) else QUANT_LEVELS
 
         for quant in quants:
-            # 0.0 when GPU compute is unknown -> latency falls back to decode-only.
+            # The memory-bound floor when GPU compute is unknown (warned, and a TTFT
+            # SLO is refused rather than checked against a bound).
             ttft_ms = models.latency.predict_ttft_ms(
                 active_params_b,
                 prefill_tokens_eff,
@@ -698,6 +705,16 @@ def enumerate_candidates(
                         n1_tps, kv_per_seq_gb, b, hardware, active_params_b
                     )
 
+                if ttft_slo and not compute_known:
+                    _reject(
+                        model,
+                        quant,
+                        "latency",
+                        f"{backend}: TTFT cannot be checked against the {ttft_slo:.0f}ms SLO -- "
+                        f"{gpu.name} has no vendor dense FP16 figure, so only its memory-bound "
+                        "floor is known; pass --gpu-fp16-tflops",
+                    )
+                    continue
                 best = None  # (n, b, per_gpu_tps, per_req_tps, lat)
                 for n in range(1, 17):
                     for b in batch_grid:
@@ -770,6 +787,15 @@ def enumerate_candidates(
                 total_gpus = best_n * tp * pp
 
                 # Gate 4: Cost (N replicas x TP*PP GPUs each)
+                if not price_known:
+                    _reject(
+                        model,
+                        quant,
+                        "budget",
+                        f"{backend}: no price for {gpu.name} -- its cost is unknown, not $0; "
+                        "pass --gpu-price-per-hour to plan it",
+                    )
+                    continue
                 monthly = models.cost.predict_monthly(hw_cost_hr) * total_gpus
                 if monthly > budget:
                     tp_note = f" x TP={tp}" if tp > 1 else (f" x PP={pp}" if pp > 1 else "")
@@ -910,6 +936,12 @@ def enumerate_candidates(
                     f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
                 )
                 warnings.extend(hardware_warnings)
+                if not compute_known:
+                    warnings.append(
+                        f"no vendor dense FP16 figure for {gpu.name}: TTFT is the memory-bound "
+                        "floor (a lower bound) and the decode compute ceiling is not applied, "
+                        "so latency here is a best case"
+                    )
                 floor_ms = models.latency.prefill_floor_ms(active_params_b, quant, hardware)
                 chunks = models.latency.prefill_chunks(prefill_tokens_eff, max_num_batched_tokens)
                 if floor_ms > 0 and ttft_ms <= floor_ms * max(chunks, 1) * (1 + 1e-9):

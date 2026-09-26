@@ -396,15 +396,15 @@ def plan(
     # used to ignore --json and print a box-drawing table regardless.
     if list_hardware:
         if output_json:
-            from chimeraforge.planner.hardware import GPU_DB
+            from chimeraforge.planner.hardware import GPU_DB, known_or_none
 
             payload = [
                 {
                     "name": spec.name,
                     "vram_gb": spec.vram_gb,
                     "bandwidth_gbps": spec.bandwidth_gbps,
-                    "cost_per_hour": spec.cost_per_hour,
-                    "fp16_tflops": spec.fp16_tflops,
+                    "cost_per_hour": known_or_none(spec.cost_per_hour),
+                    "fp16_tflops": known_or_none(spec.fp16_tflops),
                 }
                 for _, spec in sorted(GPU_DB.items())
             ]

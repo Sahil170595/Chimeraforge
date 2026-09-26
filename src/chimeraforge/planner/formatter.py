@@ -12,7 +12,7 @@ from rich.table import Table
 
 from chimeraforge.planner.constants import MODEL_PARAMS_B, POWER_UTILISATION, QUANT_BPW
 from chimeraforge.planner.engine import Candidate
-from chimeraforge.planner.hardware import GPU_DB
+from chimeraforge.planner.hardware import GPU_DB, known_or_none
 from chimeraforge.planner.provenance import (
     PROV_MEASURED,
     PROVENANCE_LEGEND,
@@ -423,7 +423,9 @@ def print_hardware_table() -> None:
             name,
             f"{spec.vram_gb:.0f} GB",
             f"{spec.bandwidth_gbps:.0f}",
-            f"${spec.cost_per_hour:.3f}",
+            "unknown"
+            if known_or_none(spec.cost_per_hour) is None
+            else f"${spec.cost_per_hour:.3f}",
         )
     console.print(table)
 
