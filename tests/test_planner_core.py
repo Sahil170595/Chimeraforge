@@ -54,10 +54,24 @@ class TestHardwareDB:
         assert REFERENCE_GPU in GPU_DB
 
     def test_gpu_spec_fields(self):
+        # Unpriced parts are exactly the 2026 ones whose vendor publishes no price;
+        # 0.0 there is "unknown" and the engine refuses to plan against it.
+        unpriced = {
+            "RTX PRO 6000 Blackwell Workstation 96GB",
+            "RTX PRO 6000 Blackwell Max-Q 96GB",
+            "RTX PRO 6000 Blackwell Server 96GB",
+            "MI325X 256GB",
+            "MI350X 288GB",
+            "MI355X 288GB",
+            "MI455X 432GB",
+            "Arc Pro B60 24GB",
+            "Arc Pro B65 32GB",
+            "Radeon AI PRO R9700 32GB",
+        }
         for name, spec in GPU_DB.items():
             assert spec.vram_gb > 0
             assert spec.bandwidth_gbps > 0
-            assert spec.cost_per_hour > 0
+            assert (spec.cost_per_hour == 0.0) == (name in unpriced), name
             assert spec.name == name
 
     def test_get_gpu_exact(self):
@@ -104,8 +118,13 @@ class TestHardwareDB:
         assert bandwidth_ratio("H200 141GB") > bandwidth_ratio("H100 80GB")
 
     def test_all_gpus_have_tdp(self):
-        # 0.8.0: every GPU carries a board-power (TDP) figure for the energy model.
+        # 0.8.0: every GPU carries a board-power (TDP) figure for the energy model,
+        # except where the vendor publishes none (AMD gives no MI455X board power);
+        # there energy is unknown rather than defaulted.
         for name, spec in GPU_DB.items():
+            if name == "MI455X 432GB":
+                assert spec.tdp_watts == 0.0
+                continue
             assert spec.tdp_watts > 0, f"{name} missing tdp_watts"
 
     def test_all_gpus_have_interconnect(self):

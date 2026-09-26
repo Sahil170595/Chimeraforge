@@ -362,3 +362,10 @@ CHUNK_OVERHEAD_CAP = 0.25
 # compared to that with chunk size 256". Real, sharp, and not smoothly modelable
 # -- so it is warned about and never modelled.
 CHUNK_TILE_ALIGNMENT = 256
+
+# How a vendor purchase price becomes an `amortised-purchase` $/hr: three years
+# of continuous use. A stated scenario, not a finding; it applies to the entries
+# whose price scripts/build_hardware_data.py derives from a vendor SEP. (The
+# consumer entries inherited from the old hardware.py predate any stated method.)
+AMORTISATION_YEARS = 3
+AMORTISATION_HOURS = AMORTISATION_YEARS * 365 * 24

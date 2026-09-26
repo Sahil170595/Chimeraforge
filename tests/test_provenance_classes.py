@@ -52,12 +52,16 @@ def _plan(gpu: str):
     on cost would test the `estimated` path everywhere and never exercise the
     lookup this module is about. Falls back to the winner where FP16 does not fit.
     """
+    # Parts with no vendor price are refused at the budget gate rather than priced
+    # at $0; this module is about throughput provenance, so it supplies one.
+    unpriced = GPU_DB[gpu].cost_per_hour <= 0
     r = run_plan(
         models=["llama3.2-3b"],
         hardware=gpu,
         budget=1e9,
         quality_target=0.0,
         allow_network=False,
+        gpu_overrides={"cost_per_hour": 1.0} if unpriced else None,
     )
     hits = [c for c in r.candidates if c.backend == "ollama" and c.quant == "FP16"]
     return hits[0] if hits else r.candidates[0]

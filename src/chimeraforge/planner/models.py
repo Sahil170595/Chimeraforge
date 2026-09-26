@@ -987,17 +987,21 @@ class LatencyModel:
            earlier chunks' KV being re-read, clamped to the only published bound
            rather than extrapolated past it.
 
-        Returns 0.0 when the GPU's compute is unknown, so the caller omits a
-        prefill term rather than guessing.
+        When the GPU's compute is unknown, returns the memory-bound floor -- a
+        lower bound the caller must label as one, not a prediction.
         """
         gpu = as_spec(hardware)
         tflops = gpu.fp16_tflops if gpu else 0.0
-        if tflops <= 0 or params_b <= 0 or prompt_tokens <= 0:
+        if params_b <= 0 or prompt_tokens <= 0:
             return 0.0
+        chunks = LatencyModel.prefill_chunks(prompt_tokens, max_num_batched_tokens)
+        if tflops <= 0:
+            # Compute unknown: the weight-read floor is still known from bandwidth,
+            # and it is a lower bound. Returning 0.0 here reported TTFT 0.0 ms.
+            return LatencyModel.prefill_floor_ms(params_b, quant, hardware, chunks=chunks)
         flops = FLOPS_PER_PARAM_PER_TOKEN * params_b * 1e9 * prompt_tokens
         compute_ms = flops / (tflops * 1e12 * mfu) * 1000.0
 
-        chunks = LatencyModel.prefill_chunks(prompt_tokens, max_num_batched_tokens)
         base_ms = max(
             compute_ms,
             LatencyModel.prefill_floor_ms(params_b, quant, hardware, chunks=chunks),
