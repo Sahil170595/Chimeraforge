@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2391 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2424 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 61 files, 2391 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 62 files, 2424 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -339,11 +339,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2391 total tests
+pytest tests/ -v                    # 2424 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2391 tests, 61 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2424 tests, 62 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -407,6 +407,9 @@ pytest tests/ --cov=src             # With coverage
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **Engine support** (31): test_engine_support.py - engine x platform matrix from each engine's
+  own docs at a pinned tag (data/engine_support.json, scripts/build_engine_support.py), silence
+  stays `not documented`, enforcement facts pinned, doctor shows the row, sdist carries fixtures
 - **Doctor** (48): test_doctor.py - read-only platform check per vendor (nvidia-smi/NVML,
   amd-smi + rocm-smi, system_profiler, xpu-smi, Windows CIM+registry, WSL osrelease), golden-
   tested on real captures (tests/fixtures/doctor/SOURCES.md), planner status per device,

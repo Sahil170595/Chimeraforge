@@ -127,6 +127,9 @@ class DoctorReport:
     planner: list[PlannerStatus]
     engines: list[EngineProbe]
     notes: list[str] = field(default_factory=list)
+    # The engine-support matrix row(s) for this machine, from each engine's docs.
+    platform: str = ""
+    engine_support: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -689,6 +692,13 @@ def run_doctor(
         # CIM + the display-class registry covers every vendor's adapters.
         probes.append(probe_windows(run, which))
 
+    from chimeraforge.planner.platform_support import (
+        PLATFORM_WSL2,
+        platform_key,
+        platform_support,
+        staleness_warning,
+    )
+
     gpus = merge_gpus(probes)
     notes: list[str] = []
     if not gpus:
@@ -696,14 +706,28 @@ def run_doctor(
             "no GPU detected by any probe; plan an unlisted card with "
             "--gpu-vram-gb and --gpu-bandwidth-gbps"
         )
+    wsl = system == "Linux" and detect_wsl(env, read_text)
+    # The platform is decided by the discrete GPU where there is one: an
+    # integrated adapter reporting a shared-memory aperture does not pick it.
+    primary = next((g for g in gpus if not g.notes or g.unified_memory), None)
+    platform = platform_key(system, primary.vendor if primary else None, wsl)
+    support = platform_support(platform)
+    if system == "Windows" and which("wsl"):
+        # WSL2 is its own row: several engines run there and not natively.
+        support += platform_support(PLATFORM_WSL2)
+    stale = staleness_warning()
+    if stale:
+        notes.append(stale)
     return DoctorReport(
         os=system,
         os_version=_platform.release(),
         arch=_platform.machine(),
-        wsl=system == "Linux" and detect_wsl(env, read_text),
+        wsl=wsl,
         probes=probes,
         gpus=gpus,
         planner=[assess(g) for g in gpus],
         engines=probe_engines() if check_engines else [],
         notes=notes,
+        platform=platform,
+        engine_support=[asdict(s) for s in support],
     )

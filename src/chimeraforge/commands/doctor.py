@@ -17,6 +17,12 @@ from rich.table import Table
 console = Console()
 
 _STATUS_STYLE = {"matched": "green", "supply-figures": "yellow", "not-representable": "red"}
+_SUPPORT_STYLE = {
+    "supported": "green",
+    "experimental": "yellow",
+    "unsupported": "red",
+    "not documented": "dim",
+}
 
 
 def doctor(
@@ -61,6 +67,26 @@ def doctor(
             style = _STATUS_STYLE.get(s.status, "white")
             planner.add_row(escape(g.name), vram, f"[{style}]{s.status}[/]", escape(s.detail))
         console.print(planner)
+
+    if report.engine_support:
+        matrix = Table(title="Engine support here (each engine's own docs)")
+        matrix.add_column("Platform")
+        matrix.add_column("Engine")
+        matrix.add_column("Status")
+        matrix.add_column("Scope / note")
+        for s in report.engine_support:
+            style = _SUPPORT_STYLE.get(s["status"], "white")
+            note = s["scope"] or ""
+            if s["maintenance"]:
+                note = (note + "; " if note else "") + "maintenance mode (repo archived)"
+            matrix.add_row(
+                s["platform"],
+                f"{s['engine']} {s['engine_version']}",
+                f"[{style}]{s['status']}[/]",
+                escape(note),
+            )
+        console.print(matrix)
+        console.print("  [dim]Quotes and pinned source URLs are in `doctor --json`.[/]")
 
     if report.engines:
         engines = Table(title="Local serving engines")

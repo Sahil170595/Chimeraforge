@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-26",
+  "note": "Serving-engine support per platform, read from each engine's own docs (or its source at the release tag where the docs were silent). Every claim carries a verbatim quote and a URL pinned to that tag. 'not documented' is silence, not a verdict. `scope` narrows a claim (e.g. instinct-only). Regenerate with scripts/build_engine_support.py.",
+  "platforms": [
+    "linux-cuda",
+    "linux-rocm",
+    "linux-xpu",
+    "windows-native",
+    "windows-wsl2",
+    "macos-apple-silicon",
+    "cpu"
+  ],
+  "engines": {
+    "ollama": {
+      "version": "v0.34.4",
+      "maintenance": null,
+      "quantization": {
+        "fp8": {
+          "quote": null,
+          "url": null,
+          "detail": "not documented"
+        },
+        "awq_gptq": {
+          "quote": null,
+          "url": null,
+          "detail": "not documented. import.mdx documents only Safetensors and GGUF import; 'Ollama does not quantize GGUF models during import' (L35)."
+        }
+      },
+      "platforms": {
+        "linux-cuda": {
+          "status": "supported",
+          "scope": null,
+          "quote": "Ollama supports Nvidia GPUs with compute capability 5.0+ and driver version 550 and newer. Nvidia GPUs with compute capability 5.0 through 6.2 require driver version 570 or newer.",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/gpu.mdx#L6",
+          "detail": "Table covers CC 5.0 (Maxwell) through 12.1 (GB10)."
+        },
+        "linux-rocm": {
+          "status": "supported",
+          "scope": null,
+          "quote": "Ollama requires the AMD ROCm v7 driver on Linux. ... AMD Radeon RX | 9070 XT 9070 GRE 9070 9060 XT ... 7900 XTX 7900 XT 7900 GRE 7800 XT 7700 XT 7700 7600 XT 7600 6950 XT ...",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/gpu.mdx#L65",
+          "detail": "RX 7900 XTX and RX 9070 ARE listed. LLVM targets: gfx908, gfx90a, gfx942, gfx950, gfx1030, gfx1100, gfx1101, gfx1102, gfx1150, gfx1151, gfx1200, gfx1201. Also Instinct MI100-MI350X, Radeon PRO, Ryzen AI. Other AMD GPUs via Vulkan or HSA_OVERRIDE_GFX_VERSION."
+        },
+        "linux-xpu": {
+          "status": "supported",
+          "scope": "vulkan-only",
+          "quote": "Additional GPU support on Windows and Linux is provided via Vulkan. Vulkan is enabled by default when the backend is installed. ... - Linux Intel GPU Instructions - https://dgpu-docs.intel.com/driver/client/overview.html",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/gpu.mdx#L143",
+          "detail": "Intel GPUs only via the Vulkan backend (no oneAPI/SYCL backend, no Intel card list). Without root or cap_perfmon, 'Ollama will use approximate sizes of the models' for scheduling."
+        },
+        "windows-native": {
+          "status": "supported",
+          "scope": null,
+          "quote": "Ollama runs as a native Windows application, including NVIDIA and AMD Radeon GPU support. ... - Windows 10 22H2 or newer, Home or Pro - NVIDIA 551.61 or newer Drivers if you have an NVIDIA card - AMD ROCm v7 / HIP7-capable driver stack for ROCm acceleration, or a Vulkan-capable AMD Radeon driver for Vulkan acceleration",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/windows.mdx#L5",
+          "detail": "AMD on Windows: YES. ROCm list (gpu.mdx L79): RX 7900 XTX/XT/GRE, 7800 XT, 7700 XT, 7600 XT, 7600; PRO W7900-W7500. RX 9070 is NOT in the Windows ROCm list. RDNA2/RX 6000 may lack ROCm v7 on Windows; Vulkan is the fallback. Intel on Windows only via Vulkan ('On Windows most GPU vendors drivers come bundled with Vulkan support')."
+        },
+        "windows-wsl2": {
+          "status": "supported",
+          "scope": "docker-nvidia-only",
+          "quote": "The Ollama Docker container can be configured with GPU acceleration in Linux or Windows (with WSL2). This requires the nvidia-container-toolkit.",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/faq.mdx#L255",
+          "detail": "Documented for the Docker container with NVIDIA only; AMD/Intel under WSL2 not documented."
+        },
+        "macos-apple-silicon": {
+          "status": "supported",
+          "scope": null,
+          "quote": "* MacOS Sonoma (v14) or newer * Apple M series (CPU and GPU support) or x86 (CPU only)",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/macos.mdx#L7",
+          "detail": "gpu.mdx L138: 'Ollama supports GPU acceleration on Apple devices via the Metal API.' No GPU in Docker Desktop on macOS (faq.mdx L257)."
+        },
+        "cpu": {
+          "status": "supported",
+          "scope": null,
+          "quote": "Ollama includes multiple LLM libraries compiled for different GPUs and CPU vector features. ... `cpu_avx2` will perform the best, followed by `cpu_avx` an the slowest but most compatible is `cpu`.",
+          "url": "https://github.com/ollama/ollama/blob/v0.34.4/docs/troubleshooting.mdx#L46",
+          "detail": "Linux ARM64 package documented (linux.mdx L48); macOS x86 CPU-only. The library list example in troubleshooting.mdx L51 is stale (cuda_v11/rocm_v5) so the list itself is not authoritative."
+        }
+      }
+    },
+    "vllm": {
+      "version": "v0.30.0",
+      "maintenance": null,
+      "quantization": {
+        "fp8": {
+          "quote": "FP8 computation is supported on NVIDIA GPUs with compute capability >= 8.9 (Ada Lovelace, Hopper, Blackwell). FP8 models will run on compute capability >= 7.5 (Turing) as weight-only W8A16, utilizing FP8 Marlin.",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/features/quantization/llm_compressor/fp8.md#L16",
+          "detail": "Hardware table (quantization/README.md L74): llm-compressor FP8 (W8A8) yes on Ada, Hopper, AMD GPU; no on Volta/Turing/Ampere, Intel GPU, x86 CPU, Arm CPU. fp8.md L3 names 'Nvidia H100 and AMD MI300x'."
+        },
+        "awq_gptq": {
+          "quote": "| AWQ | Volta no | Turing yes | Ampere yes | Ada yes | Hopper yes | AMD GPU no | Intel GPU yes | x86 CPU yes | Arm CPU no |; | GPTQ | Volta yes | Turing yes | Ampere yes | Ada yes | Hopper yes | AMD GPU no | Intel GPU yes | x86 CPU yes | Arm CPU no | (checkmarks transcribed to yes/no)",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/features/quantization/README.md#L69",
+          "detail": "Marlin (GPTQ/AWQ/FP8/FP4): Turing*-Hopper only, not AMD/Intel/CPU. GGUF: all NVIDIA + AMD GPU, not Intel/CPU. Docs caveat the chart 'is subject to change'."
+        }
+      },
+      "platforms": {
+        "linux-cuda": {
+          "status": "supported",
+          "scope": null,
+          "quote": "- GPU: compute capability 7.5 or higher (e.g., T4, RTX20xx, A100, L4, H100, B200, etc.)",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.cuda.inc.md#L9",
+          "detail": "OS: Linux (gpu.md). Binaries compiled with CUDA 12.9 by default; CUDA 12.8 and 13.0 variants also published. 'NVIDIA Blackwell GPUs (B200, GB200) require a minimum of CUDA 12.8'. CUDA 13 images need an R580+ driver (compat mode supports R535/R570 on select datacenter GPUs). No single minimum driver version stated for pip wheels."
+        },
+        "linux-rocm": {
+          "status": "supported",
+          "scope": null,
+          "quote": "- GPU: MI200s (gfx90a), MI300 (gfx942), MI350 (gfx950), Radeon RX 7900 series (gfx1100/1101), Radeon RX 9000 series (gfx1200/1201), Ryzen AI MAX / AI 300 Series (gfx1151/1150)\n- ROCm 6.3 or above\n    - MI350 requires ROCm 7.0 or above\n    - Ryzen AI MAX / AI 300 Series requires ROCm 7.0.2 or above",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.rocm.inc.md#L16",
+          "detail": "Consumer RDNA3 (RX 7900, gfx1100/1101) and RDNA4 (RX 9000, gfx1200/1201) ARE listed. Note gfx1102 (RX 7600) is not in the list. Prebuilt ROCm wheels: Python 3.12 only; the prebuilt-wheel table lists rocm700 for vLLM 0.14.0-0.18.0 and rocm721 for nightlies, so v0.30.0 on ROCm may require nightly or source build."
+        },
+        "linux-xpu": {
+          "status": "supported",
+          "scope": "basic",
+          "quote": "vLLM initially supports basic model inference and serving on Intel GPU platform. ... - Supported Hardware: Intel Data Center GPU, Intel ARC GPU",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.xpu.inc.md#L9",
+          "detail": "Wording is 'initially supports basic' -- treat as basic/limited. Python 3.12 required (vllm-xpu-kernels wheel)."
+        },
+        "windows-native": {
+          "status": "unsupported",
+          "scope": null,
+          "quote": "vLLM does not support Windows natively. To run vLLM on Windows, you can use the Windows Subsystem for Linux (WSL) with a compatible Linux distribution, or use some community-maintained forks",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.md#L31",
+          "detail": "Community forks are not official."
+        },
+        "windows-wsl2": {
+          "status": "supported",
+          "scope": null,
+          "quote": "To run vLLM on Windows, you can use the Windows Subsystem for Linux (WSL) with a compatible Linux distribution",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/gpu.md#L31",
+          "detail": "Documented as the Windows route; no WSL-specific GPU/vendor requirements given (build note: WSL assigns 50% RAM by default, use MAX_JOBS=1). Docs say 'WSL', not specifically WSL2."
+        },
+        "macos-apple-silicon": {
+          "status": "experimental",
+          "scope": "cpu-only",
+          "quote": "vLLM has experimental support for macOS with Apple Silicon. For now, users must build from source to natively run on macOS. Currently the CPU implementation for macOS supports FP32 and FP16 datatypes.",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/cpu.apple.inc.md#L4",
+          "detail": "CPU-only in core vLLM (macOS Sonoma+, Xcode 15.4+). Metal GPU only via 'vLLM-Metal, a community-maintained hardware plugin that uses MLX' (gpu.apple.inc.md L4), separate package."
+        },
+        "cpu": {
+          "status": "supported",
+          "scope": null,
+          "quote": "vLLM supports basic model inferencing and serving on x86 CPU platform, with data types FP32, FP16 and BF16. ... - OS: Linux - CPU flags: `avx512f` (Recommended), `avx2` (Limited features)",
+          "url": "https://github.com/vllm-project/vllm/blob/v0.30.0/docs/getting_started/installation/cpu.x86.inc.md#L10",
+          "detail": "ARM: 'vLLM offers basic model inferencing and serving on Arm CPU platform ... NEON support is required', OS: Linux (cpu.arm.inc.md L11). Also IBM Z s390x."
+        }
+      }
+    },
+    "tgi": {
+      "version": "v3.3.7",
+      "maintenance": {
+        "quote": "text-generation-inference is now in maintenance mode. Going forward, we will accept pull requests for minor bug fixes, documentation improvements and lightweight maintenance tasks.",
+        "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/README.md#L2",
+        "detail": "README recommends vLLM, SGLang, llama.cpp or MLX going forward. GitHub API reports archived=true for the repo (checked 2026-09-26). Install docs at v3.3.7 still reference the 3.3.5 image tag."
+      },
+      "quantization": {
+        "fp8": {
+          "quote": "fp8: FP8 (e4m3) works on H100 and above This dtype has native ops should be the fastest if available.",
+          "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/reference/launcher.md#L72",
+          "detail": "FP8 KV cache: 'Currently the only supported value are fp8_e4m3fn and fp8_e5m2 on CUDA' (L97). Ada (8.9) not mentioned."
+        },
+        "awq_gptq": {
+          "quote": "TGI supports GPTQ, AWQ, bits-and-bytes, EETQ, Marlin, EXL2 and fp8 quantization.",
+          "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/conceptual/quantization.md#L3",
+          "detail": "Per-platform: AWQ unsupported on ROCm (installation_amd.md L43). GPTQ on ROCm/Intel not stated."
+        }
+      },
+      "platforms": {
+        "linux-cuda": {
+          "status": "supported",
+          "scope": "full-on-h100-a100-a10g-t4",
+          "quote": "TGI optimized models are supported on NVIDIA H100, A100, A10G and T4 GPUs with CUDA 12.2+. ... For other NVIDIA GPUs, continuous batching will still apply, but some operations like flash attention and paged attention will not be executed.",
+          "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/installation_nvidia.md#L3",
+          "detail": "Named GPUs, not a compute-capability floor. README L127: 'We also recommend using NVIDIA drivers with CUDA version 12.2 or higher.' Docker + NVIDIA Container Toolkit."
+        },
+        "linux-rocm": {
+          "status": "supported",
+          "scope": "instinct-only",
+          "quote": "TGI is supported and tested on AMD Instinct MI210, MI250 and MI300 GPUs. The support may be extended in the future.",
+          "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/installation_amd.md#L3",
+          "detail": "Instinct only; no consumer Radeon. No ROCm version requirement stated (only an aside about 'ROCm 6.1 and PyTorch 2.3' for TunableOp). Unsupported on ROCm: AWQ checkpoints, sliding-window attention kernel (L43-44)."
+        },
+        "linux-xpu": {
+          "status": "supported",
+          "scope": "max-only",
+          "quote": "TGI optimized models are supported on Intel Data Center GPU Max1100, Max1550, the recommended usage is through Docker.",
+          "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/installation_intel.md#L3",
+          "detail": "Data Center GPU Max only; Arc not mentioned."
+        },
+        "windows-native": {
+          "status": "not documented",
+          "scope": null,
+          "quote": null,
+          "url": null,
+          "detail": "Docs are Docker/Linux-oriented; no Windows statement."
+        },
+        "windows-wsl2": {
+          "status": "not documented",
+          "scope": null,
+          "quote": null,
+          "url": null,
+          "detail": "No WSL statement."
+        },
+        "macos-apple-silicon": {
+          "status": "not documented",
+          "scope": null,
+          "quote": null,
+          "url": null,
+          "detail": "Only mention of macOS is installing protoc via Homebrew for source builds (README L239, installation.md L54); no GPU/Metal or runtime-support claim."
+        },
+        "cpu": {
+          "status": "supported",
+          "scope": "intel-only",
+          "quote": "Intel Extension for PyTorch (IPEX) also provides further optimizations for Intel CPUs. ... On a server powered by Intel CPU, TGI can be launched with the following command",
+          "url": "https://github.com/huggingface/text-generation-inference/blob/v3.3.7/docs/source/installation_intel.md#L21",
+          "detail": "Intel x86 via -intel-cpu image. Caveat README L127: 'please note CPU is not the intended platform for this project, so performance might be subpar.' ARM not documented."
+        }
+      }
+    },
+    "sglang": {
+      "version": "v0.5.20",
+      "maintenance": null,
+      "quantization": {
+        "fp8": {
+          "quote": "fp8 | NVIDIA GPUs: Yes | AMD GPUs (MI300X/MI325X/MI350X): Yes | Ascend: WIP | Notes: Aiter or Triton backend on AMD",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/advanced_features/quantization.mdx#L39",
+          "detail": "No compute-capability floor for fp8 stated (not documented)."
+        },
+        "awq_gptq": {
+          "quote": "awq: NVIDIA Yes, AMD Yes ('Uses a JIT-compiled CUDA kernel on NVIDIA, Triton dequantize on AMD'); gptq: NVIDIA No, AMD No ('Removed on NVIDIA and AMD GPUs - use gptq_marlin instead ... Still supported on Intel CPUs with AMX'); awq_marlin / gptq_marlin: NVIDIA Yes, AMD No ('Marlin kernels are CUDA-only'); gguf: NVIDIA Yes, AMD No",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/advanced_features/quantization.mdx#L23",
+          "detail": "Table cells (HTML) transcribed. amd_gpu.mdx L120 short version: 'FP8, AWQ, MXFP4, W8A8, GPTQ, compressed-tensors, Quark, and petit_nvfp4 ... all work on AMD. Methods that depend on Marlin or NVIDIA-specific kernels (awq_marlin, gptq_marlin, gguf, modelopt_fp8, modelopt_fp4) do not.' NOTE the two pages disagree on plain 'gptq' on AMD."
+        }
+      },
+      "platforms": {
+        "linux-cuda": {
+          "status": "supported",
+          "scope": null,
+          "quote": "SGLang requires CUDA 13. The CUDA 12 (`cu129`) wheels and images are retired, because PyTorch 2.14 publishes no CUDA 12.9 builds. SGLang 0.5.19 is the last release with a CUDA 12 lane.",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/get-started/install.mdx#L33",
+          "detail": "Minimum compute capability not stated as a hard floor. install.mdx L233: 'FlashInfer ... is the default attention kernel backend. It only supports sm75 and above' (Triton fallback suggested). No driver version stated (CUDA 13 implies R580+ per NVIDIA, but that is not in SGLang docs)."
+        },
+        "linux-rocm": {
+          "status": "supported",
+          "scope": "instinct-only",
+          "quote": "When using AMD GPUs (such as MI300X), certain system-level optimizations help ensure stable performance.",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/hardware-platforms/amd_gpu.mdx#L8",
+          "detail": "Docs give no gfx list and no ROCm version. Quantization matrix column header is 'AMD GPUs (MI300X/MI325X/MI350X)' (quantization.mdx L32). Source rocm.Dockerfile at the tag builds only gfx942 (MI30x), gfx950 (MI35x), gfx1250 (MI45x) against ROCm 7.0/7.2/7.2.4/10.0 bases; a separate docker/rocm-gfx1151.Dockerfile targets Strix Halo iGPU. Consumer discrete RDNA3/RDNA4 (RX 7900 XTX, RX 9070) are NOT listed anywhere."
+        },
+        "linux-xpu": {
+          "status": "supported",
+          "scope": "arc-b-series",
+          "quote": "Specifically, SGLang is optimized for Intel Arc Pro B-Series Graphics and Intel Arc B-Series Graphics.",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/hardware-platforms/xpu.mdx#L7",
+          "detail": "'Currently SGLang XPU only supports installation from source' (L51). Model list verified on Arc B580, BF16. Data Center GPU Max not mentioned. XPU Graph, memory saver, P/D disaggregation marked [Experimental]. Quote has markdown links stripped and (R)/(TM) symbols removed."
+        },
+        "windows-native": {
+          "status": "not documented",
+          "scope": null,
+          "quote": null,
+          "url": null,
+          "detail": "No Windows install path in install.mdx or hardware-platforms at v0.5.20."
+        },
+        "windows-wsl2": {
+          "status": "not documented",
+          "scope": null,
+          "quote": null,
+          "url": null,
+          "detail": "No WSL mention in install docs."
+        },
+        "macos-apple-silicon": {
+          "status": "supported",
+          "scope": "mlx",
+          "quote": "This document describes how to run the SGLang serving runtime on Apple Silicon using MLX. ... The MLX runtime requires Apple Silicon with macOS 14 or newer, stable PyTorch 2.13.x, and stable MLX 0.32.0 or newer.",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/hardware-platforms/apple_metal.mdx#L14",
+          "detail": "GPU via MLX/Metal, enabled with SGLANG_USE_MLX=1; install from source. Page is linked from install.mdx but not from hardware-platforms/overview.mdx."
+        },
+        "cpu": {
+          "status": "supported",
+          "scope": "xeon-amx-only",
+          "quote": "SGLang is enabled and optimized on the CPUs equipped with Intel AMX Instructions, which are 4th generation or newer Intel Xeon Scalable Processors.",
+          "url": "https://github.com/sgl-project/sglang/blob/v0.5.20/docs/docs/hardware-platforms/cpu_server.mdx#L5",
+          "detail": "Intel Xeon (AMX, Sapphire Rapids+) only. AMD EPYC / other x86 / ARM CPUs not documented. Docker image tags end in 'xeon'."
+        }
+      }
+    }
+  }
+}
