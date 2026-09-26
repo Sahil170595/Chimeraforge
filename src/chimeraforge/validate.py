@@ -48,6 +48,7 @@ import hashlib
 import json
 import math
 import statistics
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -66,6 +67,12 @@ CLASS_EXTRAPOLATED = "bandwidth-extrapolated"
 CLASS_LOOKUP = "measured-lookup"
 CLASS_ORDER = (CLASS_ROOFLINE, CLASS_PARALLEL, CLASS_EXTRAPOLATED, CLASS_LOOKUP)
 LEAD_CLASS = CLASS_ROOFLINE
+
+# The audit predicts ONE stream. At a real request rate the capacity gate sizes
+# a fleet and can refuse a cell that fits the card (1 req/s x 512 tokens needed
+# 512 tok/s, so a 70B on an 80 GB part was skipped). A negligible rate keeps
+# every gate except the ones that describe the cell itself.
+AUDIT_REQUEST_RATE = 1e-3
 
 # Metrics compared when both sides report them.
 # `e2e_latency_ms` is one request at batch 1 with no queue: the planner's own
@@ -735,6 +742,159 @@ def build_audit(
     )
 
 
+@contextmanager
+def models_file(models_path: str | None):
+    """Yield the corpus path predictions are made from: the given one, else bundled."""
+    if models_path:
+        yield models_path
+        return
+    import importlib.resources as pkg_resources
+
+    bundled = pkg_resources.files("chimeraforge.planner") / "data" / "fitted_models.json"
+    with pkg_resources.as_file(bundled) as p:
+        yield str(p)
+
+
+def audit_cells(
+    matrix: Matrix,
+    captured: dict[str, MeasuredCell],
+    models_path: str,
+    measure=None,
+) -> list[CellOutcome]:
+    """Predict every registered cell and join it to its measurement.
+
+    ``measure``, when given, is called per cell and returns ``(MeasuredCell |
+    None, reason)``; it replaces the captured measurement (the CLI's live mode).
+    One bad cell is recorded with its reason and never stops the audit.
+    """
+    from chimeraforge.planner.service import run_plan
+
+    outcomes: list[CellOutcome] = []
+    for cell in matrix.cells:
+        if cell.batch != 1:
+            # The audit predicts a single stream. Comparing a batch-B measurement
+            # to it would grade the planner on a quantity it did not predict.
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class="unknown",
+                    skipped=(
+                        f"batch {cell.batch}: the audit compares against a single-stream "
+                        "prediction, so a batched measurement is not comparable"
+                    ),
+                )
+            )
+            continue
+        # Predict: pin the search to exactly this cell so the audit compares what it
+        # registered, not whatever the planner would have preferred instead.
+        try:
+            result = run_plan(
+                models=[cell.model],
+                hardware=matrix.hardware,
+                quality_target=0.0,
+                budget=1e12,
+                latency_slo=1e9,
+                request_rate=AUDIT_REQUEST_RATE,
+                avg_tokens=cell.avg_tokens,
+                prompt_tokens=cell.prompt_tokens,
+                context_length=cell.context_length,
+                models_path=models_path,
+                allow_network=False,
+                overrides=cell.spec_dict or None,
+            )
+        except Exception as exc:  # noqa: BLE001 - one bad cell must not kill the audit
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class="unknown",
+                    skipped=f"prediction failed: {type(exc).__name__}: {exc}",
+                )
+            )
+            continue
+
+        picked = next(
+            (c for c in result.candidates if c.quant == cell.quant and c.backend == cell.backend),
+            None,
+        )
+        if picked is None:
+            # A refusal is itself a finding when a source ran the cell, so say
+            # which gate refused it rather than "gated out".
+            # Backend-specific rejections name their backend first; VRAM/quality/
+            # safety rejections name none and apply to every backend.
+            from chimeraforge.planner.constants import BACKENDS
+
+            gates = [
+                f"{gate}: {detail}"
+                for _m, quant, gate, detail in result.trace
+                if quant == cell.quant
+                and (
+                    detail.startswith(cell.backend)
+                    or not any(detail.startswith(b) for b in BACKENDS)
+                )
+            ]
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class="unknown",
+                    skipped=(
+                        f"the planner refuses {cell.quant} on {cell.backend}: "
+                        + ("; ".join(gates) if gates else "no binding gate recorded")
+                    ),
+                )
+            )
+            continue
+
+        predicted = {
+            "throughput_tps": picked.throughput_tps,
+            "ttft_ms": picked.ttft_ms,
+            "p95_latency_ms": picked.p95_latency_ms,
+        }
+        if picked.throughput_tps > 0:
+            # The planner's service time for one request (LatencyModel): what a
+            # single-request, no-queue end-to-end measurement is evidence about.
+            predicted["e2e_latency_ms"] = (
+                picked.ttft_ms + cell.avg_tokens / picked.throughput_tps * 1000.0
+            )
+        cls = classify(picked.provenance, picked.tensor_parallel, picked.pipeline_parallel)
+
+        measurement = captured.get(cell.key)
+        skip_reason = "no measurement for this cell"
+        if measure is not None:
+            measurement, why = measure(cell)
+            skip_reason = why or skip_reason
+
+        if measurement is None:
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class=cls,
+                    predicted=predicted,
+                    skipped=skip_reason,
+                )
+            )
+            continue
+
+        try:
+            outcomes.append(outcome_from_measurement(cell, cls, predicted, measurement))
+        except ValidationError as exc:
+            outcomes.append(
+                CellOutcome(
+                    key=cell.key,
+                    cell=cell,
+                    provenance_class=cls,
+                    predicted=predicted,
+                    skipped=str(exc),
+                    measurement=measurement,
+                    evidence=measurement.evidence,
+                )
+            )
+    return outcomes
+
+
 def load_measurements(path: str | Path) -> MeasurementSet:
     """Load sourced measurements, keyed by cell.
 
@@ -875,7 +1035,9 @@ def format_markdown(audit: Audit) -> str:
             out.append(f"- [{s['status']}] {s['url']}{reason}")
         out.append("")
     out += [
-        "Positive error means the planner was **optimistic** (predicted above measured).",
+        "Positive error means predicted above measured: **optimistic** for a rate "
+        "(throughput), **pessimistic** for a latency (TTFT, end-to-end, p95), where "
+        "the planner predicted slower than measured.",
         "GMFE is the geometric mean fold error: 2x too high and 2x too low both score 2.0x.",
         "",
         "Every cell, including the worst, is retained in the raw JSON alongside this "

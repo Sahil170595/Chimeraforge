@@ -124,3 +124,44 @@ class TestBatchedThroughputInvariants:
         agg2 = tp.batched_decode_tps(100.0, self.KV, 2, REF_GPU)
         agg16 = tp.batched_decode_tps(100.0, self.KV, 16, REF_GPU)
         assert agg16 / 16 < agg2 / 2 <= 100.0
+
+
+class TestThirdPartyAuditDoesNotWiden:
+    """P8.5 regression gates: the published third-party error bands, pinned.
+
+    Values are the headline rows of corpora/scorecard.json as first published
+    (2026-09-25): fully specified third-party cells, roofline-estimate class.
+    They are typed here rather than read from the scorecard so that regenerating
+    the scorecard cannot loosen the gate -- widening one means editing this file,
+    in a diff someone reviews. Tolerance absorbs rounding, not regressions.
+    """
+
+    TOL = 0.005
+    # (provenance class, metric): (n, median abs error, GMFE, worst abs error)
+    PUBLISHED = {
+        ("roofline-estimate", "throughput_tps"): (15, 0.3588, 1.629, 2.0634),
+        ("roofline-estimate", "ttft_ms"): (14, 1.3538, 2.6795, 1.8389),
+    }
+
+    @pytest.fixture(scope="class")
+    def live_rows(self):
+        import importlib.util
+        import pathlib
+
+        path = (
+            pathlib.Path(__file__).resolve().parents[1] / "scripts" / "build_validation_corpus.py"
+        )
+        spec = importlib.util.spec_from_file_location("build_validation_corpus", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        rows = mod.combined(mod.run_audit()["audits"]).rows
+        return {(r.provenance_class, r.metric): r for r in rows if r.evidence}
+
+    @pytest.mark.parametrize("key", sorted(PUBLISHED))
+    def test_error_band_has_not_widened(self, live_rows, key):
+        n, med, gmfe, worst = self.PUBLISHED[key]
+        row = live_rows[key]
+        assert row.n == n, "the audited cell set changed; re-register, do not re-score"
+        assert row.median_abs <= med + self.TOL
+        assert row.gmfe <= gmfe + self.TOL
+        assert abs(row.worst_error) <= worst + self.TOL

@@ -498,3 +498,61 @@ class TestCli:
         assert not cell["skipped"], cell["skipped"]
         assert cell["evidence"] == EVIDENCE_THIRD_PARTY
         assert math.isfinite(cell["errors"]["throughput_tps"])
+
+
+# -- Found by running the audit (P8.5b) ----------------------------------------
+
+L70 = {
+    "params_b": 70.553706496,
+    "n_layers": 80,
+    "n_kv_heads": 8,
+    "d_head": 128,
+    "hidden_size": 8192,
+}
+L8 = {"params_b": 8.030261248, "n_layers": 32, "n_kv_heads": 8, "d_head": 128, "hidden_size": 4096}
+
+
+def _audit_one(hardware, cell):
+    from chimeraforge.validate import audit_cells, models_file
+
+    with models_file(None) as path:
+        return audit_cells(
+            Matrix(hardware=hardware, registered_at="2026-09-25", cells=[cell]), {}, path
+        )[0]
+
+
+class TestAuditIsNotAFleetSizingExercise:
+    def test_a_single_stream_cell_is_not_gated_on_fleet_capacity(self):
+        """At 1 req/s x 512 tokens the capacity gate needed 512 tok/s, so a 70B that
+        fits an 80 GB card was skipped -- the audit was sizing a fleet, not
+        predicting one stream."""
+        cell = MatrixCell(
+            model="Meta-Llama-3-70B.Q4_K_M",
+            quant="Q4_K_M",
+            backend="ollama",
+            avg_tokens=512,
+            spec=tuple(sorted(L70.items())),
+        )
+        o = _audit_one("A100 80GB", cell)
+        assert o.skipped == "no measurement for this cell"
+        assert o.predicted["throughput_tps"] > 0
+
+    def test_a_refused_cell_names_the_binding_gate(self):
+        cell = MatrixCell(
+            model="Meta-Llama-3-8B.F16",
+            quant="FP16",
+            backend="ollama",
+            avg_tokens=512,
+            spec=tuple(sorted(L8.items())),
+        )
+        o = _audit_one("RTX 4080 16GB", cell)
+        assert "vram" in o.skipped and "16GB" in o.skipped
+
+
+class TestSignConvention:
+    def test_report_says_what_positive_means_for_latency(self):
+        """'Positive = optimistic' is true for a rate and backwards for a latency:
+        a TTFT predicted above measured is a pessimistic prediction."""
+        audit = build_audit(_matrix(), [_scored("a", EVIDENCE_THIRD_PARTY, 0.1)])
+        md = format_markdown(audit)
+        assert "pessimistic" in md and "latency" in md

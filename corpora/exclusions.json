@@ -1,0 +1,186 @@
+{
+  "captured_at": "2026-09-25",
+  "rules": "see the docstring of scripts/build_validation_corpus.py",
+  "excluded": [
+    {
+      "cell_id": "C019",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322852",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C020",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322852",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C021",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322920",
+      "reason": "rule 7: superseded duplicate of C029, C030"
+    },
+    {
+      "cell_id": "C022",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322920",
+      "reason": "rule 7: superseded duplicate of C029, C030"
+    },
+    {
+      "cell_id": "C023",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322934",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C024",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322934",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C025",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322969",
+      "reason": "rule 7: superseded duplicate of C031, C032"
+    },
+    {
+      "cell_id": "C026",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14322969",
+      "reason": "rule 7: superseded duplicate of C031, C032"
+    },
+    {
+      "cell_id": "C040",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/10879#discussioncomment-15523099",
+      "reason": "rule 5: Vulkan backend; the planner's GGUF path is CUDA/ROCm llama.cpp"
+    },
+    {
+      "cell_id": "C041",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/10879#discussioncomment-15523099",
+      "reason": "rule 5: Vulkan backend; the planner's GGUF path is CUDA/ROCm llama.cpp"
+    },
+    {
+      "cell_id": "C042",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/10879#discussioncomment-11844432",
+      "reason": "rule 5: Vulkan backend; the planner's GGUF path is CUDA/ROCm llama.cpp"
+    },
+    {
+      "cell_id": "C043",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/10879#discussioncomment-11844432",
+      "reason": "rule 5: Vulkan backend; the planner's GGUF path is CUDA/ROCm llama.cpp"
+    },
+    {
+      "cell_id": "C060",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C061",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C062",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C063",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C064",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C065",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's A100 80GB entry is the SXM part at 2039 GB/s"
+    },
+    {
+      "cell_id": "C071",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C072",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C073",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C074",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C075",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C076",
+      "source_url": "https://github.com/XiongjieDai/GPU-Benchmarks-on-LLM-Inference/blob/aa72e0ec86c356c41f8281c9733e9a13c3675800/README.md",
+      "reason": "rule 4: PCIe part, but the planner's H100 80GB entry is the SXM part at 3352 GB/s"
+    },
+    {
+      "cell_id": "C091",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/Fig_22/all_results_TTFT_ITL.csv",
+      "reason": "rule 2: batch 16; the audit predicts a single stream"
+    },
+    {
+      "cell_id": "C092",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/Fig_22/all_results_TTFT_ITL.csv",
+      "reason": "rule 2: batch 16; the audit predicts a single stream"
+    },
+    {
+      "cell_id": "C093",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/Fig_22/all_results_TTFT_ITL.csv",
+      "reason": "rule 2: batch 16; the audit predicts a single stream"
+    },
+    {
+      "cell_id": "C095",
+      "source_url": "https://github.com/sgl-project/sglang/issues/1008",
+      "reason": "rule 6: non-default engine configuration"
+    },
+    {
+      "cell_id": "C096",
+      "source_url": "https://github.com/sgl-project/sglang/issues/1008",
+      "reason": "rule 1: 8 GPUs; the audit predicts tensor-parallel 1"
+    },
+    {
+      "cell_id": "C097",
+      "source_url": "https://www.amd.com/en/developer/resources/rocm-hub/dev-ai/performance-results.html",
+      "reason": "rule 1: 8 GPUs; the audit predicts tensor-parallel 1"
+    },
+    {
+      "cell_id": "C098",
+      "source_url": "https://www.amd.com/en/developer/resources/rocm-hub/dev-ai/performance-results.html",
+      "reason": "rule 1: 8 GPUs; the audit predicts tensor-parallel 1"
+    },
+    {
+      "cell_id": "C099",
+      "source_url": "https://www.databasemart.com/blog/ollama-gpu-benchmark-rtx4060",
+      "reason": "rule 3: the source does not state which quantity its figure is"
+    },
+    {
+      "cell_id": "C100",
+      "source_url": "https://www.databasemart.com/blog/ollama-gpu-benchmark-rtx4090",
+      "reason": "rule 3: the source does not state which quantity its figure is"
+    },
+    {
+      "cell_id": "C101",
+      "source_url": "https://www.databasemart.com/blog/ollama-gpu-benchmark-rtx4090",
+      "reason": "rule 3: the source does not state which quantity its figure is"
+    },
+    {
+      "cell_id": "C102",
+      "source_url": "https://www.databasemart.com/blog/ollama-gpu-benchmark-a100-40gb",
+      "reason": "rule 3: the source does not state which quantity its figure is"
+    },
+    {
+      "cell_id": "C103",
+      "source_url": "https://www.databasemart.com/blog/ollama-gpu-benchmark-h100",
+      "reason": "rule 3: the source does not state which quantity its figure is"
+    }
+  ]
+}

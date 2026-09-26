@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "hardware": "H100 80GB",
+  "cells": {
+    "llama-2-7b.Q4_0|Q4_0|ollama|c2048|p512|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/ggml-org/llama.cpp/discussions/15013#discussioncomment-14978771",
+      "captured_at": "2026-09-25",
+      "underspecified": false,
+      "config_quote": "llama-bench -m llama-2-7b.Q4_0.gguf -ngl 99 -fa 0,1 (thread instructions); this cell = fa 0 (flash attention off); llama-bench defaults n_batch=2048, n_ubatch=512, 5 repetitions, mean +/- sd",
+      "engine_version": "build 1411d9275 (7073)",
+      "notes": "llama.cpp llama-bench (CUDA backend); GPU as stated: H100 80GB HBM3 (SXM5); model as stated: Llama 2 7B (llama-2-7b.Q4_0.gguf from TheBloke/Llama-2-7B-GGUF) (Q4_0 GGUF); raw cells C031, C032",
+      "metrics": [
+        {
+          "definition": "prefill_tps",
+          "value": 10162.9,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           pp512 |    10162.90 \u00b1 104.35 |",
+          "prompt_tokens": 512
+        },
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 303.08,
+          "quote": "| llama 7B Q4_0                  |   3.56 GiB |     6.74 B | CUDA       |  99 |  0 |           tg128 |        303.08 \u00b1 0.80 |"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-8B|FP16|sglang|c2048|p128|o8|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/sgl-project/sglang/issues/1008",
+      "captured_at": "2026-09-25",
+      "underspecified": false,
+      "config_quote": "TP=1, bs=1, --input 128 --output 8, cuda graph (default)",
+      "engine_version": "sglang commit 79ece2c51f47ee6b792c6282a6f76987892c5f8d (Fri Aug 30 2024); PyTorch 2.4.0+cu121; flashinfer 0.1.6; CUDA driver 545.23.08; GPUs: NVIDIA H100 80GB HBM3",
+      "notes": "SGLang (sglang.bench_latency); GPU as stated: NVIDIA H100 80GB HBM3 (SXM5); model as stated: Meta Llama 3 8B (BF16 (model default dtype; not explicitly stated)); raw cells C094",
+      "metrics": [
+        {
+          "definition": "decode_tps_single_stream",
+          "value": 135.64,
+          "quote": "# Benchmark llama-3-8B (TP=1, bs=1) with cuda graph\n# Decode.  median latency: 0.00737 s, median throughput:    135.64 token/s\npython3 -m sglang.bench_latency --model meta-llama/Meta-Llama-3-8B --batch-size 1 --input 128 --output 8"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-8B|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: H100 SXM5 80GB; model as stated: meta-llama/Meta-Llama-3-8B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C081",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 993.933,
+          "quote": "Nvidia H100 GPU,1,vLLM,meta-llama/Meta-Llama-3-8B,128,1,0.9939330658666686,257.5626154229798"
+        }
+      ]
+    },
+    "meta-llama/Meta-Llama-3-8B|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: H100 SXM5 80GB; model as stated: meta-llama/Meta-Llama-3-8B (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C082",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 8097.76,
+          "quote": "Nvidia H100 GPU,1,vLLM,meta-llama/Meta-Llama-3-8B,1024,1,8.097759872433327,252.90945054716576"
+        }
+      ]
+    },
+    "mistralai/Mistral-7B-v0.1|FP16|vllm|c2048|p128|o128|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: H100 SXM5 80GB; model as stated: mistralai/Mistral-7B-v0.1 (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C083",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 943.837,
+          "quote": "Nvidia H100 GPU,1,vLLM,mistralai/Mistral-7B-v0.1,128,1,0.9438365818340875,271.2333945591876"
+        }
+      ]
+    },
+    "mistralai/Mistral-7B-v0.1|FP16|vllm|c2048|p1024|o1024|b1": {
+      "evidence": "third-party-measured",
+      "source_url": "https://github.com/argonne-lcf/LLM-Inference-Bench/blob/ae7e7a41173badc99f7b59da1657a0172813e5e5/Plots/All_results.csv",
+      "captured_at": "2026-09-25",
+      "underspecified": true,
+      "config_quote": "batch size 1, TP=1 (Num of Hardware=1); other flags not stated",
+      "engine_version": null,
+      "notes": "vLLM; GPU as stated: H100 SXM5 80GB; model as stated: mistralai/Mistral-7B-v0.1 (16-bit (FP16/BF16 not distinguished; paper: 'we used 16 bits')); raw cells C084",
+      "metrics": [
+        {
+          "definition": "e2e_latency_ms",
+          "value": 7924.012,
+          "quote": "Nvidia H100 GPU,1,vLLM,mistralai/Mistral-7B-v0.1,1024,1,7.924012167198816,258.4549287389572"
+        }
+      ]
+    }
+  }
+}
