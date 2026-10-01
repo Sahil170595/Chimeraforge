@@ -74,6 +74,7 @@ def _candidate_summary(c) -> dict:
         "model": c.model,
         "quant": c.quant,
         "backend": c.backend,
+        "mode": c.mode,
         "replicas": c.n_agents,
         "tensor_parallel": c.tensor_parallel,
         "pipeline_parallel": c.pipeline_parallel,
@@ -106,7 +107,7 @@ def plan_deployment(
     model: str | None = None,
     model_size: str = "3b",
     request_rate: float = 1.0,
-    latency_slo_ms: float = 5000.0,
+    latency_slo_ms: float | None = None,
     quality_target: float = 0.5,
     budget_usd_month: float = 100000.0,
     avg_output_tokens: int = 128,
@@ -133,6 +134,7 @@ def plan_deployment(
     lora_adapters: int = 0,
     lora_rank: int = 16,
     lora_target: str = "qv",
+    mode: str = "online",
     allow_network: bool = True,
 ) -> dict:
     """Plan a deployment; return the top candidates or an actionable error.
@@ -141,6 +143,8 @@ def plan_deployment(
     (``Qwen/Qwen3-8B``); if omitted, plans the registry size class ``model_size``.
     ``workload`` sets request-size variance for the queueing tail (steady / chatbot /
     bursty / agent) -- real traffic is not deterministic and the p95 moves a lot.
+    ``mode="batch"`` plans an offline backlog (no latency gate, ranked by $/1M
+    tokens); a latency target with it is an error. ``latency_slo_ms`` None = 5000.
     """
     if workload not in WORKLOAD_CV2:
         return {
@@ -175,6 +179,7 @@ def plan_deployment(
             kv_quant=kv_quant,
             latency_slo=latency_slo_ms,
             context_length=context_length,
+            mode=mode,
         )
     except ValueError as exc:
         return {"ok": False, "error": str(exc)}
@@ -212,6 +217,7 @@ def plan_deployment(
             lora_adapters=lora_adapters,
             lora_rank=lora_rank,
             lora_target=lora_target,
+            mode=mode,
             allow_network=allow_network,
         )
     except ResolverError as exc:
