@@ -28,11 +28,26 @@ def workload(
         "per-request token counts give a measured distribution, not a bucket "
         "approximation.",
     ),
-    from_metrics: str = typer.Option(
+    from_metrics: list[str] = typer.Option(
         None,
         "--from-metrics",
         metavar="URL_OR_PATH",
-        help="A live /metrics endpoint (http...) or a saved scrape. Requires --engine.",
+        help="A live /metrics endpoint (http...) or a saved scrape. Requires --engine. "
+        "Pass it twice (two saved scrapes, with --interval) for a window.",
+    ),
+    interval: float = typer.Option(
+        None,
+        "--interval",
+        metavar="SECONDS",
+        help="Make a window: with a URL, scrape twice this far apart (the real gap is "
+        "timed); with two saved scrapes, the gap between them. A window measures the "
+        "request rate and, with --hardware, MFU/MBU.",
+    ),
+    hardware: str = typer.Option(
+        None,
+        "--hardware",
+        help="The GPU the engine runs on (a hardware DB name), for MFU/MBU from the "
+        "engine's FLOP/byte counters over a window.",
     ),
     engine: str = typer.Option(
         None,
@@ -63,9 +78,12 @@ def workload(
     already measures them.
     """
     from chimeraforge.workload import (
+        PROFILE_FIELDS,
         WorkloadError,
         fetch_metrics,
         format_markdown,
+        from_metrics_window,
+        scrape_window,
     )
     from chimeraforge.workload import (
         from_log as derive_from_log,
@@ -74,24 +92,69 @@ def workload(
         from_metrics as derive_from_metrics,
     )
 
-    if bool(from_log) == bool(from_metrics):
+    sources = list(from_metrics or [])
+    if bool(from_log) == bool(sources):
         _fail("pass exactly one of --from-log or --from-metrics.")
-    if from_metrics and not engine:
+    if sources and not engine:
         _fail("--from-metrics needs --engine (vllm or sglang).")
+    if from_log and (interval is not None or hardware):
+        _fail("--interval and --hardware apply to --from-metrics.")
+    if len(sources) > 2:
+        _fail("--from-metrics takes at most two scrapes (the start and end of a window).")
+    is_url = [s.startswith(("http://", "https://")) for s in sources]
+    if len(sources) == 2:
+        if interval is None:
+            _fail("two saved scrapes need --interval: the seconds between them.")
+        if any(is_url):
+            _fail(
+                "two saved scrapes must be files; for a live endpoint pass one URL "
+                "with --interval and it is scraped twice."
+            )
+    if len(sources) == 1 and interval is not None and not is_url[0]:
+        _fail(
+            "--interval with one saved file has nothing to difference: pass two saved "
+            "scrapes (--from-metrics twice), or a live URL."
+        )
+    if interval is not None and interval <= 0:
+        _fail("--interval must be a positive number of seconds.")
+    gpu = None
+    if hardware:
+        from chimeraforge.planner.hardware import get_gpu
+
+        gpu = get_gpu(hardware)
+        if gpu is None:
+            _fail(
+                f"'{escape(hardware)}' is not in the hardware DB; run "
+                "`chimeraforge plan --list-hardware` for the names."
+            )
+
+    def _read(path: str) -> str:
+        try:
+            return Path(path).read_text(encoding="utf-8")
+        except OSError as exc:
+            _fail(f"could not read {escape(path)}: {exc}")
 
     try:
         if from_log:
             profile = derive_from_log(from_log, engine=engine or "unknown")
+        elif len(sources) == 2:
+            profile = from_metrics_window(
+                _read(sources[0]),
+                _read(sources[1]),
+                interval,
+                engine=engine,
+                source=f"{sources[0]} -> {sources[1]}",
+                engine_version=engine_version,
+                gpu=gpu,
+            )
+        elif interval is not None:
+            profile = scrape_window(
+                sources[0], interval, engine=engine, engine_version=engine_version, gpu=gpu
+            )
         else:
-            if from_metrics.startswith(("http://", "https://")):
-                text = fetch_metrics(from_metrics)
-            else:
-                try:
-                    text = Path(from_metrics).read_text(encoding="utf-8")
-                except OSError as exc:
-                    _fail(f"could not read {escape(from_metrics)}: {exc}")
+            text = fetch_metrics(sources[0]) if is_url[0] else _read(sources[0])
             profile = derive_from_metrics(
-                text, engine=engine, source=from_metrics, engine_version=engine_version
+                text, engine=engine, source=sources[0], engine_version=engine_version
             )
     except WorkloadError as exc:
         _fail(escape(str(exc)))
@@ -113,15 +176,7 @@ def workload(
     for col in ("Field", "Value", "Provenance", "How"):
         table.add_column(col)
     any_row = False
-    for name in (
-        "request_rate",
-        "prompt_tokens",
-        "output_tokens",
-        "workload_cv2",
-        "prefix_cache_hit_rate",
-        "peak_concurrency",
-        "queue_depth",
-    ):
+    for name in PROFILE_FIELDS:
         f = getattr(profile, name)
         if f is not None:
             any_row = True

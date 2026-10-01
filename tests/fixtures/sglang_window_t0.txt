@@ -1,0 +1,58 @@
+# HELP sglang:num_requests_total n
+# TYPE sglang:num_requests_total counter
+sglang:num_requests_total{is_streaming="true",model_name="Qwen/Qwen3-8B"} 500.0
+# HELP sglang:prompt_tokens_histogram p
+# TYPE sglang:prompt_tokens_histogram histogram
+sglang:prompt_tokens_histogram_bucket{le="256.0",model_name="Qwen/Qwen3-8B"} 0.0
+sglang:prompt_tokens_histogram_bucket{le="1024.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:prompt_tokens_histogram_bucket{le="4096.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:prompt_tokens_histogram_bucket{le="+Inf",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:prompt_tokens_histogram_count{model_name="Qwen/Qwen3-8B"} 500.0
+sglang:prompt_tokens_histogram_sum{model_name="Qwen/Qwen3-8B"} 150000.0
+# HELP sglang:generation_tokens_histogram g
+# TYPE sglang:generation_tokens_histogram histogram
+sglang:generation_tokens_histogram_bucket{le="128.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:generation_tokens_histogram_bucket{le="256.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:generation_tokens_histogram_bucket{le="1024.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:generation_tokens_histogram_bucket{le="+Inf",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:generation_tokens_histogram_count{model_name="Qwen/Qwen3-8B"} 500.0
+sglang:generation_tokens_histogram_sum{model_name="Qwen/Qwen3-8B"} 40000.0
+# HELP sglang:e2e_request_latency_seconds e
+# TYPE sglang:e2e_request_latency_seconds histogram
+sglang:e2e_request_latency_seconds_bucket{is_streaming="true",le="1.0",model_name="Qwen/Qwen3-8B"} 0.0
+sglang:e2e_request_latency_seconds_bucket{is_streaming="true",le="2.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:e2e_request_latency_seconds_bucket{is_streaming="true",le="4.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:e2e_request_latency_seconds_bucket{is_streaming="true",le="8.0",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:e2e_request_latency_seconds_bucket{is_streaming="true",le="+Inf",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:e2e_request_latency_seconds_count{is_streaming="true",model_name="Qwen/Qwen3-8B"} 500.0
+sglang:e2e_request_latency_seconds_sum{is_streaming="true",model_name="Qwen/Qwen3-8B"} 750.0
+# HELP sglang:token_usage t
+# TYPE sglang:token_usage gauge
+sglang:token_usage{model_name="Qwen/Qwen3-8B"} 0.2
+# HELP sglang:full_token_usage t
+# TYPE sglang:full_token_usage gauge
+sglang:full_token_usage{model_name="Qwen/Qwen3-8B"} 0.2
+# HELP sglang:swa_token_usage t
+# TYPE sglang:swa_token_usage gauge
+sglang:swa_token_usage{model_name="Qwen/Qwen3-8B"} 0.0
+# HELP sglang:mamba_usage t
+# TYPE sglang:mamba_usage gauge
+sglang:mamba_usage{model_name="Qwen/Qwen3-8B"} 0.0
+# HELP sglang:num_running_reqs r
+# TYPE sglang:num_running_reqs gauge
+sglang:num_running_reqs{model_name="Qwen/Qwen3-8B"} 5.0
+# HELP sglang:num_queue_reqs q
+# TYPE sglang:num_queue_reqs gauge
+sglang:num_queue_reqs{model_name="Qwen/Qwen3-8B"} 0.0
+# HELP sglang:cache_hit_rate c
+# TYPE sglang:cache_hit_rate gauge
+sglang:cache_hit_rate{model_name="Qwen/Qwen3-8B"} 0.3
+# HELP sglang:estimated_flops_per_gpu_total f
+# TYPE sglang:estimated_flops_per_gpu_total counter
+sglang:estimated_flops_per_gpu_total{model_name="Qwen/Qwen3-8B"} 5e+14
+# HELP sglang:estimated_read_bytes_per_gpu_total rb
+# TYPE sglang:estimated_read_bytes_per_gpu_total counter
+sglang:estimated_read_bytes_per_gpu_total{model_name="Qwen/Qwen3-8B"} 5e+13
+# HELP sglang:estimated_write_bytes_per_gpu_total wb
+# TYPE sglang:estimated_write_bytes_per_gpu_total counter
+sglang:estimated_write_bytes_per_gpu_total{model_name="Qwen/Qwen3-8B"} 1e+12

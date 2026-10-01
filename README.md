@@ -198,10 +198,16 @@ SGLang ships with no measured rows, and the planner says so rather than borrowin
 ```bash
 chimeraforge workload --from-log requests.jsonl --out workload.json
 chimeraforge workload --from-metrics http://localhost:8000/metrics --engine vllm --out workload.json
+chimeraforge workload --from-metrics http://localhost:8000/metrics --interval 60 --engine vllm --hardware "H100 80GB"
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --workload-profile workload.json
 ```
 
 Reads the request rate, prompt/output lengths, traffic variance and prefix-cache hit rate off a JSONL request log or a live vLLM/SGLang `/metrics` endpoint, so `plan` stops taking them as typed-in guesses. The variance one matters most -- it drives the whole queueing tail, and a measured CV^2 is not one of four presets.
+
+- **A window** (`--interval 60`) scrapes twice and times the real gap. Two saved scrapes with `--interval` work too, and the output labels that interval as stated rather than measured. A window turns the counters into a **measured request rate**, and the means, variance and cache hit rate describe the window rather than the engine's lifetime. A counter reset between the scrapes (an engine restart) is an error.
+- **KV-cache pressure** is read from vLLM's `kv_cache_usage_perc` and SGLang's `token_usage`, plus its SWA and Mamba pools when they are non-zero. All are fractions 0-1, and each is labeled instantaneous.
+- **MFU and MBU** come from each engine's FLOP and byte counters over a window, against the `--hardware` card's dense FP16 peak and memory bandwidth. They are labeled `estimated`, because the counts come from the engine's own analytical model rather than hardware counters. The counters exist only when the server runs with `--enable-mfu-metrics`, and the profile says so when they are missing.
+- Names were read from vLLM v0.30.0 and SGLang v0.5.20 source. The test fixtures are real `prometheus_client` output from those declarations (`scripts/make_engine_metrics_fixtures.py`). A hand-typed fixture had hidden that the vLLM prefix-cache counters are exposed with a `_total` suffix, so that hit rate was never read from a real endpoint until now.
 
 Metric names are per-engine and explicit; an unknown `--engine` is an error and pointing the wrong one at an endpoint fails loud, because a scraper that silently falls back to a renamed metric reports a fabricated measurement. A log yields `measured` mean and variance; a Prometheus histogram yields an exact mean but a bucket-approximated variance, labeled `estimated`. A single scrape is not a rate, so `request_rate` stays absent rather than being divided out of an unmeasured uptime -- and any field the source did not expose stays a required input to `plan`, never a default. An explicit flag always beats the profile.
 

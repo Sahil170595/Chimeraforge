@@ -30,17 +30,25 @@ import json
 import math
 import re
 import statistics
+import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 SCHEMA_VERSION = 1
+# Indirection so tests can drive the live two-scrape path without waiting.
+_monotonic = time.monotonic
+_sleep = time.sleep
 
-# Per-engine metric names, verified against each project's own metrics reference
-# rather than recalled. Anything not listed is not read -- see the module docstring
-# on why a "close enough" fallback is the failure mode this guards.
+# Per-engine metric names, read from each engine's source at a pinned tag rather
+# than recalled. Anything not listed is not read -- see the module docstring on why
+# a "close enough" fallback is the failure mode this guards.
 #
-# vLLM: docs.vllm.ai/en/stable/design/metrics.html
-# SGLang: docs.sglang.io/references/production_metrics.html
+# vLLM v0.30.0: vllm/v1/metrics/loggers.py, vllm/v1/metrics/perf.py
+# SGLang v0.5.20: python/sglang/srt/observability/metrics_collector.py
+#
+# Names are as EXPOSED, not as declared: prometheus_client exposes Counter("x") as
+# x_total, so a counter read by its declared name matches nothing on a real
+# endpoint (COUNTER_KEYS below are guarded for the suffix).
 ENGINE_METRICS: dict[str, dict[str, str]] = {
     "vllm": {
         "prefix": "vllm:",
@@ -50,20 +58,69 @@ ENGINE_METRICS: dict[str, dict[str, str]] = {
         "decode_tokens": "vllm:request_generation_tokens",
         "running": "vllm:num_requests_running",
         "waiting": "vllm:num_requests_waiting",
-        "prefix_cache_hits": "vllm:prefix_cache_hits",
-        "prefix_cache_queries": "vllm:prefix_cache_queries",
+        "prefix_cache_hits": "vllm:prefix_cache_hits_total",
+        "prefix_cache_queries": "vllm:prefix_cache_queries_total",
+        # A fraction 0-1 despite "perc" ("1 means 100 percent usage").
+        "kv_usage": "vllm:kv_cache_usage_perc",
+        # Off unless the server runs with --enable-mfu-metrics.
+        "flops": "vllm:estimated_flops_per_gpu_total",
+        "read_bytes": "vllm:estimated_read_bytes_per_gpu_total",
+        "write_bytes": "vllm:estimated_write_bytes_per_gpu_total",
     },
     "sglang": {
         "prefix": "sglang:",
-        # SGLang has no request-success counter; rate is derived from the e2e
-        # histogram's _count instead, which is the same quantity by another route.
+        # Incremented once per finished request, next to the e2e histogram.
+        "requests_total": "sglang:num_requests_total",
         "e2e_latency": "sglang:e2e_request_latency_seconds",
+        "prompt_tokens": "sglang:prompt_tokens_histogram",
+        "decode_tokens": "sglang:generation_tokens_histogram",
         "running": "sglang:num_running_reqs",
         "waiting": "sglang:num_queue_reqs",
         # A rate gauge, not the hits/queries counters vLLM exposes.
         "cache_hit_rate": "sglang:cache_hit_rate",
+        # Fractions 0-1: token_usage is the fullest pool; SWA/Mamba are hybrid-only.
+        "kv_usage": "sglang:token_usage",
+        "swa_usage": "sglang:swa_token_usage",
+        "mamba_usage": "sglang:mamba_usage",
+        # Off unless the server runs with --enable-mfu-metrics.
+        "flops": "sglang:estimated_flops_per_gpu_total",
+        "read_bytes": "sglang:estimated_read_bytes_per_gpu_total",
+        "write_bytes": "sglang:estimated_write_bytes_per_gpu_total",
     },
 }
+# Keys that name Counters, which a window differences and which must end in _total.
+COUNTER_KEYS = (
+    "requests_total",
+    "prefix_cache_hits",
+    "prefix_cache_queries",
+    "flops",
+    "read_bytes",
+    "write_bytes",
+)
+# The server flag that turns the FLOP/byte counters on (same name in both engines).
+MFU_METRICS_FLAG = "--enable-mfu-metrics"
+# Series whose value only ever grows; a window takes their difference.
+CUMULATIVE_SUFFIXES = ("_total", "_sum", "_count", "_bucket")
+TERA = 1e12
+GIGA = 1e9
+# Profile fields in display order.
+PROFILE_FIELDS = (
+    "request_rate",
+    "prompt_tokens",
+    "output_tokens",
+    "workload_cv2",
+    "arrival_cv2",
+    "prefix_cache_hit_rate",
+    "peak_concurrency",
+    "queue_depth",
+    "kv_cache_usage",
+    "swa_kv_usage",
+    "mamba_state_usage",
+    "achieved_tflops",
+    "achieved_bandwidth_gbps",
+    "mfu",
+    "mbu",
+)
 
 # Log field names. Anything else is reported as unreadable rather than guessed at.
 LOG_FIELDS = {
@@ -118,6 +175,15 @@ class WorkloadProfile:
     arrival_cv2: Field | None = None
     peak_concurrency: Field | None = None
     queue_depth: Field | None = None
+    # KV-cache pressure (fractions 0-1, instantaneous) and, over a window, how hard
+    # the GPU was driven. Context for the planner, not inputs to it.
+    kv_cache_usage: Field | None = None
+    swa_kv_usage: Field | None = None
+    mamba_state_usage: Field | None = None
+    achieved_tflops: Field | None = None
+    achieved_bandwidth_gbps: Field | None = None
+    mfu: Field | None = None
+    mbu: Field | None = None
     absent: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
@@ -134,16 +200,7 @@ class WorkloadProfile:
             "absent": list(self.absent),
             "notes": list(self.notes),
         }
-        for name in (
-            "request_rate",
-            "prompt_tokens",
-            "output_tokens",
-            "workload_cv2",
-            "arrival_cv2",
-            "prefix_cache_hit_rate",
-            "peak_concurrency",
-            "queue_depth",
-        ):
+        for name in PROFILE_FIELDS:
             f = getattr(self, name)
             if f is not None:
                 out["fields"][name] = asdict(f)
@@ -453,61 +510,99 @@ def _hist_stats(samples: dict, base: str) -> tuple[float, float | None, int] | N
     return mean, cv2, int(count)
 
 
-def from_metrics(
-    text: str, *, engine: str, source: str, engine_version: str = "unknown"
-) -> WorkloadProfile:
-    """Derive a profile from a Prometheus `/metrics` scrape.
-
-    Rate needs two scrapes to be a rate, so a single scrape reports totals and
-    distributions and leaves `request_rate` absent rather than dividing a counter
-    by a process uptime nobody measured.
-    """
+def _engine_names(engine: str) -> dict[str, str]:
     if engine not in ENGINE_METRICS:
         raise WorkloadError(
             f"unknown engine {engine!r}: metric names differ per engine and per "
             "version, and guessing one fabricates a measurement. Known engines: "
             f"{', '.join(sorted(ENGINE_METRICS))}"
         )
-    names = ENGINE_METRICS[engine]
+    return ENGINE_METRICS[engine]
+
+
+def _checked_samples(text: str, names: dict[str, str], engine: str, source: str) -> dict:
     samples = parse_prometheus(text)
     if not samples:
         raise WorkloadError(f"no Prometheus samples parsed from {source}")
-
-    seen_prefix = any(k.startswith(names["prefix"]) for k in samples)
-    if not seen_prefix:
+    if not any(k.startswith(names["prefix"]) for k in samples):
         found = sorted({k.split(":")[0] + ":" for k in samples if ":" in k})
         raise WorkloadError(
             f"no {names['prefix']} metrics in {source} -- this does not look like a "
             f"{engine} endpoint. Prefixes present: {', '.join(found) or 'none'}"
         )
+    return samples
 
-    profile = WorkloadProfile(
-        captured_at=_today(), source=source, engine=engine, engine_version=engine_version
-    )
-    profile.notes.append(
-        "a single scrape shows totals and distributions, not a rate: request_rate "
-        "must still be supplied explicitly, or derived from a request log"
-    )
-    profile.absent.append("request_rate")
 
+def _series_key(labels: dict) -> tuple:
+    return tuple(sorted(labels.items()))
+
+
+def _delta(first: dict, second: dict) -> dict:
+    """Per-series growth of every cumulative series between two scrapes.
+
+    A series absent from the first scrape started at zero: the client creates a
+    label combination the first time it is used. A series that shrank means the
+    counter was reset, and differencing across a restart is not a window.
+    """
+    out: dict[str, list[tuple[dict, float]]] = {}
+    for name, rows in second.items():
+        if not name.endswith(CUMULATIVE_SUFFIXES):
+            continue
+        before = {_series_key(labels): v for labels, v in first.get(name, [])}
+        grown = []
+        for labels, value in rows:
+            d = value - before.get(_series_key(labels), 0.0)
+            if d < 0:
+                raise WorkloadError(
+                    f"{name} went down between the scrapes: the counter was reset, most "
+                    "likely an engine restart. Take both scrapes from one engine lifetime."
+                )
+            grown.append((labels, d))
+        out[name] = grown
+    return out
+
+
+def _max(samples: dict, name: str | None) -> tuple[float, int] | None:
+    rows = samples.get(name) if name else None
+    return (max(v for _, v in rows), len(rows)) if rows else None
+
+
+def _fill(
+    profile: WorkloadProfile,
+    counters: dict,
+    gauges: dict,
+    names: dict[str, str],
+    engine: str,
+    scope: str,
+) -> None:
+    """Token lengths, variance and cache hit rate from ``counters``; the rest from
+    ``gauges``. For one scrape both are that scrape; for a window, counters are the
+    window's growth and gauges the second scrape."""
     for field_name, key in (("prompt_tokens", "prompt_tokens"), ("output_tokens", "decode_tokens")):
         metric = names.get(key)
-        stats = _hist_stats(samples, metric) if metric else None
+        stats = _hist_stats(counters, metric) if metric else None
         if stats:
             mean, _, count = stats
             profile.sample_count = max(profile.sample_count, count)
             setattr(
                 profile,
                 field_name,
-                Field(round(mean, 2), PROV_MEASURED, f"{metric} sum/count over {count} requests"),
+                Field(
+                    round(mean, 2),
+                    PROV_MEASURED,
+                    f"{metric} sum/count over {count} requests ({scope})",
+                ),
             )
         else:
             profile.absent.append(field_name)
+            idle = metric and f"{metric}_count" in counters
             profile.notes.append(
-                f"{field_name}: {metric or 'no metric'} not exposed by this {engine} build"
+                f"{field_name}: no requests completed {scope}"
+                if idle
+                else f"{field_name}: {metric or 'no metric'} not exposed by this {engine} build"
             )
 
-    e2e = _hist_stats(samples, names["e2e_latency"]) if names.get("e2e_latency") else None
+    e2e = _hist_stats(counters, names["e2e_latency"]) if names.get("e2e_latency") else None
     if e2e:
         _, cv2, count = e2e
         profile.sample_count = max(profile.sample_count, count)
@@ -516,24 +611,24 @@ def from_metrics(
                 round(cv2, 4),
                 # Buckets, not samples: this is an approximation by construction.
                 PROV_ESTIMATED,
-                f"approximated from {names['e2e_latency']} bucket midpoints",
+                f"approximated from {names['e2e_latency']} bucket midpoints ({scope})",
             )
     if profile.workload_cv2 is None:
         profile.absent.append("workload_cv2")
 
-    if engine == "vllm":
-        hits = _total(samples, names["prefix_cache_hits"])
-        queries = _total(samples, names["prefix_cache_queries"])
+    if "prefix_cache_hits" in names:
+        hits = _total(counters, names["prefix_cache_hits"])
+        queries = _total(counters, names["prefix_cache_queries"])
         if hits is not None and queries:
             profile.prefix_cache_hit_rate = Field(
                 round(min(hits / queries, 1.0), 4),
                 PROV_MEASURED,
-                f"{names['prefix_cache_hits']} / {names['prefix_cache_queries']}",
+                f"{names['prefix_cache_hits']} / {names['prefix_cache_queries']} ({scope})",
             )
-    elif engine == "sglang":
-        rate = _total(samples, names["cache_hit_rate"])
+    elif "cache_hit_rate" in names:
+        rate = _total(gauges, names["cache_hit_rate"])
         if rate is not None:
-            # SGLang publishes a percentage gauge, not the two counters.
+            # SGLang publishes a rate gauge, not the two counters.
             profile.prefix_cache_hit_rate = Field(
                 round(min(rate / 100.0 if rate > 1 else rate, 1.0), 4),
                 PROV_MEASURED,
@@ -542,17 +637,215 @@ def from_metrics(
     if profile.prefix_cache_hit_rate is None:
         profile.absent.append("prefix_cache_hit_rate")
 
-    running = _total(samples, names["running"]) if names.get("running") else None
+    running = _total(gauges, names["running"]) if names.get("running") else None
     if running is not None:
         profile.peak_concurrency = Field(
             running, PROV_MEASURED, f"{names['running']} at scrape time (instantaneous)"
         )
-    waiting = _total(samples, names["waiting"]) if names.get("waiting") else None
+    waiting = _total(gauges, names["waiting"]) if names.get("waiting") else None
     if waiting is not None:
         profile.queue_depth = Field(
             waiting, PROV_MEASURED, f"{names['waiting']} at scrape time (instantaneous)"
         )
+
+    kv = _max(gauges, names.get("kv_usage"))
+    if kv is not None:
+        value, n = kv
+        across = f", the fullest of {n} series" if n > 1 else ""
+        profile.kv_cache_usage = Field(
+            round(value, 4),
+            PROV_MEASURED,
+            f"{names['kv_usage']} at scrape time (instantaneous; fraction 0-1{across})",
+        )
+    for attr, key in (("swa_kv_usage", "swa_usage"), ("mamba_state_usage", "mamba_usage")):
+        pool = _max(gauges, names.get(key))
+        if pool is None:
+            continue
+        if pool[0] > 0:
+            setattr(
+                profile,
+                attr,
+                Field(
+                    round(pool[0], 4),
+                    PROV_MEASURED,
+                    f"{names[key]} at scrape time (instantaneous; fraction 0-1)",
+                ),
+            )
+        else:
+            # Registered for every model, so 0 is not evidence the pool exists.
+            profile.notes.append(
+                f"{names[key]} is 0: the model has no such layers or the pool is empty; "
+                "not reported"
+            )
+
+
+def _fill_utilisation(
+    profile: WorkloadProfile,
+    counters: dict,
+    names: dict[str, str],
+    seconds: float,
+    gpu,
+) -> None:
+    """Achieved FLOP/s and bytes/s per GPU from the engine's counters over the window,
+    and MFU/MBU against ``gpu``'s peaks. Each counter series is one GPU's count, so
+    the figure is the mean over series."""
+    flops = [v for _, v in counters.get(names.get("flops", ""), [])]
+    moved: dict[tuple, float] = {}
+    for key in ("read_bytes", "write_bytes"):
+        for labels, v in counters.get(names.get(key, ""), []):
+            moved[_series_key(labels)] = moved.get(_series_key(labels), 0.0) + v
+    if not flops and not moved:
+        profile.notes.append(
+            f"MFU/MBU: {names.get('flops', 'no FLOP counter')} not exposed -- start the "
+            f"server with {MFU_METRICS_FLAG} to have them measured"
+        )
+        return
+    basis = (
+        "the engine's own analytical FLOP/byte count per step, not hardware counters, "
+        f"over {seconds:g} s"
+    )
+    tflops = gbps = None
+    if flops:
+        tflops = statistics.fmean(flops) / seconds / TERA
+        profile.achieved_tflops = Field(
+            round(tflops, 3),
+            PROV_ESTIMATED,
+            f"mean of {len(flops)} {names['flops']} series; {basis}",
+        )
+    if moved:
+        gbps = statistics.fmean(moved.values()) / seconds / GIGA
+        profile.achieved_bandwidth_gbps = Field(
+            round(gbps, 3),
+            PROV_ESTIMATED,
+            f"read + write bytes, mean of {len(moved)} series; {basis}",
+        )
+    if gpu is None:
+        profile.notes.append(
+            "MFU/MBU: pass --hardware to turn achieved FLOP/s and bytes/s into utilisation"
+        )
+        return
+    if tflops is not None:
+        if gpu.fp16_tflops > 0:
+            profile.mfu = Field(
+                round(tflops / gpu.fp16_tflops, 4),
+                PROV_ESTIMATED,
+                f"{tflops:.1f} TFLOP/s over {gpu.name}'s dense FP16 peak "
+                f"{gpu.fp16_tflops:g}; {basis}. An FP8/INT8 compute path has a higher "
+                "peak, so this overstates MFU there",
+            )
+        else:
+            profile.notes.append(f"MFU: {gpu.name} has no published dense FP16 figure")
+    if gbps is not None:
+        if gpu.bandwidth_gbps > 0:
+            profile.mbu = Field(
+                round(gbps / gpu.bandwidth_gbps, 4),
+                PROV_ESTIMATED,
+                f"{gbps:.1f} GB/s over {gpu.name}'s {gpu.bandwidth_gbps:g} GB/s; {basis}",
+            )
+        else:
+            profile.notes.append(f"MBU: {gpu.name} has no published memory bandwidth")
+
+
+def from_metrics(
+    text: str, *, engine: str, source: str, engine_version: str = "unknown"
+) -> WorkloadProfile:
+    """Derive a profile from a Prometheus `/metrics` scrape.
+
+    Rate needs two scrapes to be a rate, so a single scrape reports totals and
+    distributions and leaves `request_rate` absent rather than dividing a counter
+    by a process uptime nobody measured. :func:`from_metrics_window` takes two.
+    """
+    names = _engine_names(engine)
+    samples = _checked_samples(text, names, engine, source)
+    profile = WorkloadProfile(
+        captured_at=_today(), source=source, engine=engine, engine_version=engine_version
+    )
+    profile.notes.append(
+        "a single scrape shows totals and distributions, not a rate: request_rate "
+        "must still be supplied explicitly, or derived from a request log or a "
+        "two-scrape window (--interval)"
+    )
+    profile.absent.append("request_rate")
+    _fill(profile, samples, samples, names, engine, "since the engine started")
+    profile.notes.append("MFU/MBU need a window: scrape twice with --interval (and --hardware)")
     return profile
+
+
+def from_metrics_window(
+    first: str,
+    second: str,
+    seconds: float,
+    *,
+    engine: str,
+    source: str,
+    engine_version: str = "unknown",
+    gpu=None,
+    interval_basis: str = "stated",
+) -> WorkloadProfile:
+    """Derive a profile from two scrapes ``seconds`` apart.
+
+    Counters and histograms are differenced, so the request rate is measured and
+    token lengths, variance and cache hit rate describe the window rather than the
+    engine's whole lifetime. Gauges come from the second scrape. ``gpu`` (anything
+    with ``name``, ``fp16_tflops`` and ``bandwidth_gbps``) turns the FLOP/byte
+    counters into MFU/MBU. ``interval_basis`` is "measured" when the caller timed the
+    gap itself, else the interval is recorded as stated.
+    """
+    if not seconds or seconds <= 0:
+        raise WorkloadError("the interval between scrapes must be a positive number of seconds")
+    names = _engine_names(engine)
+    s0 = _checked_samples(first, names, engine, source)
+    s1 = _checked_samples(second, names, engine, source)
+    counters = _delta(s0, s1)
+    profile = WorkloadProfile(
+        captured_at=_today(),
+        source=source,
+        engine=engine,
+        engine_version=engine_version,
+        window_seconds=float(seconds),
+    )
+    how = "measured interval" if interval_basis == "measured" else "interval as stated"
+    done = _total(counters, names["requests_total"])
+    if done is None:
+        profile.absent.append("request_rate")
+        profile.notes.append(f"request_rate: {names['requests_total']} not exposed")
+    else:
+        profile.request_rate = Field(
+            round(done / seconds, 4),
+            PROV_MEASURED,
+            f"{names['requests_total']} grew {done:g} over {seconds:g} s ({how})",
+        )
+    _fill(profile, counters, s1, names, engine, f"over the {seconds:g} s window")
+    _fill_utilisation(profile, counters, names, float(seconds), gpu)
+    return profile
+
+
+def scrape_window(
+    url: str,
+    seconds: float,
+    *,
+    engine: str,
+    engine_version: str = "unknown",
+    gpu=None,
+) -> WorkloadProfile:
+    """Scrape ``url`` twice, ``seconds`` apart, timing the real gap."""
+    if not seconds or seconds <= 0:
+        raise WorkloadError("--interval must be a positive number of seconds")
+    first = fetch_metrics(url)
+    t0 = _monotonic()
+    _sleep(seconds)
+    second = fetch_metrics(url)
+    elapsed = _monotonic() - t0
+    return from_metrics_window(
+        first,
+        second,
+        elapsed,
+        engine=engine,
+        source=url,
+        engine_version=engine_version,
+        gpu=gpu,
+        interval_basis="measured",
+    )
 
 
 def fetch_metrics(url: str, timeout: float = 10.0) -> str:
@@ -584,16 +877,7 @@ def format_markdown(profile: WorkloadProfile) -> str:
         "| Field | Value | Provenance |",
         "|---|---|---|",
     ]
-    for name in (
-        "request_rate",
-        "prompt_tokens",
-        "output_tokens",
-        "workload_cv2",
-        "arrival_cv2",
-        "prefix_cache_hit_rate",
-        "peak_concurrency",
-        "queue_depth",
-    ):
+    for name in PROFILE_FIELDS:
         f = getattr(profile, name)
         if f is not None:
             out.append(f"| {name} | {f.value} | {f.provenance} -- {f.note} |")

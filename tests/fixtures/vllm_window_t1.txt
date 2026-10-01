@@ -1,0 +1,61 @@
+# HELP vllm:request_success_total ok
+# TYPE vllm:request_success_total counter
+vllm:request_success_total{engine="0",finished_reason="stop",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1000.0
+vllm:request_success_total{engine="0",finished_reason="length",model_name="meta-llama/Llama-3.1-8B-Instruct"} 120.0
+# HELP vllm:request_prompt_tokens p
+# TYPE vllm:request_prompt_tokens histogram
+vllm:request_prompt_tokens_bucket{engine="0",le="128.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 0.0
+vllm:request_prompt_tokens_bucket{engine="0",le="256.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 0.0
+vllm:request_prompt_tokens_bucket{engine="0",le="512.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_prompt_tokens_bucket{engine="0",le="1024.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_prompt_tokens_bucket{engine="0",le="2048.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_prompt_tokens_bucket{engine="0",le="+Inf",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_prompt_tokens_count{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_prompt_tokens_sum{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 461440.0
+# HELP vllm:request_generation_tokens g
+# TYPE vllm:request_generation_tokens histogram
+vllm:request_generation_tokens_bucket{engine="0",le="64.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 0.0
+vllm:request_generation_tokens_bucket{engine="0",le="128.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_generation_tokens_bucket{engine="0",le="256.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_generation_tokens_bucket{engine="0",le="512.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_generation_tokens_bucket{engine="0",le="+Inf",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_generation_tokens_count{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:request_generation_tokens_sum{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 115360.0
+# HELP vllm:e2e_request_latency_seconds e
+# TYPE vllm:e2e_request_latency_seconds histogram
+vllm:e2e_request_latency_seconds_bucket{engine="0",le="0.5",model_name="meta-llama/Llama-3.1-8B-Instruct"} 0.0
+vllm:e2e_request_latency_seconds_bucket{engine="0",le="1.5",model_name="meta-llama/Llama-3.1-8B-Instruct"} 60.0
+vllm:e2e_request_latency_seconds_bucket{engine="0",le="2.5",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1060.0
+vllm:e2e_request_latency_seconds_bucket{engine="0",le="5.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:e2e_request_latency_seconds_bucket{engine="0",le="10.0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:e2e_request_latency_seconds_bucket{engine="0",le="+Inf",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:e2e_request_latency_seconds_count{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1120.0
+vllm:e2e_request_latency_seconds_sum{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 2240.0
+# HELP vllm:prefix_cache_queries_total q
+# TYPE vllm:prefix_cache_queries_total counter
+vllm:prefix_cache_queries_total{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 461440.0
+# HELP vllm:prefix_cache_hits_total h
+# TYPE vllm:prefix_cache_hits_total counter
+vllm:prefix_cache_hits_total{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 124576.0
+# HELP vllm:kv_cache_usage_perc kv
+# TYPE vllm:kv_cache_usage_perc gauge
+vllm:kv_cache_usage_perc{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 0.37
+vllm:kv_cache_usage_perc{engine="1",model_name="meta-llama/Llama-3.1-8B-Instruct"} 0.52
+# HELP vllm:num_requests_running r
+# TYPE vllm:num_requests_running gauge
+vllm:num_requests_running{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 14.0
+# HELP vllm:num_requests_waiting w
+# TYPE vllm:num_requests_waiting gauge
+vllm:num_requests_waiting{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 3.0
+# HELP vllm:estimated_flops_per_gpu_total f
+# TYPE vllm:estimated_flops_per_gpu_total counter
+vllm:estimated_flops_per_gpu_total{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 1.2868e+16
+vllm:estimated_flops_per_gpu_total{engine="1",model_name="meta-llama/Llama-3.1-8B-Instruct"} 2.4736e+16
+# HELP vllm:estimated_read_bytes_per_gpu_total rb
+# TYPE vllm:estimated_read_bytes_per_gpu_total counter
+vllm:estimated_read_bytes_per_gpu_total{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 2.0056e+14
+vllm:estimated_read_bytes_per_gpu_total{engine="1",model_name="meta-llama/Llama-3.1-8B-Instruct"} 2.20672e+14
+# HELP vllm:estimated_write_bytes_per_gpu_total wb
+# TYPE vllm:estimated_write_bytes_per_gpu_total counter
+vllm:estimated_write_bytes_per_gpu_total{engine="0",model_name="meta-llama/Llama-3.1-8B-Instruct"} 2.0056e+13
+vllm:estimated_write_bytes_per_gpu_total{engine="1",model_name="meta-llama/Llama-3.1-8B-Instruct"} 2.0056e+13

@@ -34,9 +34,9 @@ vllm:num_requests_running{model_name="m"} 14.0
 # HELP vllm:num_requests_waiting Number of requests waiting to be processed.
 # TYPE vllm:num_requests_waiting gauge
 vllm:num_requests_waiting{model_name="m"} 3.0
-# HELP vllm:prefix_cache_queries Prefix cache queries, in terms of number of queried tokens.
-# TYPE vllm:prefix_cache_queries counter
-vllm:prefix_cache_queries{model_name="m"} 906000.0
-# HELP vllm:prefix_cache_hits Prefix cache hits, in terms of number of cached tokens.
-# TYPE vllm:prefix_cache_hits counter
-vllm:prefix_cache_hits{model_name="m"} 371460.0
+# HELP vllm:prefix_cache_queries_total Prefix cache queries, in terms of number of queried tokens.
+# TYPE vllm:prefix_cache_queries_total counter
+vllm:prefix_cache_queries_total{model_name="m"} 906000.0
+# HELP vllm:prefix_cache_hits_total Prefix cache hits, in terms of number of cached tokens.
+# TYPE vllm:prefix_cache_hits_total counter
+vllm:prefix_cache_hits_total{model_name="m"} 371460.0
