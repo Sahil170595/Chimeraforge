@@ -7,9 +7,12 @@ deployment configurations.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 from chimeraforge.planner.constants import (
+    BATCH_LATENCY_REFUSAL,
+    MAX_REPLICAS,
     CHUNK_BUDGET_CALIBRATED_MAX,
     CHUNK_BUDGET_CALIBRATED_MIN,
     CHUNK_OVERHEAD_CAP,
@@ -37,6 +40,9 @@ from chimeraforge.planner.constants import (
     MODEL_PARAMS_B,
     NVLINK_DOMAIN_SIZE,
     POWER_UTILISATION,
+    PLAN_MODE_BATCH,
+    PLAN_MODE_ONLINE,
+    PLAN_MODES,
     QUANT_BPW,
     QUANT_LEVELS,
     SECONDS_PER_MONTH,
@@ -184,6 +190,9 @@ class Candidate:
     co2e_g_per_1m_tok: float | None = None
     co2e_kg_month: float | None = None
     carbon_basis: str = ""
+    # Planning objective: "online" (latency-gated) or "batch" (backlog drain, no
+    # latency gate; p95_latency_ms is then service time with no queue wait).
+    mode: str = PLAN_MODE_ONLINE
 
 
 def find_models_for_size(target_size: str) -> list[str]:
@@ -277,6 +286,7 @@ def enumerate_candidates(
     tensor_parallel: int | None = 1,
     pipeline_parallel: int | None = 1,
     grid: GridIntensity | None = None,
+    mode: str = PLAN_MODE_ONLINE,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -284,6 +294,12 @@ def enumerate_candidates(
     (rejects cells whose refusal rate < ``safety_target``). When
     ``safety_target`` is None the safety gate is inert but each candidate
     still carries its refusal rate and RTSI risk tier.
+
+    ``mode="batch"`` plans a backlog drain instead of online serving: there is no
+    latency gate (``latency_slo`` is not consulted; TTFT/TPOT targets raise),
+    each unit runs the batch that maximises its throughput, the fleet is the
+    smallest that drains ``request_rate`` at full utilisation, and results rank
+    by $/1M tokens.
 
     ``specs`` maps a model name to a resolved :class:`ModelSpec`. Off-registry
     models drive VRAM from real architecture and throughput from a roofline
@@ -318,6 +334,11 @@ def enumerate_candidates(
     # At least one token is always prefilled -- a fully cached prompt still runs the
     # newest token through the stack, so TTFT never truly reaches zero.
     prefill_tokens_eff = max(int(round(prompt_tokens * (1.0 - hit_rate))), 1)
+    if mode not in PLAN_MODES:
+        raise ValueError(f"mode must be one of: {', '.join(PLAN_MODES)}")
+    batch_mode = mode == PLAN_MODE_BATCH
+    if batch_mode and (ttft_slo or tpot_slo):
+        raise ValueError(BATCH_LATENCY_REFUSAL)
     if lora_adapters < 0:
         raise ValueError("lora_adapters must be >= 0")
     if lora_adapters > MAX_LORA_ADAPTERS:
@@ -756,7 +777,33 @@ def enumerate_candidates(
                     )
                     continue
                 best = None  # (n, b, per_gpu_tps, per_req_tps, lat)
-                for n in range(1, 17):
+                if batch_mode:
+                    # Nobody waits on a backlog, so B is whatever maximises a unit's
+                    # throughput (smallest B at the max, for the least KV held), and
+                    # N is the fewest units that drain the rate at full utilisation.
+                    # $/token = unit cost / unit throughput, so this also minimises it.
+                    unit_by_b = {b: _unit_tps(b) for b in batch_grid}
+                    top_tps = max(unit_by_b.values())
+                    b_star = min(b for b, t in unit_by_b.items() if t >= top_tps)
+                    n_need = math.ceil(required_tps / top_tps) if top_tps > 0 else None
+                    if n_need is None or n_need > MAX_REPLICAS:
+                        _reject(
+                            model,
+                            quant,
+                            "throughput",
+                            f"{backend}: max {MAX_REPLICAS * top_tps:.0f} tok/s at "
+                            f"N={MAX_REPLICAS} B={b_star} < {required_tps:.0f} needed",
+                        )
+                        continue
+                    n_need = max(n_need, 1)
+                    per_req_b = top_tps / b_star
+                    lat = {
+                        "p95_ms": ttft_ms + decode_tokens / per_req_b * 1000.0,
+                        "utilisation": required_tps / (n_need * top_tps),
+                    }
+                    best = (n_need, b_star, top_tps, per_req_b, lat)
+                # Online: the (N, B) search under the latency gates. Skipped in batch.
+                for n in () if batch_mode else range(1, MAX_REPLICAS + 1):
                     for b in batch_grid:
                         per_gpu = _unit_tps(b)
                         if n * per_gpu < required_tps:
@@ -791,13 +838,13 @@ def enumerate_candidates(
                         break
 
                 if best is None:
-                    cap_tps = 16 * _unit_tps(b_max)
+                    cap_tps = MAX_REPLICAS * _unit_tps(b_max)
                     if cap_tps < required_tps:
                         _reject(
                             model,
                             quant,
                             "throughput",
-                            f"{backend}: max {cap_tps:.0f} tok/s at N=16 B={b_max} "
+                            f"{backend}: max {cap_tps:.0f} tok/s at N={MAX_REPLICAS} B={b_max} "
                             f"< {required_tps:.0f} needed",
                         )
                     else:
@@ -1126,12 +1173,19 @@ def enumerate_candidates(
                             f"efficiency near {best_b}/{best_b + pp - 1:.0f} -- raise concurrency "
                             "or use a continuous-batching backend"
                         )
-                if workload_cv2 >= HIGH_VARIANCE_CV2:
+                if batch_mode:
+                    warnings.append(
+                        "batch mode: no latency gate -- p95 is one request's service time "
+                        "with no queue wait (a backlog's wait depends on its size); the fleet "
+                        "runs at full utilisation with no headroom, and arrival variance "
+                        "(--workload) does not apply"
+                    )
+                elif workload_cv2 >= HIGH_VARIANCE_CV2:
                     warnings.append(
                         "high service-time variance (agent/bursty): analytical p95 "
                         "under-estimates the tail -- validate with a load test"
                     )
-                if lat["saturated"]:
+                if lat.get("saturated"):
                     warnings.append("utilisation > 70% safety cap")
                 if quality_tier == "concerning":
                     warnings.append("quality drop concerning (-10 to -15pp)")
@@ -1251,6 +1305,7 @@ def enumerate_candidates(
                         co2e_g_per_1m_tok=None if co2e_1m is None else round(co2e_1m, 3),
                         co2e_kg_month=None if co2e_month is None else round(co2e_month, 3),
                         carbon_basis=grid.basis if grid is not None else "",
+                        mode=mode,
                         effective_batch=best_b,
                         platform=engine_platform or "",
                         tdp_watts=round(tdp_watts, 1),
@@ -1273,9 +1328,12 @@ def enumerate_candidates(
     # Bucketing by the MDE means two configs whose intervals overlap tie here and
     # fall through to the next key, instead of being ordered on a difference the
     # sample size cannot detect.
+    # Batch mode ranks on $/1M tokens: the job's volume is fixed, so the cheapest
+    # token is the cheapest job, whatever the fleet's monthly size.
     def _rank(c: Candidate) -> tuple:
         step = c.quality_mde if c.quality_mde > 0 else 1e-9
-        return (c.monthly_cost, -round(c.quality / step), c.p95_latency_ms)
+        primary = c.cost_per_1m_tok if batch_mode else c.monthly_cost
+        return (primary, -round(c.quality / step), c.p95_latency_ms)
 
     candidates.sort(key=_rank)
     return candidates
@@ -1290,23 +1348,26 @@ def pareto_frontier(candidates: list[Candidate]) -> list[Candidate]:
     frontier is the menu of real trade-offs (cheapest, lowest-latency, highest
     quality, and the bends between) -- not a single cost-sorted point. Returned
     sorted by monthly cost ascending.
+
+    Batch-mode candidates have no latency trade-off to offer, so their frontier is
+    $/1M tokens vs quality, sorted by $/1M tokens.
     """
+    if candidates and all(c.mode == PLAN_MODE_BATCH for c in candidates):
+
+        def axes(c: Candidate) -> tuple[float, ...]:
+            return (c.cost_per_1m_tok, -c.quality)
+
+    else:
+
+        def axes(c: Candidate) -> tuple[float, ...]:
+            return (c.monthly_cost, c.p95_latency_ms, -c.quality)
 
     def dominates(b: Candidate, a: Candidate) -> bool:
-        no_worse = (
-            b.monthly_cost <= a.monthly_cost
-            and b.p95_latency_ms <= a.p95_latency_ms
-            and b.quality >= a.quality
-        )
-        strictly_better = (
-            b.monthly_cost < a.monthly_cost
-            or b.p95_latency_ms < a.p95_latency_ms
-            or b.quality > a.quality
-        )
-        return no_worse and strictly_better
+        pa, pb = axes(a), axes(b)
+        return all(y <= x for x, y in zip(pa, pb)) and any(y < x for x, y in zip(pa, pb))
 
     front = [a for a in candidates if not any(dominates(b, a) for b in candidates if b is not a)]
-    front.sort(key=lambda c: (c.monthly_cost, c.p95_latency_ms))
+    front.sort(key=lambda c: axes(c)[:2])
     return front
 
 

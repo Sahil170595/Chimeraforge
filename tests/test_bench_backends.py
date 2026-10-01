@@ -50,6 +50,7 @@ class TestOllamaBackend:
     async def test_health_check_success(self, backend):
         mock_response = MagicMock()
         mock_response.status_code = 200
+        mock_response.text = "Ollama is running"
 
         with patch("chimeraforge.bench.backends.ollama.httpx.AsyncClient") as mock_client_cls:
             mock_client = AsyncMock()

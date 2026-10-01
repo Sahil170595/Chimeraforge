@@ -25,6 +25,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `--carbon-intensity` takes your own figure, for example a marginal or hourly value from your provider.
   - **Where it shows up:** Candidates carry `co2e_g_per_1m_tok`, `co2e_kg_month` and `carbon_basis` (region, year, source, license, commit). `--report` includes it, and its reproduce command carries the flag. The README credits Ember and OWID.
 
+## [0.44.0] - 2026-10-01
+
+### Added
+- **`plan --mode batch` plans an offline backlog instead of online serving.** Nobody waits on a nightly summarisation job or an embedding backfill, yet the planner still gated every plan on a p95 SLO with 70% utilisation headroom. That forced small batches and extra replicas, and the job paid for latency no one reads. In batch mode:
+  - The latency gate is dropped.
+  - Each unit runs the batch size that maximises its throughput (the smallest such B, so it holds the least KV).
+  - N is the fewest units that drain `--request-rate` at full utilisation.
+  - Results rank by $/1M tokens.
+  - Example: an 8B at 2 req/s on an H100 goes from $0.66/1M (Ollama Q2_K, the cheapest online pick) to $0.065/1M (vLLM AWQ at batch 267) on the same one GPU. That throughput is a roofline estimate and is labeled as one.
+  - **Refused, not ignored:** `--latency-slo`, `--ttft-slo` or `--tpot-slo` with batch mode is an error on the CLI, in `run_plan` and in the MCP `plan` tool.
+  - The candidate's `p95_latency_ms` is service time with no queue wait. A warning says so, and says that `--workload` variance and utilisation headroom do not apply.
+  - `--pareto` trades $/1M tokens against quality.
+  - `--fleet` sizes each GPU type in batch mode.
+  - `--report` states the mode, and its reproduce command includes `--mode batch`.
+  - Every candidate carries `mode`, in JSON and in the MCP summary.
+  - The online default is unchanged, byte for byte.
+- `--latency-slo` (and the MCP `latency_slo_ms`) now defaults to unset, which means 5000 ms online. This lets batch mode tell an explicit latency target from the default. The replica ceiling of 16 is now the named constant `MAX_REPLICAS`.
+
+## [0.43.2] - 2026-10-01
+
+### Fixed
+- **`bench` and `measure` could benchmark a server that was not the named engine.** Each adapter's health check accepted any 200: vLLM on `/health` or `/v1/models`, TGI and SGLang on `/health`, Ollama on `/`. A generic web app on :8000 therefore passed as vLLM, and its numbers would have been filed under vLLM. The health check now requires the engine to identify itself, using endpoints read from engine source: vLLM `/version` (v0.30.0), TGI `/info` (v3.3.7), SGLang `/server_info` or `/get_server_info` (v0.5.20), and Ollama's root banner (v0.34.4). Anything else is refused with "a service answers at URL but did not identify as ENGINE", before the first request.
+- **A version probe no longer passes a JSON body without a version.** vLLM's `get_version` fell back to the whole response body when no `version` key was present, so any JSON 200 read as a vLLM version. SGLang's crashed on a non-JSON 200. All four adapters now share one probe that returns a version only from a 200 JSON object carrying a non-empty `version`, and it logs why when it returns none instead of silently swallowing the error.
+
+## [0.43.1] - 2026-10-01
+
+### Fixed
+- **`measure` / `bench` on vLLM and TGI filed a wall-clock rate as a decode rate.**
+  - The vLLM adapter divided completion tokens by the whole request time.
+  - The TGI adapter did the same whenever `/generate` sent no `decode_time`.
+
+  Both included prefill, so the rate understated decode more as prompts grew. `measure` writes that rate into the local corpus, where `plan` then reports it as a `measured` decode rate. Both adapters now stream, the way the SGLang adapter has since 0.35.0:
+  - TTFT is the first content token.
+  - Decode is `(tokens - 1)` over the first-to-last token interval.
+  - The token count comes from the server: vLLM's final usage chunk (`stream_options.include_usage`), or TGI's `details.generated_tokens` on the last `/generate_stream` event.
+
+  The formats were read from source at vLLM v0.30.0 and TGI v3.3.7. TGI special tokens do not start the decode clock. A response without a server token count is a failed run, not an estimate. The shared timing now lives in `bench/backends/_streaming.py`, and the SGLang adapter uses it, byte-identical in behaviour. The vLLM and TGI `generate` methods previously had no tests.
+
 ## [0.43.0] - 2026-09-26
 
 ### Added

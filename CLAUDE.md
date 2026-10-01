@@ -57,7 +57,7 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.43.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.44.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2704 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2763 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 65 files, 2704 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 68 files, 2763 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -237,6 +237,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Attention cache shape (0.18.0):** KV sizing uses the model's real shape, not always GQA. `ModelSpec.kv_elems_per_token_per_layer` returns `kv_lora_rank + qk_rope_head_dim` for **MLA** (DeepSeek-V2/V3 = 576 vs GQA's 32,768 -- a 57x overstatement) else `2*n_kv_heads*d_head`. **SWA** caps local layers at `sliding_window` with 1 full-attention layer every `swa_global_every`, giving a layer-weighted effective context. `arch()` only advertises the window when the pattern is ALSO known -- an unplaceable window would shrink the estimate, and under-sizing KV claims a fit that isn't there (Mistral: window, no pattern -> full context). Dense/bare-arch-dict/legacy-cache paths byte-identical.
 - **Variance-aware queueing:** two-moment wait `(1+Cs^2)/2 * M/M/1` (`Cs^2=0` reproduces M/D/1). `--workload {steady,chatbot,bursty,agent}` -> `WORKLOAD_CV2`; high variance inflates the tail + warns (analytical queueing silently approves broken fleets for agent traffic otherwise).
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
+- **Batch mode:** `plan --mode batch` (`PLAN_MODES`) plans a backlog drain: no latency gate (a latency/TTFT/TPOT target is REFUSED via `BATCH_LATENCY_REFUSAL`, not ignored), B = smallest batch at a unit's max throughput, N = fewest units draining the rate at 100% utilisation, ranked by `cost_per_1m_tok`; `p95_latency_ms` is service time, no queue. Pareto becomes $/1M-tok vs quality. `latency_slo` defaults to None (= `DEFAULT_LATENCY_SLO_MS` online) so an explicit target is detectable. Online is byte-identical.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
 - Numerical accuracy gates in `tests/test_accuracy.py` pin predictions to ground truth.
 
@@ -340,11 +341,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2704 total tests
+pytest tests/ -v                    # 2763 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2704 tests, 65 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2763 tests, 68 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -357,7 +358,9 @@ pytest tests/ --cov=src             # With coverage
   test_measure.py (6 - measure-on-demand)
 - **Safety** (54): test_safety.py - refusal lookup, RTSI tiers, identity resolution
 - **Bench** (70): test_bench_metrics.py (28), test_bench_backends.py (20 - Ollama/vLLM/TGI),
-  test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
+  test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5),
+  test_bench_identity.py (24 - an impostor answering /health is refused by every
+  adapter and by the runner preflight)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
 - **Launch export** (27): test_launch.py - per-backend derived flags (context/TP/PP/batch/
@@ -405,12 +408,17 @@ pytest tests/ --cov=src             # With coverage
 - **Carbon** (34): test_carbon.py - snapshot validates + provenance + values pinned to the
   OWID commit, builder parsing/exclusion/fail-loud, region lookup + staleness, hand-checked
   gCO2e arithmetic, replica invariance, unknown TDP is None, CLI/report/MCP surfaces
+- **Batch mode** (23): test_batch_mode.py - no latency gate (targets refused), max-
+  throughput B + minimal N, $/1M-tok ranking + Pareto, online byte-identical, CLI/
+  fleet/MCP/report paths each forward the mode
 - **CPU offload** (16): test_offload.py - priced instead of refused, bandwidth-
   driven derate, still refuses when KV alone busts VRAM
 - **Repo conventions** (131): test_repo_conventions.py - per-file ASCII-only guard
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **Bench decode** (8): test_bench_decode.py - vLLM + TGI adapters stream and time first/last
+  token (decode = (n-1)/interval, TTFT separate), server token count or a failed run
 - **Unified memory** (38): test_unified_memory.py - Apple Silicon / Strix Halo / DGX Spark from
   vendor pages, --unified-memory-fraction required (no default), reserve + upper-bound warnings,
   sold memory configurations, auto matches chip + installed memory, macOS/ROCm/CUDA rows

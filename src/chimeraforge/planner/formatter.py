@@ -10,7 +10,13 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 
-from chimeraforge.planner.constants import MODEL_PARAMS_B, POWER_UTILISATION, QUANT_BPW
+from chimeraforge.planner.constants import (
+    MODEL_PARAMS_B,
+    PLAN_MODE_BATCH,
+    PLAN_MODE_ONLINE,
+    POWER_UTILISATION,
+    QUANT_BPW,
+)
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_DB, known_or_none
 from chimeraforge.planner.provenance import (
@@ -48,18 +54,24 @@ def format_recommendation(
     candidates: list[Candidate],
     hardware: str,
     request_rate: float,
-    latency_slo: float,
+    latency_slo: float | None,
     quality_target: float,
     budget: float,
     safety_target: float | None = None,
+    mode: str = PLAN_MODE_ONLINE,
 ) -> None:
     """Print recommendation using Rich panels and tables."""
+    batch = mode == PLAN_MODE_BATCH
     if not candidates:
         console.print(
             Panel(
                 "[bold red]No viable configuration found.[/]\n\n"
                 "Try: relaxing quality target, increasing budget,\n"
-                "raising latency SLO, or using a larger GPU.",
+                + (
+                    "lowering the drain rate, or using a larger GPU."
+                    if batch
+                    else "raising latency SLO, or using a larger GPU."
+                ),
                 title="ChimeraForge Capacity Planner",
                 border_style="red",
             )
@@ -72,8 +84,12 @@ def format_recommendation(
     constraints = Table(show_header=False, box=None, padding=(0, 2))
     constraints.add_column("Key", style="dim")
     constraints.add_column("Value")
-    constraints.add_row("Request rate", f"{request_rate} req/s")
-    constraints.add_row("Latency SLO", f"{latency_slo} ms (p95)")
+    if batch:
+        constraints.add_row("Mode", "batch: no latency gate, ranked by $/1M tokens")
+        constraints.add_row("Drain rate", f"{request_rate} req/s")
+    else:
+        constraints.add_row("Request rate", f"{request_rate} req/s")
+        constraints.add_row("Latency SLO", f"{latency_slo} ms (p95)")
     constraints.add_row("Quality target", f"{quality_target}")
     constraints.add_row(
         "Safety target",
@@ -135,7 +151,10 @@ def format_recommendation(
         perf.add_row("TTFT (prefill)", f"{best.ttft_ms} ms")
     if best.tpot_ms:
         perf.add_row("TPOT (per token)", f"{best.tpot_ms} ms")
-    perf.add_row("p95 latency", f"{best.p95_latency_ms} ms (end-to-end)")
+    if batch:
+        perf.add_row("Request time", f"{best.p95_latency_ms} ms (service only, no queue wait)")
+    else:
+        perf.add_row("p95 latency", f"{best.p95_latency_ms} ms (end-to-end)")
     perf.add_row("Utilisation", f"{best.utilisation:.1%}")
     if best.max_concurrent_seqs:
         perf.add_row("Max concurrent/GPU", f"{best.max_concurrent_seqs} seqs (KV-cache bound)")
@@ -369,8 +388,14 @@ def format_pareto(frontier: list[Candidate], hardware: str) -> None:
         )
         return
 
-    cheapest = min(frontier, key=lambda c: c.monthly_cost)
-    fastest = min(frontier, key=lambda c: c.p95_latency_ms)
+    # A batch frontier trades $/1M tokens against quality; it has no latency axis.
+    batch = all(c.mode == PLAN_MODE_BATCH for c in frontier)
+    if batch:
+        cheapest = min(frontier, key=lambda c: c.cost_per_1m_tok)
+        fastest = None
+    else:
+        cheapest = min(frontier, key=lambda c: c.monthly_cost)
+        fastest = min(frontier, key=lambda c: c.p95_latency_ms)
     best_q = max(frontier, key=lambda c: c.quality)
 
     table = Table(title=f"Pareto frontier for {hardware} (non-dominated trade-offs)")
@@ -380,7 +405,7 @@ def format_pareto(frontier: list[Candidate], hardware: str) -> None:
     table.add_column("N", justify="right")
     table.add_column("Batch", justify="right")
     table.add_column("$/mo", justify="right")
-    table.add_column("p95 ms", justify="right")
+    table.add_column("$/1M tok" if batch else "p95 ms", justify="right")
     table.add_column("Quality", justify="right")
     table.add_column("Pick", style="dim")
 
@@ -400,7 +425,7 @@ def format_pareto(frontier: list[Candidate], hardware: str) -> None:
             str(c.n_agents),
             str(c.effective_batch),
             f"${c.monthly_cost}",
-            f"{c.p95_latency_ms}",
+            f"${c.cost_per_1m_tok}" if batch else f"{c.p95_latency_ms}",
             f"{q_mark}{c.quality}",
             ", ".join(tags),
         )
@@ -408,7 +433,8 @@ def format_pareto(frontier: list[Candidate], hardware: str) -> None:
     console.print(table)
     console.print(
         f"  [dim]{len(frontier)} non-dominated configs. Each is best at *something* "
-        f"(cost / latency / quality); points off the frontier are strictly worse.[/]\n"
+        f"({'$/1M tokens / quality' if batch else 'cost / latency / quality'}); "
+        "points off the frontier are strictly worse.[/]\n"
     )
 
 

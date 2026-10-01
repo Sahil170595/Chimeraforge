@@ -15,8 +15,11 @@ from rich.markup import escape
 from chimeraforge.planner.constants import (
     DEFAULT_ELECTRICITY_RATE,
     DEFAULT_KV_QUANT,
+    DEFAULT_LATENCY_SLO_MS,
     DEFAULT_LORA_TARGET,
     KV_QUANT_BYTES,
+    PLAN_MODE_BATCH,
+    PLAN_MODES,
 )
 
 # Which CLI flag each profile-supplied field corresponds to, so an explicitly
@@ -59,10 +62,17 @@ def plan(
         help="Requests per second.",
     ),
     latency_slo: float = typer.Option(
-        5000.0,
+        None,
         "--latency-slo",
         "-l",
-        help="Max p95 latency in milliseconds.",
+        help="Max p95 latency in milliseconds (default 5000). Online mode only.",
+    ),
+    mode: str = typer.Option(
+        "online",
+        "--mode",
+        help="online: requests someone waits on (latency-gated, cheapest monthly bill). "
+        "batch: an offline backlog (no latency gate; each GPU at its max-throughput "
+        "batch, fleet sized to drain --request-rate, ranked by $/1M tokens).",
     ),
     quality_target: float = typer.Option(
         0.5,
@@ -560,8 +570,17 @@ def plan(
         _fail("--context-length must be positive.")
     if budget <= 0:
         _fail("--budget must be positive.")
-    if latency_slo <= 0:
+    if latency_slo is not None and latency_slo <= 0:
         _fail("--latency-slo must be positive.")
+    if mode not in PLAN_MODES:
+        _fail(f"--mode must be one of: {', '.join(PLAN_MODES)}.")
+    if mode == PLAN_MODE_BATCH and any(v is not None for v in (latency_slo, ttft_slo, tpot_slo)):
+        _fail(
+            "batch mode has no latency gate, so --latency-slo/--ttft-slo/--tpot-slo "
+            "would be silently ignored. Drop them, or use --mode online."
+        )
+    if mode != PLAN_MODE_BATCH and latency_slo is None:
+        latency_slo = DEFAULT_LATENCY_SLO_MS
     if not 0.0 <= quality_target <= 1.0:
         _fail("--quality-target must be between 0.0 and 1.0.")
     if safety_target is not None and not 0.0 <= safety_target <= 1.0:
@@ -714,6 +733,7 @@ def plan(
             pareto=pareto,
             grid_region=grid_region,
             carbon_intensity=carbon_intensity,
+            mode=mode,
             models_path=models_path,
             ollama_url=ollama_url,
             hf_token=hf_token,
@@ -798,6 +818,7 @@ def plan(
                     kv_quant=kv_quant,
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
+                    mode=mode,
                     allow_network=not no_network,
                     overrides=overrides,
                 ),
@@ -853,6 +874,7 @@ def plan(
             quality_target=quality_target,
             budget=budget,
             safety_target=safety_target,
+            mode=mode,
         )
 
     if launch_cmd is not None and not output_json:
@@ -913,6 +935,7 @@ def plan(
                     tpot_slo_ms=tpot_slo,
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
+                    mode=mode,
                 ),
                 candidates=candidates,
                 api_comparison=api_cmp.to_dict() if api_cmp else None,
