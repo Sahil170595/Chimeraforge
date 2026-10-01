@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-10-01
+
 ### Added
 - **`workload --from-metrics` reads a window, KV-cache pressure and GPU utilisation.**
   - **Window:** `--interval SECONDS` with a live URL scrapes twice and times the real gap with a monotonic clock. With two saved scrapes (`--from-metrics` twice), the interval is recorded "as stated". Counters and histograms are differenced per series, so:
