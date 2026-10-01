@@ -83,6 +83,7 @@ from chimeraforge.planner.hardware import (
     get_gpu,
     is_reference_hardware,
 )
+from chimeraforge.planner.advisories import disaggregation_advisory
 from chimeraforge.planner.models import PlannerModels
 from chimeraforge.planner.platform_support import (
     DEFAULT_PLAN_PLATFORM,
@@ -185,6 +186,9 @@ class Candidate:
     # of the two a config actually fails.
     ttft_slo_ms: float = 0.0
     tpot_slo_ms: float = 0.0
+    # Where published sources say prefill/decode disaggregation is worth considering
+    # for this plan, with citations; "" outside that region. Predicts nothing.
+    disaggregation_advisory: str = ""
     # Operational carbon (SCI v1.1 O = E x I, embodied M not modelled). None when no
     # grid was given, or when the GPU's TDP is unknown -- never 0.0 for unknown.
     co2e_g_per_1m_tok: float | None = None
@@ -1302,6 +1306,19 @@ def enumerate_candidates(
                         tpot_ms=round(tpot_ms, 1),
                         ttft_slo_ms=float(ttft_slo or 0.0),
                         tpot_slo_ms=float(tpot_slo or 0.0),
+                        disaggregation_advisory=disaggregation_advisory(
+                            backend=backend,
+                            ttft_slo=ttft_slo,
+                            tpot_slo=tpot_slo,
+                            gpus_total=total_gpus,
+                            batch_mode=batch_mode,
+                            ttft_ms=ttft_ms,
+                            tpot_ms=tpot_ms,
+                            decode_tokens=decode_tokens,
+                            prompt_tokens=prompt_tokens,
+                            interconnect_gbps=interconnect_gbps,
+                            gpu_name=gpu.name,
+                        ),
                         co2e_g_per_1m_tok=None if co2e_1m is None else round(co2e_1m, 3),
                         co2e_kg_month=None if co2e_month is None else round(co2e_month, 3),
                         carbon_basis=grid.basis if grid is not None else "",

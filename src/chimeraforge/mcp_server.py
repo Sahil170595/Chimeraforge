@@ -75,6 +75,8 @@ def _candidate_summary(c) -> dict:
         "quant": c.quant,
         "backend": c.backend,
         "mode": c.mode,
+        # Cited guidance the planner does not model; "" when the plan is outside it.
+        "disaggregation_advisory": c.disaggregation_advisory,
         "replicas": c.n_agents,
         "tensor_parallel": c.tensor_parallel,
         "pipeline_parallel": c.pipeline_parallel,
