@@ -9,13 +9,13 @@ number and under-reports it by an amount that grows with prompt length.
 
 from __future__ import annotations
 
-import json
 import logging
 import time
 from collections.abc import Callable
 
 import httpx
 
+from chimeraforge.bench.backends._streaming import stream_openai_completion
 from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
 
@@ -34,9 +34,6 @@ MODEL_LIST_TIMEOUT_S = 30
 # Endpoints that report the server version, newest name first. SGLang renamed
 # /get_server_info to /server_info; older servers only answer the former.
 VERSION_ENDPOINTS = ("/server_info", "/get_server_info")
-
-_SSE_PREFIX = "data:"
-_SSE_DONE = "[DONE]"
 
 
 class SGLangBackend(Backend):
@@ -115,10 +112,6 @@ class SGLangBackend(Backend):
     ) -> RunMetrics:
         """Stream POST /v1/completions; time first and last token client-side.
 
-        Token count comes from the server's ``usage`` block, never from counting
-        chunks -- one chunk can carry several tokens. A response without usage
-        is a failed run: there is no honest way to recover the count.
-
         Raises:
             httpx.HTTPStatusError: The server rejected the request.
             RuntimeError: No usage block, or too few tokens to time a decode.
@@ -129,57 +122,15 @@ class SGLangBackend(Backend):
             "prompt": prompt,
             "max_tokens": opts.get("max_tokens", DEFAULT_MAX_TOKENS),
             "temperature": opts.get("temperature", DEFAULT_TEMPERATURE),
-            "stream": True,
-            "stream_options": {"include_usage": True},
         }
-
         client = await self._get_client()
-        t0 = self._clock()
-        t_first: float | None = None
-        t_last: float | None = None
-        usage: dict | None = None
-        async with client.stream(
-            "POST", f"{self.base_url}/v1/completions", json=payload, timeout=REQUEST_TIMEOUT_S
-        ) as resp:
-            if resp.status_code >= 400:
-                await resp.aread()
-                resp.raise_for_status()
-            async for line in resp.aiter_lines():
-                chunk = _parse_sse(line)
-                if chunk is None:
-                    continue
-                if chunk.get("usage"):
-                    usage = chunk["usage"]
-                if any(c.get("text") for c in chunk.get("choices") or []):
-                    now = self._clock()
-                    if t_first is None:
-                        t_first = now
-                    t_last = now
-        t_end = self._clock()
-
-        if not usage or "completion_tokens" not in usage:
-            raise RuntimeError(
-                "SGLang returned no usage block, so the generated token count is "
-                "unknown; the run is discarded rather than estimated"
-            )
-        tokens = int(usage["completion_tokens"])
-        if tokens < 2 or t_first is None or t_last is None or t_last <= t_first:
-            raise RuntimeError(
-                f"{tokens} token(s) streamed: a decode rate needs at least two tokens "
-                "arriving at distinct times. Raise max_tokens."
-            )
-
-        ttft_ms = (t_first - t0) * 1000
-        decode_s = t_last - t_first
-        return RunMetrics(
-            tokens_generated=tokens,
-            # The first token is produced by prefill; the remaining tokens - 1
-            # arrive over the decode interval.
-            throughput_tps=(tokens - 1) / decode_s,
-            ttft_ms=ttft_ms,
-            total_duration_ms=(t_end - t0) * 1000,
-            prompt_eval_duration_ms=ttft_ms,
-            eval_duration_ms=decode_s * 1000,
+        return await stream_openai_completion(
+            client,
+            f"{self.base_url}/v1/completions",
+            payload,
+            self._clock,
+            "SGLang",
+            REQUEST_TIMEOUT_S,
         )
 
     async def get_version(self) -> str | None:
@@ -189,19 +140,4 @@ class SGLangBackend(Backend):
             version = await fetch_json_field(client, f"{self.base_url}{path}", "version")
             if version:
                 return version
-        return None
-
-
-def _parse_sse(line: str) -> dict | None:
-    """One SSE ``data:`` line -> its JSON payload; None for keep-alives and [DONE]."""
-    line = line.strip()
-    if not line.startswith(_SSE_PREFIX):
-        return None
-    data = line[len(_SSE_PREFIX) :].strip()
-    if not data or data == _SSE_DONE:
-        return None
-    try:
-        return json.loads(data)
-    except json.JSONDecodeError:
-        logger.warning("SGLang sent an unparseable stream line: %.120s", data)
         return None

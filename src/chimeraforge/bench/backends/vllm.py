@@ -1,15 +1,19 @@
 """vLLM backend adapter.
 
-Implements the Backend interface against the vLLM OpenAI-compatible API.
-vLLM exposes /v1/completions with usage stats in the response.
+Implements the Backend interface against the vLLM OpenAI-compatible API,
+streamed with ``stream_options.include_usage`` so decode is timed separately
+from prefill (read from vLLM source at v0.30.0: the usage block arrives in a
+final chunk with empty ``choices``, before ``data: [DONE]``).
 """
 
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 
 import httpx
 
+from chimeraforge.bench.backends._streaming import stream_openai_completion
 from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
 
@@ -19,13 +23,21 @@ class VLLMBackend(Backend):
 
     name = "vllm"
 
-    def __init__(self, base_url: str = "http://localhost:8000") -> None:
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8000",
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+        clock: Callable[[], float] | None = None,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
+        self._transport = transport
+        self._clock = clock or time.perf_counter
         self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=300)
+            self._client = httpx.AsyncClient(timeout=300, transport=self._transport)
         return self._client
 
     async def close(self) -> None:
@@ -83,7 +95,15 @@ class VLLMBackend(Backend):
         prompt: str,
         options: dict | None = None,
     ) -> RunMetrics:
-        """POST /v1/completions, extract usage and timing."""
+        """Stream POST /v1/completions; decode = (tokens - 1) / first-to-last token.
+
+        This reported completion tokens over wall clock -- prefill included -- as
+        the decode rate that `measure` files into the corpus.
+
+        Raises:
+            httpx.HTTPStatusError: The server rejected the request.
+            RuntimeError: No usage block, or too few tokens to time a decode.
+        """
         opts = options or {}
         payload = {
             "model": model,
@@ -91,33 +111,9 @@ class VLLMBackend(Backend):
             "max_tokens": opts.get("max_tokens", 256),
             "temperature": opts.get("temperature", 0.7),
         }
-
         client = await self._get_client()
-        t0 = time.perf_counter()
-        resp = await client.post(
-            f"{self.base_url}/v1/completions",
-            json=payload,
-            timeout=300,
-        )
-        total_s = time.perf_counter() - t0
-        resp.raise_for_status()
-        data = resp.json()
-
-        usage = data.get("usage", {})
-        completion_tokens = usage.get("completion_tokens", 0)
-        total_duration_ms = total_s * 1000
-
-        # vLLM non-streaming API doesn't expose TTFT; throughput from wall clock
-        eval_duration_ms = total_duration_ms
-        throughput = completion_tokens / total_s if total_s > 0 else 0.0
-
-        return RunMetrics(
-            tokens_generated=completion_tokens,
-            throughput_tps=throughput,
-            ttft_ms=-1.0,  # Not measurable without streaming
-            total_duration_ms=total_duration_ms,
-            prompt_eval_duration_ms=0.0,
-            eval_duration_ms=eval_duration_ms,
+        return await stream_openai_completion(
+            client, f"{self.base_url}/v1/completions", payload, self._clock, "vLLM", 300
         )
 
     async def get_version(self) -> str | None:

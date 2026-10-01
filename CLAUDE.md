@@ -57,7 +57,7 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.43.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.43.1 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2693 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2703 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 65 files, 2693 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 66 files, 2703 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -339,11 +339,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2693 total tests
+pytest tests/ -v                    # 2703 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2693 tests, 65 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2703 tests, 66 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -409,6 +409,8 @@ pytest tests/ --cov=src             # With coverage
   (parametrized over every src/ + tests/ .py) and server.json/pyproject/__version__
   sync + registry description limit + README mcp-name token
 - **CLI hardening** (18): test_cli_fail_loud.py - clean errors + exit codes, no raw tracebacks
+- **Bench decode** (8): test_bench_decode.py - vLLM + TGI adapters stream and time first/last
+  token (decode = (n-1)/interval, TTFT separate), server token count or a failed run
 - **Unified memory** (38): test_unified_memory.py - Apple Silicon / Strix Halo / DGX Spark from
   vendor pages, --unified-memory-fraction required (no default), reserve + upper-bound warnings,
   sold memory configurations, auto matches chip + installed memory, macOS/ROCm/CUDA rows
