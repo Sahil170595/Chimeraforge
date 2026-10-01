@@ -75,6 +75,7 @@ from chimeraforge.planner.hardware import (
     AUTO_HARDWARE,
     GPU_DB,
     GPU_OVERRIDE_FIELDS,
+    PRICE_BASIS_HYPERSCALER,
     PRICE_BASIS_PHRASE,
     apply_unified_fraction,
     resolve_hardware,
@@ -83,6 +84,13 @@ from chimeraforge.planner.hardware import (
     get_gpu,
     is_reference_hardware,
 )
+from chimeraforge.planner.cloudprice import (
+    CLOUDS,
+    fleet_hourly_cost,
+    load_cloud_prices,
+    offers_for,
+)
+from chimeraforge.planner.cloudprice import is_stale as cloud_is_stale
 from chimeraforge.planner.models import PlannerModels
 from chimeraforge.planner.platform_support import (
     DEFAULT_PLAN_PLATFORM,
@@ -185,6 +193,9 @@ class Candidate:
     # of the two a config actually fails.
     ttft_slo_ms: float = 0.0
     tpot_slo_ms: float = 0.0
+    # Hyperscaler pricing (--cloud): the instances the bill was computed from, e.g.
+    # "1 x aws p5.48xlarge in us-east-1 ($55.04/h for 8 GPUs)". "" = bundled price.
+    cloud_offer: str = ""
     # Operational carbon (SCI v1.1 O = E x I, embodied M not modelled). None when no
     # grid was given, or when the GPU's TDP is unknown -- never 0.0 for unknown.
     co2e_g_per_1m_tok: float | None = None
@@ -287,6 +298,7 @@ def enumerate_candidates(
     pipeline_parallel: int | None = 1,
     grid: GridIntensity | None = None,
     mode: str = PLAN_MODE_ONLINE,
+    cloud: str | None = None,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -395,6 +407,20 @@ def enumerate_candidates(
     # `derived`, sorted first, inside any budget) and one with no FP16 figure
     # reported TTFT 0.0 ms. Unknown disables the prediction instead.
     price_known = gpu is None or gpu.cost_per_hour > 0
+    # A cloud prices instances, not GPUs; the bill is computed per candidate from
+    # whole instances. A second price for the same GPU would leave two answers.
+    cloud_offers = None
+    if cloud is not None:
+        if cloud not in CLOUDS:
+            raise ValueError(f"cloud must be one of: {', '.join(CLOUDS)}")
+        if (gpu_overrides or {}).get("cost_per_hour") is not None:
+            raise ValueError(
+                "--cloud prices the GPU from that cloud's list; --gpu-price-per-hour is a "
+                "second price for the same GPU -- pass one or the other"
+            )
+        cloud_offers = offers_for(cloud, gpu.name)
+        cloud_captured = load_cloud_prices()["captured_at"]
+        cloud_stale = cloud_is_stale()
     compute_known = gpu is None or gpu.fp16_tflops > 0
     # Which engine-support row this deployment is: the OS the plan targets plus
     # the GPU's vendor. None when the vendor is unknown -- then nothing is refused
@@ -874,7 +900,29 @@ def enumerate_candidates(
                 total_gpus = best_n * tp * pp
 
                 # Gate 4: Cost (N replicas x TP*PP GPUs each)
-                if not price_known:
+                fleet_hr = hw_cost_hr * total_gpus
+                cloud_offer = ""
+                if cloud_offers is not None:
+                    fleet = fleet_hourly_cost(cloud_offers, best_n, tp * pp)
+                    if fleet is None:
+                        why = (
+                            f"no {cloud} on-demand instance carries {gpu.name}"
+                            if not cloud_offers
+                            else f"no {cloud} instance holds a TP={tp * pp} group of "
+                            f"{gpu.name} (the largest has "
+                            f"{max(o.gpus for o in cloud_offers)} GPUs)"
+                        )
+                        _reject(
+                            model,
+                            quant,
+                            "budget",
+                            f"{backend}: {why} (price snapshot {cloud_captured})",
+                        )
+                        continue
+                    fleet_list_hr, offer, instances = fleet
+                    fleet_hr = fleet_list_hr * price_mult
+                    cloud_offer = f"{instances} x {offer.describe()}"
+                elif not price_known:
                     _reject(
                         model,
                         quant,
@@ -883,7 +931,7 @@ def enumerate_candidates(
                         "pass --gpu-price-per-hour to plan it",
                     )
                     continue
-                monthly = models.cost.predict_monthly(hw_cost_hr) * total_gpus
+                monthly = models.cost.predict_monthly(fleet_hr)
                 if monthly > budget:
                     tp_note = f" x TP={tp}" if tp > 1 else (f" x PP={pp}" if pp > 1 else "")
                     _reject(
@@ -897,7 +945,7 @@ def enumerate_candidates(
                 # Cost per 1M tokens: total_tps is the fleet throughput, so the rate
                 # must be the fleet's (N*tp) GPU cost (else understated). Identical
                 # replicas leave $/token unchanged -- the correct invariant.
-                cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * total_gpus)
+                cost_1m = models.cost.predict_cost_per_1m(total_tps, fleet_hr)
                 # Tokens the workload actually asks for over a month, at duty cycle.
                 tokens_month = request_rate * decode_tokens * SECONDS_PER_MONTH * duty
                 cost_1m_eff = (monthly / tokens_month * 1e6) if tokens_month > 0 else float("inf")
@@ -1028,11 +1076,30 @@ def enumerate_candidates(
                 # drives the budget gate, $/1M-tok and the API break-even -- so a
                 # bare dollar figure means two different things depending on the
                 # card, and the difference is 4-5x on the datacenter entries.
-                warnings.append(
-                    f"priced at ${gpu.cost_per_hour:.3f}/GPU-hour on the "
-                    f"{gpu.price_basis} basis: "
-                    f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
-                )
+                if cloud_offers is not None:
+                    billed = instances * offer.gpus
+                    idle = (
+                        f"; {billed - total_gpus} of the {billed} GPUs billed sit idle"
+                        if billed > total_gpus
+                        else ""
+                    )
+                    warnings.append(
+                        f"priced at ${fleet_list_hr:.2f}/h on the {PRICE_BASIS_HYPERSCALER} "
+                        f"basis ({PRICE_BASIS_PHRASE[PRICE_BASIS_HYPERSCALER]}): "
+                        f"{cloud_offer}, Linux, list price from the {cloud_captured} "
+                        f"snapshot{idle}"
+                    )
+                    if cloud_stale:
+                        warnings.append(
+                            f"the {cloud} price snapshot from {cloud_captured} is stale; "
+                            "re-run scripts/build_cloud_prices.py --write"
+                        )
+                else:
+                    warnings.append(
+                        f"priced at ${gpu.cost_per_hour:.3f}/GPU-hour on the "
+                        f"{gpu.price_basis} basis: "
+                        f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
+                    )
                 warnings.extend(hardware_warnings)
                 warnings.extend(verdict.warnings)
                 if not compute_known:
@@ -1302,6 +1369,7 @@ def enumerate_candidates(
                         tpot_ms=round(tpot_ms, 1),
                         ttft_slo_ms=float(ttft_slo or 0.0),
                         tpot_slo_ms=float(tpot_slo or 0.0),
+                        cloud_offer=cloud_offer,
                         co2e_g_per_1m_tok=None if co2e_1m is None else round(co2e_1m, 3),
                         co2e_kg_month=None if co2e_month is None else round(co2e_month, 3),
                         carbon_basis=grid.basis if grid is not None else "",

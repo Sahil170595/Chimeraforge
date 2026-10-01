@@ -159,6 +159,7 @@ def run_plan(
     grid_region: str | None = None,
     carbon_intensity: float | None = None,
     mode: str = DEFAULT_PLAN_MODE,
+    cloud: str | None = None,
     models_path: str | None = None,
     ollama_url: str | None = None,
     hf_token: str | None = None,
@@ -267,6 +268,7 @@ def run_plan(
         lora_target=lora_target,
         grid=grid,
         mode=mode,
+        cloud=cloud,
     )
     frontier = pareto_frontier(candidates) if pareto else None
     return PlanResult(

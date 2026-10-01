@@ -330,6 +330,13 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    cloud: str = typer.Option(
+        None,
+        "--cloud",
+        help="Price the fleet at aws or azure on-demand list prices (a dated snapshot of "
+        "each cloud's public price list), instance by instance, instead of the bundled "
+        "marketplace rate.",
+    ),
     grid_region: str = typer.Option(
         None,
         "--grid-region",
@@ -734,6 +741,7 @@ def plan(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity,
             mode=mode,
+            cloud=cloud,
             models_path=models_path,
             ollama_url=ollama_url,
             hf_token=hf_token,
@@ -819,6 +827,7 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    cloud=cloud,
                     allow_network=not no_network,
                     overrides=overrides,
                 ),
@@ -936,6 +945,7 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    cloud=cloud,
                 ),
                 candidates=candidates,
                 api_comparison=api_cmp.to_dict() if api_cmp else None,

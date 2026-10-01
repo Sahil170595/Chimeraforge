@@ -107,6 +107,7 @@ class BriefInputs:
     grid_region: str | None = None
     carbon_intensity: float | None = None
     mode: str = "online"
+    cloud: str | None = None
 
     @property
     def models(self) -> list[str]:
@@ -130,6 +131,7 @@ class BriefInputs:
         defaults = BriefInputs(hardware=self.hardware)
         flags: list[tuple[str, object, object]] = [
             ("--mode", self.mode, defaults.mode),
+            ("--cloud", self.cloud, None),
             ("--request-rate", self.request_rate, defaults.request_rate),
             ("--latency-slo", self.latency_slo_ms, defaults.latency_slo_ms),
             ("--quality-target", self.quality_target, defaults.quality_target),
