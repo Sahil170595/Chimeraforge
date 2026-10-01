@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-10-01
+
 ### Added
 - **Operational carbon per token: `plan --grid-region` / `--carbon-intensity`, and on the MCP `plan` tool.** The planner already modelled energy, but not emissions.
   - **What it reports:** gCO2e per 1M tokens and kg per month. That is the same board-power energy times the grid's carbon intensity, and it is replica-invariant per token. An 8B at 2 req/s on an H100 comes to 60 gCO2e per 1M tokens on the US grid and 6.5 on France's.
