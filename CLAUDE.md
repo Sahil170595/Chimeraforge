@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2792 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2800 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 69 files, 2792 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 70 files, 2800 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -341,11 +341,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2792 total tests
+pytest tests/ -v                    # 2800 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2792 tests, 69 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2800 tests, 70 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -405,6 +405,10 @@ pytest tests/ --cov=src             # With coverage
   measured SGLang row flipping provenance (only for the cell that was measured)
 - **Goodput SLOs** (18): test_goodput.py - TTFT/TPOT gated separately inside the
   (N x B) search, actionable rejection reasons, point-estimate-not-attainment
+- **Corpus shape** (7): test_corpus_shape.py - the README block stating what the planner's
+  bundled tables hold (23 FP16 throughput rows on one GPU, ...) equals the render from the data
+  (scripts/corpus_shape.py --check/--write), sits beside the ~204,000 claim, and a stale
+  `_provenance.coverage` record fails the render
 - **Workload engine metrics** (28): test_workload_engine_metrics.py - counters read with the
   `_total` suffix prometheus_client exposes (structural guard), KV-pressure gauges as 0-1
   fractions, two-scrape window (measured rate, window means, reset fails loud), MFU/MBU from
