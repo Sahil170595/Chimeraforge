@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A prefill/decode disaggregation advisory on candidates that sit where the published sources say it is worth considering.** The planner does not model disaggregation, and the roadmap rejected that (D2): no closed-form prefill:decode ratio exists, and vLLM's own docs state "Disaggregated prefill DOES NOT improve throughput". So the advisory predicts nothing. It says when a plan is in the region, quotes the sources, and gives context from the plan.
+  - **The region:** each condition maps to a sentence in a source re-read on 2026-10-01.
+    - Both TTFT and TPOT are gated. DistServe (OSDI 2024, arXiv:2401.09670) says existing systems "have to prioritize one latency over the other, or over-provision compute resources to meet both"; vLLM's docs list tuning TTFT and ITL separately and controlling tail ITL as the uses.
+    - Serving is online. DistServe Sec. 7 says chunked prefill "may be preferred" for throughput-optimized offline work.
+    - The fleet has more than one GPU.
+    - The engine's docs document the feature: vLLM v0.30.0 and SGLang v0.5.20 do; TGI v3.3.7 and Ollama do not.
+  - **The text:** it states that no speedup is predicted, that the feature is experimental, and that chunked prefill (`--max-num-batched-tokens`) targets the same problem. It gives the plan's prefill share of a request's GPU time and the GPU's interconnect bandwidth, and quotes DistServe that with "only a few or even a single GPU" the design space "is significantly limited".
+  - **Where it shows up:** the candidate field `disaggregation_advisory`, an Advisory panel in the Rich output, and the MCP summary. The field is empty outside the region, so plans are otherwise unchanged.
+
 ## [0.46.0] - 2026-10-01
 
 ### Added

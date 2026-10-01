@@ -218,6 +218,10 @@ def format_recommendation(
     if best.warnings:
         warning_text = "\n".join(f"  - {w}" for w in best.warnings)
         console.print(Panel(warning_text, title="Warnings", border_style="red"))
+    if best.disaggregation_advisory:
+        console.print(
+            Panel(escape(best.disaggregation_advisory), title="Advisory", border_style="blue")
+        )
 
     # Alternatives
     alts = candidates[1:5]
