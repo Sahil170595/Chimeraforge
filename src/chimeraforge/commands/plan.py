@@ -330,6 +330,19 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    think_time: float = typer.Option(
+        None,
+        "--think-time",
+        metavar="SECONDS",
+        help="Seconds between a conversation's turns. With --session-turns, limits "
+        "--prefix-cache-hit-rate to what the fleet's free KV can keep for idle "
+        "conversations (Little's law: rate x (T-1)/T x think time of them).",
+    ),
+    session_turns: int = typer.Option(
+        None,
+        "--session-turns",
+        help="Average turns per conversation (>= 2). Used with --think-time.",
+    ),
     grid_region: str = typer.Option(
         None,
         "--grid-region",
@@ -734,6 +747,8 @@ def plan(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity,
             mode=mode,
+            think_time_s=think_time,
+            session_turns=session_turns,
             models_path=models_path,
             ollama_url=ollama_url,
             hf_token=hf_token,
@@ -819,6 +834,8 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    think_time_s=think_time,
+                    session_turns=session_turns,
                     allow_network=not no_network,
                     overrides=overrides,
                 ),
@@ -936,6 +953,8 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    think_time_s=think_time,
+                    session_turns=session_turns,
                 ),
                 candidates=candidates,
                 api_comparison=api_cmp.to_dict() if api_cmp else None,
