@@ -94,6 +94,10 @@ def _candidate_summary(c) -> dict:
         "duty_cycle": c.duty_cycle,
         "energy_cost_month_usd": c.energy_cost_month,
         "perf_per_watt": c.perf_per_watt,
+        # Operational only (SCI O = E x I); null when not requested or TDP unknown.
+        "co2e_g_per_1m_tok": c.co2e_g_per_1m_tok,
+        "co2e_kg_month": c.co2e_kg_month,
+        "carbon_basis": c.carbon_basis,
         "lora_adapters": c.lora_adapters,
         "lora_rank": c.lora_rank,
         "lora_vram_gb": c.lora_gb,
@@ -134,6 +138,8 @@ def plan_deployment(
     lora_adapters: int = 0,
     lora_rank: int = 16,
     lora_target: str = "qv",
+    grid_region: str | None = None,
+    carbon_intensity_g_per_kwh: float | None = None,
     mode: str = "online",
     allow_network: bool = True,
 ) -> dict:
@@ -143,6 +149,8 @@ def plan_deployment(
     (``Qwen/Qwen3-8B``); if omitted, plans the registry size class ``model_size``.
     ``workload`` sets request-size variance for the queueing tail (steady / chatbot /
     bursty / agent) -- real traffic is not deterministic and the p95 moves a lot.
+    ``grid_region`` (ISO-3 code or country name) or ``carbon_intensity_g_per_kwh`` adds
+    operational gCO2e per 1M tokens (SCI O = E x I only; embodied emissions excluded).
     ``mode="batch"`` plans an offline backlog (no latency gate, ranked by $/1M
     tokens); a latency target with it is an error. ``latency_slo_ms`` None = 5000.
     """
@@ -217,6 +225,8 @@ def plan_deployment(
             lora_adapters=lora_adapters,
             lora_rank=lora_rank,
             lora_target=lora_target,
+            grid_region=grid_region,
+            carbon_intensity=carbon_intensity_g_per_kwh,
             mode=mode,
             allow_network=allow_network,
         )

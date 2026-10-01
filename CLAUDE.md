@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2727 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2763 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 67 files, 2727 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 68 files, 2763 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -262,6 +262,7 @@ The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th 
 **Gate 4 — Cost:** `monthly_cost <= budget`
 - Monthly = `hw_cost_per_hour * 720 * N_agents`
 - **Energy (0.8.0):** `GPUSpec.tdp_watts` drives a *separate* energy dimension — monthly kWh cost, `$/1M-tok (+energy)`, and `tok/s per watt` (`--electricity-rate`, default `DEFAULT_ELECTRICITY_RATE`; draw = `tdp_watts * POWER_UTILISATION`). Reported alongside, **not summed into**, `monthly_cost`/the budget gate: cloud `$/hr` already bundles power (double-count) while amortised consumer cost does not. `perf_per_watt` and per-token energy are replica-invariant.
+- **Carbon (opt-in):** `--grid-region ISO3|name` / `--carbon-intensity G` (planner/carbon.py) -> `co2e_g_per_1m_tok`, `co2e_kg_month`, `carbon_basis`: the energy kWh x gCO2e/kWh (reuses the energy functions with intensity as the rate). Data: OWID `carbon_intensity_elec` (Ember lifecycle, CC BY 4.0) pinned to an OWID commit in `data/carbon_intensity.json`, built by `scripts/build_carbon_data.py --write/--check`; 0-lifecycle values excluded with reason. SCI O = E x I only (embodied M not modelled -- never call it a full SCI score); E has no host/PUE so it is a lower bound; unknown TDP -> None, never 0; region year > `CARBON_STALE_AFTER_YEARS` old warns stale.
 
 **Gate 5 — Safety (opt-in):** `refusal_rate >= safety_target` (only when `--safety-target` is set)
 - Lookup table (model|quant) of TR134 refusal rate + TR142 RTSI risk tier; GGUF quants only
@@ -340,11 +341,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2727 total tests
+pytest tests/ -v                    # 2763 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2727 tests, 67 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2763 tests, 68 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -404,6 +405,9 @@ pytest tests/ --cov=src             # With coverage
   measured SGLang row flipping provenance (only for the cell that was measured)
 - **Goodput SLOs** (18): test_goodput.py - TTFT/TPOT gated separately inside the
   (N x B) search, actionable rejection reasons, point-estimate-not-attainment
+- **Carbon** (34): test_carbon.py - snapshot validates + provenance + values pinned to the
+  OWID commit, builder parsing/exclusion/fail-loud, region lookup + staleness, hand-checked
+  gCO2e arithmetic, replica invariance, unknown TDP is None, CLI/report/MCP surfaces
 - **Batch mode** (23): test_batch_mode.py - no latency gate (targets refused), max-
   throughput B + minimal N, $/1M-tok ranking + Pareto, online byte-identical, CLI/
   fleet/MCP/report paths each forward the mode

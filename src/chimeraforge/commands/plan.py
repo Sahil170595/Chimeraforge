@@ -330,6 +330,19 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    grid_region: str = typer.Option(
+        None,
+        "--grid-region",
+        help="Report operational gCO2e per 1M tokens on this grid (ISO-3 code or "
+        "country name, e.g. USA, DEU, France): Ember's annual-average lifecycle "
+        "intensity via Our World in Data. SCI operational term only; embodied excluded.",
+    ),
+    carbon_intensity: float = typer.Option(
+        None,
+        "--carbon-intensity",
+        help="Your own grid figure in gCO2e/kWh (e.g. a marginal or hourly value from "
+        "your provider), instead of --grid-region.",
+    ),
     pareto: bool = typer.Option(
         False,
         "--pareto",
@@ -718,6 +731,8 @@ def plan(
             lora_rank=lora_rank,
             lora_target=lora_target,
             pareto=pareto,
+            grid_region=grid_region,
+            carbon_intensity=carbon_intensity,
             mode=mode,
             models_path=models_path,
             ollama_url=ollama_url,
@@ -801,6 +816,8 @@ def plan(
                     workload_cv2=workload_cv2,
                     electricity_rate=electricity_rate,
                     kv_quant=kv_quant,
+                    grid_region=grid_region,
+                    carbon_intensity=carbon_intensity,
                     mode=mode,
                     allow_network=not no_network,
                     overrides=overrides,
@@ -916,6 +933,8 @@ def plan(
                     lora_target=lora_target,
                     ttft_slo_ms=ttft_slo,
                     tpot_slo_ms=tpot_slo,
+                    grid_region=grid_region,
+                    carbon_intensity=carbon_intensity,
                     mode=mode,
                 ),
                 candidates=candidates,

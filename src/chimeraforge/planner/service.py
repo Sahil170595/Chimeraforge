@@ -22,6 +22,7 @@ from chimeraforge.planner.constants import (
     PLAN_MODE_BATCH,
     PLAN_MODES,
 )
+from chimeraforge.planner.carbon import grid_intensity
 from chimeraforge.planner.engine import (
     Candidate,
     enumerate_candidates,
@@ -155,6 +156,8 @@ def run_plan(
     lora_rank: int = 16,
     lora_target: str = DEFAULT_LORA_TARGET,
     pareto: bool = False,
+    grid_region: str | None = None,
+    carbon_intensity: float | None = None,
     mode: str = DEFAULT_PLAN_MODE,
     models_path: str | None = None,
     ollama_url: str | None = None,
@@ -187,6 +190,8 @@ def run_plan(
     # so the two surfaces disagreed on the same input.
     if isinstance(kv_quant, str):
         kv_quant = kv_quant.lower()
+    # Resolved before any work so a bad region fails fast (CarbonError is a ValueError).
+    grid = grid_intensity(grid_region, carbon_intensity)
 
     planner_models = load_models(models_path) if models_path else load_effective_models()
 
@@ -260,6 +265,7 @@ def run_plan(
         lora_adapters=lora_adapters,
         lora_rank=lora_rank,
         lora_target=lora_target,
+        grid=grid,
         mode=mode,
     )
     frontier = pareto_frontier(candidates) if pareto else None
