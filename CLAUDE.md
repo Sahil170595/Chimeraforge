@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2678 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2703 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 65 files, 2678 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 66 files, 2703 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -339,11 +339,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2678 total tests
+pytest tests/ -v                    # 2703 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2678 tests, 65 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2703 tests, 66 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -356,7 +356,9 @@ pytest tests/ --cov=src             # With coverage
   test_measure.py (6 - measure-on-demand)
 - **Safety** (54): test_safety.py - refusal lookup, RTSI tiers, identity resolution
 - **Bench** (70): test_bench_metrics.py (28), test_bench_backends.py (20 - Ollama/vLLM/TGI),
-  test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5)
+  test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5),
+  test_bench_identity.py (24 - an impostor answering /health is refused by every
+  adapter and by the runner preflight)
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
 - **Launch export** (27): test_launch.py - per-backend derived flags (context/TP/PP/batch/

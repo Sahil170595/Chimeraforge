@@ -14,7 +14,7 @@ from collections.abc import Callable
 import httpx
 
 from chimeraforge.bench.backends._streaming import stream_openai_completion
-from chimeraforge.bench.backends.base import Backend
+from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
 
 
@@ -46,17 +46,23 @@ class VLLMBackend(Backend):
             await self._client.aclose()
 
     async def health_check(self) -> tuple[bool, str]:
-        """GET /health or /v1/models to check availability."""
+        """GET /health, then GET /version: running means vLLM named itself.
+
+        /health returns an empty 200 (vLLM v0.30.0 source), which any web app on
+        :8000 can also return -- on the dev box a generic uvicorn app did, and
+        this reported "vLLM is running". /version returns {"version": ...}.
+        """
         try:
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/health", timeout=10)
-            if resp.status_code == 200:
-                return True, "vLLM is running"
-            # Fallback: try /v1/models
-            resp = await client.get(f"{self.base_url}/v1/models", timeout=10)
-            if resp.status_code == 200:
-                return True, "vLLM is running"
-            return False, f"vLLM returned status {resp.status_code}"
+            if resp.status_code != 200:
+                return False, f"vLLM returned status {resp.status_code}"
+            version = await self.get_version()
+            if not version:
+                return False, identity_message(
+                    "vLLM", self.base_url, "GET /version returned no version"
+                )
+            return True, f"vLLM {version} is running"
         except httpx.ConnectError:
             return False, f"vLLM not running at {self.base_url}"
         except httpx.TimeoutException:
@@ -111,13 +117,6 @@ class VLLMBackend(Backend):
         )
 
     async def get_version(self) -> str | None:
-        """GET /version or extract from /v1/models metadata."""
-        try:
-            client = await self._get_client()
-            resp = await client.get(f"{self.base_url}/version", timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                return data.get("version", str(data))
-        except Exception:
-            pass
-        return None
+        """GET /version -> ``{"version": ...}`` (vLLM v0.30.0 source), else None."""
+        client = await self._get_client()
+        return await fetch_json_field(client, f"{self.base_url}/version", "version")

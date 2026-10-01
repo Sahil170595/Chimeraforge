@@ -15,7 +15,7 @@ from collections.abc import Callable
 import httpx
 
 from chimeraforge.bench.backends._streaming import StreamTiming, decode_metrics, parse_sse
-from chimeraforge.bench.backends.base import Backend
+from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
 
 
@@ -47,13 +47,22 @@ class TGIBackend(Backend):
             await self._client.aclose()
 
     async def health_check(self) -> tuple[bool, str]:
-        """GET /health to check TGI availability."""
+        """GET /health, then GET /info: running means TGI named itself.
+
+        /info returns the server's ``Info`` (TGI v3.3.7 source: ``model_id``,
+        ``version``, ...); an empty 200 on /health is not evidence of TGI.
+        """
         try:
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/health", timeout=10)
-            if resp.status_code == 200:
-                return True, "TGI is running"
-            return False, f"TGI returned status {resp.status_code}"
+            if resp.status_code != 200:
+                return False, f"TGI returned status {resp.status_code}"
+            version = await self.get_version()
+            if not version:
+                return False, identity_message(
+                    "TGI", self.base_url, "GET /info returned no version"
+                )
+            return True, f"TGI {version} is running"
         except httpx.ConnectError:
             return False, f"TGI not running at {self.base_url}"
         except httpx.TimeoutException:
@@ -139,13 +148,6 @@ class TGIBackend(Backend):
         return decode_metrics(timing, "TGI", "final details (generated_tokens)")
 
     async def get_version(self) -> str | None:
-        """GET /info and extract version."""
-        try:
-            client = await self._get_client()
-            resp = await client.get(f"{self.base_url}/info", timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                return data.get("version")
-        except Exception:
-            pass
-        return None
+        """GET /info -> the server ``Info``'s ``version`` (TGI v3.3.7 source), else None."""
+        client = await self._get_client()
+        return await fetch_json_field(client, f"{self.base_url}/info", "version")

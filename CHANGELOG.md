@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`bench` and `measure` could benchmark a server that was not the named engine.** Each adapter's health check accepted any 200: vLLM on `/health` or `/v1/models`, TGI and SGLang on `/health`, Ollama on `/`. A generic web app on :8000 therefore passed as vLLM, and its numbers would have been filed under vLLM. The health check now requires the engine to identify itself, using endpoints read from engine source: vLLM `/version` (v0.30.0), TGI `/info` (v3.3.7), SGLang `/server_info` or `/get_server_info` (v0.5.20), and Ollama's root banner (v0.34.4). Anything else is refused with "a service answers at URL but did not identify as ENGINE", before the first request.
+- **A version probe no longer passes a JSON body without a version.** vLLM's `get_version` fell back to the whole response body when no `version` key was present, so any JSON 200 read as a vLLM version. SGLang's crashed on a non-JSON 200. All four adapters now share one probe that returns a version only from a 200 JSON object carrying a non-empty `version`, and it logs why when it returns none instead of silently swallowing the error.
+
 ## [0.43.1] - 2026-10-01
 
 ### Fixed
