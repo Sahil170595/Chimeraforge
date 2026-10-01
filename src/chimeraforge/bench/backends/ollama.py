@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import httpx
 
-from chimeraforge.bench.backends.base import Backend
+from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
+
+# What Ollama's root route returns (server/routes.go, v0.34.4): its self-identification.
+OLLAMA_BANNER = "Ollama is running"
 
 
 class OllamaBackend(Backend):
@@ -33,13 +36,22 @@ class OllamaBackend(Backend):
             await self._client.aclose()
 
     async def health_check(self) -> tuple[bool, str]:
-        """GET / -- Ollama returns 'Ollama is running'."""
+        """GET / -- Ollama answers with the literal banner "Ollama is running".
+
+        A 200 alone is not Ollama: any web server on the port returns one. The
+        banner is the identity check, so an impostor is refused before a
+        benchmark is filed against the wrong engine.
+        """
         try:
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/", timeout=10)
-            if resp.status_code == 200:
-                return True, "Ollama is running"
-            return False, f"Ollama returned status {resp.status_code}"
+            if resp.status_code != 200:
+                return False, f"Ollama returned status {resp.status_code}"
+            if OLLAMA_BANNER not in resp.text:
+                return False, identity_message(
+                    "Ollama", self.base_url, f"no {OLLAMA_BANNER!r} banner at GET /"
+                )
+            return True, "Ollama is running"
         except httpx.ConnectError:
             return False, f"Ollama not running at {self.base_url}"
         except httpx.TimeoutException:
@@ -130,12 +142,6 @@ class OllamaBackend(Backend):
         return resp.json().get("response", "")
 
     async def get_version(self) -> str | None:
-        """GET /api/version."""
-        try:
-            client = await self._get_client()
-            resp = await client.get(f"{self.base_url}/api/version", timeout=10)
-            if resp.status_code == 200:
-                return resp.json().get("version")
-        except Exception:
-            pass
-        return None
+        """GET /api/version -> ``{"version": ...}``, else None."""
+        client = await self._get_client()
+        return await fetch_json_field(client, f"{self.base_url}/api/version", "version")

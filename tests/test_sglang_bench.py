@@ -83,9 +83,13 @@ class TestRegistration:
 class TestHealthAndModel:
     @pytest.mark.asyncio
     async def test_healthy(self):
-        b = _backend(lambda req: httpx.Response(200, text=""))
-        ok, msg = await b.health_check()
-        assert ok and "SGLang" in msg
+        def handler(req):
+            if req.url.path == "/server_info":
+                return httpx.Response(200, json={"version": "0.5.20"})
+            return httpx.Response(200, text="")
+
+        ok, msg = await _backend(handler).health_check()
+        assert ok and "SGLang 0.5.20" in msg
 
     @pytest.mark.asyncio
     async def test_not_running_is_reported(self):
