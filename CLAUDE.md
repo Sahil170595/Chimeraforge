@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2792 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2812 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 69 files, 2792 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 70 files, 2812 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -239,6 +239,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Batch mode:** `plan --mode batch` (`PLAN_MODES`) plans a backlog drain: no latency gate (a latency/TTFT/TPOT target is REFUSED via `BATCH_LATENCY_REFUSAL`, not ignored), B = smallest batch at a unit's max throughput, N = fewest units draining the rate at 100% utilisation, ranked by `cost_per_1m_tok`; `p95_latency_ms` is service time, no queue. Pareto becomes $/1M-tok vs quality. `latency_slo` defaults to None (= `DEFAULT_LATENCY_SLO_MS` online) so an explicit target is detectable. Online is byte-identical.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
+- **Cloud pricing:** `--cloud aws|azure` (planner/cloudprice.py) bills from `data/cloud_prices.json` (scripts/build_cloud_prices.py: AWS EC2 bulk CSV us-east-1 + Azure Retail Prices eastus; GPU model from the vendor page, count/memory checked against hardware.json). `fleet_hourly_cost()` = cheapest ceil(N/floor(gpus/g)) whole instances; no instance holding the TP*PP group -> budget-gate reject; conflicts with --gpu-price-per-hour; stale after 90 days.
 - Numerical accuracy gates in `tests/test_accuracy.py` pin predictions to ground truth.
 
 The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th safety gate) over (model x quant x backend x N_agents):
@@ -341,11 +342,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2792 total tests
+pytest tests/ -v                    # 2812 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2792 tests, 69 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2812 tests, 70 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -384,6 +385,9 @@ pytest tests/ --cov=src             # With coverage
 - **Cost realism** (26): test_cost_realism.py - duty-cycle effective cost vs
   at-capacity, price multiplier scales bill not physics, clamping, API-compare
   scaling, CLI/MCP surfaces
+- **Cloud prices** (18): test_cloud_prices.py - snapshot validates, every offer matches the
+  hardware DB, different cards excluded with reasons, whole-instance fleet billing (idle GPUs
+  billed, TP group must fit one instance), refusals, staleness, CLI/MCP/report surfaces
 - **GitHub Action** (28): test_gha_plan_comment.py - argv build, both --json
   payload shapes, empty-plan message, bounded warnings, sticky-comment
   metadata, GITHUB_OUTPUT heredoc for multi-line values
