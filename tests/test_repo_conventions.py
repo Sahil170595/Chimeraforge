@@ -66,7 +66,10 @@ class TestReadmeTracksTheCode:
     def commands(self) -> list[str]:
         from chimeraforge.cli import app
 
-        return sorted(c.name or c.callback.__name__ for c in app.registered_commands)
+        # Groups too: a sub-app (`contribute export|verify|...`) is a command a user
+        # types, and counting only plain commands let one ship undocumented.
+        names = [c.name or c.callback.__name__ for c in app.registered_commands]
+        return sorted(names + [g.name for g in app.registered_groups])
 
     def test_every_command_has_a_readme_section(self, readme, commands):
         missing = [c for c in commands if f"### `{c}`" not in readme]

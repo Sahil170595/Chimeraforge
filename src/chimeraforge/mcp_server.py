@@ -141,6 +141,7 @@ def plan_deployment(
     grid_region: str | None = None,
     carbon_intensity_g_per_kwh: float | None = None,
     mode: str = "online",
+    use_contributions: bool = False,
     allow_network: bool = True,
 ) -> dict:
     """Plan a deployment; return the top candidates or an actionable error.
@@ -151,6 +152,8 @@ def plan_deployment(
     bursty / agent) -- real traffic is not deterministic and the p95 moves a lot.
     ``grid_region`` (ISO-3 code or country name) or ``carbon_intensity_g_per_kwh`` adds
     operational gCO2e per 1M tokens (SCI O = E x I only; embodied emissions excluded).
+    ``use_contributions`` reads quarantined third-party bench results for an exact
+    model/engine/quant/GPU match, labelled ``contributed`` (unverified).
     ``mode="batch"`` plans an offline backlog (no latency gate, ranked by $/1M
     tokens); a latency target with it is an error. ``latency_slo_ms`` None = 5000.
     """
@@ -228,6 +231,7 @@ def plan_deployment(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity_g_per_kwh,
             mode=mode,
+            use_contributions=use_contributions,
             allow_network=allow_network,
         )
     except ResolverError as exc:

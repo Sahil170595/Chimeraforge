@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**14 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**15 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -285,6 +285,24 @@ What the matrix says:
 - TGI's repository is archived and in maintenance mode.
 
 `scripts/build_engine_support.py` rebuilds and validates the matrix. `doctor` warns once it is more than 90 days old.
+
+### `contribute` -- share bench results, quarantine others'
+
+```bash
+chimeraforge bench --model llama3.2-3b --backend vllm --runs 5 --output-dir results/
+chimeraforge contribute export results/bench_*.json --out contributions/   # one file per result
+chimeraforge contribute verify contributions/*.json              # schema + content hash
+chimeraforge contribute import theirs.contribution.json          # into the local quarantine
+chimeraforge contribute list
+chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --contributions
+```
+
+The first step toward a shared measured corpus.
+
+- **What a contribution holds:** one `bench` result with its full environment fingerprint (GPU, memory, driver, CUDA, OS, engine and version, chimeraforge version), the per-run decode and TTFT figures, and a SHA-256 content id.
+- **What export refuses:** a result with no GPU name, or fewer than 3 runs. A decode CV above 5% is flagged as unstable but kept: an outlier published with its flag is evidence, and one silently dropped is not.
+- **What the id proves:** contributions are **unsigned**. The id shows the file is unaltered since export, not who ran it or that the numbers are real. That is why imports go into a local quarantine, and nothing there ever reaches the bundled corpus or the `measure` corpus.
+- **How `plan --contributions` uses them:** only for an exact model, engine, quant and GPU match, at the median of the matching contributions. The number is labelled `contributed` (`*`), a class below `extrapolated`, along with the contribution ids and the engine/driver clusters it came from. This project's own measured row still wins on the reference rig.
 
 ### `catalog` -- local model catalog
 
