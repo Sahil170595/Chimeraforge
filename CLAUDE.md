@@ -101,7 +101,7 @@ chimeraforge bench --model llama3.2-3b --runs 5
 # MCP server: let Claude/GPT/Cursor call the planner (needs the `mcp` extra)
 pip install -e ".[mcp]" && chimeraforge mcp   # stdio server: plan/resolve/list-hardware tools
 
-# Run tests (2792 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
+# Run tests (2816 total; 0.6.0 adds KV-batch/prefill-decode/continuous-batching/variance/pareto/accuracy + blind-audit regressions)
 pytest tests/ -v
 
 # Lint -- scope matters: this is exactly what CI gates on.
@@ -190,7 +190,7 @@ experiments/                          # TR108-TR133 experiment folders
 data/                                 # baselines/, csv/, research/
 outputs/publish_ready/                # Final reports and notebooks
 scripts/                              # Mostly scaffolded (empty); setup_ollama_model.ps1 is live
-tests/                                # 69 files, 2792 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
+tests/                                # 70 files, 2816 tests (planner/bench split per-concern; test_accuracy falsifiability gates)
 docs/                                 # 18 guides (~12,400 lines total)
 resources/prompts/                    # Legacy banter_prompts.txt (not used in benchmarking)
 ```
@@ -239,6 +239,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Batch mode:** `plan --mode batch` (`PLAN_MODES`) plans a backlog drain: no latency gate (a latency/TTFT/TPOT target is REFUSED via `BATCH_LATENCY_REFUSAL`, not ignored), B = smallest batch at a unit's max throughput, N = fewest units draining the rate at 100% utilisation, ranked by `cost_per_1m_tok`; `p95_latency_ms` is service time, no queue. Pareto becomes $/1M-tok vs quality. `latency_slo` defaults to None (= `DEFAULT_LATENCY_SLO_MS` online) so an explicit target is detectable. Online is byte-identical.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
+- **Contributions (federated corpus, step 1):** `chimeraforge/contrib.py` + `contribute export|verify|import|list`. Unsigned content-addressed files (SHA-256 over fingerprint+measurements) land in `$CHIMERAFORGE_CACHE/contributions/` (quarantine), never in bundled/measured corpora. `plan --contributions` -> `contributed_decode()` exact (model, engine, quant, `match_driver_name` GPU) median, provenance class `contributed` (`PROVENANCE_ORDER` between extrapolated and estimated, mark `*`); reference-rig measured row wins.
 - Numerical accuracy gates in `tests/test_accuracy.py` pin predictions to ground truth.
 
 The `chimeraforge plan` CLI runs a 4-gate exhaustive search (plus an opt-in 5th safety gate) over (model x quant x backend x N_agents):
@@ -341,11 +342,11 @@ The planner is no longer limited to the 7 bundled registry models. `plan --model
 ## Testing
 
 ```bash
-pytest tests/ -v                    # 2792 total tests
+pytest tests/ -v                    # 2816 total tests
 pytest tests/ --cov=src             # With coverage
 ```
 
-**Layout** (2792 tests, 69 files -- planner/bench split per-concern after 0.3.0):
+**Layout** (2816 tests, 70 files -- planner/bench split per-concern after 0.3.0):
 
 - **Planner** (196): test_planner_models.py (76 - 7 predictive models: VRAM (+KV-quant +TP +PP)/
   throughput (+TP comms)/quality/latency/scaling/cost+energy/safety, incl. roofline +
@@ -361,6 +362,10 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5),
   test_bench_identity.py (24 - an impostor answering /health is refused by every
   adapter and by the runner preflight)
+- **Contributions** (21): test_contributions.py - fingerprint + content id, refusals (no GPU,
+  <3 runs), unstable flagged not dropped, tamper detection, quarantine dedupe and isolation
+  from the measured corpus, `plan --contributions` exact-match median labelled `contributed`
+  (below extrapolated), reference-rig measured row wins, CLI + MCP
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
 - **Launch export** (27): test_launch.py - per-backend derived flags (context/TP/PP/batch/

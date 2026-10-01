@@ -8,10 +8,15 @@ top-level BenchmarkResult container.
 from __future__ import annotations
 
 import json
+import logging
 import platform
 import statistics
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
+# NVML reports bytes; the hardware DB and nvidia-smi speak in GiB.
+GIB = 1024**3
 
 
 @dataclass
@@ -63,6 +68,7 @@ class EnvironmentInfo:
     cuda_version: str | None
     backend_name: str
     backend_version: str | None
+    gpu_memory_gb: float | None = None
 
 
 @dataclass
@@ -143,6 +149,7 @@ def collect_environment(
     import chimeraforge
 
     gpu_name: str | None = None
+    gpu_memory_gb: float | None = None
     gpu_driver: str | None = None
     cuda_version: str | None = None
     try:
@@ -154,6 +161,8 @@ def collect_environment(
             gpu_name = pynvml.nvmlDeviceGetName(handle)
             if isinstance(gpu_name, bytes):
                 gpu_name = gpu_name.decode()
+            # Total memory, so a model sold in several capacities can be told apart.
+            gpu_memory_gb = round(pynvml.nvmlDeviceGetMemoryInfo(handle).total / GIB, 1)
             gpu_driver = pynvml.nvmlSystemGetDriverVersion()
             if isinstance(gpu_driver, bytes):
                 gpu_driver = gpu_driver.decode()
@@ -161,8 +170,8 @@ def collect_environment(
             cuda_version = f"{cuda_version // 1000}.{(cuda_version % 1000) // 10}"
         finally:
             pynvml.nvmlShutdown()
-    except Exception:
-        pass
+    except Exception as exc:  # pynvml absent, no NVIDIA driver, or no device
+        logger.debug("GPU environment unavailable via NVML: %s", exc)
 
     return EnvironmentInfo(
         os=platform.system(),
@@ -174,6 +183,7 @@ def collect_environment(
         cuda_version=cuda_version,
         backend_name=backend_name,
         backend_version=backend_version,
+        gpu_memory_gb=gpu_memory_gb,
     )
 
 
