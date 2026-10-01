@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.1] - 2026-10-01
+
 ### Fixed
 - **`measure` / `bench` on vLLM and TGI filed a wall-clock rate as a decode rate.**
   - The vLLM adapter divided completion tokens by the whole request time.
