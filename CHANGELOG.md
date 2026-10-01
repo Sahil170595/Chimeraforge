@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-10-01
+
 ### Added
 - **`plan --mode batch` plans an offline backlog instead of online serving.** Nobody waits on a nightly summarisation job or an embedding backfill, yet the planner still gated every plan on a p95 SLO with 70% utilisation headroom. That forced small batches and extra replicas, and the job paid for latency no one reads. In batch mode:
   - The latency gate is dropped.
