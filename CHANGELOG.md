@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`measure` / `bench` on vLLM and TGI filed a wall-clock rate as a decode rate.**
+  - The vLLM adapter divided completion tokens by the whole request time.
+  - The TGI adapter did the same whenever `/generate` sent no `decode_time`.
+
+  Both included prefill, so the rate understated decode more as prompts grew. `measure` writes that rate into the local corpus, where `plan` then reports it as a `measured` decode rate. Both adapters now stream, the way the SGLang adapter has since 0.35.0:
+  - TTFT is the first content token.
+  - Decode is `(tokens - 1)` over the first-to-last token interval.
+  - The token count comes from the server: vLLM's final usage chunk (`stream_options.include_usage`), or TGI's `details.generated_tokens` on the last `/generate_stream` event.
+
+  The formats were read from source at vLLM v0.30.0 and TGI v3.3.7. TGI special tokens do not start the decode clock. A response without a server token count is a failed run, not an estimate. The shared timing now lives in `bench/backends/_streaming.py`, and the SGLang adapter uses it, byte-identical in behaviour. The vLLM and TGI `generate` methods previously had no tests.
+
 ## [0.43.0] - 2026-09-26
 
 ### Added
