@@ -98,6 +98,23 @@ WORKLOAD_CV2: dict[str, float] = {
 # advise a real load test / simulation (the head-of-line-blocking regime).
 HIGH_VARIANCE_CV2 = 4.0
 
+# Replica search ceiling: the (N x B) search never sizes a fleet past this many units.
+MAX_REPLICAS = 16
+
+# Planning objective. "online" serves requests someone is waiting on: latency
+# gates, queueing headroom, ranked by monthly bill. "batch" drains a backlog: no
+# latency gate, each GPU at its max-throughput batch, ranked by $/1M tokens.
+PLAN_MODE_ONLINE = "online"
+PLAN_MODE_BATCH = "batch"
+PLAN_MODES = (PLAN_MODE_ONLINE, PLAN_MODE_BATCH)
+DEFAULT_PLAN_MODE = PLAN_MODE_ONLINE
+# Online p95 target when none is given. Batch mode refuses any latency target.
+DEFAULT_LATENCY_SLO_MS = 5000.0
+BATCH_LATENCY_REFUSAL = (
+    "batch mode has no latency gate, so a latency target would be silently ignored; "
+    "drop latency_slo/ttft_slo/tpot_slo, or plan with mode=online"
+)
+
 # Roofline throughput estimate for off-registry models. Decode is memory-bound:
 # each token streams all weights once, so tok/s ~= MBU * bandwidth / weight_bytes.
 # MBU (memory-bandwidth utilisation) calibrated from the llama3.2-1b ollama FP16
@@ -160,6 +177,7 @@ DEFAULT_PROMPT_TOKENS = 512
 # steady serving typically draws ~80-90%. Named so the assumption is explicit and
 # tunable, not a magic number buried in the cost math.
 POWER_UTILISATION = 0.85
+GRAMS_PER_KG = 1000.0
 # Default electricity price ($/kWh) -- roughly the US commercial average; override
 # per run with `plan --electricity-rate`. Energy is reported as a SEPARATE line,
 # not folded into the hardware cost or the budget gate, because a cloud `$/hr`

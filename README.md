@@ -155,12 +155,19 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - **KV-cache quantization** (`--kv-quant {fp16,q8,q4}`) shrinks the cache and raises max concurrency -- biggest win at long context.
 - **Heterogeneous fleets** (`--fleet "H100 80GB,A100 80GB,L4 24GB"`): sizes a mix of GPU types instead of N copies of one, because a cheap GPU can win at loose SLOs and small requests while an expensive one wins at tight SLOs and long requests. On an 8B at 250 req/s that is 3x H100 + 1x L4 at **$5,760/mo** against 6x A100 at **$6,912** -- 16.7% cheaper, because the last few req/s are cheaper on a small GPU than on another big one (`plan --model-size 8b --request-rate 250 --fleet "H100 80GB,A100 80GB,L4 24GB" --budget 100000`). A mix presumes a capability-aware router that no serving engine ships, so every mixed plan says so, and the reported provenance is the worst across the types used rather than the best.
 - **Cost realism** (`--duty-cycle`, `--gpu-price-multiplier`): the headline $/1M-tok prices a saturated fleet. You also pay for provisioned headroom and for every idle hour, so the effective figure on an 8B at 2 req/s on an H100 is **$2.71/1M at full duty and $9.04/1M at 30%**, against $0.71 at capacity (`plan --model-size 8b --request-rate 2 --hardware "H100 80GB" --budget 100000 --duty-cycle 0.3`). Spot/reserved pricing is your input, not a bundled guess.
+- **Batch mode** (`--mode batch`): for an offline backlog (a nightly summarisation job, an embedding backfill, an eval sweep) that nobody is waiting on. The latency gate and the 70% utilisation headroom are dropped. Each GPU runs the batch that maximises its throughput, the fleet is the smallest that drains `--request-rate` at full utilisation, and results rank by $/1M tokens rather than by monthly bill.
+  - Example: an 8B at 2 req/s on an H100 goes from **$0.66/1M** (Ollama Q2_K, the cheapest online pick) to **$0.065/1M** (vLLM AWQ at batch 267), with the same one GPU at $1,800/mo (`plan --model-size 8b --request-rate 2 --hardware "H100 80GB" --budget 100000 --mode batch`). That throughput is a roofline estimate, and the output says so.
+  - A latency target (`--latency-slo`, `--ttft-slo`, `--tpot-slo`) together with batch mode is an error, not ignored. The reported request time is service only, with no queue wait, because a backlog's wait depends on its size. `--pareto` trades $/1M tokens against quality.
 - **Self-host vs API break-even** (`--compare-api`): prices your workload against hosted APIs and reports the monthly volume where self-hosting starts winning. Prices are a **dated snapshot with a source URL per provider**, flagged stale past 90 days -- never presented as a live quote -- and a frontier API is labeled as a different quality tier rather than passed off as like-for-like.
 - **Prefix caching** (`--prefix-cache-hit-rate`): chatbot and agent traffic reuse a long system prompt, so most of the prefill is already cached. At a 4k prompt and a 90% hit rate an 8B on an H100 goes from 166ms to 17ms TTFT (`plan --model-size 8b --prompt-tokens 4096 --hardware "H100 80GB" --budget 100000 --prefix-cache-hit-rate 0.9`); the same query on the reference RTX 4080 is 2051ms to 205ms. Defaults to 0 and is never inferred, and the KV a shared prefix saves is deliberately not deducted -- under-sizing KV is what turns "it fits" into an OOM.
 - **Reasoning models** (`--reasoning-tokens N`): hidden thinking tokens are decoded by the GPU and held in KV even though the caller never sees them. Counting only visible output under-counts decode by the reasoning ratio -- 1000 hidden tokens take an 8B plan on an H100 from 193ms to 3664ms p95 (`plan --model-size 8b --hardware "H100 80GB" --budget 100000 --reasoning-tokens 1000`). Defaults to 0 and is never inferred: the ratio is a property of your workload, not the weights.
 - **Attention-shape aware KV:** MLA (DeepSeek-V2/V3) caches a compressed latent rather than per-head K/V -- sizing it as GQA overstates DeepSeek-V3's cache by **57x** -- and sliding-window models stop growing the cache past the window. A window whose layer pattern isn't declared is *not* applied, because under-sizing KV is what turns "it fits" into an OOM.
 - **Mixture-of-Experts aware:** VRAM sizes on *total* params (every expert stays resident) while throughput and TTFT use *active* params (a token only reads the experts it routes to). Treating an MoE model as dense under-predicts its throughput by 3.6x on Mixtral-8x7B and ~18x on DeepSeek-V3. Active counts are derived from the model's real expert geometry and match published figures.
 - **Energy** (`--electricity-rate`): monthly kWh cost, `$/1M-tok (+energy)`, and tok/s-per-watt, reported alongside (not folded into) the budget gate.
+- **Operational carbon** (`--grid-region USA|DEU|France|...` or `--carbon-intensity G`): gCO2e per 1M tokens and kg per month, computed as that same energy times the grid's carbon intensity. An 8B at 2 req/s on an H100 comes to **60 gCO2e per 1M tokens on the US grid and 6.5 on France's** (`plan --model-size 8b --request-rate 2 --hardware "H100 80GB" --budget 100000 --grid-region USA`).
+  - Intensity is Ember's annual-average lifecycle figure per country, via Our World in Data, pinned to an OWID commit and regenerated by `scripts/build_carbon_data.py`. The year is printed with every figure, and a figure more than 2 years old is flagged stale.
+  - It is the SCI operational term only (O = E x I). Embodied emissions are not modelled, so it is not a full SCI score.
+  - E is board power with no host or datacenter PUE, so the figure is a lower bound. An unknown TDP gives unknown carbon, never zero.
 - **Launch-command export** (`--launch`): emits the `vllm serve` / `ollama run` / TGI `docker run` command for the winning config, with the plan's own context length, TP/PP degree, batch size, and KV dtype filled in -- the flags that are error-prone to hand-compute. It won't fabricate what it can't derive: a GGUF quant level becomes a note to serve the native-equivalent checkpoint, not an invented `--quantization` flag.
 - Per-prediction provenance (`measured` / `extrapolated` / `derived` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
@@ -184,7 +191,7 @@ chimeraforge plan --model qwen3:14b --measure   # measure then plan in one step
 
 Benchmarks the live model (real N=1 throughput, service time, concurrency scaling) and folds it into a local corpus. `plan` / `suggest` then prefer the measured numbers automatically (provenance flips to `measured`).
 
-SGLang ships with no measured rows, and the planner says so rather than borrowing vLLM's. Measure your own: `chimeraforge measure --backend sglang --model <served-model-name> --base-url http://localhost:30000`. The SGLang adapter streams and times first and last token, so it records the **decode** rate the planner predicts rather than tokens over wall clock, which includes prefill. It takes the token count from the server's `usage` block, and a response without one is discarded, not estimated.
+SGLang ships with no measured rows, and the planner says so rather than borrowing vLLM's. Measure your own: `chimeraforge measure --backend sglang --model <served-model-name> --base-url http://localhost:30000`. The vLLM, TGI and SGLang adapters stream and time the first and last token, so they record the **decode** rate the planner predicts rather than tokens over wall clock, which includes prefill. TTFT is reported separately. The token count comes from the server (the `usage` block, or TGI's final `generated_tokens`). A response without one is discarded, not estimated.
 
 ### `workload` -- derive plan inputs from real traffic
 
@@ -306,6 +313,8 @@ chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhos
 
 Three workload profiles (single / batch / server-Poisson); measures throughput, TTFT, and latency with p50/p90/p95/p99; CV-based stability warnings; JSON output.
 
+Before the first request, `bench` (and `measure`) confirms the server at the URL is the engine you named: vLLM through `/version`, TGI through `/info`, SGLang through `/server_info`, and Ollama through its root banner. A port that answers `/health` but does not identify itself is refused, so another web app's numbers are never filed as vLLM.
+
 ### `eval` -- quality evaluation
 
 ```bash
@@ -360,6 +369,7 @@ Runs the stdio MCP server described above. Requires `pip install "chimeraforge[m
 | Quality | Measured composite lookup, family-prior estimate, or unknown -- every cell carries its sample size and the smallest difference that sample size can resolve; `--quality-from` ingests a real lm-evaluation-harness run | measured / estimated / unknown |
 | Cost | GPU $/hr x fleet size ($/1M-tok invariant in replica count) | derived (exact arithmetic) |
 | Energy | TDP-driven monthly kWh, $/1M-tok (+energy), tok/s-per-watt | estimated |
+| Carbon (opt-in) | Energy x grid intensity (Ember lifecycle gCO2e/kWh via OWID, per country and year); SCI operational term only | estimated |
 | Safety | TR134/TR142 refusal-rate lookup (opt-in gate) | measured / unknown |
 
 **Hardware:** 50 GPUs:
@@ -412,7 +422,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **2,668 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **2,678 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
@@ -445,6 +455,8 @@ Contributions welcome -- see [`CONTRIBUTING.md`](CONTRIBUTING.md). Good areas: a
 MIT -- see [LICENSE](LICENSE).
 
 ## Acknowledgments
+
+Grid carbon intensity: Ember, Yearly Electricity Data (2026), processed by Our World in Data (energy-data, Ritchie, Rosado and Roser), both CC BY 4.0. The bundled snapshot records the exact OWID commit it was read at.
 
 Conducted as part of the Banterhearts LLM Performance Research Program: Phase 1 (TR108-TR122) established the measurement methodology and cross-language comparison, Phase 2 (TR123-TR133) produced the deployment framework and capacity planner, and Phase 3 (TR134-TR137) measured the safety cost of inference optimization -- now the planner's opt-in safety gate.
 

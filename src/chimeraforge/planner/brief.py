@@ -80,7 +80,8 @@ class BriefInputs:
     model: str | list[str] | None = None
     model_size: str = "3b"
     request_rate: float = 1.0
-    latency_slo_ms: float = 5000.0
+    # None in batch mode, which has no latency gate.
+    latency_slo_ms: float | None = 5000.0
     quality_target: float = 0.5
     # Must match the CLI's --budget default. At 100000 an explicit --budget 100000
     # was treated as "unchanged" and omitted from repro_command(), so the printed
@@ -103,6 +104,9 @@ class BriefInputs:
     lora_target: str = "qv"
     ttft_slo_ms: float | None = None
     tpot_slo_ms: float | None = None
+    grid_region: str | None = None
+    carbon_intensity: float | None = None
+    mode: str = "online"
 
     @property
     def models(self) -> list[str]:
@@ -125,6 +129,7 @@ class BriefInputs:
             parts += ["--model-size", self.model_size]
         defaults = BriefInputs(hardware=self.hardware)
         flags: list[tuple[str, object, object]] = [
+            ("--mode", self.mode, defaults.mode),
             ("--request-rate", self.request_rate, defaults.request_rate),
             ("--latency-slo", self.latency_slo_ms, defaults.latency_slo_ms),
             ("--quality-target", self.quality_target, defaults.quality_target),
@@ -146,6 +151,8 @@ class BriefInputs:
             ("--lora-target", self.lora_target, defaults.lora_target),
             ("--ttft-slo", self.ttft_slo_ms, None),
             ("--tpot-slo", self.tpot_slo_ms, None),
+            ("--grid-region", self.grid_region, None),
+            ("--carbon-intensity", self.carbon_intensity, None),
         ]
         for flag, value, default in flags:
             if value != default and value is not None:
@@ -290,7 +297,18 @@ def build_brief(
         ),
         # Latency is a queueing model layered on a throughput number, so it cannot
         # be better-grounded than "estimated" even when the throughput was measured.
-        MetricRow("p95 latency", f"{w.p95_latency_ms:.0f} ms", "estimated", "service + queueing"),
+        (
+            MetricRow(
+                "Request time",
+                f"{w.p95_latency_ms:.0f} ms",
+                "estimated",
+                "service only; batch mode models no queue wait",
+            )
+            if w.mode == "batch"
+            else MetricRow(
+                "p95 latency", f"{w.p95_latency_ms:.0f} ms", "estimated", "service + queueing"
+            )
+        ),
         MetricRow("Quality score", f"{w.quality:.3f}", qual_p, w.quality_tier),
         MetricRow(
             "Cost",
@@ -313,6 +331,15 @@ def build_brief(
                 f"${w.energy_cost_month:,.2f}/mo",
                 "estimated",  # board TDP is a rating, not a measured draw
                 f"{w.perf_per_watt:.2f} tok/s per watt, from board TDP",
+            )
+        )
+    if w.co2e_g_per_1m_tok is not None:
+        metrics.append(
+            MetricRow(
+                "Carbon (operational)",
+                f"{w.co2e_g_per_1m_tok:,.1f} gCO2e per 1M tokens, {w.co2e_kg_month:,.1f} kg/mo",
+                "estimated",  # E is board TDP x load, not a metered draw
+                f"SCI O = E x I only, embodied excluded; {w.carbon_basis}",
             )
         )
     if w.lora_adapters:
@@ -400,7 +427,11 @@ def render_markdown(brief: Brief) -> str:
         + " |",
         f"| Prompt tokens | {i.prompt_tokens} |",
         f"| Context length | {i.context_length} |",
-        f"| Latency SLO (p95) | {_num(i.latency_slo_ms)} ms |",
+        (
+            "| Mode | batch: no latency gate, ranked by $/1M tokens |"
+            if i.mode == "batch"
+            else f"| Latency SLO (p95) | {_num(i.latency_slo_ms)} ms |"
+        ),
         f"| Quality floor | {i.quality_target} |",
         f"| Budget | ${i.budget_usd_month:,.2f}/mo |",
         f"| Traffic variance | {i.workload} |",
