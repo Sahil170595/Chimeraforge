@@ -1,36 +1,28 @@
-# Container image for the ChimeraForge MCP server.
-#
-# The server speaks MCP over stdio, so the container is run attached rather than
-# as a daemon -- there is no port to publish and no healthcheck to poll:
-#
-#   docker run --rm -i chimeraforge
-#
-# Installed from the published wheel rather than the working tree so the image
-# matches what a user actually gets from PyPI. Pass a version to pin it.
-FROM python:3.12-slim AS base
-
-# Build arg rather than a hardcoded pin: the default tracks the latest release,
-# and CI/consumers can pin a known version for a reproducible image.
-ARG CHIMERAFORGE_VERSION=""
-
+# The default image follows the published package; CI explicitly selects candidate.
+FROM python:3.12-slim@sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016 AS base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# The planner itself is pure Python and needs no build toolchain; installing the
-# wheel only keeps the image small and the attack surface boring.
-RUN pip install --no-cache-dir "chimeraforge[mcp]${CHIMERAFORGE_VERSION:+==${CHIMERAFORGE_VERSION}}"
-
-# Nothing here needs root, and an MCP server is something a user runs against
-# their own machine -- so drop privileges rather than leaving it as an exercise.
 RUN useradd --create-home --uid 10001 chimera
+
+FROM base AS candidate
+COPY requirements-candidate.txt /tmp/requirements-candidate.txt
+COPY dist/*.whl /tmp/dist/
+RUN pip install --require-hashes -r /tmp/requirements-candidate.txt \
+    && pip install --no-deps /tmp/dist/*.whl \
+    && rm -rf /tmp/dist /tmp/requirements-candidate.txt
 USER chimera
 WORKDIR /home/chimera
+RUN python -c "from chimeraforge.mcp_server import build_server; build_server()"
+ENTRYPOINT ["chimeraforge"]
+CMD ["mcp"]
 
-# Fail the build if the server cannot actually be constructed, rather than
-# shipping an image that only fails when someone tries to use it.
-RUN python -c "from chimeraforge.mcp_server import build_server; build_server(); print('mcp server OK')"
-
+FROM base AS published
+ARG CHIMERAFORGE_VERSION=""
+RUN pip install "chimeraforge[mcp]${CHIMERAFORGE_VERSION:+==${CHIMERAFORGE_VERSION}}"
+USER chimera
+WORKDIR /home/chimera
+RUN python -c "from chimeraforge.mcp_server import build_server; build_server()"
 ENTRYPOINT ["chimeraforge"]
 CMD ["mcp"]
