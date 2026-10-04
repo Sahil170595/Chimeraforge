@@ -305,10 +305,38 @@ def _cell(cands, backend="vllm", quant="FP16"):
 
 
 class TestPlan:
+    def test_approximate_model_alias_does_not_borrow_exact_contribution(self):
+        _quarantine(bench_result())
+        result = run_plan(
+            **PLAN,
+            models=["custom/Llama-3.2-3B-Instruct-customer"],
+            allow_network=False,
+            use_contributions=True,
+        )
+        assert result.candidates
+        assert all(c.model_source == "registry-approx" for c in result.candidates)
+        assert all(
+            prov_class(c.provenance["throughput"]) != PROV_CONTRIBUTED for c in result.candidates
+        )
+
     def test_contributed_class_ranks_below_extrapolated(self):
         order = list(PROVENANCE_ORDER)
         assert (
             order.index("extrapolated") < order.index(PROV_CONTRIBUTED) < order.index("estimated")
+        )
+
+    def test_approximate_model_can_use_its_own_exact_contribution(self):
+        model = "custom/Llama-3.2-3B-Instruct-customer"
+        _quarantine(bench_result(model=model))
+        result = run_plan(
+            **PLAN,
+            models=[model],
+            allow_network=False,
+            use_contributions=True,
+        )
+        assert result.candidates
+        assert any(
+            prov_class(c.provenance["throughput"]) == PROV_CONTRIBUTED for c in result.candidates
         )
 
     def test_ignored_without_the_flag(self):

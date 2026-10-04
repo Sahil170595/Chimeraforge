@@ -718,8 +718,11 @@ def enumerate_candidates(
                 # when asked for -- never this project's own row on its own rig.
                 contrib_ev = None
                 if contributions is not None and not (lookup_hit and is_reference_hardware(gpu)):
+                    contribution_models = (
+                        (model,) if model_source == SOURCE_REGISTRY_APPROX else (model, lookup_name)
+                    )
                     contrib_ev = contributed_decode(
-                        contributions, (model, lookup_name), backend, quant, gpu.name
+                        contributions, contribution_models, backend, quant, gpu.name
                     )
                     if contrib_ev is not None:
                         n1_tps = contrib_ev["decode_tps"]
