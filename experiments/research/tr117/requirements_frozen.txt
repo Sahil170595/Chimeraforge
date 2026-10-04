@@ -21,7 +21,7 @@ pycuda==2024.1.2
 
 # Metrics
 rouge-score==0.1.2
-nltk==3.9.1
+nltk==3.10.3
 sentence-transformers==3.3.1
 scikit-learn==1.6.0
 
