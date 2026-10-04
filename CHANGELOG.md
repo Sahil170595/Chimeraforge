@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-10-04
+
 ### Added
 - **`chimeraforge contribute export|verify|import|list` and `plan --contributions`: the first step toward a shared measured corpus.** This is the roadmap's Phase 9 federated corpus, built in the shape it says stays honest.
   - **Contribution files:** `export` turns `bench` results into one file each, holding the environment fingerprint (GPU and its memory, driver, CUDA, OS, engine and version, chimeraforge version), the per-run decode and TTFT figures, and a SHA-256 content id.
