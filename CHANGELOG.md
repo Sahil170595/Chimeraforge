@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-10-04
+
 ### Added
 - **A prefill/decode disaggregation advisory on candidates that sit where the published sources say it is worth considering.** The planner does not model disaggregation, and the roadmap rejected that (D2): no closed-form prefill:decode ratio exists, and vLLM's own docs state "Disaggregated prefill DOES NOT improve throughput". So the advisory predicts nothing. It says when a plan is in the region, quotes the sources, and gives context from the plan.
   - **The region:** each condition maps to a sentence in a source re-read on 2026-10-01.
