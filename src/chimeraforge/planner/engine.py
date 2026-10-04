@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from chimeraforge.planner.constants import (
     BATCH_LATENCY_REFUSAL,
     MAX_REPLICAS,
+    MIN_SESSION_TURNS,
     CHUNK_BUDGET_CALIBRATED_MAX,
     CHUNK_BUDGET_CALIBRATED_MIN,
     CHUNK_OVERHEAD_CAP,
@@ -75,6 +76,7 @@ from chimeraforge.planner.hardware import (
     AUTO_HARDWARE,
     GPU_DB,
     GPU_OVERRIDE_FIELDS,
+    PRICE_BASIS_HYPERSCALER,
     PRICE_BASIS_PHRASE,
     apply_unified_fraction,
     resolve_hardware,
@@ -83,6 +85,14 @@ from chimeraforge.planner.hardware import (
     get_gpu,
     is_reference_hardware,
 )
+from chimeraforge.planner.advisories import disaggregation_advisory
+from chimeraforge.planner.cloudprice import (
+    CLOUDS,
+    fleet_hourly_cost,
+    load_cloud_prices,
+    offers_for,
+)
+from chimeraforge.planner.cloudprice import is_stale as cloud_is_stale
 from chimeraforge.planner.models import PlannerModels
 from chimeraforge.planner.platform_support import (
     DEFAULT_PLAN_PLATFORM,
@@ -132,6 +142,15 @@ class Candidate:
     # after it (0.19.0). hit_rate 0.0 = no caching assumed.
     prefix_cache_hit_rate: float = 0.0
     prefill_tokens_effective: int = 0
+    # Multi-turn residency: think time and turns per session (0 = off), the idle
+    # conversations those imply, how many this config's free KV holds, the share
+    # retained, and the hit rate that survives it (= prefix_cache_hit_rate when off).
+    prefix_cache_hit_rate_effective: float = 0.0
+    think_time_s: float = 0.0
+    session_turns: int = 0
+    session_idle_conversations: float = 0.0
+    session_capacity_conversations: float = 0.0
+    session_retention: float = 1.0
     # Cost realism (0.20.0). `cost_per_1m_tok` prices a saturated fleet; the
     # effective figure amortises the same bill over the tokens actually served
     # at `duty_cycle`, which is what a monthly invoice divides by.
@@ -185,6 +204,12 @@ class Candidate:
     # of the two a config actually fails.
     ttft_slo_ms: float = 0.0
     tpot_slo_ms: float = 0.0
+    # Where published sources say prefill/decode disaggregation is worth considering
+    # for this plan, with citations; "" outside that region. Predicts nothing.
+    disaggregation_advisory: str = ""
+    # Hyperscaler pricing (--cloud): the instances the bill was computed from, e.g.
+    # "1 x aws p5.48xlarge in us-east-1 ($55.04/h for 8 GPUs)". "" = bundled price.
+    cloud_offer: str = ""
     # Operational carbon (SCI v1.1 O = E x I, embodied M not modelled). None when no
     # grid was given, or when the GPU's TDP is unknown -- never 0.0 for unknown.
     co2e_g_per_1m_tok: float | None = None
@@ -287,6 +312,9 @@ def enumerate_candidates(
     pipeline_parallel: int | None = 1,
     grid: GridIntensity | None = None,
     mode: str = PLAN_MODE_ONLINE,
+    cloud: str | None = None,
+    think_time_s: float | None = None,
+    session_turns: int | None = None,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -334,6 +362,26 @@ def enumerate_candidates(
     # At least one token is always prefilled -- a fully cached prompt still runs the
     # newest token through the stack, so TTFT never truly reaches zero.
     prefill_tokens_eff = max(int(round(prompt_tokens * (1.0 - hit_rate))), 1)
+    # Multi-turn residency: a returning turn hits only if its conversation's KV
+    # survived the think time. Little's law gives the idle conversations the fleet
+    # must hold; each holds the prefix the next turn re-sends (prompt + visible
+    # output -- chat templates drop hidden reasoning from the history).
+    sessions_on = think_time_s is not None or session_turns is not None
+    idle_conversations = 0.0
+    session_prefix_tokens = prompt_tokens + max(avg_tokens, 0)
+    if sessions_on:
+        if think_time_s is None or session_turns is None:
+            raise ValueError("think_time_s and session_turns are given together, or not at all")
+        if think_time_s <= 0:
+            raise ValueError("think_time_s must be positive")
+        if session_turns < MIN_SESSION_TURNS:
+            raise ValueError(f"session_turns must be at least {MIN_SESSION_TURNS}")
+        if hit_rate <= 0:
+            raise ValueError(
+                "session residency bounds a prefix-cache hit rate; state the hit rate a "
+                "returning turn gets when its conversation is still cached"
+            )
+        idle_conversations = request_rate * (session_turns - 1) / session_turns * think_time_s
     if mode not in PLAN_MODES:
         raise ValueError(f"mode must be one of: {', '.join(PLAN_MODES)}")
     batch_mode = mode == PLAN_MODE_BATCH
@@ -395,6 +443,20 @@ def enumerate_candidates(
     # `derived`, sorted first, inside any budget) and one with no FP16 figure
     # reported TTFT 0.0 ms. Unknown disables the prediction instead.
     price_known = gpu is None or gpu.cost_per_hour > 0
+    # A cloud prices instances, not GPUs; the bill is computed per candidate from
+    # whole instances. A second price for the same GPU would leave two answers.
+    cloud_offers = None
+    if cloud is not None:
+        if cloud not in CLOUDS:
+            raise ValueError(f"cloud must be one of: {', '.join(CLOUDS)}")
+        if (gpu_overrides or {}).get("cost_per_hour") is not None:
+            raise ValueError(
+                "--cloud prices the GPU from that cloud's list; --gpu-price-per-hour is a "
+                "second price for the same GPU -- pass one or the other"
+            )
+        cloud_offers = offers_for(cloud, gpu.name)
+        cloud_captured = load_cloud_prices()["captured_at"]
+        cloud_stale = cloud_is_stale()
     compute_known = gpu is None or gpu.fp16_tflops > 0
     # Which engine-support row this deployment is: the OS the plan targets plus
     # the GPU's vendor. None when the vendor is unknown -- then nothing is refused
@@ -766,6 +828,45 @@ def enumerate_candidates(
                         n1_tps, kv_per_seq_gb, b, gpu, active_params_b
                     )
 
+                # KV one unit holds (pool), and what one active sequence and one idle
+                # conversation's prefix each occupy -- in GB, so SWA/MLA shapes count.
+                pool_gb = max_seqs * kv_per_seq_gb
+                active_seq_gb = models.vram.kv_cache_gb(
+                    arch_eff, peak_seq_tokens, 1, kv_bytes=kv_bytes
+                )
+                prefix_gb = models.vram.kv_cache_gb(
+                    arch_eff, session_prefix_tokens, 1, kv_bytes=kv_bytes
+                )
+
+                def _session(n: int, b: int) -> tuple[float, float, int, float, float]:
+                    """(ttft_ms, hit rate, prefill tokens, retention, capacity) at N x B."""
+                    if not sessions_on:
+                        return ttft_ms, hit_rate, prefill_tokens_eff, 1.0, 0.0
+                    if batched:
+                        # Finished requests' blocks stay as evictable cache; only what
+                        # the running batch leaves free can hold idle conversations.
+                        free_gb = max(pool_gb - b * active_seq_gb, 0.0)
+                        capacity = n * free_gb / prefix_gb if prefix_gb > 0 else 0.0
+                    else:
+                        # A single-slot server keeps the last request's prompt cache;
+                        # the next request replaces it.
+                        capacity = float(n)
+                    retention = session_retention(idle_conversations, capacity)
+                    hit = hit_rate * retention
+                    prefill = max(int(round(prompt_tokens * (1.0 - hit))), 1)
+                    if prefill == prefill_tokens_eff:
+                        return ttft_ms, hit, prefill, retention, capacity
+                    ttft = models.latency.predict_ttft_ms(
+                        active_params_b,
+                        prefill,
+                        gpu,
+                        quant=quant,
+                        arch=arch_model,
+                        max_num_batched_tokens=max_num_batched_tokens,
+                        kv_bytes=kv_bytes,
+                    )
+                    return ttft, hit, prefill, retention, capacity
+
                 if ttft_slo and not compute_known:
                     _reject(
                         model,
@@ -798,17 +899,22 @@ def enumerate_candidates(
                     n_need = max(n_need, 1)
                     per_req_b = top_tps / b_star
                     lat = {
-                        "p95_ms": ttft_ms + decode_tokens / per_req_b * 1000.0,
+                        "p95_ms": _session(n_need, b_star)[0] + decode_tokens / per_req_b * 1000.0,
                         "utilisation": required_tps / (n_need * top_tps),
                     }
                     best = (n_need, b_star, top_tps, per_req_b, lat)
                 # Online: the (N, B) search under the latency gates. Skipped in batch.
+                # TTFT is per (N, B): with session residency, more replicas and a
+                # smaller batch leave more KV free for idle conversations.
+                ttft_best = float("inf") if sessions_on else ttft_ms
                 for n in () if batch_mode else range(1, MAX_REPLICAS + 1):
                     for b in batch_grid:
                         per_gpu = _unit_tps(b)
                         if n * per_gpu < required_tps:
                             continue
                         per_req = per_gpu / b
+                        cell_ttft = _session(n, b)[0]
+                        ttft_best = min(ttft_best, cell_ttft) if sessions_on else ttft_ms
                         lat = models.latency.predict_p95(
                             lookup_name,
                             backend,
@@ -818,7 +924,7 @@ def enumerate_candidates(
                             quant=quant,
                             hardware=gpu,
                             n1_tps=per_req,
-                            ttft_ms=ttft_ms,
+                            ttft_ms=cell_ttft,
                             concurrent_per_agent=b,
                             service_cv2=workload_cv2,
                         )
@@ -827,7 +933,7 @@ def enumerate_candidates(
                         # a bigger batch that wins on p95 by ruining per-token
                         # latency is rejected here rather than recommended.
                         cand_tpot = 1000.0 / per_req if per_req > 0 else float("inf")
-                        if ttft_slo and ttft_ms > ttft_slo:
+                        if ttft_slo and cell_ttft > ttft_slo:
                             continue
                         if tpot_slo and cand_tpot > tpot_slo:
                             continue
@@ -851,9 +957,9 @@ def enumerate_candidates(
                         # Say which of the three bound, so "latency" is actionable:
                         # a TTFT failure and a TPOT failure need opposite fixes
                         # (more replicas vs a smaller batch).
-                        if ttft_slo and ttft_ms > ttft_slo:
+                        if ttft_slo and ttft_best > ttft_slo:
                             detail = (
-                                f"{backend}: TTFT {ttft_ms:.0f}ms > {ttft_slo:.0f}ms SLO "
+                                f"{backend}: TTFT {ttft_best:.0f}ms > {ttft_slo:.0f}ms SLO "
                                 "(prefill-bound; a bigger batch will not help)"
                             )
                         elif tpot_slo:
@@ -867,6 +973,7 @@ def enumerate_candidates(
                     continue
 
                 best_n, best_b, per_gpu_tps, per_req_tps, lat = best
+                cell_ttft, cell_hit, cell_prefill, retention, capacity = _session(best_n, best_b)
                 total_tps = best_n * per_gpu_tps
                 tpot_ms = 1000.0 / per_req_tps if per_req_tps > 0 else 0.0
                 # Each of the N replicas is a parallel group of `tp*pp` GPUs, so the
@@ -874,7 +981,29 @@ def enumerate_candidates(
                 total_gpus = best_n * tp * pp
 
                 # Gate 4: Cost (N replicas x TP*PP GPUs each)
-                if not price_known:
+                fleet_hr = hw_cost_hr * total_gpus
+                cloud_offer = ""
+                if cloud_offers is not None:
+                    fleet = fleet_hourly_cost(cloud_offers, best_n, tp * pp)
+                    if fleet is None:
+                        why = (
+                            f"no {cloud} on-demand instance carries {gpu.name}"
+                            if not cloud_offers
+                            else f"no {cloud} instance holds a TP={tp * pp} group of "
+                            f"{gpu.name} (the largest has "
+                            f"{max(o.gpus for o in cloud_offers)} GPUs)"
+                        )
+                        _reject(
+                            model,
+                            quant,
+                            "budget",
+                            f"{backend}: {why} (price snapshot {cloud_captured})",
+                        )
+                        continue
+                    fleet_list_hr, offer, instances = fleet
+                    fleet_hr = fleet_list_hr * price_mult
+                    cloud_offer = f"{instances} x {offer.describe()}"
+                elif not price_known:
                     _reject(
                         model,
                         quant,
@@ -883,7 +1012,7 @@ def enumerate_candidates(
                         "pass --gpu-price-per-hour to plan it",
                     )
                     continue
-                monthly = models.cost.predict_monthly(hw_cost_hr) * total_gpus
+                monthly = models.cost.predict_monthly(fleet_hr)
                 if monthly > budget:
                     tp_note = f" x TP={tp}" if tp > 1 else (f" x PP={pp}" if pp > 1 else "")
                     _reject(
@@ -897,7 +1026,7 @@ def enumerate_candidates(
                 # Cost per 1M tokens: total_tps is the fleet throughput, so the rate
                 # must be the fleet's (N*tp) GPU cost (else understated). Identical
                 # replicas leave $/token unchanged -- the correct invariant.
-                cost_1m = models.cost.predict_cost_per_1m(total_tps, hw_cost_hr * total_gpus)
+                cost_1m = models.cost.predict_cost_per_1m(total_tps, fleet_hr)
                 # Tokens the workload actually asks for over a month, at duty cycle.
                 tokens_month = request_rate * decode_tokens * SECONDS_PER_MONTH * duty
                 cost_1m_eff = (monthly / tokens_month * 1e6) if tokens_month > 0 else float("inf")
@@ -998,10 +1127,22 @@ def enumerate_candidates(
                     )
                 if hit_rate > 0:
                     warnings.append(
-                        f"prefix cache assumed at {hit_rate:.0%} hit rate: {prefill_tokens_eff} of "
+                        f"prefix cache assumed at {cell_hit:.0%} hit rate: {cell_prefill} of "
                         f"{prompt_tokens} prompt tokens prefilled, so TTFT reflects the uncached "
                         "remainder. The hit rate is your scenario input, not a model property, and "
                         "the KV memory a shared prefix saves is deliberately NOT deducted"
+                    )
+                if sessions_on and retention < 1.0:
+                    warnings.append(
+                        f"session residency: {idle_conversations:.0f} idle conversations "
+                        f"(rate x {session_turns - 1}/{session_turns} returning x "
+                        f"{think_time_s:g}s think time) each hold a "
+                        f"{session_prefix_tokens}-token prefix, and this config's free KV "
+                        f"holds {capacity:.0f} of them, so the {hit_rate:.0%} hit rate is "
+                        f"limited to {cell_hit:.0%}. Assumes session-affinity routing (a "
+                        "returning turn reaches the replica holding its prefix) and eviction "
+                        "that keeps idle conversations at random; a stated hit rate above "
+                        "this cannot be explained by retention"
                     )
                 if spec is not None and spec.is_mla:
                     warnings.append(
@@ -1028,11 +1169,30 @@ def enumerate_candidates(
                 # drives the budget gate, $/1M-tok and the API break-even -- so a
                 # bare dollar figure means two different things depending on the
                 # card, and the difference is 4-5x on the datacenter entries.
-                warnings.append(
-                    f"priced at ${gpu.cost_per_hour:.3f}/GPU-hour on the "
-                    f"{gpu.price_basis} basis: "
-                    f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
-                )
+                if cloud_offers is not None:
+                    billed = instances * offer.gpus
+                    idle = (
+                        f"; {billed - total_gpus} of the {billed} GPUs billed sit idle"
+                        if billed > total_gpus
+                        else ""
+                    )
+                    warnings.append(
+                        f"priced at ${fleet_list_hr:.2f}/h on the {PRICE_BASIS_HYPERSCALER} "
+                        f"basis ({PRICE_BASIS_PHRASE[PRICE_BASIS_HYPERSCALER]}): "
+                        f"{cloud_offer}, Linux, list price from the {cloud_captured} "
+                        f"snapshot{idle}"
+                    )
+                    if cloud_stale:
+                        warnings.append(
+                            f"the {cloud} price snapshot from {cloud_captured} is stale; "
+                            "re-run scripts/build_cloud_prices.py --write"
+                        )
+                else:
+                    warnings.append(
+                        f"priced at ${gpu.cost_per_hour:.3f}/GPU-hour on the "
+                        f"{gpu.price_basis} basis: "
+                        f"{PRICE_BASIS_PHRASE.get(gpu.price_basis, 'basis unrecorded')}"
+                    )
                 warnings.extend(hardware_warnings)
                 warnings.extend(verdict.warnings)
                 if not compute_known:
@@ -1042,18 +1202,18 @@ def enumerate_candidates(
                         "so latency here is a best case"
                     )
                 floor_ms = models.latency.prefill_floor_ms(active_params_b, quant, gpu)
-                chunks = models.latency.prefill_chunks(prefill_tokens_eff, max_num_batched_tokens)
-                if floor_ms > 0 and ttft_ms <= floor_ms * max(chunks, 1) * (1 + 1e-9):
+                chunks = models.latency.prefill_chunks(cell_prefill, max_num_batched_tokens)
+                if floor_ms > 0 and cell_ttft <= floor_ms * max(chunks, 1) * (1 + 1e-9):
                     warnings.append(
                         f"TTFT is at its memory-bound FLOOR ({floor_ms:.1f}ms per forward "
-                        f"pass): at {prefill_tokens_eff} prompt tokens the prefill is too "
+                        f"pass): at {cell_prefill} prompt tokens the prefill is too "
                         "short to saturate compute, so the time to stream the weights "
                         "dominates. This is a BOUND from MBU (one calibration point), not "
                         "a prediction -- treat it as 'no faster than'"
                     )
                 if chunks > 1:
                     warnings.append(
-                        f"chunked prefill: {prefill_tokens_eff} tokens in {chunks} chunks of "
+                        f"chunked prefill: {cell_prefill} tokens in {chunks} chunks of "
                         f"{max_num_batched_tokens}. Each chunk re-reads the earlier chunks' "
                         f"KV, and the weights are streamed once per chunk. The overhead is "
                         f"derived from that mechanism and clamped at "
@@ -1294,14 +1454,34 @@ def enumerate_candidates(
                         reasoning_tokens=reasoning_hidden,
                         decode_tokens_per_req=decode_tokens,
                         prefix_cache_hit_rate=round(hit_rate, 4),
-                        prefill_tokens_effective=prefill_tokens_eff,
+                        prefix_cache_hit_rate_effective=round(cell_hit, 4),
+                        prefill_tokens_effective=cell_prefill,
+                        think_time_s=float(think_time_s or 0.0),
+                        session_turns=int(session_turns or 0),
+                        session_idle_conversations=round(idle_conversations, 3),
+                        session_capacity_conversations=round(capacity, 3),
+                        session_retention=round(retention, 4),
                         model_source=model_source,
                         provenance=provenance,
                         max_concurrent_seqs=max_seqs,
-                        ttft_ms=round(ttft_ms, 1),
+                        ttft_ms=round(cell_ttft, 1),
                         tpot_ms=round(tpot_ms, 1),
                         ttft_slo_ms=float(ttft_slo or 0.0),
                         tpot_slo_ms=float(tpot_slo or 0.0),
+                        disaggregation_advisory=disaggregation_advisory(
+                            backend=backend,
+                            ttft_slo=ttft_slo,
+                            tpot_slo=tpot_slo,
+                            gpus_total=total_gpus,
+                            batch_mode=batch_mode,
+                            ttft_ms=cell_ttft,
+                            tpot_ms=tpot_ms,
+                            decode_tokens=decode_tokens,
+                            prompt_tokens=prompt_tokens,
+                            interconnect_gbps=interconnect_gbps,
+                            gpu_name=gpu.name,
+                        ),
+                        cloud_offer=cloud_offer,
                         co2e_g_per_1m_tok=None if co2e_1m is None else round(co2e_1m, 3),
                         co2e_kg_month=None if co2e_month is None else round(co2e_month, 3),
                         carbon_basis=grid.basis if grid is not None else "",
@@ -1389,6 +1569,18 @@ def _carbon_warnings(grid: GridIntensity, tdp_watts: float, gpu_name: str) -> li
             "grids change year to year -- pass --carbon-intensity with a current figure"
         )
     return out
+
+
+def session_retention(idle_conversations: float, capacity_conversations: float) -> float:
+    """Share of idle conversations whose prefix the free KV can hold at once.
+
+    With eviction that keeps idle conversations at random relative to when they
+    return (memoryless think time + LRU), it is also the share of returning turns
+    that find their prefix.
+    """
+    if idle_conversations <= 0:
+        return 1.0
+    return max(0.0, min(1.0, capacity_conversations / idle_conversations))
 
 
 def _batch_grid(b_max: int) -> list[int]:

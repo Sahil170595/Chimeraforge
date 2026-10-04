@@ -53,6 +53,10 @@ htmlcov/
 .tox/
 .nox/
 coverage.xml
+coverage.json
+requirements-candidate.txt
+.ci-audit.json
+.ci-requirements.txt
 *.cover
 
 # Type checking & linting

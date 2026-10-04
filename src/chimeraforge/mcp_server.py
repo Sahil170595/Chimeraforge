@@ -75,6 +75,14 @@ def _candidate_summary(c) -> dict:
         "quant": c.quant,
         "backend": c.backend,
         "mode": c.mode,
+        # Cited guidance the planner does not model; "" when the plan is outside it.
+        "disaggregation_advisory": c.disaggregation_advisory,
+        # The instances a --cloud bill was computed from ("" = bundled price).
+        "cloud_offer": c.cloud_offer,
+        # Multi-turn residency: the hit rate that survives idle conversations'
+        # KV competing for the free pool (equals the stated rate when off).
+        "prefix_cache_hit_rate_effective": c.prefix_cache_hit_rate_effective,
+        "session_retention": c.session_retention,
         "replicas": c.n_agents,
         "tensor_parallel": c.tensor_parallel,
         "pipeline_parallel": c.pipeline_parallel,
@@ -141,6 +149,9 @@ def plan_deployment(
     grid_region: str | None = None,
     carbon_intensity_g_per_kwh: float | None = None,
     mode: str = "online",
+    cloud: str | None = None,
+    think_time_s: float | None = None,
+    session_turns: int | None = None,
     allow_network: bool = True,
 ) -> dict:
     """Plan a deployment; return the top candidates or an actionable error.
@@ -151,6 +162,10 @@ def plan_deployment(
     bursty / agent) -- real traffic is not deterministic and the p95 moves a lot.
     ``grid_region`` (ISO-3 code or country name) or ``carbon_intensity_g_per_kwh`` adds
     operational gCO2e per 1M tokens (SCI O = E x I only; embodied emissions excluded).
+    ``cloud`` (aws/azure) prices the fleet from that cloud's on-demand list, instance by
+    instance (dated snapshot), instead of the bundled marketplace rate.
+    ``think_time_s`` + ``session_turns`` (together) limit ``prefix_cache_hit_rate``
+    to what the fleet's free KV can keep for idle conversations between turns.
     ``mode="batch"`` plans an offline backlog (no latency gate, ranked by $/1M
     tokens); a latency target with it is an error. ``latency_slo_ms`` None = 5000.
     """
@@ -228,6 +243,9 @@ def plan_deployment(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity_g_per_kwh,
             mode=mode,
+            cloud=cloud,
+            think_time_s=think_time_s,
+            session_turns=session_turns,
             allow_network=allow_network,
         )
     except ResolverError as exc:
