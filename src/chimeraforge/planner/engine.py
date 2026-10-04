@@ -85,6 +85,7 @@ from chimeraforge.planner.hardware import (
     get_gpu,
     is_reference_hardware,
 )
+from chimeraforge.planner.advisories import disaggregation_advisory
 from chimeraforge.planner.cloudprice import (
     CLOUDS,
     fleet_hourly_cost,
@@ -203,6 +204,9 @@ class Candidate:
     # of the two a config actually fails.
     ttft_slo_ms: float = 0.0
     tpot_slo_ms: float = 0.0
+    # Where published sources say prefill/decode disaggregation is worth considering
+    # for this plan, with citations; "" outside that region. Predicts nothing.
+    disaggregation_advisory: str = ""
     # Hyperscaler pricing (--cloud): the instances the bill was computed from, e.g.
     # "1 x aws p5.48xlarge in us-east-1 ($55.04/h for 8 GPUs)". "" = bundled price.
     cloud_offer: str = ""
@@ -1464,6 +1468,19 @@ def enumerate_candidates(
                         tpot_ms=round(tpot_ms, 1),
                         ttft_slo_ms=float(ttft_slo or 0.0),
                         tpot_slo_ms=float(tpot_slo or 0.0),
+                        disaggregation_advisory=disaggregation_advisory(
+                            backend=backend,
+                            ttft_slo=ttft_slo,
+                            tpot_slo=tpot_slo,
+                            gpus_total=total_gpus,
+                            batch_mode=batch_mode,
+                            ttft_ms=cell_ttft,
+                            tpot_ms=tpot_ms,
+                            decode_tokens=decode_tokens,
+                            prompt_tokens=prompt_tokens,
+                            interconnect_gbps=interconnect_gbps,
+                            gpu_name=gpu.name,
+                        ),
                         cloud_offer=cloud_offer,
                         co2e_g_per_1m_tok=None if co2e_1m is None else round(co2e_1m, 3),
                         co2e_kg_month=None if co2e_month is None else round(co2e_month, 3),
