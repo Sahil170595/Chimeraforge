@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.49.0] - 2026-10-04
-
 ### Added
 - **`chimeraforge contribute export|verify|import|list` and `plan --contributions`: the first step toward a shared measured corpus.** This is the roadmap's Phase 9 federated corpus, built in the shape it says stays honest.
   - **Contribution files:** `export` turns `bench` results into one file each, holding the environment fingerprint (GPU and its memory, driver, CUDA, OS, engine and version, chimeraforge version), the per-run decode and TTFT figures, and a SHA-256 content id.
@@ -28,6 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`bench` swallowed every NVML error silently** when collecting the environment. It now logs why the GPU fields are empty.
 - Contribution validation rejects malformed encodings, excessively nested JSON, invalid measurements and fingerprints, inconsistent statistics, and unknown or unapplied quantization labels. Invalid quarantine files warn and are skipped.
 - Approximate registry matches cannot borrow another model's contribution as an exact measurement. An explicitly named custom model can still use its own exact contribution.
+
+## [0.49.0] - 2026-10-04
+
+### Added
+- **A prefill/decode disaggregation advisory on candidates that sit where the published sources say it is worth considering.** The planner does not model disaggregation, and the roadmap rejected that (D2): no closed-form prefill:decode ratio exists, and vLLM's own docs state "Disaggregated prefill DOES NOT improve throughput". So the advisory predicts nothing. It says when a plan is in the region, quotes the sources, and gives context from the plan.
+  - **The region:** each condition maps to a sentence in a source re-read on 2026-10-01.
+    - Both TTFT and TPOT are gated. DistServe (OSDI 2024, arXiv:2401.09670) says existing systems "have to prioritize one latency over the other, or over-provision compute resources to meet both"; vLLM's docs list tuning TTFT and ITL separately and controlling tail ITL as the uses.
+    - Serving is online. DistServe Sec. 7 says chunked prefill "may be preferred" for throughput-optimized offline work.
+    - The fleet has more than one GPU.
+    - The engine's docs document the feature: vLLM v0.30.0 and SGLang v0.5.20 do; TGI v3.3.7 and Ollama do not.
+  - **The text:** it states that no speedup is predicted, that the feature is experimental, and that chunked prefill (`--max-num-batched-tokens`) targets the same problem. It gives the plan's prefill share of modeled request service time, including session-limited TTFT, and the GPU's interconnect bandwidth, and quotes DistServe that with "only a few or even a single GPU" the design space "is significantly limited".
+  - **Where it shows up:** the candidate field `disaggregation_advisory`, an Advisory panel in the Rich output, and the MCP summary. The field is empty outside the region, so plans are otherwise unchanged.
 
 ## [0.48.0] - 2026-10-04
 
