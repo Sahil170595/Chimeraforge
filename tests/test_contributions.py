@@ -11,6 +11,7 @@ since export; it does not prove who ran it, and the file says so.
 from __future__ import annotations
 
 import json
+import copy
 from dataclasses import asdict
 
 import pytest
@@ -31,7 +32,7 @@ def bench_result(
     gpu="NVIDIA GeForce RTX 4090",
     model="llama3.2-3b",
     backend="vllm",
-    quant=None,
+    quant="FP16",
 ):
     runs = [
         {
@@ -76,6 +77,25 @@ def isolated_cache(tmp_path, monkeypatch):
 
 
 class TestExport:
+    def test_backend_default_quant_is_unknown(self):
+        with pytest.raises(contrib.ContribError, match="quant"):
+            contrib.build_contribution(bench_result(quant=None))
+
+    def test_unapplied_sweep_labels_are_not_evidence(self):
+        result = bench_result(quant="Q4_K_M")
+        result["warnings"] = [
+            "quant=Q4_K_M recorded but NOT applied: no backend accepts it"
+        ]
+        with pytest.raises(contrib.ContribError, match="NOT applied"):
+            contrib.build_contribution(result)
+
+    @pytest.mark.parametrize("rate", [0, -1, float("nan"), float("inf"), "fast", True])
+    def test_invalid_decode_sample_is_refused(self, rate):
+        result = bench_result()
+        result["individual_runs"][0]["throughput_tps"] = rate
+        with pytest.raises(contrib.ContribError, match="decode"):
+            contrib.build_contribution(result)
+
     def test_fingerprint_measurements_and_hash(self):
         c = contrib.build_contribution(bench_result())
         assert c["kind"] == contrib.CONTRIBUTION_KIND
@@ -89,7 +109,9 @@ class TestExport:
     def test_hash_is_content_addressed(self):
         a = contrib.build_contribution(bench_result())
         b = contrib.build_contribution(bench_result())
-        c = contrib.build_contribution(bench_result(tps=(150.0, 152.0, 148.0, 151.0, 150.0)))
+        c = contrib.build_contribution(
+            bench_result(tps=(150.0, 152.0, 148.0, 151.0, 150.0))
+        )
         assert a["id"] == b["id"] != c["id"]
 
     def test_no_gpu_name_is_refused(self):
@@ -107,6 +129,69 @@ class TestExport:
 
 
 class TestVerify:
+    @pytest.mark.parametrize(
+        "field, value",
+        [
+            ("decode_tps_mean", None),
+            ("decode_tps_mean", "fast"),
+            ("decode_tps_mean", float("nan")),
+            ("decode_tps_mean", 1e9),
+            ("decode_tps_cv", -1),
+            ("decode_tps_cv", 1.0),
+            ("decode_tps", [150, 150, -1]),
+            ("decode_tps", "150"),
+            ("ttft_ms", [40, float("inf"), 40, 40, 40]),
+            ("measured_at", "yesterday"),
+        ],
+    )
+    def test_hash_valid_malformed_measurements_fail(self, field, value):
+        c = contrib.build_contribution(bench_result())
+        c["measurements"][field] = value
+        c["id"] = contrib._content_id(c["fingerprint"], c["measurements"])
+        with pytest.raises(contrib.ContribError):
+            contrib.verify_contribution(c)
+
+    def test_required_mean_cannot_be_omitted(self):
+        c = contrib.build_contribution(bench_result())
+        del c["measurements"]["decode_tps_mean"]
+        c["id"] = contrib._content_id(c["fingerprint"], c["measurements"])
+        with pytest.raises(contrib.ContribError, match="mean"):
+            contrib.verify_contribution(c)
+
+    @pytest.mark.parametrize(
+        "field, value",
+        [
+            ("model", ""),
+            ("backend", "unsupported"),
+            ("backend_name", "other"),
+            ("quant", None),
+            ("gpu_name", ""),
+            ("gpu_memory_gb", -1),
+            ("gpu_driver", []),
+            ("os", None),
+            ("context_length", 0),
+        ],
+    )
+    def test_hash_valid_malformed_fingerprint_fails(self, field, value):
+        c = contrib.build_contribution(bench_result())
+        c["fingerprint"][field] = value
+        c["id"] = contrib._content_id(c["fingerprint"], c["measurements"])
+        with pytest.raises(contrib.ContribError):
+            contrib.verify_contribution(c)
+
+    def test_instability_flag_cannot_be_removed(self):
+        c = contrib.build_contribution(bench_result(tps=(100, 150, 200)))
+        c["flags"] = []
+        with pytest.raises(contrib.ContribError, match="flags"):
+            contrib.verify_contribution(c)
+
+    @pytest.mark.parametrize("signed", [True, 0, None])
+    def test_unsupported_signature_claim_is_refused(self, signed):
+        c = contrib.build_contribution(bench_result())
+        c["attestation"]["signed"] = signed
+        with pytest.raises(contrib.ContribError, match="unsigned"):
+            contrib.verify_contribution(c)
+
     def test_valid(self):
         contrib.verify_contribution(contrib.build_contribution(bench_result()))
 
@@ -122,9 +207,30 @@ class TestVerify:
 
 
 class TestQuarantine:
+    def test_hash_valid_bad_file_is_skipped_by_list_and_plan(self, tmp_path, caplog):
+        good = contrib.build_contribution(bench_result())
+        bad = copy.deepcopy(good)
+        del bad["measurements"]["decode_tps_mean"]
+        bad["id"] = contrib._content_id(bad["fingerprint"], bad["measurements"])
+        folder = contrib.quarantine_dir()
+        folder.mkdir(parents=True)
+        for c in (good, bad):
+            (folder / f"{c['id']}.json").write_text(json.dumps(c), encoding="utf-8")
+        assert [c["id"] for c in contrib.load_quarantine()] == [good["id"]]
+        assert "skipping quarantined contribution" in caplog.text
+        r = CliRunner().invoke(app, ["contribute", "list", "--json"])
+        assert r.exit_code == 0
+        assert [c["id"] for c in json.loads(r.output)] == [good["id"]]
+        assert (
+            _cell(run_plan(**PLAN, use_contributions=True).candidates).throughput_tps
+            == 150.0
+        )
+
     def test_import_dedupes_by_id(self, tmp_path):
         p = tmp_path / "c.json"
-        p.write_text(json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8")
+        p.write_text(
+            json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8"
+        )
         cid, new = contrib.import_contribution(p)
         assert new and contrib.import_contribution(p) == (cid, False)
         assert [c["id"] for c in contrib.load_quarantine()] == [cid]
@@ -142,7 +248,9 @@ class TestQuarantine:
         from chimeraforge.planner.resolver import measured_corpus_path
 
         p = tmp_path / "c.json"
-        p.write_text(json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8")
+        p.write_text(
+            json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8"
+        )
         contrib.import_contribution(p)
         assert not measured_corpus_path().exists()
 
@@ -151,17 +259,25 @@ def _quarantine(*results):
     for r in results:
         c = contrib.build_contribution(r)
         contrib.quarantine_dir().mkdir(parents=True, exist_ok=True)
-        (contrib.quarantine_dir() / f"{c['id']}.json").write_text(json.dumps(c), encoding="utf-8")
+        (contrib.quarantine_dir() / f"{c['id']}.json").write_text(
+            json.dumps(c), encoding="utf-8"
+        )
 
 
 PLAN = dict(
-    model_size="3b", hardware="RTX 4090 24GB", request_rate=0.5, budget=1e9, quality_target=0.0
+    model_size="3b",
+    hardware="RTX 4090 24GB",
+    request_rate=0.5,
+    budget=1e9,
+    quality_target=0.0,
 )
 
 
 def _cell(cands, backend="vllm", quant="FP16"):
     return next(
-        c for c in cands if c.backend == backend and c.quant == quant and c.model == "llama3.2-3b"
+        c
+        for c in cands
+        if c.backend == backend and c.quant == quant and c.model == "llama3.2-3b"
     )
 
 
@@ -169,7 +285,9 @@ class TestPlan:
     def test_contributed_class_ranks_below_extrapolated(self):
         order = list(PROVENANCE_ORDER)
         assert (
-            order.index("extrapolated") < order.index(PROV_CONTRIBUTED) < order.index("estimated")
+            order.index("extrapolated")
+            < order.index(PROV_CONTRIBUTED)
+            < order.index("estimated")
         )
 
     def test_ignored_without_the_flag(self):
@@ -215,11 +333,17 @@ class TestCli:
         assert r.exit_code == 0, r.output
         files = list(out.glob("*.json"))
         assert len(files) == 1
-        assert runner.invoke(app, ["contribute", "verify", str(files[0])]).exit_code == 0
-        assert runner.invoke(app, ["contribute", "import", str(files[0])]).exit_code == 0
+        assert (
+            runner.invoke(app, ["contribute", "verify", str(files[0])]).exit_code == 0
+        )
+        assert (
+            runner.invoke(app, ["contribute", "import", str(files[0])]).exit_code == 0
+        )
         r = runner.invoke(app, ["contribute", "list", "--json"])
         assert r.exit_code == 0, r.output
-        assert [c["fingerprint"]["model"] for c in json.loads(r.output)] == ["llama3.2-3b"]
+        assert [c["fingerprint"]["model"] for c in json.loads(r.output)] == [
+            "llama3.2-3b"
+        ]
         assert runner.invoke(app, ["contribute", "list"]).exit_code == 0
 
     def test_verify_tampered_fails_clean(self, tmp_path):
