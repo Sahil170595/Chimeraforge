@@ -7,6 +7,7 @@ recursive-include tests *.py *.jsonl *.txt *.json *.csv *.md
 include CHANGELOG.md
 include CLAUDE.md
 include MANIFEST.in
+include uv.lock
 
 # test_monitoring.py exercises src/python/banterhearts, which is not part of
 # this distribution and is never shipped -- excluded rather than shipped broken.

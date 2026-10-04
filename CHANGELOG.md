@@ -24,6 +24,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **The README command-count guard missed command groups.** `test_repo_conventions` counted only `app.registered_commands`, so a Typer sub-app could ship with no README section and no failing test. It now counts `registered_groups` too.
 - **`bench` swallowed every NVML error silently** when collecting the environment. It now logs why the GPU fields are empty.
+- Contribution validation rejects malformed encodings, excessively nested JSON, invalid measurements and fingerprints, inconsistent statistics, and unknown or unapplied quantization labels. Invalid quarantine files warn and are skipped.
+- Approximate registry matches cannot borrow another model's contribution as an exact measurement. An explicitly named custom model can still use its own exact contribution.
+
+## [0.48.0] - 2026-10-04
+
+### Added
+- **`plan --cloud aws|azure` prices the fleet at hyperscaler on-demand list prices, and so does the MCP `plan` tool.** The bundled datacenter prices are marketplace rates, roughly 4-5x below what AWS and Azure bill on demand, and the `hyperscaler-on-demand` price basis existed with nothing to price it. Both clouds publish list prices without credentials:
+  - **Snapshot:** `planner/data/cloud_prices.json`, built by `scripts/build_cloud_prices.py`. It holds 20 AWS and 11 Azure offers.
+    - Prices come from the AWS EC2 price list for us-east-1 (streamed, never written to disk) and the Azure Retail Prices API for eastus. They are Linux, on-demand and shared tenancy, with no spot, low-priority, capacity blocks or reservations.
+    - Each offer's GPU model comes from the cloud's own instance or VM-series page, which must name the part.
+    - GPU count and memory come from AWS's price list columns and from the Accelerators table on each Azure series page. They are checked against the hardware DB: memory that does not match is a build error.
+  - **Excluded, with reasons:**
+    - Azure NCads H100 v5 (an H100 NVL 94GB) and NC A100 v4 (an A100 PCIe), which are different cards from the DB entries.
+    - AWS p5e/p5en (capacity blocks only in us-east-1).
+    - Fractional-GPU VM sizes.
+    - Azure H200 and MI300X, which have no Linux on-demand price in eastus.
+  - **Whole instances:** for N replicas of g GPUs, the bill is the cheapest `ceil(N / floor(gpus / g))` instances of one size, each billed in full. A TP/PP group that no instance holds is refused at the budget gate with the largest size named, and the warning counts GPUs that are billed but idle. Example: one H100 for an 8B is $1,800/mo at the marketplace rate, $4,954 on AWS (a 1-GPU p5.4xlarge), and $70,790 on Azure, which sells the H100 only in an 8-GPU VM.
+  - **Stated, not silent:**
+    - A GPU the cloud does not sell is refused with "no aws on-demand instance carries X".
+    - `--cloud` together with `--gpu-price-per-hour` is refused, because those are two prices for one GPU.
+    - The snapshot is flagged stale after 90 days.
+    - Each candidate carries `cloud_offer`. `--fleet` and `--report` forward the flag.
+  - Without the flag, plans are unchanged.
+
+## [0.47.0] - 2026-10-04
+
+### Added
+- **Multi-turn session residency: `plan --think-time SECONDS --session-turns T`, and on the MCP `plan` tool.** A prefix-cache hit on a conversation's next turn needs that conversation's KV to still be resident when the user returns. The planner took `--prefix-cache-hit-rate` as given whatever the fleet could hold, and the concurrency ceiling counts only decoding sequences, never conversations idling between turns.
+  - **The model:** by Little's law the fleet holds `request_rate x (T-1)/T x think_time` idle conversations, each with its reusable prefix (prompt + visible output; chat templates drop hidden reasoning from the history).
+    - With continuous batching, a config can retain what its KV pool has left after the running batch, in GB, so SWA/MLA shapes count. vLLM keeps finished requests' blocks as evictable cache.
+    - Ollama keeps one conversation per replica slot.
+    - Retention = min(1, capacity / idle conversations). The effective hit rate = stated x retention.
+  - **Applied, not just warned:** TTFT and p95 come from the effective rate per (replicas x batch) inside the search, so more replicas or a smaller batch that hold more conversations can win. Example: an 8B at 2 req/s with 4k prompts and 60 s between turns has 108 idle conversations. One RTX 4090's free KV holds 19.2 of them (9.875 GiB free / 0.516 GiB per 4,224-token prefix), so a stated 90% hit rate becomes 16% and TTFT goes from 100ms to 837ms.
+  - **Stated assumptions:** session-affinity routing, and eviction that keeps idle conversations at random relative to when they return. A stated rate above the limit cannot be explained by retention.
+  - **Refused, not ignored:** one flag without the other, `--session-turns` below 2, a non-positive think time, or session flags without a hit rate to limit.
+  - **New candidate fields:** `prefix_cache_hit_rate_effective`, `session_idle_conversations`, `session_capacity_conversations` and `session_retention`. `--fleet` and `--report` forward the flags.
+  - **Off by default:** without the flags, plans are byte-identical.
+
+### Fixed
+- A session-residency TTFT failure now reports the achievable TTFT gate instead of attributing it to p95 latency.
+
+## [0.46.1] - 2026-10-04
+
+### Fixed
+- **The README now states what the planner itself reads, next to the "~204,000 measurements" claim.** That figure counts the research program. Read beside the planner, it implied the throughput predictions rest on all of it, when the planner's throughput table is 23 FP16 rows from one GPU (9 of them on serving engines).
+  - A table under the introduction gives the real size and shape of every bundled table: throughput, quantization multipliers, quality (n=20 per cell), safety, latency service times, and the third-party audit. It also quotes the limitations the data records about itself.
+  - The table is generated by `scripts/corpus_shape.py` from the bundled data (`--write` / `--check`), not typed. The script recomputes every figure from the lookups and fails if the coverage record in `fitted_models.json` `_provenance` disagrees, so neither the README nor that record can go stale quietly.
+  - The other mention of the figure, under "What the research decided", now points back to the table.
+
+- **`bench --json` keeps JSON on stdout and sends benchmark status to stderr.** NVML memory reads use the supported attribute and retain their regression coverage.
+
+### Changed
+- Hosted CI now checks locked dependencies, branch and critical-module coverage, numerical properties and mutations, candidate wheel/sdist installation across platforms, CPU serving, consumer-action failures, and actual Docker MCP calls. Release publishing validates and attests the same distribution files it uploads using OIDC.
+- Updated development tools to Twine 7 and mypy 2, and the observability Plotly requirement to 7.1.
+- These hosted checks qualify CPU and packaging paths; GPU execution and planner calibration are not established by this release.
 
 ## [0.46.0] - 2026-10-01
 

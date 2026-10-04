@@ -1,4 +1,4 @@
-# The image installs from the published wheel, so the working tree is not needed.
+# Candidate builds consume dist/ and requirements-candidate.txt from this checkout.
 .git
 .github
 .venv
@@ -8,7 +8,6 @@ __pycache__
 .ruff_cache
 htmlcov
 coverage.xml
-dist
 build
 *.egg-info
 experiments

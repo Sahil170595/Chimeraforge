@@ -112,6 +112,9 @@ class BriefInputs:
     carbon_intensity: float | None = None
     mode: str = "online"
     use_contributions: bool = False
+    cloud: str | None = None
+    think_time_s: float | None = None
+    session_turns: int | None = None
 
     @property
     def models(self) -> list[str]:
@@ -135,6 +138,9 @@ class BriefInputs:
         defaults = BriefInputs(hardware=self.hardware)
         flags: list[tuple[str, object, object]] = [
             ("--mode", self.mode, defaults.mode),
+            ("--cloud", self.cloud, None),
+            ("--think-time", self.think_time_s, None),
+            ("--session-turns", self.session_turns, None),
             ("--request-rate", self.request_rate, defaults.request_rate),
             ("--latency-slo", self.latency_slo_ms, defaults.latency_slo_ms),
             ("--quality-target", self.quality_target, defaults.quality_target),

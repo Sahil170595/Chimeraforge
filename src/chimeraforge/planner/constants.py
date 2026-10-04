@@ -101,6 +101,10 @@ HIGH_VARIANCE_CV2 = 4.0
 # Replica search ceiling: the (N x B) search never sizes a fleet past this many units.
 MAX_REPLICAS = 16
 
+# Multi-turn residency needs a conversation that comes back: one turn has no
+# next turn whose prefix could hit.
+MIN_SESSION_TURNS = 2
+
 # Planning objective. "online" serves requests someone is waiting on: latency
 # gates, queueing headroom, ranked by monthly bill. "batch" drains a backlog: no
 # latency gate, each GPU at its max-throughput batch, ranked by $/1M tokens.

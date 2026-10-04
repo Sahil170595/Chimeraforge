@@ -160,6 +160,9 @@ def run_plan(
     carbon_intensity: float | None = None,
     mode: str = DEFAULT_PLAN_MODE,
     use_contributions: bool = False,
+    cloud: str | None = None,
+    think_time_s: float | None = None,
+    session_turns: int | None = None,
     models_path: str | None = None,
     ollama_url: str | None = None,
     hf_token: str | None = None,
@@ -269,6 +272,9 @@ def run_plan(
         grid=grid,
         mode=mode,
         use_contributions=use_contributions,
+        cloud=cloud,
+        think_time_s=think_time_s,
+        session_turns=session_turns,
     )
     frontier = pareto_frontier(candidates) if pareto else None
     return PlanResult(
