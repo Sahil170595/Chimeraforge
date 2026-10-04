@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.0] - 2026-10-04
+
 ### Added
 - **Multi-turn session residency: `plan --think-time SECONDS --session-turns T`, and on the MCP `plan` tool.** A prefix-cache hit on a conversation's next turn needs that conversation's KV to still be resident when the user returns. The planner took `--prefix-cache-hit-rate` as given whatever the fleet could hold, and the concurrency ceiling counts only decoding sequences, never conversations idling between turns.
   - **The model:** by Little's law the fleet holds `request_rate x (T-1)/T x think_time` idle conversations, each with its reusable prefix (prompt + visible output; chat templates drop hidden reasoning from the history).

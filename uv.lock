@@ -632,7 +632,7 @@ wheels = [
 
 [[package]]
 name = "chimeraforge"
-version = "0.46.1"
+version = "0.47.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
