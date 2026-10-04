@@ -123,6 +123,23 @@ class TestRetention:
         assert any(held[k].session_retention < 1.0 for k in shared)
         assert any(held[k].ttft_ms > plain[k].ttft_ms for k in shared)
 
+    def test_residency_ttft_rejection_names_the_failed_gate(self):
+        result = _plan(
+            models=["llama3.1-8b"],
+            allow_network=False,
+            think_time_s=600.0,
+            session_turns=10,
+            ttft_slo=200.0,
+            latency_slo=100000.0,
+        )
+        failures = [
+            detail
+            for model, _, gate, detail in result.trace
+            if model == "llama3.1-8b" and gate == "latency"
+        ]
+        assert failures
+        assert all("TTFT" in detail for detail in failures), failures
+
     def test_retention_never_rises_with_think_time(self):
         prev = None
         for s in (5.0, 30.0, 120.0, 600.0):

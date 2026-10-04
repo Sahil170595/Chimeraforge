@@ -876,7 +876,7 @@ def enumerate_candidates(
                 # Online: the (N, B) search under the latency gates. Skipped in batch.
                 # TTFT is per (N, B): with session residency, more replicas and a
                 # smaller batch leave more KV free for idle conversations.
-                ttft_best = ttft_ms
+                ttft_best = float("inf") if sessions_on else ttft_ms
                 for n in () if batch_mode else range(1, MAX_REPLICAS + 1):
                     for b in batch_grid:
                         per_gpu = _unit_tps(b)
