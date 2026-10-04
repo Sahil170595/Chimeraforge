@@ -16,6 +16,8 @@ disaggregation is worth considering, quote them, and predict nothing:
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from typer.testing import CliRunner
 
@@ -111,6 +113,27 @@ BASE = dict(
 
 
 class TestPlan:
+    def test_advisory_share_uses_session_limited_ttft_with_cloud_pricing(self):
+        candidates = run_plan(
+            **BASE,
+            cloud="aws",
+            latency_slo=100000.0,
+            context_length=8192,
+            prefix_cache_hit_rate=0.9,
+            think_time_s=600.0,
+            session_turns=10,
+            ttft_slo=3000.0,
+            tpot_slo=200.0,
+        ).candidates
+        affected = [c for c in candidates if c.disaggregation_advisory and c.session_retention < 1]
+        assert affected
+        for candidate in affected:
+            match = re.search(r"prefill is (\d+)%", candidate.disaggregation_advisory)
+            assert match
+            expected = 100 * candidate.ttft_ms / (candidate.ttft_ms + 128 * candidate.tpot_ms)
+            assert float(match.group(1)) == pytest.approx(expected, abs=0.51)
+            assert candidate.cloud_offer
+
     def test_attached_to_qualifying_candidates_only(self):
         cands = run_plan(**BASE, ttft_slo=3000.0, tpot_slo=200.0).candidates
         assert cands
