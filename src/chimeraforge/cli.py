@@ -14,6 +14,7 @@ import chimeraforge
 from chimeraforge.commands.bench import bench
 from chimeraforge.commands.catalog import catalog
 from chimeraforge.commands.compare import compare
+from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
@@ -71,6 +72,7 @@ app.command(name="eval")(eval_cmd)
 app.command()(report)
 app.command()(workload)
 app.command()(doctor)
+app.add_typer(contribute_app, name="contribute")
 app.command()(mcp)
 
 

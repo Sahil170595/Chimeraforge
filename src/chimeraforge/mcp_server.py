@@ -149,6 +149,7 @@ def plan_deployment(
     grid_region: str | None = None,
     carbon_intensity_g_per_kwh: float | None = None,
     mode: str = "online",
+    use_contributions: bool = False,
     cloud: str | None = None,
     think_time_s: float | None = None,
     session_turns: int | None = None,
@@ -162,6 +163,8 @@ def plan_deployment(
     bursty / agent) -- real traffic is not deterministic and the p95 moves a lot.
     ``grid_region`` (ISO-3 code or country name) or ``carbon_intensity_g_per_kwh`` adds
     operational gCO2e per 1M tokens (SCI O = E x I only; embodied emissions excluded).
+    ``use_contributions`` reads quarantined third-party bench results for an exact
+    model/engine/quant/GPU match, labelled ``contributed`` (unverified).
     ``cloud`` (aws/azure) prices the fleet from that cloud's on-demand list, instance by
     instance (dated snapshot), instead of the bundled marketplace rate.
     ``think_time_s`` + ``session_turns`` (together) limit ``prefix_cache_hit_rate``
@@ -243,6 +246,7 @@ def plan_deployment(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity_g_per_kwh,
             mode=mode,
+            use_contributions=use_contributions,
             cloud=cloud,
             think_time_s=think_time_s,
             session_turns=session_turns,
