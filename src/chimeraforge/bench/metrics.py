@@ -157,8 +157,8 @@ def collect_environment(
             gpu_driver = pynvml.nvmlSystemGetDriverVersion()
             if isinstance(gpu_driver, bytes):
                 gpu_driver = gpu_driver.decode()
-            cuda_version = pynvml.nvmlSystemGetCudaDriverVersion_v2()
-            cuda_version = f"{cuda_version // 1000}.{(cuda_version % 1000) // 10}"
+            cuda_driver_version = pynvml.nvmlSystemGetCudaDriverVersion_v2()
+            cuda_version = f"{cuda_driver_version // 1000}.{(cuda_driver_version % 1000) // 10}"
         finally:
             pynvml.nvmlShutdown()
     except Exception:

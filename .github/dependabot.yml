@@ -25,7 +25,17 @@ updates:
     commit-message:
       prefix: "chore(deps)"
 
-  - package-ecosystem: pip
+  - package-ecosystem: github-actions
+    directory: "/.github/actions/setup-ci"
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: uv
     directory: "/"
     schedule:
       interval: monthly
@@ -34,9 +44,7 @@ updates:
         patterns: ["*"]
     ignore:
       # The MCP server targets `mcp.server.fastmcp.FastMCP`, which mcp 2.0 moved.
-      # Worse, the only test that would catch it guards on importorskip, so a 2.x
-      # bump SKIPS that test and CI stays green while the [mcp] extra is broken.
-      # Major bumps here must follow a deliberate port, not a dependency PR.
+      # Major bumps require porting the server and passing actual SDK calls.
       - dependency-name: "mcp"
         update-types: ["version-update:semver-major"]
     commit-message:
