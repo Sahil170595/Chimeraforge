@@ -88,7 +88,7 @@ class TestWhatItSays:
 
     def test_prefill_share_is_computed_from_the_plan(self):
         # 300 / (300 + 128 * 25) = 0.0857 -> 9%
-        assert "prefill is 9% of a request's GPU time" in _adv()
+        assert "prefill is 9% of a request's modeled service time" in _adv()
 
     def test_states_the_small_fleet_caveat_and_the_interconnect(self):
         text = _adv(gpus_total=2)

@@ -67,7 +67,7 @@ def disaggregation_advisory(
         "vLLM's docs mark the feature experimental and state 'Disaggregated prefill "
         "DOES NOT improve throughput', and chunked prefill (--max-num-batched-tokens) "
         "targets the same tail-latency problem. Context from this plan: prefill is "
-        f"{share:.0%} of a request's GPU time ({prompt_tokens} prompt, {decode_tokens} "
+        f"{share:.0%} of a request's modeled service time ({prompt_tokens} prompt, {decode_tokens} "
         f"output tokens); the KV handoff needs a fast link ({link}); and DistServe "
         "notes that with 'only a few or even a single GPU' the design space 'is "
         "significantly limited'"
