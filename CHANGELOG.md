@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Serving is online. DistServe Sec. 7 says chunked prefill "may be preferred" for throughput-optimized offline work.
     - The fleet has more than one GPU.
     - The engine's docs document the feature: vLLM v0.30.0 and SGLang v0.5.20 do; TGI v3.3.7 and Ollama do not.
-  - **The text:** it states that no speedup is predicted, that the feature is experimental, and that chunked prefill (`--max-num-batched-tokens`) targets the same problem. It gives the plan's prefill share of a request's GPU time and the GPU's interconnect bandwidth, and quotes DistServe that with "only a few or even a single GPU" the design space "is significantly limited".
+  - **The text:** it states that no speedup is predicted, that the feature is experimental, and that chunked prefill (`--max-num-batched-tokens`) targets the same problem. It gives the plan's prefill share of modeled request service time, including session-limited TTFT, and the GPU's interconnect bandwidth, and quotes DistServe that with "only a few or even a single GPU" the design space "is significantly limited".
   - **Where it shows up:** the candidate field `disaggregation_advisory`, an Advisory panel in the Rich output, and the MCP summary. The field is empty outside the region, so plans are otherwise unchanged.
 
 ## [0.47.0] - 2026-10-04
