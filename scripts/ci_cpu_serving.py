@@ -382,9 +382,12 @@ def main(argv: list[str] | None = None) -> int:
                         timeout=OPERATION_TIMEOUT_SECONDS,
                     )
                     receipt = accept_runtime(client, work, env, args.expect_version)
-                    running = client.get("/api/ps").json()["models"]
-                    assert running and all(row["size_vram"] == 0 for row in running), (
-                        "runtime unexpectedly used GPU memory"
+                    placement = client.get("/api/ps")
+                    placement.raise_for_status()
+                    running = placement.json()["models"]
+                    assert running, f"runtime has no loaded model: {placement.text}"
+                    assert all(row["size_vram"] == 0 for row in running), (
+                        f"runtime unexpectedly used GPU memory: {placement.text}"
                     )
                     print(json.dumps(receipt, indent=2))
             finally:
