@@ -1,5 +1,6 @@
-# Visualization Dependencies for PublishReady Notebooks
-# October 2025 - Latest and Greatest Visualization Stack
+# Standalone visualization and notebook environment.
+# nbconvert security maintenance validated on 2026-10-04.
+# Separate from archived frozen research environments and historical reproduction.
 
 # Core Data Science
 pandas==2.2.3
