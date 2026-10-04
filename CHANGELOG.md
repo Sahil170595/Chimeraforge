@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Multi-turn session residency: `plan --think-time SECONDS --session-turns T`, and on the MCP `plan` tool.** A prefix-cache hit on a conversation's next turn needs that conversation's KV to still be resident when the user returns. The planner took `--prefix-cache-hit-rate` as given whatever the fleet could hold, and the concurrency ceiling counts only decoding sequences, never conversations idling between turns.
+  - **The model:** by Little's law the fleet holds `request_rate x (T-1)/T x think_time` idle conversations, each with its reusable prefix (prompt + visible output; chat templates drop hidden reasoning from the history).
+    - With continuous batching, a config can retain what its KV pool has left after the running batch, in GB, so SWA/MLA shapes count. vLLM keeps finished requests' blocks as evictable cache.
+    - Ollama keeps one conversation per replica slot.
+    - Retention = min(1, capacity / idle conversations). The effective hit rate = stated x retention.
+  - **Applied, not just warned:** TTFT and p95 come from the effective rate per (replicas x batch) inside the search, so more replicas or a smaller batch that hold more conversations can win. Example: an 8B at 2 req/s with 4k prompts and 60 s between turns has 108 idle conversations. One RTX 4090's free KV holds 19.2 of them (9.875 GiB free / 0.516 GiB per 4,224-token prefix), so a stated 90% hit rate becomes 16% and TTFT goes from 100ms to 837ms.
+  - **Stated assumptions:** session-affinity routing, and eviction that keeps idle conversations at random relative to when they return. A stated rate above the limit cannot be explained by retention.
+  - **Refused, not ignored:** one flag without the other, `--session-turns` below 2, a non-positive think time, or session flags without a hit rate to limit.
+  - **New candidate fields:** `prefix_cache_hit_rate_effective`, `session_idle_conversations`, `session_capacity_conversations` and `session_retention`. `--fleet` and `--report` forward the flags.
+  - **Off by default:** without the flags, plans are byte-identical.
+
+### Fixed
+- A session-residency TTFT failure now reports the achievable TTFT gate instead of attributing it to p95 latency.
+
 ## [0.46.1] - 2026-10-04
 
 ### Fixed
