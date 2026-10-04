@@ -27,6 +27,13 @@ from chimeraforge.planner.provenance import (
 from chimeraforge.planner.service import run_plan
 
 
+MALFORMED_JSON_INPUTS = [
+    pytest.param(b"\xff", id="invalid-utf8"),
+    pytest.param(b"[" * 5000 + b"0" + b"]" * 5000, id="excessive-nesting"),
+    pytest.param(b'{"number":' + b"9" * 10000 + b"}", id="oversized-integer"),
+]
+
+
 def bench_result(
     tps=(150.0, 152.0, 148.0, 151.0, 149.0),
     gpu="NVIDIA GeForce RTX 4090",
@@ -83,9 +90,7 @@ class TestExport:
 
     def test_unapplied_sweep_labels_are_not_evidence(self):
         result = bench_result(quant="Q4_K_M")
-        result["warnings"] = [
-            "quant=Q4_K_M recorded but NOT applied: no backend accepts it"
-        ]
+        result["warnings"] = ["quant=Q4_K_M recorded but NOT applied: no backend accepts it"]
         with pytest.raises(contrib.ContribError, match="NOT applied"):
             contrib.build_contribution(result)
 
@@ -109,9 +114,7 @@ class TestExport:
     def test_hash_is_content_addressed(self):
         a = contrib.build_contribution(bench_result())
         b = contrib.build_contribution(bench_result())
-        c = contrib.build_contribution(
-            bench_result(tps=(150.0, 152.0, 148.0, 151.0, 150.0))
-        )
+        c = contrib.build_contribution(bench_result(tps=(150.0, 152.0, 148.0, 151.0, 150.0)))
         assert a["id"] == b["id"] != c["id"]
 
     def test_no_gpu_name_is_refused(self):
@@ -129,6 +132,15 @@ class TestExport:
 
 
 class TestVerify:
+    def test_excessively_nested_content_fails_cleanly(self):
+        c = contrib.build_contribution(bench_result())
+        nested = None
+        for _ in range(5000):
+            nested = [nested]
+        c["fingerprint"]["extra"] = nested
+        with pytest.raises(contrib.ContribError, match="content"):
+            contrib.verify_contribution(c)
+
     @pytest.mark.parametrize(
         "field, value",
         [
@@ -207,6 +219,28 @@ class TestVerify:
 
 
 class TestQuarantine:
+    @pytest.mark.parametrize("payload", MALFORMED_JSON_INPUTS)
+    def test_malformed_encoding_and_parser_limits_are_skipped(self, tmp_path, caplog, payload):
+        good = contrib.build_contribution(bench_result())
+        folder = contrib.quarantine_dir()
+        folder.mkdir(parents=True)
+        (folder / f"{good['id']}.json").write_text(json.dumps(good), encoding="utf-8")
+        (folder / "malformed.json").write_bytes(payload)
+        assert [c["id"] for c in contrib.load_quarantine()] == [good["id"]]
+        assert "skipping quarantined contribution malformed.json" in caplog.text
+        r = CliRunner().invoke(app, ["contribute", "list", "--json"])
+        assert r.exit_code == 0, r.output
+        assert [c["id"] for c in json.loads(r.output)] == [good["id"]]
+        assert _cell(run_plan(**PLAN, use_contributions=True).candidates).throughput_tps == 150.0
+
+    @pytest.mark.parametrize("payload", MALFORMED_JSON_INPUTS)
+    def test_malformed_import_raises_contribution_error(self, tmp_path, payload):
+        path = tmp_path / "malformed.json"
+        path.write_bytes(payload)
+        with pytest.raises(contrib.ContribError, match="could not read"):
+            contrib.import_contribution(path)
+        assert contrib.load_quarantine() == []
+
     def test_hash_valid_bad_file_is_skipped_by_list_and_plan(self, tmp_path, caplog):
         good = contrib.build_contribution(bench_result())
         bad = copy.deepcopy(good)
@@ -221,16 +255,11 @@ class TestQuarantine:
         r = CliRunner().invoke(app, ["contribute", "list", "--json"])
         assert r.exit_code == 0
         assert [c["id"] for c in json.loads(r.output)] == [good["id"]]
-        assert (
-            _cell(run_plan(**PLAN, use_contributions=True).candidates).throughput_tps
-            == 150.0
-        )
+        assert _cell(run_plan(**PLAN, use_contributions=True).candidates).throughput_tps == 150.0
 
     def test_import_dedupes_by_id(self, tmp_path):
         p = tmp_path / "c.json"
-        p.write_text(
-            json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8"
-        )
+        p.write_text(json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8")
         cid, new = contrib.import_contribution(p)
         assert new and contrib.import_contribution(p) == (cid, False)
         assert [c["id"] for c in contrib.load_quarantine()] == [cid]
@@ -248,9 +277,7 @@ class TestQuarantine:
         from chimeraforge.planner.resolver import measured_corpus_path
 
         p = tmp_path / "c.json"
-        p.write_text(
-            json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8"
-        )
+        p.write_text(json.dumps(contrib.build_contribution(bench_result())), encoding="utf-8")
         contrib.import_contribution(p)
         assert not measured_corpus_path().exists()
 
@@ -259,9 +286,7 @@ def _quarantine(*results):
     for r in results:
         c = contrib.build_contribution(r)
         contrib.quarantine_dir().mkdir(parents=True, exist_ok=True)
-        (contrib.quarantine_dir() / f"{c['id']}.json").write_text(
-            json.dumps(c), encoding="utf-8"
-        )
+        (contrib.quarantine_dir() / f"{c['id']}.json").write_text(json.dumps(c), encoding="utf-8")
 
 
 PLAN = dict(
@@ -275,9 +300,7 @@ PLAN = dict(
 
 def _cell(cands, backend="vllm", quant="FP16"):
     return next(
-        c
-        for c in cands
-        if c.backend == backend and c.quant == quant and c.model == "llama3.2-3b"
+        c for c in cands if c.backend == backend and c.quant == quant and c.model == "llama3.2-3b"
     )
 
 
@@ -285,9 +308,7 @@ class TestPlan:
     def test_contributed_class_ranks_below_extrapolated(self):
         order = list(PROVENANCE_ORDER)
         assert (
-            order.index("extrapolated")
-            < order.index(PROV_CONTRIBUTED)
-            < order.index("estimated")
+            order.index("extrapolated") < order.index(PROV_CONTRIBUTED) < order.index("estimated")
         )
 
     def test_ignored_without_the_flag(self):
@@ -325,6 +346,19 @@ runner = CliRunner()
 
 
 class TestCli:
+    @pytest.mark.parametrize("command", ["export", "verify", "import"])
+    @pytest.mark.parametrize("payload", MALFORMED_JSON_INPUTS)
+    def test_malformed_inputs_fail_with_cli_error(self, tmp_path, command, payload):
+        path = tmp_path / "malformed.json"
+        path.write_bytes(payload)
+        args = ["contribute", command, str(path)]
+        if command == "export":
+            args.extend(["--out", str(tmp_path / "out")])
+        r = runner.invoke(app, args)
+        assert r.exit_code == 1
+        assert "Error:" in r.output
+        assert "Traceback" not in r.output
+
     def test_export_verify_import_list(self, tmp_path):
         bench = tmp_path / "bench.json"
         bench.write_text(json.dumps([bench_result()]), encoding="utf-8")
@@ -333,17 +367,11 @@ class TestCli:
         assert r.exit_code == 0, r.output
         files = list(out.glob("*.json"))
         assert len(files) == 1
-        assert (
-            runner.invoke(app, ["contribute", "verify", str(files[0])]).exit_code == 0
-        )
-        assert (
-            runner.invoke(app, ["contribute", "import", str(files[0])]).exit_code == 0
-        )
+        assert runner.invoke(app, ["contribute", "verify", str(files[0])]).exit_code == 0
+        assert runner.invoke(app, ["contribute", "import", str(files[0])]).exit_code == 0
         r = runner.invoke(app, ["contribute", "list", "--json"])
         assert r.exit_code == 0, r.output
-        assert [c["fingerprint"]["model"] for c in json.loads(r.output)] == [
-            "llama3.2-3b"
-        ]
+        assert [c["fingerprint"]["model"] for c in json.loads(r.output)] == ["llama3.2-3b"]
         assert runner.invoke(app, ["contribute", "list"]).exit_code == 0
 
     def test_verify_tampered_fails_clean(self, tmp_path):

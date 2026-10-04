@@ -65,12 +65,28 @@ def quarantine_dir() -> Path:
 
 
 def _content_id(fingerprint: dict, measurements: dict) -> str:
-    canonical = json.dumps(
-        {"fingerprint": fingerprint, "measurements": measurements},
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    try:
+        canonical = json.dumps(
+            {"fingerprint": fingerprint, "measurements": measurements},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise ContribError(f"contribution content cannot be encoded as JSON: {exc}") from exc
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def read_json_file(path: str | Path) -> object:
+    """Read an exchange file, reporting malformed encoding and JSON as contribution errors."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ContribError(f"could not read {path}: {exc}") from exc
+    try:
+        return json.loads(text)
+    except (ValueError, RecursionError) as exc:
+        # JSON's integer conversion limit raises ValueError outside JSONDecodeError.
+        raise ContribError(f"could not read {path}: invalid JSON: {exc}") from exc
 
 
 def _number(value: object, field: str, *, positive: bool = False) -> float:
@@ -112,9 +128,7 @@ def _decode_summary(decode: list[float]) -> tuple[float, float]:
         mean = statistics.fmean(decode)
         cv = statistics.stdev(decode) / mean
     except (OverflowError, ValueError) as exc:
-        raise ContribError(
-            "decode samples cannot produce finite summary statistics"
-        ) from exc
+        raise ContribError("decode samples cannot produce finite summary statistics") from exc
     _number(mean, "decode_tps_mean", positive=True)
     _number(cv, "decode_tps_cv")
     return mean, cv
@@ -167,9 +181,7 @@ def _validate_fingerprint(fp: dict) -> None:
 def _validate_measurements(m: dict) -> float:
     decode = _samples(m.get("decode_tps"), "decode_tps", positive=True)
     if len(decode) < MIN_RUNS:
-        raise ContribError(
-            f"{len(decode)} runs; a contribution needs at least {MIN_RUNS}"
-        )
+        raise ContribError(f"{len(decode)} runs; a contribution needs at least {MIN_RUNS}")
     ttft = _samples(m.get("ttft_ms"), "ttft_ms")
     if len(ttft) != len(decode):
         raise ContribError("ttft_ms must contain one sample per decode run")
@@ -182,9 +194,7 @@ def _validate_measurements(m: dict) -> float:
     try:
         timestamp = datetime.fromisoformat(m["measured_at"])
     except ValueError as exc:
-        raise ContribError(
-            "measured_at must be an ISO timestamp with timezone"
-        ) from exc
+        raise ContribError("measured_at must be an ISO timestamp with timezone") from exc
     if timestamp.tzinfo is None:
         raise ContribError("measured_at must include its timezone")
     return cv
@@ -217,13 +227,9 @@ def build_contribution(result: dict) -> dict:
     runs = result.get("individual_runs") or []
     if not isinstance(runs, list) or any(not isinstance(run, dict) for run in runs):
         raise ContribError("individual_runs must be a list of run objects")
-    decode = [
-        _number(r.get("throughput_tps"), "decode_tps", positive=True) for r in runs
-    ]
+    decode = [_number(r.get("throughput_tps"), "decode_tps", positive=True) for r in runs]
     if len(decode) < MIN_RUNS:
-        raise ContribError(
-            f"{len(decode)} runs; a contribution needs at least {MIN_RUNS}"
-        )
+        raise ContribError(f"{len(decode)} runs; a contribution needs at least {MIN_RUNS}")
     ttft = [_number(r.get("ttft_ms"), "ttft_ms") for r in runs]
     fingerprint = {k: env.get(k) for k in FINGERPRINT_FIELDS}
     fingerprint.update(
@@ -259,13 +265,8 @@ def verify_contribution(data: dict) -> None:
     """Raise unless ``data`` is a well-formed contribution whose id matches its content."""
     if not isinstance(data, dict) or data.get("kind") != CONTRIBUTION_KIND:
         raise ContribError(f"not a contribution (kind must be {CONTRIBUTION_KIND!r})")
-    if (
-        type(data.get("schema_version")) is not int
-        or data["schema_version"] != SCHEMA_VERSION
-    ):
-        raise ContribError(
-            f"schema_version {data.get('schema_version')!r} is not {SCHEMA_VERSION}"
-        )
+    if type(data.get("schema_version")) is not int or data["schema_version"] != SCHEMA_VERSION:
+        raise ContribError(f"schema_version {data.get('schema_version')!r} is not {SCHEMA_VERSION}")
     fingerprint, measurements = data.get("fingerprint"), data.get("measurements")
     if not isinstance(fingerprint, dict) or not isinstance(measurements, dict):
         raise ContribError("fingerprint and measurements are required")
@@ -274,9 +275,7 @@ def verify_contribution(data: dict) -> None:
     _validate_fingerprint(fingerprint)
     cv = _validate_measurements(measurements)
     if data.get("flags") != _instability_flags(cv):
-        raise ContribError(
-            "flags disagree with instability derived from decode samples"
-        )
+        raise ContribError("flags disagree with instability derived from decode samples")
     attestation = data.get("attestation")
     if (
         not isinstance(attestation, dict)
@@ -290,10 +289,7 @@ def verify_contribution(data: dict) -> None:
 
 def import_contribution(path: str | Path) -> tuple[str, bool]:
     """Verify and copy a contribution into quarantine. Returns (id, newly added)."""
-    try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise ContribError(f"could not read {path}: {exc}") from exc
+    data = read_json_file(path)
     verify_contribution(data)
     dest = quarantine_dir() / f"{data['id']}.json"
     if dest.exists():
@@ -311,9 +307,9 @@ def load_quarantine() -> list[dict]:
         return out
     for path in sorted(folder.glob("*.json")):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            data = read_json_file(path)
             verify_contribution(data)
-        except (OSError, json.JSONDecodeError, ContribError) as exc:
+        except ContribError as exc:
             logger.warning("skipping quarantined contribution %s: %s", path.name, exc)
             continue
         out.append(data)

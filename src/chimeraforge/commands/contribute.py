@@ -39,14 +39,14 @@ def export(
     ),
 ) -> None:
     """Turn bench results into contribution files (one per result)."""
-    from chimeraforge.contrib import ContribError, build_contribution
+    from chimeraforge.contrib import ContribError, build_contribution, read_json_file
 
     out.mkdir(parents=True, exist_ok=True)
     for path in bench_files:
         try:
-            data = json_mod.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json_mod.JSONDecodeError) as exc:
-            _fail(f"could not read {escape(str(path))}: {exc}")
+            data = read_json_file(path)
+        except ContribError as exc:
+            _fail(escape(str(exc)))
         for result in data if isinstance(data, list) else [data]:
             try:
                 contribution = build_contribution(result)
@@ -70,12 +70,12 @@ def export(
 @contribute_app.command("verify")
 def verify(files: list[Path] = typer.Argument(..., help="Contribution files.")) -> None:
     """Check each file's schema and content hash."""
-    from chimeraforge.contrib import ContribError, verify_contribution
+    from chimeraforge.contrib import ContribError, read_json_file, verify_contribution
 
     for path in files:
         try:
-            verify_contribution(json_mod.loads(path.read_text(encoding="utf-8")))
-        except (OSError, json_mod.JSONDecodeError, ContribError) as exc:
+            verify_contribution(read_json_file(path))
+        except ContribError as exc:
             _fail(f"{escape(str(path))}: {escape(str(exc))}")
         console.print(f"[green]ok[/] {escape(str(path))}")
 
