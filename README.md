@@ -23,6 +23,26 @@ Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual o
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
+<!-- corpus-shape:start (scripts/corpus_shape.py --write; do not edit by hand) -->
+**What the planner itself reads.** The ~204,000 measurements are the research program's total across its reports. The tables `plan` looks numbers up in are far smaller:
+
+| Table | Size | Shape |
+|---|---|---|
+| Decode throughput | 23 rows | FP16 only; 7 models, the largest llama3.2-3b at 3.21B; 9 rows on serving engines (ollama 3, tgi 3, vllm 3) and 14 on transformers research harnesses; every row measured on one GPU, the RTX 4080 Laptop 12GB (192-bit GDDR6, 432 GB/s) |
+| Quantization speedups | 7 multipliers | applied to an FP16 row; a quantized throughput is never a measurement of that quant |
+| Quality | 35 model x quant cells | n=20 items each (TR125) |
+| Safety | 40 model x quant cells | refusal rate (TR134/TR142) |
+| Latency service times | 9 | model x backend |
+| Third-party audit | 42 scored cells on 17 GPUs | published benchmarks ([scorecard](corpora/SCORECARD.md)); 26 more published but too underspecified to score |
+
+Anything outside those rows is `extrapolated` (scaled by memory bandwidth from the reference GPU), `derived` (exact arithmetic) or `estimated` (roofline), and every number in a plan says which. The data records its own limits:
+
+- Every throughput row is FP16. Quantized throughput is the FP16 row times a quant multiplier, not a measurement of that quant.
+- Every row was measured on one GPU. Other hardware is bandwidth-extrapolated and labelled 'extrapolated', not 'measured'.
+- The largest model measured is 3.21B; predictions above that extrapolate the power law.
+- No SGLang rows exist; that backend falls through to the fp16/power-law path.
+<!-- corpus-shape:end -->
+
 ---
 
 ## Install
@@ -423,7 +443,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 
 ## How the numbers are made
 
-- **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
+- **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
 - **2,678 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
