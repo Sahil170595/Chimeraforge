@@ -418,6 +418,9 @@ pytest tests/ --cov=src             # With coverage
   measured SGLang row flipping provenance (only for the cell that was measured)
 - **Goodput SLOs** (18): test_goodput.py - TTFT/TPOT gated separately inside the
   (N x B) search, actionable rejection reasons, point-estimate-not-attainment
+- **Disaggregation advisory** (17): test_disaggregation_advisory.py - emitted only in the cited
+  region (both SLOs, online, >1 GPU, vLLM/SGLang), predicts no speedup, quotes pinned sources
+  (DistServe arXiv:2401.09670, engine docs at v0.30.0 / v0.5.20), prefill share from the plan
 - **Corpus shape** (7): test_corpus_shape.py - the README block stating what the planner's
   bundled tables hold (23 FP16 throughput rows on one GPU, ...) equals the render from the data
   (scripts/corpus_shape.py --check/--write), sits beside the ~204,000 claim, and a stale

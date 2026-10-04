@@ -374,6 +374,59 @@ runner = CliRunner()
 
 
 class TestCli:
+    def test_plan_combines_contributions_cloud_and_session_residency(self):
+        _quarantine(bench_result(gpu="NVIDIA H100 80GB HBM3"))
+        r = runner.invoke(
+            app,
+            [
+                "plan",
+                "--model-size",
+                "3b",
+                "--hardware",
+                "H100 80GB",
+                "--budget",
+                "1000000000",
+                "--quality-target",
+                "0",
+                "--request-rate",
+                "12",
+                "--prompt-tokens",
+                "4096",
+                "--context-length",
+                "8192",
+                "--prefix-cache-hit-rate",
+                "0.9",
+                "--think-time",
+                "600",
+                "--session-turns",
+                "10",
+                "--ttft-slo",
+                "3000",
+                "--tpot-slo",
+                "200",
+                "--latency-slo",
+                "100000",
+                "--cloud",
+                "aws",
+                "--contributions",
+                "--json",
+            ],
+        )
+        assert r.exit_code == 0, r.output
+        rows = json.loads(r.output)
+        contributed = [
+            row for row in rows if prov_class(row["provenance"]["throughput"]) == PROV_CONTRIBUTED
+        ]
+        assert contributed
+        assert all(
+            row["cloud_offer"] and row["session_idle_conversations"] > 0 for row in contributed
+        )
+        assert all(
+            bool(row["disaggregation_advisory"])
+            == (row["backend"] in ("vllm", "sglang") and row["gpus_total"] > 1)
+            for row in contributed
+        )
+
     @pytest.mark.parametrize("command", ["export", "verify", "import"])
     @pytest.mark.parametrize("payload", MALFORMED_JSON_INPUTS)
     def test_malformed_inputs_fail_with_cli_error(self, tmp_path, command, payload):

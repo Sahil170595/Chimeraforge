@@ -75,6 +75,8 @@ def _candidate_summary(c) -> dict:
         "quant": c.quant,
         "backend": c.backend,
         "mode": c.mode,
+        # Cited guidance the planner does not model; "" when the plan is outside it.
+        "disaggregation_advisory": c.disaggregation_advisory,
         # The instances a --cloud bill was computed from ("" = bundled price).
         "cloud_offer": c.cloud_offer,
         # Multi-turn residency: the hit rate that survives idle conversations'
