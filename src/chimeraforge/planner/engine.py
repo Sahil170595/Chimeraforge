@@ -60,8 +60,10 @@ from chimeraforge.planner.evalstats import (
 from chimeraforge.planner.evalstats import SOURCE as EVALSTATS_SOURCE
 from chimeraforge.planner.evalstats import QualityCell
 from chimeraforge.planner.hybrid import INFERRED_KINDS
+from chimeraforge.contrib import contributed_decode, load_quarantine
 from chimeraforge.planner.provenance import (
     COST_BASIS,
+    PROV_CONTRIBUTED,
     PROV_ESTIMATED,
     PROV_EXTRAPOLATED,
     PROV_MEASURED,
@@ -312,6 +314,7 @@ def enumerate_candidates(
     pipeline_parallel: int | None = 1,
     grid: GridIntensity | None = None,
     mode: str = PLAN_MODE_ONLINE,
+    use_contributions: bool = False,
     cloud: str | None = None,
     think_time_s: float | None = None,
     session_turns: int | None = None,
@@ -426,6 +429,13 @@ def enumerate_candidates(
     # the user leaves the GPU is plannable, and that share is theirs to state.
     gpu, unified_warnings = apply_unified_fraction(gpu, unified_memory_fraction)
     hardware_warnings = [*hardware_warnings, *unified_warnings]
+    # Quarantined contributions are read only on request, never by default.
+    contributions = load_quarantine() if use_contributions else None
+    if use_contributions and not contributions:
+        hardware_warnings.append(
+            "--contributions: the quarantine holds no contributions "
+            "(chimeraforge contribute import FILE)"
+        )
     hw_vram = gpu.vram_gb
     # A rented GPU bills for wall-clock, not for tokens. A fleet sized for a peak
     # rate it only sees part of the day still costs the full month, so the
@@ -766,6 +776,26 @@ def enumerate_candidates(
                     n1_tps = models.throughput.roofline_tps(active_params_b, quant, gpu)
                     throughput_source = PROV_ESTIMATED
                     used_roofline = True
+                # Contributed runs on THIS GPU replace an extrapolation or an estimate
+                # when asked for -- never this project's own row on its own rig.
+                contrib_ev = None
+                if contributions is not None and not (lookup_hit and is_reference_hardware(gpu)):
+                    contribution_models = (
+                        (model,) if model_source == SOURCE_REGISTRY_APPROX else (model, lookup_name)
+                    )
+                    contrib_ev = contributed_decode(
+                        contributions, contribution_models, backend, quant, gpu.name
+                    )
+                    if contrib_ev is not None:
+                        n1_tps = contrib_ev["decode_tps"]
+                        used_roofline = False
+                        throughput_source = {
+                            "class": PROV_CONTRIBUTED,
+                            "contributions": contrib_ev["contributions"],
+                            "ids": contrib_ev["ids"],
+                            "clusters": contrib_ev["clusters"],
+                            "basis": "median of quarantined third-party bench runs on this GPU",
+                        }
 
                 # Decode reads every weight once per token. Whatever sits in host RAM
                 # crosses the PCIe link instead of VRAM, so the per-token time is the
@@ -1393,6 +1423,18 @@ def enumerate_candidates(
                     warnings.append("quality unscreened (neutral 0.5 prior, not measured)")
                 elif quality_source == "estimated" and not use_measured:
                     warnings.append("quality estimated from family prior, not measured")
+                if contrib_ev is not None:
+                    flagged = (
+                        f", {contrib_ev['flagged']} flagged unstable"
+                        if contrib_ev["flagged"]
+                        else ""
+                    )
+                    warnings.append(
+                        f"throughput contributed: median of {contrib_ev['contributions']} "
+                        f"quarantined bench result(s) on {gpu.name} "
+                        f"({'; '.join(contrib_ev['clusters'])}{flagged}), unverified by this "
+                        f"project -- ids {', '.join(contrib_ev['ids'])}"
+                    )
                 if prov_class(throughput_source) == PROV_EXTRAPOLATED:
                     ratio = bandwidth_ratio(gpu)
                     warnings.append(

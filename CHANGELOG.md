@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.50.0] - 2026-10-04
+
+### Added
+- **`chimeraforge contribute export|verify|import|list` and `plan --contributions`: the first step toward a shared measured corpus.** This is the roadmap's Phase 9 federated corpus, built in the shape it says stays honest.
+  - **Contribution files:** `export` turns `bench` results into one file each, holding the environment fingerprint (GPU and its memory, driver, CUDA, OS, engine and version, chimeraforge version), the per-run decode and TTFT figures, and a SHA-256 content id.
+    - Refused: a result with no GPU name (it cannot be attributed to hardware), or fewer than 3 runs (the bundled corpus's own minimum).
+    - A decode CV above 5% is flagged "unstable" and kept. Outliers are published, not dropped.
+  - **Unsigned, and it says so:** the id proves the file is unaltered since export. It does not prove who ran the benchmark or that the numbers are real. `verify` checks schema and hash.
+  - **Quarantine:** `import` verifies a file and adds it, deduplicated by id. Nothing in it ever reaches the bundled corpus or the `measure` corpus.
+  - **Use only on request:** `plan --contributions` (and MCP `use_contributions`) reads the quarantine for an exact model, engine, quant and GPU match, taking the median of the matching contributions.
+    - The GPU is resolved from the driver name and memory through the same matching `--hardware auto` uses; an ambiguous name matches nothing.
+    - The number carries a new provenance class, `contributed` (mark `*`), ranked below `extrapolated`. It lists the contribution ids and the engine/driver clusters, plus a warning saying it is unverified.
+    - This project's own measured row still wins on the reference rig.
+  - **`bench` change:** results now record GPU memory, so a model sold in several capacities can be told apart.
+  - New command, so the README headline is now 15 commands.
+
+### Fixed
+- **The README command-count guard missed command groups.** `test_repo_conventions` counted only `app.registered_commands`, so a Typer sub-app could ship with no README section and no failing test. It now counts `registered_groups` too.
+- **`bench` swallowed every NVML error silently** when collecting the environment. It now logs why the GPU fields are empty.
+- Contribution validation rejects malformed encodings, excessively nested JSON, invalid measurements and fingerprints, inconsistent statistics, and unknown or unapplied quantization labels. Invalid quarantine files warn and are skipped.
+- Approximate registry matches cannot borrow another model's contribution as an exact measurement. An explicitly named custom model can still use its own exact contribution.
+
 ## [0.49.0] - 2026-10-04
 
 ### Added

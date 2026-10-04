@@ -16,6 +16,7 @@ def test_nvml_metadata_records_driver_version_and_closes_handle(monkeypatch, enc
         nvmlInit=lambda: None,
         nvmlDeviceGetHandleByIndex=lambda index: index,
         nvmlDeviceGetName=lambda handle: name.encode() if encoded else name,
+        nvmlDeviceGetMemoryInfo=lambda handle: SimpleNamespace(total=24 * 1024**3),
         nvmlSystemGetDriverVersion=lambda: driver.encode() if encoded else driver,
         nvmlSystemGetCudaDriverVersion_v2=lambda: 12090,
         nvmlShutdown=lambda: closed.append(True),
@@ -23,6 +24,7 @@ def test_nvml_metadata_records_driver_version_and_closes_handle(monkeypatch, enc
     monkeypatch.setitem(sys.modules, "pynvml", module)
     env = collect_environment("ollama", "test-version")
     assert (env.gpu_name, env.gpu_driver, env.cuda_version) == (name, driver, "12.9")
+    assert env.gpu_memory_gb == 24.0
     assert closed == [True]
 
 

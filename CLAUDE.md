@@ -57,7 +57,7 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.49.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.50.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
 ## Quick Reference
 
@@ -240,6 +240,7 @@ The planner models LLM serving as the literature describes it, not replicas-of-s
 - **Pareto output:** `plan --pareto` -> `pareto_frontier()` (non-dominated on cost/p95/quality), the trade-off menu instead of one cost-sorted pick.
 - **Batch mode:** `plan --mode batch` (`PLAN_MODES`) plans a backlog drain: no latency gate (a latency/TTFT/TPOT target is REFUSED via `BATCH_LATENCY_REFUSAL`, not ignored), B = smallest batch at a unit's max throughput, N = fewest units draining the rate at 100% utilisation, ranked by `cost_per_1m_tok`; `p95_latency_ms` is service time, no queue. Pareto becomes $/1M-tok vs quality. `latency_slo` defaults to None (= `DEFAULT_LATENCY_SLO_MS` online) so an explicit target is detectable. Online is byte-identical.
 - **Cost:** `cost_per_1m_tok` uses N-GPU cost with N-GPU throughput (invariant in replica count).
+- **Contributions (federated corpus, step 1):** `chimeraforge/contrib.py` + `contribute export|verify|import|list`. Unsigned content-addressed files (SHA-256 over fingerprint+measurements) land in `$CHIMERAFORGE_CACHE/contributions/` (quarantine), never in bundled/measured corpora. `plan --contributions` -> `contributed_decode()` exact (model, engine, quant, `match_driver_name` GPU) median, provenance class `contributed` (`PROVENANCE_ORDER` between extrapolated and estimated, mark `*`); reference-rig measured row wins.
 - **Cloud pricing:** `--cloud aws|azure` (planner/cloudprice.py) bills from `data/cloud_prices.json` (scripts/build_cloud_prices.py: AWS EC2 bulk CSV us-east-1 + Azure Retail Prices eastus; GPU model from the vendor page, count/memory checked against hardware.json). `fleet_hourly_cost()` = cheapest ceil(N/floor(gpus/g)) whole instances; no instance holding the TP*PP group -> budget-gate reject; conflicts with --gpu-price-per-hour; stale after 90 days.
 - Numerical accuracy gates in `tests/test_accuracy.py` pin predictions to ground truth.
 
@@ -363,6 +364,10 @@ pytest tests/ --cov=src             # With coverage
   test_bench_runner.py (17 - runner, sweeps, resilience), test_bench_cli.py (5),
   test_bench_identity.py (24 - an impostor answering /health is refused by every
   adapter and by the runner preflight)
+- **Contributions** (21): test_contributions.py - fingerprint + content id, refusals (no GPU,
+  <3 runs), unstable flagged not dropped, tamper detection, quarantine dedupe and isolation
+  from the measured corpus, `plan --contributions` exact-match median labelled `contributed`
+  (below extrapolated), reference-rig measured row wins, CLI + MCP
 - **Refit/Eval/Report/Compare** (141): test_refit.py (47 - Bayesian blend + per-key
   weighting + validation), test_eval.py (42), test_report.py (32), test_compare.py (20)
 - **Launch export** (27): test_launch.py - per-backend derived flags (context/TP/PP/batch/

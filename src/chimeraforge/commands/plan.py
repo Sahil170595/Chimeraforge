@@ -330,6 +330,12 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    contributions: bool = typer.Option(
+        False,
+        "--contributions",
+        help="Use quarantined contributed bench results (`chimeraforge contribute import`) "
+        "for an exact model/engine/quant/GPU match, labelled `contributed` (unverified).",
+    ),
     cloud: str = typer.Option(
         None,
         "--cloud",
@@ -754,6 +760,7 @@ def plan(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity,
             mode=mode,
+            use_contributions=contributions,
             cloud=cloud,
             think_time_s=think_time,
             session_turns=session_turns,
@@ -842,6 +849,7 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    use_contributions=contributions,
                     cloud=cloud,
                     think_time_s=think_time,
                     session_turns=session_turns,
@@ -962,6 +970,7 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    use_contributions=contributions,
                     cloud=cloud,
                     think_time_s=think_time,
                     session_turns=session_turns,

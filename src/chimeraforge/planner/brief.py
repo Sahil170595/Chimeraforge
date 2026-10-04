@@ -47,6 +47,10 @@ PROVENANCE_PHRASE = {
         "measured on the reference rig, then scaled to this GPU by memory bandwidth "
         "-- a real measurement, but not of this card"
     ),
+    "contributed": (
+        "contributed -- someone else's bench runs on this GPU, imported into "
+        "quarantine and unverified by this project"
+    ),
     "estimated": "estimated (first-principles model, not measured)",
     "unknown": "unknown -- not screened, treat as unvalidated",
     # Not a prediction at all: exact arithmetic over the inputs and the GPU
@@ -107,6 +111,7 @@ class BriefInputs:
     grid_region: str | None = None
     carbon_intensity: float | None = None
     mode: str = "online"
+    use_contributions: bool = False
     cloud: str | None = None
     think_time_s: float | None = None
     session_turns: int | None = None
@@ -163,6 +168,8 @@ class BriefInputs:
         for flag, value, default in flags:
             if value != default and value is not None:
                 parts += [flag, _num(value)]
+        if self.use_contributions:
+            parts.append("--contributions")
         return " ".join(shlex.quote(str(p)) for p in parts)
 
 

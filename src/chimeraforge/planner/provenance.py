@@ -31,6 +31,10 @@ PROV_MEASURED = "measured"
 # bandwidth_ratio != 1.0 lands here -- no threshold, because any threshold would
 # be chosen to make the output look better.
 PROV_EXTRAPOLATED = "extrapolated"
+# Someone else's bench runs on this exact GPU, imported into quarantine and used
+# only on request (`plan --contributions`). Below `extrapolated`: that is this
+# project's own measurement, scaled; this one is unverified.
+PROV_CONTRIBUTED = "contributed"
 # A first-principles model: roofline, FP16 baseline + quant delta, family prior.
 PROV_ESTIMATED = "estimated"
 # Not screened. Reported as unvalidated rather than filled with a default.
@@ -42,6 +46,7 @@ PROVENANCE_ORDER = (
     PROV_DERIVED,
     PROV_MEASURED,
     PROV_EXTRAPOLATED,
+    PROV_CONTRIBUTED,
     PROV_ESTIMATED,
     PROV_UNKNOWN,
 )
@@ -148,10 +153,12 @@ COST_BASIS = "GPU-hours x the dated price snapshot"
 # them loses the distinction between "a model said so" and "a benchmark said so,
 # about another card".
 MARK_EXTRAPOLATED = "^"
+MARK_CONTRIBUTED = "*"
 PROVENANCE_MARK = {
     PROV_DERIVED: "",
     PROV_MEASURED: "",
     PROV_EXTRAPOLATED: MARK_EXTRAPOLATED,
+    PROV_CONTRIBUTED: MARK_CONTRIBUTED,
     PROV_ESTIMATED: "~",
     PROV_UNKNOWN: "?",
 }
@@ -160,6 +167,7 @@ PROVENANCE_MARK = {
 PROVENANCE_LEGEND = (
     f"{PROVENANCE_MARK[PROV_ESTIMATED]} estimated (modelled)  "
     f"{MARK_EXTRAPOLATED} extrapolated (measured on another GPU)  "
+    f"{MARK_CONTRIBUTED} contributed (imported, unverified)  "
     f"{PROVENANCE_MARK[PROV_UNKNOWN]} unknown (unscreened)"
 )
 
