@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-10-04
+
 ### Added
 - **`plan --cloud aws|azure` prices the fleet at hyperscaler on-demand list prices, and so does the MCP `plan` tool.** The bundled datacenter prices are marketplace rates, roughly 4-5x below what AWS and Azure bill on demand, and the `hyperscaler-on-demand` price basis existed with nothing to price it. Both clouds publish list prices without credentials:
   - **Snapshot:** `planner/data/cloud_prices.json`, built by `scripts/build_cloud_prices.py`. It holds 20 AWS and 11 Azure offers.
