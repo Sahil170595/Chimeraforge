@@ -237,7 +237,8 @@ class TestQuarantine:
     def test_malformed_import_raises_contribution_error(self, tmp_path, payload):
         path = tmp_path / "malformed.json"
         path.write_bytes(payload)
-        with pytest.raises(contrib.ContribError, match="could not read"):
+        # Newer CPython can parse this nesting; schema validation must still reject it.
+        with pytest.raises(contrib.ContribError):
             contrib.import_contribution(path)
         assert contrib.load_quarantine() == []
 
