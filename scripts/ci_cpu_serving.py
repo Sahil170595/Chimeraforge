@@ -176,7 +176,7 @@ def stream_requests(client: httpx.Client, cwd: Path) -> Path:
 def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> dict:
     """Exercise the installed product using measurements made by the real backend."""
     results = cwd / "results"
-    run_cli(
+    benchmark_stdout = run_cli(
         [
             "bench",
             "--model",
@@ -189,6 +189,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
             str(client.base_url).rstrip("/"),
             "--output-dir",
             str(results),
+            "--json",
         ],
         cwd,
         env,
@@ -196,6 +197,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     files = list(results.glob("bench_*.json"))
     assert len(files) == 1, f"expected exactly one saved benchmark, found {files}"
     benchmark = json.loads(files[0].read_text(encoding="utf-8"))
+    assert json.loads(benchmark_stdout) == benchmark, "stdout and saved JSON disagree"
     assert len(benchmark) == 1
     validate_benchmark(benchmark[0], BENCH_RUNS)
     assert benchmark[0]["environment"]["chimeraforge_version"] == version

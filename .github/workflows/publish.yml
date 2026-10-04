@@ -5,110 +5,114 @@ on:
     types: [published]
   workflow_dispatch:
 
-jobs:
-  build:
-    name: Build distribution
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
+permissions:
+  contents: read
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: "3.12"
-
-      - name: Install build tooling
+      - name: Require a version tag reachable from main on every publishing path
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      # Runs on BOTH triggers. Behind `if: github.event_name == 'release'`
-      # a workflow_dispatch from any branch skipped the only version check and
-      # would publish whatever that branch's pyproject.toml said.
-      - name: Verify tag matches pyproject version
+          set -euo pipefail
+          test "$REF_TYPE" = tag
+          test "${REF_NAME#v}" != "$REF_NAME"
+          git merge-base --is-ancestor HEAD origin/main
+          python - <<'PY'
+          import json, os, pathlib, tomllib
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          server = json.loads(pathlib.Path("server.json").read_text())
+          assert os.environ["REF_NAME"] == f"v{version}", "release tag must match package version"
+          assert server["version"] == version, "MCP registry version must match before PyPI upload"
+          assert server["packages"][0]["version"] == version, "MCP package version must match"
+          print(f"release identity verified: v{version}")
+          PY
+      - name: Verify pinned MCP publisher and registry metadata before uploading
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          PKG=$(python -c "import tomllib,pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
-          echo "tag=$TAG pyproject=$PKG"
-          test "$TAG" = "$PKG"
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mcp-publisher.tar.gz"
+          curl --fail --location --retry 3 https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz -o "$archive"
+          echo "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" mcp-publisher
+          "$RUNNER_TEMP/mcp-publisher" validate
 
-      - name: Build sdist and wheel
-        run: python -m build
-
-      - name: Check distribution
-        run: twine check dist/*
-
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist/
+  validation:
+    needs: release-identity
+    uses: ./.github/workflows/ci.yml
 
   publish:
-    name: Publish to PyPI
-    needs: build
+    needs: validation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: pypi
       url: https://pypi.org/project/chimeraforge/
     permissions:
+      contents: read
       id-token: write
+      attestations: write
     steps:
-      - name: Download dist artifact
-        uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: dist
           path: dist/
-
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Attest the validated release artifacts
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: dist/*
+      - name: Publish the same validated artifacts with OIDC
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
 
   mcp-registry:
-    name: Publish to MCP Registry
     needs: publish
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
-      id-token: write   # mints the OIDC token mcp-publisher exchanges; no secrets
+      id-token: write
       contents: read
     steps:
-      - uses: actions/checkout@v7
-
-      # The registry pins a server to a version that must already exist on PyPI,
-      # so a stale server.json would list a release that cannot be verified.
-      # Caught here rather than after publishing the wrong version.
-      - name: Verify server.json matches the tag
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Install verified publisher
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          SRV=$(python -c "import json;d=json.load(open('server.json'));print(d['version'])")
-          PKG=$(python -c "import json;d=json.load(open('server.json'));print(d['packages'][0]['version'])")
-          echo "tag=$TAG server.json=$SRV package=$PKG"
-          test "$TAG" = "$SRV" && test "$TAG" = "$PKG"
-
-      - name: Install mcp-publisher
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mcp-publisher.tar.gz"
+          curl --fail --location --retry 3 https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz -o "$archive"
+          echo "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" mcp-publisher
+      - name: Wait for the validated release on PyPI
+        env:
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
-            | tar xz mcp-publisher
-          ./mcp-publisher --version
-
-      # Ownership is proved by the `mcp-name:` token in the README, which the
-      # registry reads from the PyPI *description* -- so the release has to be
-      # indexed before publishing. PyPI's CDN lags the upload by a few seconds.
-      - name: Wait for the release to be visible on PyPI
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          for i in $(seq 1 30); do
-            if curl -fsS "https://pypi.org/pypi/chimeraforge/$TAG/json" >/dev/null 2>&1; then
-              echo "chimeraforge $TAG is on PyPI"; exit 0
+          set -euo pipefail
+          tag="${REF_NAME#v}"
+          for attempt in $(seq 1 30); do
+            if curl -fsS "https://pypi.org/pypi/chimeraforge/$tag/json" >/dev/null; then
+              exit 0
             fi
-            echo "attempt $i: not indexed yet, waiting..."; sleep 10
+            echo "attempt $attempt: waiting for PyPI indexing"
+            sleep 10
           done
-          echo "::error::chimeraforge $TAG never appeared on PyPI"; exit 1
-
-      - name: Validate server.json
-        run: ./mcp-publisher validate
-
-      - name: Publish to the MCP Registry
+          echo "::error::Release never became visible on PyPI"
+          exit 1
+      - name: Publish registry metadata
         run: |
-          ./mcp-publisher login github-oidc
-          ./mcp-publisher publish
+          "$RUNNER_TEMP/mcp-publisher" login github-oidc
+          "$RUNNER_TEMP/mcp-publisher" publish

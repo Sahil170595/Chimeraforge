@@ -45,6 +45,10 @@ inputs:
     description: "chimeraforge version to install. Pin this for reproducible comments."
     required: false
     default: "latest"
+  package-path:
+    description: "Local candidate wheel to install instead of downloading from PyPI."
+    required: false
+    default: ""
   comment:
     description: "Post (or update) a sticky PR comment. Set false to only emit outputs."
     required: false
@@ -74,17 +78,23 @@ runs:
   using: composite
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v7
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
       with:
         python-version: "3.12"
 
     - name: Install chimeraforge
       shell: bash
+      env:
+        CF_PACKAGE_PATH: ${{ inputs.package-path }}
+        CF_VERSION: ${{ inputs.version }}
       run: |
-        if [ "${{ inputs.version }}" = "latest" ]; then
+        set -euo pipefail
+        if [ -n "$CF_PACKAGE_PATH" ]; then
+          python -m pip install --quiet "$CF_PACKAGE_PATH"
+        elif [ "$CF_VERSION" = "latest" ]; then
           python -m pip install --quiet --upgrade chimeraforge
         else
-          python -m pip install --quiet "chimeraforge==${{ inputs.version }}"
+          python -m pip install --quiet "chimeraforge==$CF_VERSION"
         fi
         chimeraforge --version
 
@@ -104,7 +114,7 @@ runs:
 
     - name: Post the comment
       if: ${{ inputs.comment == 'true' && github.event_name == 'pull_request' }}
-      uses: actions/github-script@v9
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       env:
         SUMMARY: ${{ steps.plan.outputs.summary }}
       with:

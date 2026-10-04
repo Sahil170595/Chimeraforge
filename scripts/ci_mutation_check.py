@@ -92,7 +92,11 @@ def main(argv: list[str] | None = None) -> int:
                     capture_output=True,
                     timeout=TIMEOUT_SECONDS,
                 )
-                assert result.returncode == 1 and " failed" in result.stdout, (
+                assert (
+                    result.returncode == 1
+                    and " failed" in result.stdout
+                    and "ERROR" not in result.stdout + result.stderr
+                ), (
                     f"mutation {name} survived or did not reach assertions:\n"
                     f"{result.stdout}\n{result.stderr}"
                 )

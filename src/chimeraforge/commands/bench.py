@@ -152,7 +152,7 @@ def bench(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
-            disable=not console.is_terminal,  # no live spinner when piped/redirected
+            disable=output_json or not console.is_terminal,
         ) as progress:
             try:
                 if all_quants:
@@ -258,6 +258,7 @@ def bench(
 
         # Save results
         saved_path = _save_results(results, out_path)
-        console.print(f"\n[green]Results saved to:[/] {saved_path}")
+        diagnostics = Console(stderr=True) if output_json else console
+        diagnostics.print(f"\n[green]Results saved to:[/] {saved_path}")
 
     asyncio.run(_run())
