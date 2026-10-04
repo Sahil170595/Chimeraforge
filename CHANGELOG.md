@@ -7,17 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+
 ## [0.48.0] - 2026-10-04
 
 ### Added
-- **A prefill/decode disaggregation advisory on candidates that sit where the published sources say it is worth considering.** The planner does not model disaggregation, and the roadmap rejected that (D2): no closed-form prefill:decode ratio exists, and vLLM's own docs state "Disaggregated prefill DOES NOT improve throughput". So the advisory predicts nothing. It says when a plan is in the region, quotes the sources, and gives context from the plan.
-  - **The region:** each condition maps to a sentence in a source re-read on 2026-10-01.
-    - Both TTFT and TPOT are gated. DistServe (OSDI 2024, arXiv:2401.09670) says existing systems "have to prioritize one latency over the other, or over-provision compute resources to meet both"; vLLM's docs list tuning TTFT and ITL separately and controlling tail ITL as the uses.
-    - Serving is online. DistServe Sec. 7 says chunked prefill "may be preferred" for throughput-optimized offline work.
-    - The fleet has more than one GPU.
-    - The engine's docs document the feature: vLLM v0.30.0 and SGLang v0.5.20 do; TGI v3.3.7 and Ollama do not.
-  - **The text:** it states that no speedup is predicted, that the feature is experimental, and that chunked prefill (`--max-num-batched-tokens`) targets the same problem. It gives the plan's prefill share of modeled request service time, including session-limited TTFT, and the GPU's interconnect bandwidth, and quotes DistServe that with "only a few or even a single GPU" the design space "is significantly limited".
-  - **Where it shows up:** the candidate field `disaggregation_advisory`, an Advisory panel in the Rich output, and the MCP summary. The field is empty outside the region, so plans are otherwise unchanged.
+- **`plan --cloud aws|azure` prices the fleet at hyperscaler on-demand list prices, and so does the MCP `plan` tool.** The bundled datacenter prices are marketplace rates, roughly 4-5x below what AWS and Azure bill on demand, and the `hyperscaler-on-demand` price basis existed with nothing to price it. Both clouds publish list prices without credentials:
+  - **Snapshot:** `planner/data/cloud_prices.json`, built by `scripts/build_cloud_prices.py`. It holds 20 AWS and 11 Azure offers.
+    - Prices come from the AWS EC2 price list for us-east-1 (streamed, never written to disk) and the Azure Retail Prices API for eastus. They are Linux, on-demand and shared tenancy, with no spot, low-priority, capacity blocks or reservations.
+    - Each offer's GPU model comes from the cloud's own instance or VM-series page, which must name the part.
+    - GPU count and memory come from AWS's price list columns and from the Accelerators table on each Azure series page. They are checked against the hardware DB: memory that does not match is a build error.
+  - **Excluded, with reasons:**
+    - Azure NCads H100 v5 (an H100 NVL 94GB) and NC A100 v4 (an A100 PCIe), which are different cards from the DB entries.
+    - AWS p5e/p5en (capacity blocks only in us-east-1).
+    - Fractional-GPU VM sizes.
+    - Azure H200 and MI300X, which have no Linux on-demand price in eastus.
+  - **Whole instances:** for N replicas of g GPUs, the bill is the cheapest `ceil(N / floor(gpus / g))` instances of one size, each billed in full. A TP/PP group that no instance holds is refused at the budget gate with the largest size named, and the warning counts GPUs that are billed but idle. Example: one H100 for an 8B is $1,800/mo at the marketplace rate, $4,954 on AWS (a 1-GPU p5.4xlarge), and $70,790 on Azure, which sells the H100 only in an 8-GPU VM.
+  - **Stated, not silent:**
+    - A GPU the cloud does not sell is refused with "no aws on-demand instance carries X".
+    - `--cloud` together with `--gpu-price-per-hour` is refused, because those are two prices for one GPU.
+    - The snapshot is flagged stale after 90 days.
+    - Each candidate carries `cloud_offer`. `--fleet` and `--report` forward the flag.
+  - Without the flag, plans are unchanged.
 
 ## [0.47.0] - 2026-10-04
 
