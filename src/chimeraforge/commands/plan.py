@@ -330,6 +330,13 @@ def plan(
         "--json",
         help="Output as JSON instead of Rich tables.",
     ),
+    cloud: str = typer.Option(
+        None,
+        "--cloud",
+        help="Price the fleet at aws or azure on-demand list prices (a dated snapshot of "
+        "each cloud's public price list), instance by instance, instead of the bundled "
+        "marketplace rate.",
+    ),
     think_time: float = typer.Option(
         None,
         "--think-time",
@@ -747,6 +754,7 @@ def plan(
             grid_region=grid_region,
             carbon_intensity=carbon_intensity,
             mode=mode,
+            cloud=cloud,
             think_time_s=think_time,
             session_turns=session_turns,
             models_path=models_path,
@@ -834,6 +842,7 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    cloud=cloud,
                     think_time_s=think_time,
                     session_turns=session_turns,
                     allow_network=not no_network,
@@ -953,6 +962,7 @@ def plan(
                     grid_region=grid_region,
                     carbon_intensity=carbon_intensity,
                     mode=mode,
+                    cloud=cloud,
                     think_time_s=think_time,
                     session_turns=session_turns,
                 ),
