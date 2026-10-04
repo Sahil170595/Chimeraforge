@@ -23,6 +23,26 @@ Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual o
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
+<!-- corpus-shape:start (scripts/corpus_shape.py --write; do not edit by hand) -->
+**What the planner itself reads.** The ~204,000 measurements are the research program's total across its reports. The tables `plan` looks numbers up in are far smaller:
+
+| Table | Size | Shape |
+|---|---|---|
+| Decode throughput | 23 rows | FP16 only; 7 models, the largest llama3.2-3b at 3.21B; 9 rows on serving engines (ollama 3, tgi 3, vllm 3) and 14 on transformers research harnesses; every row measured on one GPU, the RTX 4080 Laptop 12GB (192-bit GDDR6, 432 GB/s) |
+| Quantization speedups | 7 multipliers | applied to an FP16 row; a quantized throughput is never a measurement of that quant |
+| Quality | 35 model x quant cells | n=20 items each (TR125) |
+| Safety | 40 model x quant cells | refusal rate (TR134/TR142) |
+| Latency service times | 9 | model x backend |
+| Third-party audit | 42 scored cells on 17 GPUs | published benchmarks ([scorecard](corpora/SCORECARD.md)); 26 more published but too underspecified to score |
+
+Anything outside those rows is `extrapolated` (scaled by memory bandwidth from the reference GPU), `derived` (exact arithmetic) or `estimated` (roofline), and every number in a plan says which. The data records its own limits:
+
+- Every throughput row is FP16. Quantized throughput is the FP16 row times a quant multiplier, not a measurement of that quant.
+- Every row was measured on one GPU. Other hardware is bandwidth-extrapolated and labelled 'extrapolated', not 'measured'.
+- The largest model measured is 3.21B; predictions above that extrapolate the power law.
+- No SGLang rows exist; that backend falls through to the fp16/power-law path.
+<!-- corpus-shape:end -->
+
 ---
 
 ## Install
@@ -164,6 +184,10 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
   - A latency target (`--latency-slo`, `--ttft-slo`, `--tpot-slo`) together with batch mode is an error, not ignored. The reported request time is service only, with no queue wait, because a backlog's wait depends on its size. `--pareto` trades $/1M tokens against quality.
 - **Self-host vs API break-even** (`--compare-api`): prices your workload against hosted APIs and reports the monthly volume where self-hosting starts winning. Prices are a **dated snapshot with a source URL per provider**, flagged stale past 90 days -- never presented as a live quote -- and a frontier API is labeled as a different quality tier rather than passed off as like-for-like.
 - **Prefix caching** (`--prefix-cache-hit-rate`): chatbot and agent traffic reuse a long system prompt, so most of the prefill is already cached. At a 4k prompt and a 90% hit rate an 8B on an H100 goes from 166ms to 17ms TTFT (`plan --model-size 8b --prompt-tokens 4096 --hardware "H100 80GB" --budget 100000 --prefix-cache-hit-rate 0.9`); the same query on the reference RTX 4080 is 2051ms to 205ms. Defaults to 0 and is never inferred, and the KV a shared prefix saves is deliberately not deducted -- under-sizing KV is what turns "it fits" into an OOM.
+- **Multi-turn session residency** (`--think-time SECONDS --session-turns T`): a conversation's next turn hits the prefix cache only if its KV survived the user's think time. Between turns the conversation is idle (it is not decoding, and the concurrency ceiling does not count it), but its prefix still has to sit in the KV pool.
+  - **How it is computed:** by Little's law the fleet holds `rate x (T-1)/T x think time` idle conversations at once. The planner computes how many of their prefixes each (replicas x batch) config's free KV can hold, and limits the stated hit rate to that share. TTFT is computed from the limited rate inside the search, so more replicas genuinely help.
+  - **Example:** an 8B at 2 req/s with 4k prompts and 60 s between turns has 108 idle conversations. One RTX 4090's free KV holds 19 of them, so a stated 90% hit rate becomes 16%, and TTFT goes from 100ms to 837ms (`plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2 --prompt-tokens 4096 --context-length 8192 --prefix-cache-hit-rate 0.9 --think-time 60 --session-turns 10`).
+  - **Assumptions, stated in the output:** session-affinity routing, so a returning turn reaches the replica holding its prefix, and eviction that keeps idle conversations at random relative to when they return. Ollama keeps one conversation per replica slot. Off unless both flags are given.
 - **Reasoning models** (`--reasoning-tokens N`): hidden thinking tokens are decoded by the GPU and held in KV even though the caller never sees them. Counting only visible output under-counts decode by the reasoning ratio -- 1000 hidden tokens take an 8B plan on an H100 from 193ms to 3664ms p95 (`plan --model-size 8b --hardware "H100 80GB" --budget 100000 --reasoning-tokens 1000`). Defaults to 0 and is never inferred: the ratio is a property of your workload, not the weights.
 - **Attention-shape aware KV:** MLA (DeepSeek-V2/V3) caches a compressed latent rather than per-head K/V -- sizing it as GQA overstates DeepSeek-V3's cache by **57x** -- and sliding-window models stop growing the cache past the window. A window whose layer pattern isn't declared is *not* applied, because under-sizing KV is what turns "it fits" into an OOM.
 - **Mixture-of-Experts aware:** VRAM sizes on *total* params (every expert stays resident) while throughput and TTFT use *active* params (a token only reads the experts it routes to). Treating an MoE model as dense under-predicts its throughput by 3.6x on Mixtral-8x7B and ~18x on DeepSeek-V3. Active counts are derived from the model's real expert geometry and match published figures.
@@ -423,7 +447,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 
 ## How the numbers are made
 
-- **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data.
+- **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
 - **2,678 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.

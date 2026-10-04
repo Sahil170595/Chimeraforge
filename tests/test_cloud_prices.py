@@ -45,6 +45,21 @@ def _plan(**over):
     return run_plan(**kw)
 
 
+def test_cloud_pricing_and_session_residency_work_together():
+    result = _plan(
+        cloud="aws",
+        prompt_tokens=4096,
+        context_length=8192,
+        prefix_cache_hit_rate=0.9,
+        think_time_s=600.0,
+        session_turns=10,
+    )
+    assert result.candidates
+    assert all(c.cloud_offer for c in result.candidates)
+    assert all(c.session_idle_conversations == pytest.approx(1080.0) for c in result.candidates)
+    assert any(c.session_retention < 1.0 for c in result.candidates)
+
+
 class TestSnapshot:
     def test_validates(self):
         _builder().validate(load_cloud_prices())
