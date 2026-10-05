@@ -212,6 +212,26 @@ def test_process_restart_cannot_pass():
     assert "restart" in result.metrics["ttft"].reason
 
 
+@pytest.mark.parametrize("where", ["both", "baseline", "end"])
+def test_ambiguous_histogram_lifetime_metadata_cannot_pass(where):
+    first, second = pair()
+    name = "vllm:time_to_first_token_seconds_created "
+    if where != "end":
+        first += name + "100\n"
+    if where != "baseline":
+        second += name + "200\n"
+    result = window(first, second, ttft_slo=150)
+    assert result.outcome == "unknown"
+    assert "ambiguous lifetime metadata" in result.metrics["ttft"].reason
+
+
+def test_other_explicit_model_lifetime_is_not_assigned_to_selected_model():
+    first, second = pair()
+    name = 'vllm:time_to_first_token_seconds_created{model_name="other"} '
+    result = window(first + name + "100\n", second + name + "200\n", ttft_slo=150)
+    assert result.outcome == "pass"
+
+
 @pytest.mark.parametrize("value", ["NaN", "-1", "99"])
 def test_finished_request_counter_reset_or_invalid_is_unknown(value):
     first, second = pair()

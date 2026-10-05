@@ -276,6 +276,12 @@ def _check_sum(histogram: _Histogram, base: str) -> None:
 
 
 def _global_reset(first: dict, second: dict, model: str) -> str | None:
+    for scrape in (first, second):
+        for name, rows in scrape.items():
+            if name.endswith("_created") and any(
+                not labels.get("model_name") for labels, _ in rows
+            ):
+                return f"{name} has ambiguous lifetime metadata without model_name"
     starts = [first.get("process_start_time_seconds"), second.get("process_start_time_seconds")]
     if all(starts) and starts[0] != starts[1]:
         return "process start time changed: engine restart invalidates this window"

@@ -59,7 +59,8 @@ excluded, and an unlabeled histogram cannot be assigned to the requested model.
 The baseline and final series must match; newly appearing series, missing
 buckets/counts/sums, contradictory sums, non-monotone deltas, and decreasing
 counters make the window unknown. A changed process-start or histogram-created
-timestamp also invalidates the window. Two scrapes cannot detect every restart
+timestamp also invalidates the window. Histogram lifetime metadata without a
+model label is ambiguous and cannot qualify a passing window. Two scrapes cannot detect every restart
 if timestamps are absent and all counters have already regrown beyond t0.
 
 ## Outcomes and evidence
