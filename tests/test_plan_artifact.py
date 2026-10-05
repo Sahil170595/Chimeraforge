@@ -34,6 +34,14 @@ def test_public_plan_and_snapshot_roundtrip(tmp_path):
         {"workload_cv2": -1},
         {"session_turns": 0},
         {"platform": "amiga"},
+        {"gpu_overrides": {"vram_gb": [24]}},
+        {"gpu_overrides": {"vram_gb": True}},
+        {"gpu_overrides": {"cost_per_hour": -1}},
+        {"gpu_overrides": {"typo": 1}},
+        {"overrides": {"params_b": -7}},
+        {"overrides": {"n_layers": 32.9}},
+        {"overrides": {"n_kv_heads": True}},
+        {"overrides": {"hidden_size": []}},
     ],
 )
 def test_sdk_rejects_invalid_inputs_before_search(kwargs):
@@ -122,3 +130,58 @@ def test_url_credentials_are_removed():
     assert data["inputs"]["ollama_url"] == "http://localhost:11434/"
     data["inputs"]["request_rate"] = 999
     assert artifact.to_dict()["inputs"]["request_rate"] == 1
+
+
+@pytest.mark.parametrize(
+    "path,value",
+    [
+        (("inputs",), {}),
+        (("inputs", "ollama_url"), "http://user:secret@localhost:11434/?token=secret"),
+        (("result", "trace"), "not a trace"),
+        (("result", "frontier"), "not candidates"),
+        (("result", "target_models"), ["unrelated-model"]),
+    ],
+)
+def test_recomputed_artifact_still_requires_valid_contract(path, value):
+    from chimeraforge.api import PlanRequest, plan, artifact_from_dict, PlanError
+    import hashlib
+
+    data = plan(PlanRequest(allow_network=False)).to_dict()
+    if len(path) == 1:
+        data[path[0]] = value
+    else:
+        data[path[0]][path[1]] = value
+    body = {k: v for k, v in data.items() if k != "fingerprint"}
+    data["fingerprint"] = hashlib.sha256(
+        json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    with pytest.raises(PlanError):
+        artifact_from_dict(data)
+
+
+def test_cli_save_rejects_nonfinite_input(tmp_path):
+    path = tmp_path / "plan.json"
+    result = CliRunner().invoke(
+        app, ["plan", "--no-network", "--json", "--budget", "inf", "--save", str(path)]
+    )
+    assert result.exit_code != 0
+    assert "finite" in json.loads(result.stdout)["error"]
+    assert not path.exists()
+
+
+def test_snapshot_uses_the_consumed_corpus_once(monkeypatch):
+    from chimeraforge.api import PlanRequest, plan
+    from chimeraforge.planner import service
+
+    original = service.load_effective_models
+    calls = []
+
+    def read_once():
+        calls.append(1)
+        assert len(calls) == 1, "snapshot must not reread a possibly replaced coefficient file"
+        return original()
+
+    monkeypatch.setattr(service, "load_effective_models", read_once)
+    data = plan(PlanRequest(allow_network=False)).to_dict()
+    assert calls == [1]
+    assert data["corpus_sha256"] == data["result"]["corpus_sha256"]

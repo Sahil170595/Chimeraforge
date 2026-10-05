@@ -773,6 +773,10 @@ def plan(
             allow_network=not no_network,
             overrides=overrides,
         )
+        if save:
+            from chimeraforge.api import PlanRequest
+
+            PlanRequest(**plan_inputs).validate()
         result = run_plan(**plan_inputs)
         if save:
             if fleet:

@@ -14,12 +14,19 @@ from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge import __version__
 from chimeraforge.planner.engine import Candidate
-from chimeraforge.planner.models import load_effective_models
+from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
 from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inputs
 
 SCHEMA_VERSION = 1
 MAX_PLAN_BYTES = 8 * 1024 * 1024
+MODEL_OVERRIDE_TYPES = {
+    "params_b": float,
+    "n_layers": int,
+    "n_kv_heads": int,
+    "d_head": int,
+    "hidden_size": int,
+}
 
 
 class PlanError(ValueError):
@@ -82,6 +89,14 @@ class PlanRequest:
         for name, annotation in get_type_hints(type(self)).items():
             _check_type(values[name], annotation, name)
         _finite_input(values)
+        _validate_overrides(self.overrides, MODEL_OVERRIDE_TYPES, set(MODEL_OVERRIDE_TYPES))
+        _validate_overrides(
+            self.gpu_overrides,
+            {k: float for k in GPU_OVERRIDE_FIELDS},
+            {"vram_gb", "bandwidth_gbps"},
+        )
+        if self.models is not None and any(not model.strip() for model in self.models):
+            raise PlanError("model identifiers must be non-empty")
         names = get_type_hints(validate_plan_inputs)
         validate_plan_inputs(**{k: v for k, v in values.items() if k in names})
         for name in ("budget", "workload_cv2", "lora_adapters", "reasoning_tokens"):
@@ -107,6 +122,21 @@ class PlanRequest:
             raise PlanError("think_time_s and session_turns must be supplied together")
         if self.platform is not None and self.platform not in ("linux", "windows", "wsl2", "macos"):
             raise PlanError("platform must be linux, windows, wsl2 or macos")
+
+
+def _validate_overrides(values: dict | None, annotations: dict, positive: set[str]) -> None:
+    if values is None:
+        return
+    unknown = set(values) - set(annotations)
+    if unknown:
+        raise PlanError(f"unknown override fields: {sorted(unknown, key=str)}")
+    for name, value in values.items():
+        if value is None:
+            continue
+        _check_type(value, annotations[name], name)
+        if value < 0 or (name in positive and value == 0):
+            constraint = "positive" if name in positive else "non-negative"
+            raise PlanError(f"override {name} must be {constraint}")
 
 
 def _check_type(value, annotation, name: str) -> None:
@@ -205,6 +235,7 @@ class PlanArtifact:
 
 def snapshot(request: PlanRequest, result: PlanResult) -> PlanArtifact:
     """Capture effective options, resolved facts, corpus identity and provenance."""
+    request.validate()
     inputs = asdict(request)
     inputs.pop("hf_token")
     # URL userinfo is a credential too. An authenticated endpoint is not portable.
@@ -213,19 +244,20 @@ def snapshot(request: PlanRequest, result: PlanResult) -> PlanArtifact:
     if inputs["ollama_url"]:
         url = urlsplit(inputs["ollama_url"])
         inputs["ollama_url"] = urlunsplit((url.scheme, url.netloc.split("@")[-1], url.path, "", ""))
-    corpus = load_effective_models(request.models_path)
+    if not result.corpus_sha256:
+        raise PlanError("planning result did not record its consumed corpus")
     body = _json_value(
         {
             "schema_version": SCHEMA_VERSION,
             "tool": {"name": "chimeraforge", "version": __version__},
             "created_at": datetime.now(timezone.utc).isoformat(),
             "inputs": inputs,
-            "corpus_sha256": _digest(asdict(corpus)),
+            "corpus_sha256": result.corpus_sha256,
             "result": asdict(result),
         }
     )
     body["fingerprint"] = _digest(body)
-    return PlanArtifact(body)
+    return artifact_from_dict(body)
 
 
 def plan(request: PlanRequest) -> PlanArtifact:
@@ -233,7 +265,7 @@ def plan(request: PlanRequest) -> PlanArtifact:
     try:
         request.validate()
         return snapshot(request, run_plan(**asdict(request)))
-    except (ValueError, OSError, ResolverError) as exc:
+    except (ValueError, OSError, ResolverError, TypeError, OverflowError) as exc:
         raise PlanError(str(exc)) from exc
 
 
@@ -297,31 +329,60 @@ def artifact_from_dict(data: dict) -> PlanArtifact:
             or any(c not in "0123456789abcdef" for c in corpus_hash)
         ):
             raise PlanError("invalid corpus fingerprint")
+        expected_inputs = {f.name for f in fields(PlanRequest)} - {"hf_token"}
+        if set(data["inputs"]) != expected_inputs:
+            raise PlanError("saved plan must record every noncredential request field")
         request = PlanRequest(**data["inputs"])
         request.validate()
         if "hf_token" in data["inputs"]:
             raise PlanError("saved plans must not contain credentials")
+        from urllib.parse import urlsplit
+
+        if request.ollama_url:
+            url = urlsplit(request.ollama_url)
+            if url.username is not None or url.password is not None or url.query or url.fragment:
+                raise PlanError("saved endpoint must omit userinfo, query and fragment")
         result = data["result"]
         if set(result) != {f.name for f in fields(PlanResult)}:
             raise PlanError("invalid saved-plan result fields")
+        if result["corpus_sha256"] != corpus_hash:
+            raise PlanError("result and artifact corpus fingerprints must agree")
         if not isinstance(result["candidates"], list) or not isinstance(result["specs"], dict):
             raise PlanError("invalid candidates/specifications")
-        for row in result["candidates"]:
-            if set(row) != {f.name for f in fields(Candidate)}:
-                raise PlanError("invalid candidate fields")
-            for name, annotation in get_type_hints(Candidate).items():
-                if row[name] is None and annotation is float:
-                    continue  # non-finite predictions are serialized as unknown
-                _check_type(row[name], annotation, name)
-            Candidate(**row)
-        for row in result["specs"].values():
+        rows = result["candidates"]
+        if result["frontier"] is not None:
+            _check_type(result["frontier"], list[dict], "frontier")
+            rows = rows + result["frontier"]
+        for row in rows:
+            _validate_candidate(row)
+        for key, row in result["specs"].items():
             for name, annotation in get_type_hints(ModelSpec).items():
                 _check_type(row[name], annotation, name)
             ModelSpec(**row)
+            canonical = key.split("ollama:", 1)[-1] if row["source"] == "ollama" else key
+            if row["name"] not in (key, canonical):
+                raise PlanError("specification identity must match its recorded target")
         _check_type(result["target_models"], list[str], "target_models")
+        if any(row["model"] not in result["target_models"] for row in rows):
+            raise PlanError("every candidate must name a recorded target model")
+        if any(key not in result["target_models"] for key in result["specs"]):
+            raise PlanError("specifications must belong to recorded targets")
+        _check_type(result["trace"], list[list], "trace")
+        if any(len(row) != 4 or any(type(v) is not str for v in row) for row in result["trace"]):
+            raise PlanError("trace rows must contain four strings")
         if result["platform"] not in ("linux", "windows", "wsl2", "macos"):
             raise PlanError("invalid saved-plan platform")
         _finite_input(data)
     except (TypeError, KeyError, ValueError, OverflowError) as exc:
         raise PlanError(f"invalid saved-plan structure: {exc}") from exc
     return PlanArtifact(copy.deepcopy(data))
+
+
+def _validate_candidate(row: dict) -> None:
+    if set(row) != {f.name for f in fields(Candidate)}:
+        raise PlanError("invalid candidate fields")
+    for name, annotation in get_type_hints(Candidate).items():
+        if row[name] is None and annotation is float:
+            continue  # non-finite predictions are serialized as unknown
+        _check_type(row[name], annotation, name)
+    Candidate(**row)

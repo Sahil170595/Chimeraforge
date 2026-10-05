@@ -24,7 +24,7 @@ chimeraforge plan --model-size 3b --no-network --json --save plan.json
 
 Standard stdout remains the existing candidate array. A saved plan is a distinct
 versioned document containing inputs, resolved model specifications, target OS,
-candidate provenance, the current effective fitted-corpus fingerprint, timestamp
+candidate provenance, the fingerprint of the fitted corpus actually consumed by the search, timestamp
 and producing package version. Heterogeneous fleets are currently refused with
 `--save`; the artifact describes one homogeneous search. Nonfinite predictions
 are JSON `null`, meaning unknown/unavailable.
