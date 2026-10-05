@@ -56,8 +56,11 @@ unit to avoid port conflicts.
 Exports refuse configurations they cannot express: multiple replicas, CPU
 offload, unresolved LoRA adapter paths, unsupported platforms, multi-GPU Ollama,
 TGI pipeline parallelism, backend-incompatible GGUF weight formats or q4 KV,
-unknown/mismatched quantized checkpoint identity, unexpressed recurrent-state
-memory pools and unsupported chunked-prefill/prefix-cache assumptions. A real
+unknown/mismatched quantized checkpoint identity, recurrent-state memory pools
+and unsupported chunked-prefill/prefix-cache assumptions. Saved recurrent-state
+metadata records whether a dtype was declared, but does not preserve its exact
+value. The exporter refuses these models on every backend instead of inferring
+FP32 from that flag or relying on an unrecorded engine default. A real
 model name alone does not establish its quantization. Replan with resolved model
 metadata rather than substituting an arbitrary AWQ/GPTQ/FP8/Ollama checkpoint.
 Changing a resolved checkpoint requires replanning it. SGLang/TGI BF16 or

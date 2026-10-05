@@ -1,8 +1,9 @@
 """Deployment config fidelity and format-specific argument safety."""
 
 import json
+import hashlib
 import plistlib
-from dataclasses import replace
+from dataclasses import asdict, replace
 
 import pytest
 import yaml
@@ -11,6 +12,7 @@ from typer.testing import CliRunner
 from chimeraforge.api import PlanRequest, snapshot
 from chimeraforge.cli import app
 from chimeraforge.planner.engine import Candidate
+from chimeraforge.planner.models import load_effective_models
 from chimeraforge.planner.resolver import ModelSpec, SOURCE_HF, SOURCE_OLLAMA
 from chimeraforge.planner.service import PlanResult
 
@@ -65,8 +67,20 @@ def artifact(
         )
     )
     request = PlanRequest(platform=platform, allow_network=False, **(inputs or {}))
+    corpus_hash = hashlib.sha256(
+        json.dumps(
+            asdict(load_effective_models()), sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
+    ).hexdigest()
     return snapshot(
-        request, PlanResult([candidate], [model], {model: spec} if spec else {}, platform=platform)
+        request,
+        PlanResult(
+            [candidate],
+            [model],
+            {model: spec} if spec else {},
+            platform=platform,
+            corpus_sha256=corpus_hash,
+        ),
     )
 
 
@@ -555,3 +569,19 @@ def test_real_planner_saved_candidate_exports_without_replanning(tmp_path, monke
     args = data["services"]["inference"]["command"]
     assert args[args.index("--max-num-seqs") + 1] == str(saved.candidate(index).effective_batch)
     assert saved.to_dict()["fingerprint"] in result.content
+
+
+@pytest.mark.parametrize("dtype_declared", [True, False])
+@pytest.mark.parametrize("quant", ["FP16", "BF16"])
+def test_recurrent_state_exports_refuse_missing_exact_dtype(dtype_declared, quant):
+    from chimeraforge.deploy import DeploymentError
+
+    saved = artifact(
+        quant=quant,
+        spec_changes={
+            "recurrent_state_bytes_per_seq": 8192.0,
+            "recurrent_state_dtype_declared": dtype_declared,
+        },
+    )
+    with pytest.raises(DeploymentError, match="recurrent-state.*dtype"):
+        export(saved, format="compose", image="vllm/vllm-openai:v0.30.0")

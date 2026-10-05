@@ -70,6 +70,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv run --no-sync pytest tests/ -q --tb=short
+      - name: Validate deployment exports with actual host parsers
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        env:
+          CHIMERAFORGE_DEPLOY_ACCEPTANCE: "1"
+        run: uv run --no-sync pytest tests/test_deploy_acceptance.py -q
 
   coverage:
     runs-on: ubuntu-latest

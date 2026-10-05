@@ -194,9 +194,10 @@ def _validate_fidelity(
         raise DeploymentError("TGI has no pipeline-parallel template; select PP=1")
     if candidate.backend == "tgi" and inputs["context_length"] <= 1:
         raise DeploymentError("TGI requires context_length > 1 for a positive input-token limit")
-    if spec and spec.recurrent_state_bytes_per_seq and candidate.backend != "vllm":
+    if spec and spec.recurrent_state_bytes_per_seq:
         raise DeploymentError(
-            "hybrid recurrent-state dtype/pool fidelity is supported only by the vLLM template"
+            "saved recurrent-state metadata does not record the exact dtype; "
+            "deployment export cannot reconstruct the served state pool faithfully"
         )
     if inputs["max_num_batched_tokens"] is not None and candidate.backend != "vllm":
         raise DeploymentError("chunked-prefill token budget is expressed only by the vLLM template")
@@ -261,11 +262,6 @@ def _hf_argv(
             if inputs["prefix_cache_hit_rate"]
             else "--no-enable-prefix-caching"
         ]
-        if spec and spec.recurrent_state_bytes_per_seq:
-            argv += [
-                "--mamba-ssm-cache-dtype",
-                "float32" if spec.recurrent_state_dtype_declared else "auto",
-            ]
     elif backend == "sglang":
         argv = [
             "python3",
