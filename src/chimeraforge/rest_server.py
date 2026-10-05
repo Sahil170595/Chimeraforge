@@ -6,6 +6,7 @@ import json
 import logging
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import TCPServer
 
 from chimeraforge import __version__
 from chimeraforge.api import PlanError, PlanRequest, plan
@@ -39,6 +40,12 @@ class PlanningServer(HTTPServer):
     """Serial, loopback-only server; callers own shutdown/server_close."""
 
     allow_network: bool = False
+
+    def server_bind(self) -> None:
+        # HTTPServer's reverse DNS can stall macOS before listen(); this host is known.
+        TCPServer.server_bind(self)
+        self.server_name = "localhost"
+        self.server_port = self.server_address[1]
 
 
 class PlanningHandler(BaseHTTPRequestHandler):

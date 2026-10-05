@@ -89,3 +89,20 @@ def test_request_size_is_bounded(endpoint):
         endpoint + "/v1/plan", content=" " * 65537, headers={"Content-Type": "application/json"}
     )
     assert response.status_code == 413
+
+
+def test_loopback_binding_needs_no_reverse_dns(monkeypatch):
+    import socket
+
+    from chimeraforge.rest_server import make_server
+
+    def no_dns(*args):
+        raise AssertionError("loopback startup must not require reverse DNS")
+
+    monkeypatch.setattr(socket, "getfqdn", no_dns)
+    server = make_server(port=0)
+    try:
+        assert server.server_name == "localhost"
+        assert server.server_port == server.server_address[1] > 0
+    finally:
+        server.server_close()

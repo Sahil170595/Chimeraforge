@@ -19,12 +19,6 @@ from ci_installed_acceptance import assert_installed_origin
 
 STARTUP_TIMEOUT_SECONDS = 20
 STARTUP_POLL_SECONDS = 0.05
-STARTUP_STACK_SECONDS = 15
-CLI_BOOTSTRAP = (
-    "import faulthandler, runpy; "
-    f"faulthandler.dump_traceback_later({STARTUP_STACK_SECONDS}); "
-    "runpy.run_module('chimeraforge', run_name='__main__')"
-)
 
 
 def wait_for_health(client, url, process, *, clock=time.monotonic, sleep=time.sleep):
@@ -57,7 +51,7 @@ def main() -> int:
         env.pop("PYTHONPATH", None)
         env["CHIMERAFORGE_CACHE"] = str(Path(directory) / "cache")
         process = subprocess.Popen(
-            [sys.executable, "-I", "-c", CLI_BOOTSTRAP, "serve", "--port", str(port)],
+            [sys.executable, "-I", "-m", "chimeraforge", "serve", "--port", str(port)],
             cwd=directory,
             env=env,
             stdout=subprocess.PIPE,
