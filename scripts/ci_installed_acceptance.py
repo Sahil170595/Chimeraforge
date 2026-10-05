@@ -90,6 +90,15 @@ def main(argv: list[str] | None = None) -> int:
         assert (
             registered and registered[0]["provenance"] and registered[0]["total_throughput_tps"] > 0
         )
+        snapshot_path = cwd / "saved-plan.json"
+        saved_candidates = json.loads(
+            run_cli(["plan", "--model-size", "3b", *common, "--save", str(snapshot_path)], cwd, env)
+        )
+        from chimeraforge.api import load_plan, PlanRequest, plan as public_plan
+
+        saved = load_plan(snapshot_path)
+        assert saved.to_dict()["result"]["candidates"] == saved_candidates
+        assert public_plan(PlanRequest(allow_network=False)).candidate().provenance
         manual = json.loads(
             run_cli(
                 [
