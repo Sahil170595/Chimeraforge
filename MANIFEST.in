@@ -3,7 +3,7 @@
 # ModuleNotFoundError. Downstream packagers build from the sdist and run the
 # suite as their gate, so they saw four collection errors on a package whose
 # README advertises the suite as its evidence.
-recursive-include tests *.py *.jsonl *.txt *.json *.csv *.md
+recursive-include tests *.py *.jsonl *.txt *.json *.csv *.md *.toml
 include CHANGELOG.md
 include CLAUDE.md
 include MANIFEST.in
