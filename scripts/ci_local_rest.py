@@ -17,6 +17,24 @@ import httpx
 from ci_installed_acceptance import assert_installed_origin
 
 
+STARTUP_TIMEOUT_SECONDS = 20
+STARTUP_POLL_SECONDS = 0.05
+
+
+def wait_for_health(client, url, process, *, clock=time.monotonic, sleep=time.sleep):
+    """Retry startup connection failures, with a fixed deadline and process diagnostics."""
+    deadline = clock() + STARTUP_TIMEOUT_SECONDS
+    while True:
+        if process.poll() is not None:
+            raise AssertionError(f"server exited: {process.communicate()}")
+        try:
+            return client.get(url + "/health")
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+            if clock() >= deadline:
+                raise AssertionError("installed API did not become ready") from exc
+            sleep(STARTUP_POLL_SECONDS)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkout", type=Path, required=True)
@@ -43,17 +61,7 @@ def main() -> int:
         try:
             url = f"http://127.0.0.1:{port}"
             with httpx.Client(timeout=5, trust_env=False) as client:
-                deadline = time.monotonic() + 20
-                while True:
-                    if process.poll() is not None:
-                        raise AssertionError(f"server exited: {process.communicate()}")
-                    try:
-                        health = client.get(url + "/health")
-                        break
-                    except httpx.ConnectError as exc:
-                        if time.monotonic() >= deadline:
-                            raise AssertionError("installed API did not become ready") from exc
-                        time.sleep(0.05)
+                health = wait_for_health(client, url, process)
                 assert health.status_code == 200 and health.json()["version"] == args.expect_version
                 response = client.post(url + "/v1/plan", json={"model_size": "3b"})
                 response.raise_for_status()
