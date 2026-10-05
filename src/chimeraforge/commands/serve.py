@@ -1,11 +1,12 @@
 """Run the local, bounded HTTP planning interface."""
 
 import typer
+from chimeraforge.rest_server import DEFAULT_PORT
 
 
 def serve(
     host: str = typer.Option("127.0.0.1", help="Loopback address: 127.0.0.1 or localhost."),
-    port: int = typer.Option(8765, min=1, max=65535, help="Local TCP port."),
+    port: int = typer.Option(DEFAULT_PORT, min=1, max=65535, help="Local TCP port."),
     allow_network: bool = typer.Option(False, help="Allow HF metadata resolution on the server."),
 ) -> None:
     """Expose the validated Python planner over local HTTP; offline by default."""

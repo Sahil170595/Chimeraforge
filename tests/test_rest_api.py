@@ -1,4 +1,3 @@
-import json
 import threading
 
 import httpx
@@ -78,6 +77,10 @@ def test_server_refuses_public_binding():
 
     with pytest.raises(ValueError, match="loopback"):
         make_server(host="0.0.0.0", port=0)
+    with pytest.raises(ValueError, match="port"):
+        make_server(port=True)
+    with pytest.raises(ValueError, match="boolean"):
+        make_server(port=0, allow_network="yes")
 
 
 def test_request_size_is_bounded(endpoint):

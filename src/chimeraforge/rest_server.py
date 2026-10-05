@@ -168,6 +168,8 @@ def make_server(
         raise ValueError("the planning API binds to loopback (127.0.0.1 or localhost) only")
     if type(port) is not int or not 0 <= port <= 65535:
         raise ValueError("port must be between 0 and 65535")
+    if type(allow_network) is not bool:
+        raise ValueError("allow_network must be boolean")
     server = PlanningServer(("127.0.0.1", port), PlanningHandler)
     server.allow_network = allow_network
     return server
