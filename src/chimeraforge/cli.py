@@ -24,6 +24,7 @@ from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
 from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
+from chimeraforge.commands.serve import serve
 from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.validate import validate
 
@@ -74,6 +75,7 @@ app.command()(workload)
 app.command()(doctor)
 app.add_typer(contribute_app, name="contribute")
 app.command()(mcp)
+app.command()(serve)
 
 
 if __name__ == "__main__":  # pragma: no cover - module invocation
