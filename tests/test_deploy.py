@@ -585,3 +585,99 @@ def test_recurrent_state_exports_refuse_missing_exact_dtype(dtype_declared, quan
     )
     with pytest.raises(DeploymentError, match="recurrent-state.*dtype"):
         export(saved, format="compose", image="vllm/vllm-openai:v0.30.0")
+
+
+def test_uppercase_kv_plan_round_trip_preserves_served_cache_precision(tmp_path):
+    from chimeraforge.api import load_plan, plan
+
+    saved = plan(PlanRequest(allow_network=False, hardware="RTX 4090 24GB", kv_quant="Q8"))
+    index = next(
+        i
+        for i, row in enumerate(saved.to_dict()["result"]["candidates"])
+        if row["backend"] == "vllm" and row["quant"] == "FP16" and row["n_agents"] == 1
+    )
+    path = tmp_path / "plan.json"
+    saved.save(path)
+    result = export(
+        load_plan(path),
+        format="compose",
+        candidate_index=index,
+        model="meta-llama/Llama-3.2-3B-Instruct",
+        image="vllm/vllm-openai:v0.30.0",
+    )
+    args = yaml.safe_load(result.content)["services"]["inference"]["command"]
+    assert args[args.index("--kv-cache-dtype") + 1] == "fp8"
+    assert load_plan(path).to_dict()["inputs"]["kv_quant"] == "Q8"
+
+
+@pytest.mark.parametrize("backend", ["vllm", "sglang", "tgi"])
+def test_uppercase_q4_kv_cannot_bypass_fidelity_refusal(backend):
+    from chimeraforge.deploy import DeploymentError
+
+    with pytest.raises(DeploymentError, match="q4 KV"):
+        export(
+            artifact(backend=backend, inputs={"kv_quant": "Q4"}),
+            format="compose",
+            image="example/engine:1.2.3",
+        )
+
+
+@pytest.mark.parametrize("mode, expected", [("Q8", "q8_0"), ("FP16", "f16")])
+def test_uppercase_ollama_kv_mode_uses_required_daemon_settings(mode, expected):
+    result = export(
+        artifact(
+            backend="ollama",
+            model="ollama:qwen2.5:7b-instruct-q4_K_M",
+            source=SOURCE_OLLAMA,
+            quant="Q4_K_M",
+            native_quant="Q4_K_M",
+            inputs={"kv_quant": mode},
+        ),
+        format="compose",
+        image="ollama/ollama:0.6.8",
+    )
+    env = yaml.safe_load(result.content)["services"]["inference"]["environment"]
+    assert env["OLLAMA_KV_CACHE_TYPE"] == expected
+
+
+@pytest.mark.parametrize("format", ["compose", "modelfile"])
+def test_custom_output_filename_is_used_by_every_provisioning_command(
+    tmp_path, monkeypatch, format
+):
+    import shlex
+    from rich.console import Console
+
+    monkeypatch.setattr("chimeraforge.commands.deploy.Console", lambda: Console(width=10000))
+    directory = tmp_path / "export's configs"
+    directory.mkdir()
+    path = tmp_path / "plan.json"
+    artifact(
+        backend="ollama",
+        model="ollama:qwen2.5:7b-instruct-q4_K_M",
+        source=SOURCE_OLLAMA,
+        quant="Q4_K_M",
+        native_quant="Q4_K_M",
+    ).save(path)
+    output = directory / ("custom's config.yaml" if format == "compose" else "custom's model")
+    args = ["deploy", "--plan", str(path), "--format", format, "--out", str(output)]
+    if format == "compose":
+        args += ["--image", "ollama/ollama:0.6.8"]
+    result = CliRunner().invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert output.exists()
+    if format == "compose":
+        instructions = [
+            shlex.split(line.split(": ", 1)[1])
+            for line in result.output.splitlines()
+            if "docker compose" in line
+        ]
+        assert len(instructions) == 4  # config, up, pull and create
+        assert all(
+            args[:4] == ["docker", "compose", "-f", str(output.resolve())] for args in instructions
+        )
+        assert instructions[0][4:] == ["config"]
+        assert instructions[1][4:] == ["up", "-d"]
+    else:
+        instruction = next(line for line in result.output.splitlines() if line.startswith("Then: "))
+        assert shlex.split(instruction.removeprefix("Then: "))[-2:] == ["-f", str(output.resolve())]
+        assert not (directory / "Modelfile").exists()

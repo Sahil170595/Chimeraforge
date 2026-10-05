@@ -16,6 +16,9 @@ Create the output directory first. Choose an image matching the **selected
 candidate's backend**, with an explicit version tag or SHA256 digest; the exporter
 does not infer an image, download it, or inspect its engine version. Version tags
 can move; a digest fixes content. Existing main or companion files are refused.
+Printed provisioning commands use the chosen output filename, including `-f` for
+every Compose command, and shell-quote paths. Library calls to `export_deployment`
+can supply `output_path` to bind the instructions to their chosen destination.
 The exporter accepts resolved model identities; for an unresolved registry/manual
 size class, `--model org/concrete-model` can supply an unquantized HF identity. That
 override retains the size-class prediction and an explicit note; resolving and

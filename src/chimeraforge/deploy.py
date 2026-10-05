@@ -7,6 +7,7 @@ import plistlib
 import re
 import shlex
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 
 from chimeraforge.api import PlanArtifact, PlanError, artifact_from_dict
 from chimeraforge.planner.engine import Candidate
@@ -368,6 +369,7 @@ def export_deployment(
     image: str | None = None,
     candidate_index: int = 0,
     executable: str | None = None,
+    output_path: str | Path | None = None,
 ) -> DeploymentExport:
     """Render a supported saved candidate; refused assumptions never become placeholders."""
     if format not in FORMATS:
@@ -384,12 +386,17 @@ def export_deployment(
         raise DeploymentError(str(exc)) from exc
     data = artifact.to_dict()
     inputs = data["inputs"]
+    inputs["kv_quant"] = inputs["kv_quant"].lower()
     _validate_fidelity(candidate, spec, inputs, data["result"]["platform"], format)
     identifier, identity_notes = _model_identity(candidate, spec, model)
     fingerprint = data["fingerprint"]
     notes = [_GPU_NOTE, *candidate.warnings, *identity_notes]
     provisioning = []
     files = {}
+    destination = Path(output_path).resolve() if output_path is not None else None
+    compose = "docker compose"
+    if destination is not None:
+        compose += " -f " + shlex.quote(_safe_text(str(destination), "output path"))
     host = "0.0.0.0" if format == "compose" else "127.0.0.1"
     env = {}
     if candidate.backend == "ollama":
@@ -402,13 +409,17 @@ def export_deployment(
         )
         files["Modelfile"] = modelfile
         if format == "compose":
-            prefix = "docker compose exec inference ollama"
+            prefix = f"{compose} exec inference ollama"
             path = "/etc/chimeraforge/Modelfile"
         else:
             prefix, path = "ollama", "./Modelfile"
+            if destination is not None:
+                path = str(
+                    destination if format == "modelfile" else destination.parent / "Modelfile"
+                )
         provisioning += [
             f"After the daemon is running: {prefix} pull {shlex.quote(identifier)}",
-            f"Then: {prefix} create {model_name} -f {path}",
+            f"Then: {prefix} create {model_name} -f {shlex.quote(path)}",
             f"Use model {model_name} in client requests; do not override options.num_ctx.",
         ]
         notes.append(
@@ -458,9 +469,10 @@ def export_deployment(
             config["volumes"] = {"ollama-models": {}}
         # JSON is a YAML subset, avoiding an optional runtime PyYAML dependency.
         content = json.dumps(_compose_value(config), indent=2) + "\n"
-        provisioning.insert(
-            0, "From this config's directory: docker compose config, then docker compose up -d"
-        )
+        provisioning[:0] = [
+            f"Validate the config: {compose} config",
+            f"Then start it: {compose} up -d",
+        ]
     elif format == "systemd":
         argv[0] = _executable(executable)
         env["CUDA_VISIBLE_DEVICES"] = ",".join(str(index) for index in range(candidate.gpus_total))

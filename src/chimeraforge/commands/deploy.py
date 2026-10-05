@@ -40,6 +40,7 @@ def deploy(
             image=image,
             candidate_index=candidate_index,
             executable=executable,
+            output_path=out,
         )
         outputs = {
             out: result.content,
