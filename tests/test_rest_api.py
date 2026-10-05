@@ -44,6 +44,7 @@ def test_actual_http_planning_matches_sdk(endpoint):
         {"allow_network": True},
         {"ollama_url": "http://remote/"},
         {"models": ["ollama:remote"]},
+        {"models": ["qwen3:8b"]},
         [],
         {"models": ["model"] * 17},
     ],

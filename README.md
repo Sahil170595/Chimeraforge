@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**15 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**16 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -397,6 +397,10 @@ chimeraforge report --results-dir ./results/ --format markdown --output report.m
 ```
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
+
+### `serve` -- local planning HTTP API
+
+`chimeraforge serve --port 8765` exposes the validated planner over loopback HTTP, offline by default. `POST /v1/plan` returns a saved-plan artifact; malformed inputs return structured errors. See [the local API contract](docs/rest-api.md).
 
 ### `mcp` -- serve the planner to AI assistants
 

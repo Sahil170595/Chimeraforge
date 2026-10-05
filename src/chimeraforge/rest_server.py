@@ -48,6 +48,7 @@ class PlanningHandler(BaseHTTPRequestHandler):
 
     def setup(self) -> None:
         self.request.settimeout(READ_TIMEOUT_S)
+        self._body_read = 0
         super().setup()
 
     def log_message(self, format: str, *args) -> None:
@@ -55,6 +56,8 @@ class PlanningHandler(BaseHTTPRequestHandler):
         log.info("local planning HTTP request completed: %s", self.command)
 
     def _respond(self, status: int, data: dict) -> None:
+        if status >= 400:
+            self._discard_rejected_body()
         payload = json.dumps(data, allow_nan=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -68,6 +71,22 @@ class PlanningHandler(BaseHTTPRequestHandler):
                 self.wfile.write(payload)
             except (BrokenPipeError, ConnectionResetError) as exc:
                 log.debug("local planning response client disconnected: %s", exc)
+
+    def _discard_rejected_body(self) -> None:
+        """Avoid TCP resets from pending small uploads without unbounded draining."""
+        headers = getattr(self, "headers", None)
+        if headers is None or headers.get("Transfer-Encoding"):
+            return
+        lengths = headers.get_all("Content-Length", [])
+        if len(lengths) != 1:
+            return
+        try:
+            size = int(lengths[0])
+            if 0 < size <= MAX_REJECT_DRAIN_BYTES:
+                remaining = max(0, size - self._body_read)
+                self._body_read += len(self.rfile.read(remaining))
+        except (ValueError, OSError) as exc:
+            log.debug("rejected local request body could not be drained: %s", exc)
 
     def send_error(self, code: int, message=None, explain=None) -> None:
         self._respond(
@@ -116,13 +135,10 @@ class PlanningHandler(BaseHTTPRequestHandler):
         try:
             size = int(lengths[0])
             if not 0 < size <= MAX_BODY_BYTES:
-                # Drain a bounded rejected upload so its pending bytes do not
-                # reset the TCP connection before the client reads the error.
-                if 0 < size <= MAX_REJECT_DRAIN_BYTES:
-                    self.rfile.read(size)
                 self.send_error(413, f"JSON request must be between 1 and {MAX_BODY_BYTES} bytes")
                 return
             raw = self.rfile.read(size)
+            self._body_read = len(raw)
             if len(raw) != size:
                 raise PlanError("incomplete JSON request")
             data = json.loads(raw, object_pairs_hook=_object, parse_constant=_constant)
@@ -136,7 +152,7 @@ class PlanningHandler(BaseHTTPRequestHandler):
             if isinstance(models, list):
                 if len(models) > MAX_MODELS:
                     raise PlanError(f"at most {MAX_MODELS} models per request")
-                if any(isinstance(model, str) and model.startswith("ollama:") for model in models):
+                if any(isinstance(model, str) and ":" in model for model in models):
                     raise PlanError(
                         "Ollama endpoint resolution is not exposed by the local REST API"
                     )
