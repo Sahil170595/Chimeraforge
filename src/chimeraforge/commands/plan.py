@@ -325,6 +325,9 @@ def plan(
         help="Benchmark the --model live first (real throughput+scaling), then plan "
         "on the measured numbers. Requires a live backend serving the model.",
     ),
+    save: str | None = typer.Option(
+        None, "--save", help="Save a versioned plan artifact with inputs and provenance."
+    ),
     output_json: bool = typer.Option(
         False,
         "--json",
@@ -723,7 +726,7 @@ def plan(
 
     # Core search runs through the shared service (same path the MCP server uses).
     try:
-        result = run_plan(
+        plan_inputs = dict(
             models=list(model) if model else None,
             model_size=model_size,
             hardware=hardware,
@@ -770,6 +773,13 @@ def plan(
             allow_network=not no_network,
             overrides=overrides,
         )
+        result = run_plan(**plan_inputs)
+        if save:
+            if fleet:
+                _fail("--save does not yet support heterogeneous fleets")
+            from chimeraforge.api import PlanRequest, snapshot
+
+            snapshot(PlanRequest(**plan_inputs), result).save(save)
     except FileNotFoundError:
         _fail(f"models file not found: {models_path}")
     except ResolverError as exc:
