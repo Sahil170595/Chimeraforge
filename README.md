@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**15 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**16 commands, one tool:** `plan` - `deploy` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -202,6 +202,24 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - **Launch-command export** (`--launch`): emits the `vllm serve` / `ollama run` / TGI `docker run` command for the winning config, with the plan's own context length, TP/PP degree, batch size, and KV dtype filled in -- the flags that are error-prone to hand-compute. It won't fabricate what it can't derive: a GGUF quant level becomes a note to serve the native-equivalent checkpoint, not an invented `--quantization` flag.
 - Per-prediction provenance (`measured` / `extrapolated` / `derived` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
+
+### `deploy` -- export serving configuration
+
+Export one saved candidate as Compose, a systemd user service, an Ollama macOS
+LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
+
+```bash
+mkdir deployment
+chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --save plan.json
+chimeraforge deploy --plan plan.json --format compose --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
+```
+
+Select a candidate matching the explicit image's backend. Unsupported fleets,
+offload, unresolved adapter paths and checkpoint/KV mismatches fail clearly.
+Ollama emits daemon settings and a companion Modelfile with required provisioning
+steps. Native units require an explicit installed executable path. See
+[supported templates and config validation](docs/deployment.md). Config acceptance
+does not establish GPU execution or prediction accuracy.
 
 ### `suggest` -- discover & rank models
 
