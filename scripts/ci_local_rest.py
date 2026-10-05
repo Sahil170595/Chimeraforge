@@ -19,6 +19,12 @@ from ci_installed_acceptance import assert_installed_origin
 
 STARTUP_TIMEOUT_SECONDS = 20
 STARTUP_POLL_SECONDS = 0.05
+STARTUP_STACK_SECONDS = 15
+CLI_BOOTSTRAP = (
+    "import faulthandler, runpy; "
+    f"faulthandler.dump_traceback_later({STARTUP_STACK_SECONDS}); "
+    "runpy.run_module('chimeraforge', run_name='__main__')"
+)
 
 
 def wait_for_health(client, url, process, *, clock=time.monotonic, sleep=time.sleep):
@@ -51,13 +57,14 @@ def main() -> int:
         env.pop("PYTHONPATH", None)
         env["CHIMERAFORGE_CACHE"] = str(Path(directory) / "cache")
         process = subprocess.Popen(
-            [sys.executable, "-I", "-m", "chimeraforge", "serve", "--port", str(port)],
+            [sys.executable, "-I", "-c", CLI_BOOTSTRAP, "serve", "--port", str(port)],
             cwd=directory,
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
+        accepted = False
         try:
             url = f"http://127.0.0.1:{port}"
             with httpx.Client(timeout=5, trust_env=False) as client:
@@ -75,13 +82,16 @@ def main() -> int:
                 assert invalid.status_code == 400 and invalid.json()["error"]["message"]
                 assert client.get(url + "/v1/hardware").json()["hardware"]
                 print(json.dumps({"version": args.expect_version, "installed_api": "passed"}))
+                accepted = True
         finally:
             process.terminate()
             try:
-                process.communicate(timeout=10)
+                output = process.communicate(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
-                process.communicate(timeout=5)
+                output = process.communicate(timeout=5)
+            if not accepted:
+                print(f"Installed server diagnostics: {output}", file=sys.stderr)
     return 0
 
 
