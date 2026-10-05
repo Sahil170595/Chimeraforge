@@ -95,6 +95,8 @@ class MonitorRequest:
         _metrics_url(self.url)
         for name in ("interval", "timeout"):
             _positive(getattr(self, name), name)
+            if getattr(self, name) > threading.TIMEOUT_MAX:
+                raise MonitorError(f"{name} exceeds the platform's supported wait range")
         for name in ("ttft_slo", "tpot_slo"):
             value = getattr(self, name)
             if value is not None:

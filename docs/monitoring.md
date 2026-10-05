@@ -18,7 +18,8 @@ chimeraforge monitor --backend sglang --url http://localhost:30000/metrics \
 Targets are milliseconds and the requested percentile is P95. At least one
 positive, finite target is required. The default is one 30-second window;
 `--windows` permits 1 through 10,000 windows. `--timeout` defaults to 10 seconds
-for each metrics request. Responses are capped at 2 MiB. Requests use finite
+for each metrics request. Interval and timeout must fit the platform's supported
+wait range. Responses are capped at 2 MiB. Requests use finite
 connect/read timeouts and a checked total deadline between incoming chunks;
 an in-flight read can take up to the configured timeout to stop. Ctrl+C and an
 API `stop_event` cancel the observation. No process remains running afterwards.

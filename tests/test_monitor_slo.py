@@ -266,6 +266,8 @@ def test_unrepresentable_millisecond_boundary_is_unknown():
         {"timeout": None},
         {"backend": []},
         {"interval": 10**1000},
+        {"interval": 1e300},
+        {"timeout": 1e300},
     ],
 )
 def test_invalid_requests_fail_before_network(kwargs):
