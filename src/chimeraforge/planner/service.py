@@ -351,7 +351,9 @@ def _run_plan(
         think_time_s=think_time_s,
         session_turns=session_turns,
         _consumed=consumed,
-        _hardware_spec=GPUSpec(**_replay["hardware"]["raw"]) if _replay is not None else None,
+        _hardware_spec=GPUSpec.from_dict(_replay["hardware"]["raw"])
+        if _replay is not None
+        else None,
     )
     consumed.update(
         version=REPLAY_VERSION,

@@ -49,6 +49,13 @@ IDs. Corpus identity covers coefficients; separate bindings cover the other
 inputs. File receipts hash the bytes that were parsed and record absolute original
 paths. No later reread is used to manufacture a consumption receipt. Strict
 schema-v1 loading remains supported; missing v1 replay bindings are unverified.
+Absolute source paths retain their producer's Windows/POSIX flavor. A valid
+foreign-platform receipt loads, but checking it reports the original input as
+unavailable rather than coercing it into a local namesake.
+Legacy checks still compare the current effective coefficient digest when no
+external corpus was requested and inspect current expiry for an explicitly used
+cloud. They distinguish these known observations from unverified original
+sources, price history and replay geometry, and retain overall exit 1.
 
 `check_plan(saved)` accepts an artifact or a file path and returns a `PlanCheck`
 with a defensive `to_dict()` copy. `chimeraforge check plan.json --json` exposes

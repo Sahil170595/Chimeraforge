@@ -472,3 +472,173 @@ def test_feasibility_gained_and_empty_unchanged(tmp_path):
     assert report["comparison"]["feasibility"] == "gained"
     assert report["comparison"]["added"] and report["exit_code"] == 1
     assert report["comparison"]["trace_before"]
+
+
+@pytest.mark.parametrize(
+    "flavor,path", [("posix", "/home/runner/models.json"), ("windows", r"C:\models\corpus.json")]
+)
+def test_portable_absolute_input_syntax_loads(flavor, path):
+    data = plan(PlanRequest(allow_network=False)).to_dict()
+    receipt = {"kind": "file", "path": path, "path_flavor": flavor, "sha256": "a" * 64}
+    data["result"]["replay_context"]["corpus"]["input"] = receipt
+    assert signed(data).to_dict()["result"]["replay_context"]["corpus"]["input"] == receipt
+    receipt.pop("path_flavor")
+    assert signed(data).to_dict()["result"]["replay_context"]["corpus"]["input"] == receipt
+
+
+@pytest.mark.parametrize("source", ["corpus", "quality"])
+def test_foreign_absolute_input_is_unverified_despite_native_namesake(
+    monkeypatch, tmp_path, source
+):
+    from pathlib import Path, PureWindowsPath
+    from chimeraforge.planner import service
+
+    path = tmp_path / "input.json"
+    if source == "corpus":
+        path.write_bytes(corpus_bytes())
+    else:
+        quality(path)
+    options = {"models_path" if source == "corpus" else "quality_from": str(path)}
+    data = plan(PlanRequest(**options, allow_network=False)).to_dict()
+    native_windows = isinstance(Path(), PureWindowsPath)
+    flavor = "posix" if native_windows else "windows"
+    foreign = path.as_posix().split(":", 1)[-1] if native_windows else r"C:\models\input.json"
+    monkeypatch.chdir(tmp_path)
+    namesake = Path(foreign)
+    if not native_windows:
+        namesake.write_bytes(path.read_bytes())
+    assert namesake.is_file(), "native coercion would wrongly accept this namesake"
+    binding = data["result"]["replay_context"][source]
+    binding["input"]["path"] = foreign
+    binding["input"]["path_flavor"] = flavor
+    if source == "quality":
+        binding["aggregate"]["source"] = foreign
+        for cell in binding["scores"]["cells"].values():
+            cell["source"] = foreign
+    artifact = signed(data)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("a foreign source cannot be consumed via a native namesake")
+
+    monkeypatch.setattr(
+        service, "load_models" if source == "corpus" else "load_quality_file", forbidden
+    )
+    report = checked(artifact)
+    assert report["exit_code"] == 1 and report["comparison"] is None
+    assert report["components"][source]["state"] == "unverified"
+
+
+def legacy_from_current(artifact):
+    data = artifact.to_dict()
+    data["schema_version"] = 1
+    data["result"].pop("replay_context")
+    return signed(data)
+
+
+@pytest.mark.parametrize("source", ["corpus", "quality"])
+def test_context_v1_implicit_path_flavor_remains_comparable(tmp_path, source):
+    path = tmp_path / "input.json"
+    if source == "corpus":
+        path.write_bytes(corpus_bytes())
+    else:
+        quality(path)
+    option = "models_path" if source == "corpus" else "quality_from"
+    data = plan(PlanRequest(**{option: str(path)}, allow_network=False)).to_dict()
+    data["result"]["replay_context"][source]["input"].pop("path_flavor")
+    assert checked(signed(data))["exit_code"] == 0
+
+
+def test_unchanged_reference_gpu_keeps_own_measurement_over_quarantine(monkeypatch):
+    from chimeraforge import contrib
+    from chimeraforge.planner import engine
+    from chimeraforge.planner.hardware import REFERENCE_GPU
+    from test_contributions import bench_result
+
+    bench = bench_result(gpu="NVIDIA GeForce RTX 4080 Laptop GPU")
+    bench["environment"]["gpu_memory_gb"] = 12
+    row = contrib.build_contribution(bench)
+    monkeypatch.setattr(engine, "load_quarantine", lambda: [row])
+    saved = plan(
+        PlanRequest(
+            models=["llama3.2-3b"],
+            hardware=REFERENCE_GPU,
+            use_contributions=True,
+            allow_network=False,
+            quality_target=0,
+            budget=1e9,
+        )
+    )
+    own = next(
+        row
+        for row in saved.to_dict()["result"]["candidates"]
+        if row["quant"] == "FP16" and row["backend"] == "vllm"
+    )
+    assert own["throughput_tps"] == 57.2
+    assert saved.to_dict()["result"]["replay_context"]["contributions"]["used_ids"] == []
+    report = checked(saved)
+    assert report["exit_code"] == 0
+    assert report["components"]["contributions"]["state"] == "unchanged"
+    assert all(
+        row["deltas"]["throughput_tps"]["state"] == "unchanged"
+        for row in report["comparison"]["matched"]
+    )
+
+
+def test_legacy_reports_known_changed_effective_corpus_without_replay(monkeypatch):
+    from chimeraforge.planner import service
+
+    legacy = legacy_from_current(plan(PlanRequest(allow_network=False)))
+    original = service.load_effective_models
+
+    def changed():
+        corpus = copy.deepcopy(original())
+        corpus.throughput.lookup = {
+            key: value * 0.8 for key, value in corpus.throughput.lookup.items()
+        }
+        return corpus
+
+    monkeypatch.setattr(service, "load_effective_models", changed)
+    report = checked(legacy)
+    assert report["components"]["corpus"]["state"] == "changed"
+    assert report["components"]["replay_context"]["state"] == "unverified"
+    assert report["comparison"] is None and report["exit_code"] == 1
+
+
+def test_legacy_current_cloud_expiry_is_known_but_history_unverified(monkeypatch):
+    from chimeraforge.planner import cloudprice
+
+    captured = dt.date.fromisoformat(cloudprice.load_cloud_prices()["captured_at"])
+    monkeypatch.setattr(cloudprice, "_today", lambda: captured)
+    legacy = legacy_from_current(
+        plan(PlanRequest(hardware="H100 80GB", cloud="aws", budget=100000, allow_network=False))
+    )
+    monkeypatch.setattr(cloudprice, "_today", lambda: captured + dt.timedelta(days=91))
+    report = checked(legacy)
+    assert report["components"]["cloud"]["state"] == "expired"
+    assert report["components"]["cloud"]["age_days"] == 91
+    assert report["components"]["cloud"]["before"] is None
+    assert report["components"]["replay_context"]["state"] == "unverified"
+    assert report["exit_code"] == 1
+
+
+def test_legacy_does_not_resolve_relative_external_inputs_or_probe_auto(monkeypatch, tmp_path):
+    from chimeraforge.planner import engine, service
+
+    data = legacy_from_current(plan(PlanRequest(allow_network=False))).to_dict()
+    data["inputs"].update(hardware="auto", models_path="corpus.json", quality_from="quality.json")
+    (tmp_path / "corpus.json").write_bytes(corpus_bytes())
+    quality(tmp_path / "quality.json")
+    monkeypatch.chdir(tmp_path)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("legacy missing receipts never authorize source or host substitution")
+
+    monkeypatch.setattr(service, "load_models", forbidden)
+    monkeypatch.setattr(service, "load_quality_file", forbidden)
+    monkeypatch.setattr(service, "local_plan_platform", forbidden)
+    monkeypatch.setattr(engine, "resolve_hardware", forbidden)
+    report = checked(signed(data))
+    assert report["components"]["corpus"]["state"] == "unverified"
+    assert report["components"]["quality"]["state"] == "unverified"
+    assert report["components"]["cloud"]["state"] == "not_used"
+    assert report["exit_code"] == 1 and report["comparison"] is None

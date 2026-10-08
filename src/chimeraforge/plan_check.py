@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, fields
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import get_type_hints
 
 from chimeraforge.planner.hardware import GPUSpec
-from chimeraforge.planner.replay import REPLAY_VERSION, json_value
+from chimeraforge.planner.replay import REPLAY_VERSION, digest, json_value
 from chimeraforge.planner.resolver import ModelSpec
 
 CONTEXT_FIELDS = {
@@ -97,14 +97,41 @@ def _input_receipt(row):
     if row.get("kind") == "bundled":
         _exact(row, ("kind", "sha256"), "bundled input")
     else:
-        _exact(row, ("kind", "path", "sha256"), "file input")
-        if (
-            row["kind"] != "file"
-            or not isinstance(row["path"], str)
-            or not Path(row["path"]).is_absolute()
-        ):
+        names = ("kind", "path", "sha256")
+        if "path_flavor" in row:
+            names += ("path_flavor",)
+        _exact(row, names, "file input")
+        if row["kind"] != "file" or not isinstance(row["path"], str):
             raise ValueError("replay file source must be absolute")
+        _path_flavor(row)
     _sha(row["sha256"])
+
+
+def _path_flavor(receipt: dict) -> str:
+    """Validate producer syntax without interpreting it on the checking host."""
+    flavor = receipt.get("path_flavor")
+    if flavor is None:
+        flavor = "windows" if PureWindowsPath(receipt["path"]).is_absolute() else "posix"
+    pure = {"windows": PureWindowsPath, "posix": PurePosixPath}.get(flavor)
+    if pure is None or not pure(receipt["path"]).is_absolute():
+        raise ValueError("replay file source must have a valid absolute path flavor")
+    return flavor
+
+
+def _local_file(receipt: dict) -> Path | None:
+    native = "windows" if isinstance(Path(), PureWindowsPath) else "posix"
+    return Path(receipt["path"]) if _path_flavor(receipt) == native else None
+
+
+def _receipt_facts(value):
+    if isinstance(value, dict):
+        result = {key: _receipt_facts(item) for key, item in value.items()}
+        if result.get("kind") == "file" and "path" in result:
+            result["path_flavor"] = _path_flavor(result)
+        return result
+    if isinstance(value, list):
+        return [_receipt_facts(item) for item in value]
+    return value
 
 
 def validate_context(context: dict, result: dict, request) -> None:
@@ -144,7 +171,7 @@ def validate_context(context: dict, result: dict, request) -> None:
         if row["vram_gb"] <= 0 or row["bandwidth_gbps"] <= 0:
             raise ValueError("replay GPU capacity must be positive")
     effective, _ = apply_unified_fraction(
-        GPUSpec(**context["hardware"]["raw"]), request.unified_memory_fraction
+        GPUSpec.from_dict(context["hardware"]["raw"]), request.unified_memory_fraction
     )
     if json_value(effective) != context["hardware"]["effective"]:
         raise ValueError("replay effective GPU must apply the stated fraction exactly once")
@@ -350,6 +377,67 @@ def _resolution(data, context):
     return view
 
 
+def _legacy_components(data: dict) -> dict:
+    """Inspect still-comparable facts without manufacturing missing replay bindings."""
+    from chimeraforge.planner import service
+    from chimeraforge.planner import cloudprice
+
+    inputs = data["inputs"]
+    rows = {}
+    if inputs["models_path"] is None:
+        try:
+            corpus = service.load_effective_models()
+            rows["corpus"] = component(
+                data["corpus_sha256"],
+                digest(corpus),
+                detail=(
+                    "Coefficient identity only; original corpus source and geometry are unverified."
+                ),
+            )
+            rows["corpus"]["current_source"] = getattr(corpus, "_input_receipt", None)
+        except (ValueError, OSError, TypeError) as exc:
+            rows["corpus"] = component(
+                data["corpus_sha256"], None, state="unverified", detail=str(exc)
+            )
+    else:
+        rows["corpus"] = component(
+            data["corpus_sha256"],
+            None,
+            state="unverified",
+            detail=(
+                "Legacy external corpus lacks a consumed source receipt; "
+                "its filename is not replayed."
+            ),
+        )
+    rows["quality"] = component(
+        None,
+        None,
+        state="unverified" if inputs["quality_from"] else "not_used",
+        detail="Legacy external quality scores and consumed source were not bound.",
+    )
+    rows["price"] = component(
+        None, None, state="unverified", detail="Original GPU price facts were not bound."
+    )
+    if inputs["cloud"]:
+        try:
+            snapshot = cloudprice.load_cloud_prices()
+            age = cloudprice.snapshot_age_days(snapshot=snapshot)
+            rows["cloud"] = component(
+                None,
+                {"cloud": inputs["cloud"], "captured_at": snapshot["captured_at"]},
+                state="expired" if age > cloudprice.STALE_AFTER_DAYS else "unverified",
+                detail=(
+                    "Current cloud expiry only; original offers and price history were not bound."
+                ),
+            )
+            rows["cloud"]["age_days"] = age
+        except (ValueError, OSError, TypeError, KeyError) as exc:
+            rows["cloud"] = component(None, None, state="unverified", detail=str(exc))
+    else:
+        rows["cloud"] = component(None, None, state="not_used")
+    return rows
+
+
 def check(artifact) -> PlanCheck:
     from chimeraforge import api
     from chimeraforge.planner import hardware, service
@@ -378,7 +466,9 @@ def check(artifact) -> PlanCheck:
         },
     }
     if context is None:
-        report.update(status="unverified", exit_code=1)
+        components.update(_legacy_components(data))
+        known_change = any(row["state"] in ("changed", "expired") for row in components.values())
+        report.update(status="changed" if known_change else "unverified", exit_code=1)
         return PlanCheck(report)
     inputs = copy.deepcopy(data["inputs"])
     inputs["allow_network"] = False
@@ -389,12 +479,20 @@ def check(artifact) -> PlanCheck:
         ("quality", (context["quality"] or {}).get("input"), "quality_from"),
     ):
         if binding is not None and binding["kind"] == "file":
-            inputs[option] = binding["path"]
-            if not Path(binding["path"]).is_file():
+            source = _local_file(binding)
+            if source is None or not source.is_file():
                 components[name] = component(
-                    binding, None, state="unverified", detail="Original input is unavailable."
+                    binding,
+                    None,
+                    state="unverified",
+                    detail=(
+                        "Original input is unavailable on this host; "
+                        "foreign paths are never coerced."
+                    ),
                 )
                 unavailable = True
+            else:
+                inputs[option] = str(source)
         elif name == "quality" and context["quality"] is not None:
             components[name] = component(
                 binding, None, state="unverified", detail="Original quality input was not bound."
@@ -458,7 +556,13 @@ def check(artifact) -> PlanCheck:
                 components[name] = component(
                     context[name],
                     now[name],
-                    state="not_used" if context[name] is None and now[name] is None else None,
+                    state=(
+                        "not_used"
+                        if context[name] is None and now[name] is None
+                        else "unchanged"
+                        if _receipt_facts(context[name]) == _receipt_facts(now[name])
+                        else "changed"
+                    ),
                 )
             components["cloud"] = component(
                 context["cloud"],

@@ -6,7 +6,7 @@ from dataclasses import asdict, is_dataclass
 import hashlib
 import json
 import math
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 REPLAY_VERSION = 1
 
@@ -36,6 +36,7 @@ def file_receipt(path: str | Path, raw: bytes) -> dict:
     return {
         "kind": "file",
         "path": str(Path(path).resolve()),
+        "path_flavor": "windows" if isinstance(Path(path), PureWindowsPath) else "posix",
         "sha256": hashlib.sha256(raw).hexdigest(),
     }
 
