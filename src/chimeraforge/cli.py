@@ -16,6 +16,7 @@ from chimeraforge.commands.catalog import catalog
 from chimeraforge.commands.compare import compare
 from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
+from chimeraforge.commands.deploy import deploy
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
 from chimeraforge.commands.measure import measure
@@ -60,6 +61,7 @@ def main(
 # Register commands (implementations in chimeraforge.commands.*).
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
+app.command()(deploy)
 app.command()(suggest)
 app.command()(measure)
 app.command()(validate)
