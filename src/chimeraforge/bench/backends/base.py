@@ -112,6 +112,10 @@ class Backend(ABC):
     async def close(self) -> None:
         """Release task-owned resources; stateless adapters need no cleanup."""
 
+    async def observe_serving(self, model: str) -> dict:
+        """Optional serving-side metadata; supplied labels are never observations."""
+        return {"source": "serving metadata capability unavailable"}
+
 
 @asynccontextmanager
 async def backend_lifecycle(backend: Backend) -> AsyncIterator[Backend]:

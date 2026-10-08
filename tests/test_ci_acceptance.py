@@ -43,6 +43,12 @@ def test_cpu_probe_refuses_corrupt_download_before_installing(tmp_path):
         script.verify_sha256(artifact, "0" * 64)
 
 
+def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification():
+    script = load_script("ci_cpu_serving")
+    with pytest.raises(AssertionError):
+        script.validate_plan_benchmark({"audit": {"slo": {"state": "pass"}}}, {}, 3)
+
+
 @pytest.mark.parametrize("invalid", ["zero tokens", "lost run", "wrong backend", "nonfinite"])
 def test_cpu_probe_refuses_invalid_benchmark_evidence(invalid):
     from chimeraforge.bench.metrics import (

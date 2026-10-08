@@ -141,3 +141,8 @@ class SGLangBackend(Backend):
             if version:
                 return version
         return None
+
+    async def observe_serving(self, model: str) -> dict:
+        from chimeraforge.bench.serving import observe_sglang
+
+        return await observe_sglang(await self._get_client(), self.base_url, model)

@@ -87,3 +87,78 @@ coefficients have no invented expiry threshold. Performance remains informationa
 unverified: an unchanged modeled result is not a performance acceptance test.
 Fingerprints detect edits, including context edits, but cannot authenticate a
 snapshot or turn unsigned quarantine data into trusted measurements.
+
+## Benchmark a saved candidate
+
+```python
+import asyncio
+from chimeraforge.api import benchmark_plan
+
+receipt = asyncio.run(benchmark_plan("plan.json", candidate_index=0,
+    model="actual-served-id", prompt="The actual prompt", runs=5))
+receipt.save("benchmark.json")
+print(receipt.to_dict()["audit"])
+```
+
+```bash
+chimeraforge bench --plan plan.json --candidate-index 0 --model actual-served-id \
+  --prompt "The actual prompt" --runs 5 --base-url http://localhost:11434 \
+  --output-dir results --json
+```
+
+This explicitly contacts a live serving endpoint. It validates and preserves the
+saved artifact, binds its fingerprint/index/candidate identity, and reuses the
+benchmark runner. The default adapter follows the selected backend; `--model`
+can name an actual serving alias, but that label cannot verify the planned model.
+Quant/context labels and sweeps are refused. The saved context is requested only
+where an adapter supports it (Ollama `num_ctx`); other adapters require observed
+server configuration. The saved decode length is sent as an output **cap**, and
+the actual returned counts are recorded separately.
+
+The receipt contains the prompt SHA256/character count, forwarded generation
+options, applied single/batch/server profile, concurrency, server arrival rate,
+requested/successful/failed counts and timing bases. Single concurrency is 1;
+`--rate` applies only to server mode. A context window is not a prompt-token count.
+Server token counts establish whether the actual workload matches the saved
+prompt/output lengths. Repeating a prompt may warm caches; unavailable cache
+counters/configuration remain unverified. Partial-run aggregates describe the
+successful requests and cannot establish a passing SLO.
+
+Observations before/after the workload are bounded and whitelisted. Ollama's
+`/api/show` provides quant/architecture; `/api/ps` provides loaded digest, actual
+context and CPU/GPU loaded bytes. Architecture maximum context is not active
+context. Ollama family/version does not attest the underlying llama.cpp execution
+version, TP/PP or GPU identity. vLLM's structured
+`/server_info?config_format=json` can expose quant, context, TP/PP, data parallelism
+and cache configuration; text representations are never evaluated. TGI's `/info`
+exposes model identity/revision and router limits, not quant/TP/GPU configuration.
+SGLang's resolved `/server_info` and current `/model_info` expose supported
+configuration/identity fields; an operator weight-version label is not a digest.
+Missing capabilities or refused metadata are unavailable, not supplied defaults.
+Known configuration changes during a run are mismatches; a lazy-loaded unknown
+pre-state remains unverified. Client NVML describes the benchmark client host.
+Loaded GPU bytes or a GPU name do not establish full remote GPU geometry.
+
+The native-unit audit keeps modeled values, actual measurements and a labeled
+`raw_delta` even when equivalence cannot be established. That arithmetic is not
+prediction accuracy. A `delta` is available only for a fully observed equivalent
+single-stream base decode comparator; the saved base rate precedes batch/TP/PP
+scaling. It does not qualify selected fleet capacity. Queue-inclusive modeled p95
+cannot be accepted from survivor-only adapter durations, which exclude the
+client semaphore queue. Ollama server-prefill TTFT differs from client first-token
+stream timing. Immutable planned weights remain unverified.
+
+Exit 0 means requests completed without an observed binding mismatch; unavailable
+evidence still remains explicitly unverified. Exit 1 means an observed mismatch,
+partial execution or operational failure. Exit 2 means invalid saved input/options.
+The saved receipt and JSON stdout agree. Endpoint URL credentials/query tokens
+and raw private serving configuration are excluded from receipts. Fingerprints
+detect edits, not authenticity. The hosted CPU acceptance executes the installed
+saved-plan path and requires a truthful CPU-versus-GPU mismatch, useful native
+measurements and unverified accuracy/SLO rather than a GPU performance claim.
+
+Protocol references: [Ollama running models](https://docs.ollama.com/api/ps),
+[Ollama generation](https://docs.ollama.com/api/generate),
+[vLLM0.30.0 server info](https://github.com/vllm-project/vllm/blob/v0.30.0/vllm/entrypoints/serve/dev/server_info/api_router.py),
+[TGI3.3.7 Info schema](https://github.com/huggingface/text-generation-inference/blob/v3.3.7/router/src/lib.rs),
+[SGLang0.5.20 server/model info](https://github.com/sgl-project/sglang/blob/v0.5.20/python/sglang/srt/entrypoints/http_server.py).

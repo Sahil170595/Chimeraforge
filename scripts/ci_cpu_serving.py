@@ -173,6 +173,93 @@ def stream_requests(client: httpx.Client, cwd: Path) -> Path:
     return path
 
 
+def validate_plan_benchmark(report: dict, saved: dict, runs: int) -> None:
+    """A real CPU mismatch is useful evidence and cannot become GPU qualification."""
+    assert report.get("kind") == "chimeraforge.plan-benchmark"
+    assert report["plan"]["fingerprint"] == saved["fingerprint"]
+    assert report["execution"]["requested_count"] == runs
+    assert report["execution"]["successful_count"] == runs
+    assert report["execution"]["failed_count"] == 0
+    assert report["binding"]["hardware"]["state"] == "mismatch"
+    assert report["binding"]["hardware"]["observed"] == {"device": "cpu"}
+    assert report["binding"]["quant"]["observed"] == "Q4_K_M"
+    assert report["configuration_status"] == "mismatch" and report["exit_code"] == 1
+    assert report["audit"]["slo"]["state"] == "unverified"
+    metric = report["audit"]["metrics"]["base_decode_tps"]
+    assert metric["measured"] > 0 and metric["modeled"] > 0
+    assert metric["delta"] is None and metric["state"] == "unverified"
+    assert metric["raw_delta"] == metric["measured"] - metric["modeled"]
+    assert report["execution"]["serving_after"]["loaded_gpu_bytes"] == 0
+    for row in report["measurement"]["individual_runs"]:
+        assert 0 < row["tokens_generated"] <= MAX_OUTPUT_TOKENS
+        assert row["prompt_tokens"] > 0 and row["ttft_basis"] == "server-prefill-duration"
+
+
+def accept_saved_plan(client: httpx.Client, cwd: Path, env: dict) -> dict:
+    """Resolve the actual installed model, then benchmark an installed saved candidate."""
+    source = cwd / "serving-plan.json"
+    run_cli(
+        [
+            "plan",
+            "--model",
+            f"ollama:{MODEL_NAME}",
+            "--ollama-url",
+            str(client.base_url),
+            "--hardware",
+            "RTX 4080 12GB",
+            "--budget",
+            "100000",
+            "--quality-target",
+            "0",
+            "--avg-tokens",
+            str(MAX_OUTPUT_TOKENS),
+            "--save",
+            str(source),
+            "--json",
+        ],
+        cwd,
+        env,
+    )
+    original = source.read_bytes()
+    saved = json.loads(original)
+    chosen = next(
+        index
+        for index, row in enumerate(saved["result"]["candidates"])
+        if row["backend"] == "ollama" and row["quant"] == "Q4_K_M"
+    )
+    directory = cwd / "plan-results"
+    stdout = run_cli(
+        [
+            "bench",
+            "--plan",
+            str(source),
+            "--candidate-index",
+            str(chosen),
+            "--runs",
+            str(BENCH_RUNS),
+            "--base-url",
+            str(client.base_url),
+            "--output-dir",
+            str(directory),
+            "--json",
+        ],
+        cwd,
+        env,
+        1,
+    )
+    report = json.loads(stdout)
+    validate_plan_benchmark(report, saved, BENCH_RUNS)
+    assert source.read_bytes() == original, "benchmark modified its saved plan"
+    (receipt,) = directory.glob("plan-bench_*.json")
+    assert json.loads(receipt.read_text(encoding="utf-8")) == report
+    return {
+        "saved_fingerprint": saved["fingerprint"],
+        "receipt_fingerprint": report["fingerprint"],
+        "observed_config": "Ollama quant/context/CPU device; TP/PP and GPU identity unavailable",
+        "comparison": "native values and arithmetic delta; accuracy and SLO unverified",
+    }
+
+
 def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> dict:
     """Exercise the installed product using measurements made by the real backend."""
     results = cwd / "results"
@@ -268,6 +355,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
         )
     )
     assert planned and planned[0]["mode"] == "batch"
+    saved_plan_benchmark = accept_saved_plan(client, cwd, env)
     error = run_cli(
         ["bench", "--model", "ci-definitely-missing-model", "--base-url", str(client.base_url)],
         cwd,
@@ -304,6 +392,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
         "completed_streams": STREAM_REQUESTS,
         "interrupted_stream_recovery": "passed",
         "bench_report_workload_plan": "passed",
+        "saved_plan_benchmark": saved_plan_benchmark,
         "missing_model_identity_and_metrics_errors": "passed",
         "scope": "CPU functional integration; no performance or prediction-accuracy claim",
     }
