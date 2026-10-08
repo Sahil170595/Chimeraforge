@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-10-08
+
+### Added
+- Validated public planning API and `plan --save` snapshots with effective inputs, resolved specifications, provenance and integrity checks.
+- `deploy` exports faithful serving commands, Compose configurations, Ollama Modelfiles and native service units from a saved candidate, refusing configurations it cannot represent.
+- `monitor` observes explicit latency SLOs from model-scoped Prometheus histogram windows, retaining breach and unknown decisions without claiming deployment qualification.
+- Explicit installed backend plugins through a documented entry-point interface, with lazy discovery, lifecycle ownership and failure handling shared by benchmarking and safety evaluation.
+- `serve` exposes bounded local planning over loopback HTTP, with strict request validation and Host/Origin/Referer protections.
+
+### Fixed
+- Deployment export normalizes accepted uppercase KV modes before fidelity checks and serving flags while preserving the saved plan and its fingerprint.
+- Printed provisioning commands use the actual quoted output destination, including every Compose command and native Ollama companion files.
+
 ## [0.50.0] - 2026-10-04
 
 ### Added

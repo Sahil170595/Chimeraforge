@@ -167,7 +167,7 @@ class Candidate:
     quality_n: int = 0
     quality_mde: float = 0.0
     quality_indistinguishable: bool = False
-    provenance: dict[str, str] = field(default_factory=dict)
+    provenance: dict[str, str | dict] = field(default_factory=dict)
     # KV-cache-bound max concurrent sequences a single GPU can hold (0.6.0).
     max_concurrent_seqs: int = 0
     # Latency split (0.6.0): prefill time-to-first-token + decode time-per-output-token.

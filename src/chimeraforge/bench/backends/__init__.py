@@ -20,7 +20,7 @@ def get_backend(name: str, **kwargs: object) -> Backend:
     """Instantiate a backend by name.
 
     Args:
-        name: Backend identifier ("ollama", "vllm", "tgi", or "sglang").
+        name: Built-in backend or an installed ``chimeraforge.backends`` entry-point name.
         **kwargs: Passed to the backend constructor (e.g. base_url).
 
     Returns:
@@ -30,6 +30,26 @@ def get_backend(name: str, **kwargs: object) -> Backend:
         ValueError: If backend name is unknown.
     """
     cls = BACKEND_REGISTRY.get(name)
-    if cls is None:
-        raise ValueError(f"Unknown backend: {name}. Available: {list(BACKEND_REGISTRY)}")
-    return cls(**kwargs)
+    if cls is not None:
+        return cls(**kwargs)
+
+    from chimeraforge.bench.backends.plugin import discover_plugins, instantiate_plugin
+
+    plugins = discover_plugins()
+    for plugin in plugins:
+        if plugin.name == name:
+            return instantiate_plugin(plugin, **kwargs)
+    available = sorted([*BACKEND_REGISTRY, *(p.name for p in plugins)])
+    raise ValueError(f"Unknown backend: {name}. Available: {available}")
+
+
+def list_backends() -> list[dict[str, str | None]]:
+    """List built-ins and installed plugin metadata without importing plugin code."""
+    from chimeraforge.bench.backends.plugin import discover_plugins
+
+    rows = [
+        {"name": name, "kind": "built-in", "value": None, "distribution": None, "version": None}
+        for name in BACKEND_REGISTRY
+    ]
+    rows.extend(plugin.to_dict() for plugin in discover_plugins())
+    return sorted(rows, key=lambda row: row["name"] or "")

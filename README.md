@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**15 commands, one tool:** `plan` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**18 commands, one tool:** `plan` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -203,6 +203,24 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - Per-prediction provenance (`measured` / `extrapolated` / `derived` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
 
+### `deploy` -- export serving configuration
+
+Export one saved candidate as Compose, a systemd user service, an Ollama macOS
+LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
+
+```bash
+mkdir deployment
+chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --save plan.json
+chimeraforge deploy --plan plan.json --format compose --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
+```
+
+Select a candidate matching the explicit image's backend. Unsupported fleets,
+offload, unresolved adapter paths and checkpoint/KV mismatches fail clearly.
+Ollama emits daemon settings and a companion Modelfile with required provisioning
+steps. Native units require an explicit installed executable path. See
+[supported templates and config validation](docs/deployment.md). Config acceptance
+does not establish GPU execution or prediction accuracy.
+
 ### `suggest` -- discover & rank models
 
 ```bash
@@ -278,6 +296,15 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 - **GDDR consumer cards:** decode is **under**-predicted by a median of **-36%**.
 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
+
+### `monitor` -- observe explicit latency SLOs
+
+```bash
+chimeraforge monitor --backend vllm --url http://localhost:8000 --model YOUR_SERVED_MODEL \
+  --ttft-slo 500 --tpot-slo 50 --interval 30 --windows 1 --json
+```
+
+Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. Optional saved-plan targets and atomic Prometheus textfile export are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
 
 ### `doctor` -- check this machine (read-only)
 
@@ -398,6 +425,10 @@ chimeraforge report --results-dir ./results/ --format markdown --output report.m
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
 
+### `serve` -- local planning HTTP API
+
+`chimeraforge serve --port 8765` exposes the validated planner over loopback HTTP, offline by default. `POST /v1/plan` returns a saved-plan artifact; malformed inputs return structured errors. See [the local API contract](docs/rest-api.md).
+
 ### `mcp` -- serve the planner to AI assistants
 
 ```bash
@@ -513,3 +544,7 @@ Conducted as part of the Banterhearts LLM Performance Research Program: Phase 1 
 ---
 
 **Repository:** https://github.com/Sahil170595/Chimeraforge - **PyPI:** https://pypi.org/project/chimeraforge/ - **Status:** Beta, actively developed
+
+### Saved plans and Python integrations
+
+`chimeraforge plan --model-size 3b --no-network --save plan.json` preserves the effective inputs, resolved facts and candidate provenance in a versioned artifact. The validated Python API accepts `PlanRequest` and returns the same planning core's results. See [the API and artifact contract](docs/planning-api.md).

@@ -9,7 +9,9 @@ renders them its own way -- the CLI as Rich text, the MCP server as an error res
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
+import hashlib
+import json
 
 from chimeraforge.planner.constants import (
     BATCH_LATENCY_REFUSAL,
@@ -47,6 +49,8 @@ class PlanResult:
     frontier: list[Candidate] | None = None
     # The OS the plan targeted (--platform). Engine support is checked against it.
     platform: str = DEFAULT_PLAN_PLATFORM
+    # Captured from the actual coefficients consumed, before remote resolution.
+    corpus_sha256: str = ""
 
 
 def _check_mode_targets(
@@ -198,6 +202,9 @@ def run_plan(
     grid = grid_intensity(grid_region, carbon_intensity)
 
     planner_models = load_models(models_path) if models_path else load_effective_models()
+    corpus_sha256 = hashlib.sha256(
+        json.dumps(asdict(planner_models), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
     # The deployment OS. Unset means Linux -- the OS the matrix's GPU rows
     # describe -- unless the plan is for THIS machine (`auto`), whose OS is known.
@@ -284,4 +291,5 @@ def run_plan(
         trace=trace,
         frontier=frontier,
         platform=platform,
+        corpus_sha256=corpus_sha256,
     )

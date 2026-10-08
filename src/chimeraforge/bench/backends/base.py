@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 import httpx
 
@@ -106,3 +108,28 @@ class Backend(ABC):
             f"backend '{getattr(self, 'name', type(self).__name__)}' "
             "does not support text generation for the safety screen yet"
         )
+
+    async def close(self) -> None:
+        """Release task-owned resources; stateless adapters need no cleanup."""
+
+
+@asynccontextmanager
+async def backend_lifecycle(backend: Backend) -> AsyncIterator[Backend]:
+    """Close an adapter on success, error, or cancellation without hiding the original failure."""
+    failed = False
+    try:
+        yield backend
+    except BaseException:
+        failed = True
+        raise
+    finally:
+        try:
+            # Keep the existing optional-close protocol used by doctor and legacy adapters.
+            close = getattr(backend, "close", None)
+            if close is not None:
+                await close()
+        except Exception as exc:
+            name = getattr(backend, "name", type(backend).__name__)
+            logger.warning("Backend '%s' cleanup failed: %s", name, exc, exc_info=True)
+            if not failed:
+                raise RuntimeError(f"Backend '{name}' cleanup failed: {exc}") from exc

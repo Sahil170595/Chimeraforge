@@ -16,14 +16,17 @@ from chimeraforge.commands.catalog import catalog
 from chimeraforge.commands.compare import compare
 from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
+from chimeraforge.commands.deploy import deploy
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
+from chimeraforge.commands.monitor import monitor
 from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
 from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
+from chimeraforge.commands.serve import serve
 from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.validate import validate
 
@@ -60,6 +63,7 @@ def main(
 # Register commands (implementations in chimeraforge.commands.*).
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
+app.command()(deploy)
 app.command()(suggest)
 app.command()(measure)
 app.command()(validate)
@@ -71,9 +75,11 @@ app.command()(compare)
 app.command(name="eval")(eval_cmd)
 app.command()(report)
 app.command()(workload)
+app.command()(monitor)
 app.command()(doctor)
 app.add_typer(contribute_app, name="contribute")
 app.command()(mcp)
+app.command()(serve)
 
 
 if __name__ == "__main__":  # pragma: no cover - module invocation
