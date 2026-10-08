@@ -120,7 +120,19 @@ def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> 
     )
     for field in ("tensor_parallel", "pipeline_parallel"):
         result[field] = bind(candidate[field], after.get(field), source=source)
-    result["replicas"] = bind(candidate["n_agents"], after.get("replicas"), source=source)
+    result["replicas"] = bind(
+        candidate["n_agents"],
+        after.get("replicas"),
+        source=source,
+        detail="Engine DP size does not attest the full endpoint/load-balancer replica topology.",
+    )
+    result["serving_data_parallel_size"] = bind(
+        None,
+        after.get("serving_data_parallel_size"),
+        state="observed" if after.get("serving_data_parallel_size") is not None else "unavailable",
+        source=source,
+        detail="Serving engine configuration only; not the saved fleet replica count.",
+    )
     hardware = (context or {}).get("hardware", {}).get("effective")
     observed_hw = after.get("hardware")
     if after.get("device") == "cpu" and hardware is not None:
@@ -170,6 +182,7 @@ def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> 
         "prefix_cache",
         "configuration_sha256",
         "weight_version_label",
+        "serving_data_parallel_size",
     )
     original = {key: before.get(key) for key in stability_keys}
     current = {key: after.get(key) for key in stability_keys}
@@ -178,7 +191,11 @@ def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> 
         for key in stability_keys
         if original[key] is not None and current[key] is not None and original[key] != current[key]
     ]
-    optional_stability = ("configuration_sha256", "weight_version_label")
+    optional_stability = (
+        "configuration_sha256",
+        "weight_version_label",
+        "serving_data_parallel_size",
+    )
     required_stability = tuple(key for key in stability_keys if key not in optional_stability)
     missing = [key for key in required_stability if original[key] is None or current[key] is None]
     missing.extend(

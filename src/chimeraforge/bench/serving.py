@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 METADATA_TIMEOUT_S = 10
 MAX_METADATA_BYTES = 1024 * 1024
 MAX_OBSERVATION_SECONDS = 4 * METADATA_TIMEOUT_S
+DP_SCOPE = "serving engine configuration; not endpoint/load-balancer fleet inventory"
 URL_PATTERN = re.compile(r"https?://[^\s<>\"']+")
 
 
@@ -141,6 +142,8 @@ def observation() -> dict:
         "tensor_parallel": None,
         "pipeline_parallel": None,
         "replicas": None,
+        "serving_data_parallel_size": None,
+        "serving_data_parallel_scope": DP_SCOPE,
         "hardware": None,
         "device": None,
         "prefix_cache": None,
@@ -248,7 +251,7 @@ async def observe_vllm(client: httpx.AsyncClient, url: str, model: str) -> dict:
         result["context_length"] = positive_int(model_config.get("max_model_len"))
         result["tensor_parallel"] = positive_int(parallel.get("tensor_parallel_size"))
         result["pipeline_parallel"] = positive_int(parallel.get("pipeline_parallel_size"))
-        result["replicas"] = positive_int(parallel.get("data_parallel_size"))
+        result["serving_data_parallel_size"] = positive_int(parallel.get("data_parallel_size"))
         cache = object_value(config.get("cache_config")).get("enable_prefix_caching")
         result["prefix_cache"] = cache if type(cache) is bool else None
         device = object_value(config.get("device_config")).get("device")
@@ -268,7 +271,7 @@ async def observe_vllm(client: httpx.AsyncClient, url: str, model: str) -> dict:
                     "context_length",
                     "tensor_parallel",
                     "pipeline_parallel",
-                    "replicas",
+                    "serving_data_parallel_size",
                     "prefix_cache",
                     "device",
                 )
@@ -323,7 +326,7 @@ async def observe_sglang(client: httpx.AsyncClient, url: str, model: str) -> dic
     result["context_length"] = positive_int(info.get("context_length"))
     result["tensor_parallel"] = positive_int(info.get("tp_size"))
     result["pipeline_parallel"] = positive_int(info.get("pp_size"))
-    result["replicas"] = positive_int(info.get("dp_size"))
+    result["serving_data_parallel_size"] = positive_int(info.get("dp_size"))
     cache_disabled = info.get("disable_radix_cache")
     result["prefix_cache"] = not cache_disabled if type(cache_disabled) is bool else None
     device = info.get("device")

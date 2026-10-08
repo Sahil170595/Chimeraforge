@@ -360,6 +360,27 @@ def test_known_sglang_weight_version_change_is_mismatch_without_digest_claim(mon
     assert report["audit"]["weights"]["state"] == "unverified" and report["exit_code"] == 1
 
 
+def test_known_engine_dp_change_is_observed_without_claiming_fleet_topology(monkeypatch):
+    saved = saved_plan()
+    backend = ObservedBackend(saved, device="gpu")
+    original = backend.observe_serving
+
+    async def observe(model):
+        data = await original(model)
+        data["serving_data_parallel_size"] = 2 if backend.options else 1
+        return data
+
+    backend.observe_serving = observe
+    report = execute(saved, backend, monkeypatch)
+    assert report["binding"]["replicas"]["state"] == "unavailable"
+    assert report["binding"]["serving_data_parallel_size"]["observed"] == 2
+    assert report["binding"]["serving_stability"]["state"] == "mismatch"
+    assert (
+        "serving_data_parallel_size"
+        in report["binding"]["serving_stability"]["detail"]["changed_fields"]
+    )
+
+
 def test_metadata_failure_keeps_real_measurement_and_closes_backend(monkeypatch):
     saved = saved_plan()
     backend = ObservedBackend(saved, device="gpu")

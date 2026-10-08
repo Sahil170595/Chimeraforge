@@ -113,7 +113,7 @@ class Backend(ABC):
         """Release task-owned resources; stateless adapters need no cleanup."""
 
     async def observe_serving(self, model: str) -> dict:
-        """Optional serving-side metadata; supplied labels are never observations."""
+        """Observed metadata; replicas means full endpoint topology, not engine DP size."""
         return {"source": "serving metadata capability unavailable"}
 
 

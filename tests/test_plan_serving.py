@@ -117,7 +117,8 @@ def test_vllm_observed_parallel_and_context_use_structured_config_only():
     )
     assert result["model"] == "model" and result["quant"] == "FP16"
     assert result["tensor_parallel"] == 2 and result["pipeline_parallel"] == 1
-    assert result["replicas"] == 3 and result["context_length"] == 4096
+    assert result["replicas"] is None and result["serving_data_parallel_size"] == 3
+    assert result["context_length"] == 4096
     assert result["prefix_cache"] is False and result["device"] == "gpu"
     assert result["hardware"] is None and result["model_digest"] is None
     assert "private-" not in json.dumps(result) and "RTX 4080" not in json.dumps(result)
@@ -195,11 +196,57 @@ def test_sglang_current_identity_and_resolved_parallel_config_exclude_secrets():
         },
     )
     assert result["model"] == "current-model" and result["tensor_parallel"] == 2
+    assert result["replicas"] is None and result["serving_data_parallel_size"] == 1
     assert result["prefix_cache"] is False
     assert result["quant"] == "AWQ", (
         "Preserve the observed quant method without relabeling it as a GGUF quant."
     )
     assert result["model_digest"] is None and "private-" not in json.dumps(result)
+
+
+def test_engine_dp_one_does_not_refute_saved_two_replica_endpoint():
+    from chimeraforge.api import PlanRequest, plan
+    from chimeraforge.bench.plan import binding
+
+    saved = plan(
+        PlanRequest(
+            models=["llama3.2-3b"],
+            request_rate=10,
+            budget=100000000,
+            allow_network=False,
+            quality_target=0,
+        )
+    )
+    candidate = next(
+        row
+        for row in saved.to_dict()["result"]["candidates"]
+        if row["backend"] == "vllm" and row["n_agents"] == 2
+    )
+    observed = observe(
+        observe_vllm,
+        {
+            "/version": {"version": "0.30.0"},
+            "/v1/models": {"data": [{"id": candidate["model"]}]},
+            "/server_info": {"vllm_config": {"parallel_config": {"data_parallel_size": 1}}},
+        },
+        model=candidate["model"],
+    )
+    result = binding(
+        saved.to_dict(),
+        candidate,
+        {
+            "serving_before": observed,
+            "serving_after": observed,
+            "individual_runs": [{"tokens_generated": 128}],
+            "request": {"workload": "single"},
+        },
+        candidate["model"],
+    )
+    assert result["backend"]["state"] == "matched" and result["model"]["state"] == "matched"
+    assert result["replicas"]["expected"] == 2
+    assert result["replicas"]["state"] == "unavailable"
+    assert result["serving_data_parallel_size"]["observed"] == 1
+    assert result["serving_data_parallel_size"]["state"] == "observed"
 
 
 @pytest.mark.parametrize(

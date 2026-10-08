@@ -130,7 +130,13 @@ context and CPU/GPU loaded bytes. Architecture maximum context is not active
 context. Ollama family/version does not attest the underlying llama.cpp execution
 version, TP/PP or GPU identity. vLLM's structured
 `/server_info?config_format=json` can expose quant, context, TP/PP, data parallelism
-and cache configuration; text representations are never evaluated. TGI's `/info`
+and cache configuration; text representations are never evaluated. Engine data
+parallel size is recorded separately with serving-engine scope ([vLLM's configuration
+and external load balancing](https://github.com/vllm-project/vllm/blob/v0.30.0/vllm/config/parallel.py#L118-L153)): it does not
+attest the total replica fleet behind an endpoint/load balancer. Replica count
+remains unavailable unless an observation capability actually covers that
+topology. Known engine-DP changes during a run remain configuration changes.
+TGI's `/info`
 exposes model identity/revision and router limits, not quant/TP/GPU configuration.
 SGLang's resolved `/server_info` and current `/model_info` expose supported
 configuration/identity fields; an operator weight-version label is not a digest.
