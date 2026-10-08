@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Validated public planning API and `plan --save` snapshots with effective inputs, resolved specifications, provenance and integrity checks.
+
 ## [0.50.0] - 2026-10-04
 
 ### Added

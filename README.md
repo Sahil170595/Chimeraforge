@@ -513,3 +513,7 @@ Conducted as part of the Banterhearts LLM Performance Research Program: Phase 1 
 ---
 
 **Repository:** https://github.com/Sahil170595/Chimeraforge - **PyPI:** https://pypi.org/project/chimeraforge/ - **Status:** Beta, actively developed
+
+### Saved plans and Python integrations
+
+`chimeraforge plan --model-size 3b --no-network --save plan.json` preserves the effective inputs, resolved facts and candidate provenance in a versioned artifact. The validated Python API accepts `PlanRequest` and returns the same planning core's results. See [the API and artifact contract](docs/planning-api.md).
