@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**16 commands, one tool:** `plan` - `deploy` - `suggest` - `measure` - `workload` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
+**17 commands, one tool:** `plan` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -296,6 +296,15 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 - **GDDR consumer cards:** decode is **under**-predicted by a median of **-36%**.
 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
+
+### `monitor` -- observe explicit latency SLOs
+
+```bash
+chimeraforge monitor --backend vllm --url http://localhost:8000 --model YOUR_SERVED_MODEL \
+  --ttft-slo 500 --tpot-slo 50 --interval 30 --windows 1 --json
+```
+
+Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. Optional saved-plan targets and atomic Prometheus textfile export are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
 
 ### `doctor` -- check this machine (read-only)
 

@@ -19,6 +19,7 @@ from chimeraforge.commands.doctor import doctor
 from chimeraforge.commands.deploy import deploy
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
+from chimeraforge.commands.monitor import monitor
 from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
@@ -73,6 +74,7 @@ app.command()(compare)
 app.command(name="eval")(eval_cmd)
 app.command()(report)
 app.command()(workload)
+app.command()(monitor)
 app.command()(doctor)
 app.add_typer(contribute_app, name="contribute")
 app.command()(mcp)
