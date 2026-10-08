@@ -8,7 +8,7 @@ deployment configurations.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 from chimeraforge.planner.constants import (
     BATCH_LATENCY_REFUSAL,
@@ -85,6 +85,7 @@ from chimeraforge.planner.hardware import (
     REFERENCE_GPU,
     bandwidth_ratio,
     get_gpu,
+    GPUSpec,
     is_reference_hardware,
 )
 from chimeraforge.planner.advisories import disaggregation_advisory
@@ -97,6 +98,7 @@ from chimeraforge.planner.cloudprice import (
 from chimeraforge.planner.cloudprice import is_stale as cloud_is_stale
 from chimeraforge.planner.models import PlannerModels
 from chimeraforge.planner.platform_support import (
+    load_engine_support,
     DEFAULT_PLAN_PLATFORM,
     check_engine,
     plan_platform_key,
@@ -318,6 +320,8 @@ def enumerate_candidates(
     cloud: str | None = None,
     think_time_s: float | None = None,
     session_turns: int | None = None,
+    _consumed: dict | None = None,
+    _hardware_spec: GPUSpec | None = None,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -407,7 +411,10 @@ def enumerate_candidates(
     # Overrides and `auto` go through the resolver; a bare name still falls to the
     # dataset lookup below, so the no-override path is byte-identical.
     hardware_warnings: list[str] = []
-    if gpu_overrides or (hardware or "").strip().lower() == AUTO_HARDWARE:
+    if _hardware_spec is not None:
+        gpu = _hardware_spec
+        hardware = gpu.name
+    elif gpu_overrides or (hardware or "").strip().lower() == AUTO_HARDWARE:
         gpu, hardware_warnings = resolve_hardware(hardware, gpu_overrides)
         hardware = gpu.name
     else:
@@ -427,10 +434,33 @@ def enumerate_candidates(
         )
     # A unified-memory device shares one pool between CPU and GPU. Only the share
     # the user leaves the GPU is plannable, and that share is theirs to state.
+    raw_gpu = gpu
     gpu, unified_warnings = apply_unified_fraction(gpu, unified_memory_fraction)
     hardware_warnings = [*hardware_warnings, *unified_warnings]
     # Quarantined contributions are read only on request, never by default.
     contributions = load_quarantine() if use_contributions else None
+    support_data = load_engine_support()
+    if _consumed is not None:
+        from chimeraforge.planner.replay import digest, json_value, policy_digest
+
+        _consumed.update(
+            hardware={"raw": json_value(raw_gpu), "effective": json_value(gpu)},
+            model_specs={},
+            engine_support={
+                "sha256": digest(support_data),
+                "captured_at": support_data["captured_at"],
+            },
+            policy_sha256=policy_digest(),
+            cloud=None,
+            contributions={
+                "enabled": use_contributions,
+                "records": [
+                    {"id": row["id"], "sha256": digest(row)} for row in (contributions or [])
+                ],
+                "used_ids": [],
+                "trust": "quarantined unsigned third-party evidence",
+            },
+        )
     if use_contributions and not contributions:
         hardware_warnings.append(
             "--contributions: the quarantine holds no contributions "
@@ -464,9 +494,16 @@ def enumerate_candidates(
                 "--cloud prices the GPU from that cloud's list; --gpu-price-per-hour is a "
                 "second price for the same GPU -- pass one or the other"
             )
-        cloud_offers = offers_for(cloud, gpu.name)
-        cloud_captured = load_cloud_prices()["captured_at"]
-        cloud_stale = cloud_is_stale()
+        cloud_data = load_cloud_prices()
+        cloud_offers = offers_for(cloud, gpu.name, snapshot=cloud_data)
+        cloud_captured = cloud_data["captured_at"]
+        cloud_stale = cloud_is_stale(snapshot=cloud_data)
+        if _consumed is not None:
+            _consumed["cloud"] = {
+                "cloud": cloud,
+                "captured_at": cloud_captured,
+                "offers": [asdict(offer) for offer in cloud_offers],
+            }
     compute_known = gpu is None or gpu.fp16_tflops > 0
     # Which engine-support row this deployment is: the OS the plan targets plus
     # the GPU's vendor. None when the vendor is unknown -- then nothing is refused
@@ -516,6 +553,8 @@ def enumerate_candidates(
         spec = specs.get(model)
         if spec is None and model in MODEL_PARAMS_B:
             spec = ModelSpec.from_registry(model)
+        if _consumed is not None and spec is not None:
+            _consumed["model_specs"][model] = asdict(spec)
         params_known = spec is not None or model in MODEL_PARAMS_B
         params_b = spec.params_b if spec else MODEL_PARAMS_B.get(model, 3.0)
         # MoE splits the parameter count in two, and the planner must use the right
@@ -737,6 +776,7 @@ def enumerate_candidates(
                     gpu.vendor if gpu else "",
                     gpu.product_line if gpu else "",
                     quant,
+                    data=support_data,
                 )
                 if not verdict.allowed:
                     _reject(model, quant, "platform", verdict.reason)
@@ -787,6 +827,10 @@ def enumerate_candidates(
                         contributions, contribution_models, backend, quant, gpu.name
                     )
                     if contrib_ev is not None:
+                        if _consumed is not None:
+                            _consumed["contributions"]["used_ids"] = sorted(
+                                set(_consumed["contributions"]["used_ids"] + contrib_ev["full_ids"])
+                            )
                         n1_tps = contrib_ev["decode_tps"]
                         used_roofline = False
                         throughput_source = {

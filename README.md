@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**18 commands, one tool:** `plan` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**19 commands, one tool:** `plan` - `check` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -202,6 +202,22 @@ chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 - **Launch-command export** (`--launch`): emits the `vllm serve` / `ollama run` / TGI `docker run` command for the winning config, with the plan's own context length, TP/PP degree, batch size, and KV dtype filled in -- the flags that are error-prone to hand-compute. It won't fabricate what it can't derive: a GGUF quant level becomes a note to serve the native-equivalent checkpoint, not an invented `--quantization` flag.
 - Per-prediction provenance (`measured` / `extrapolated` / `derived` / `estimated` / `unknown`); explains the binding gate when nothing fits.
 - Validated on registry data: VRAM R^2=0.968, throughput R^2=0.859, quality RMSE=0.062, latency MAPE=1.05% (beats analytical M/D/1 by 20.4x, TR133). No ML -- empirical lookup tables with first-principles interpolation (roofline for off-registry models).
+
+### `check` -- recheck a saved plan offline
+
+```bash
+chimeraforge plan --model-size 3b --no-network --save plan.json
+chimeraforge check plan.json --json
+```
+
+Compare consumed inputs, local pricing, feasibility, candidate order and modeled
+deltas without changing the saved file. New snapshots bind full model geometry,
+GPU/platform and input receipts; legacy snapshots report missing bindings as
+unverified. Checks never enable network access from a saved permission or probe
+a new host for an `auto` plan. Exit 0 means required modeled components are
+unchanged, 1 means changed/expired/unverified required evidence, and 2 means
+malformed input. A stable modeled recommendation does not prove serving
+performance or identify immutable model weights. See [the API contract](docs/planning-api.md).
 
 ### `deploy` -- export serving configuration
 
