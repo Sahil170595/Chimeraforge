@@ -143,7 +143,14 @@ The native-unit audit keeps modeled values, actual measurements and a labeled
 `raw_delta` even when equivalence cannot be established. That arithmetic is not
 prediction accuracy. A `delta` is available only for a fully observed equivalent
 single-stream base decode comparator; the saved base rate precedes batch/TP/PP
-scaling. It does not qualify selected fleet capacity. Queue-inclusive modeled p95
+scaling. It does not qualify selected fleet capacity.
+
+Saved LoRA adapters/rank/target and CPU offload modify that base rate, but the
+runner does not apply or observe those scenarios; their comparator remains
+unverified. Known SGLang weight-version label changes are mismatches, while
+labels still do not establish immutable weights.
+
+Queue-inclusive modeled p95
 cannot be accepted from survivor-only adapter durations, which exclude the
 client semaphore queue. Ollama server-prefill TTFT differs from client first-token
 stream timing. Immutable planned weights remain unverified.

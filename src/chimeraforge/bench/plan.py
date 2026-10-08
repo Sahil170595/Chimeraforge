@@ -169,6 +169,7 @@ def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> 
         "device",
         "prefix_cache",
         "configuration_sha256",
+        "weight_version_label",
     )
     original = {key: before.get(key) for key in stability_keys}
     current = {key: after.get(key) for key in stability_keys}
@@ -177,8 +178,15 @@ def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> 
         for key in stability_keys
         if original[key] is not None and current[key] is not None and original[key] != current[key]
     ]
-    required_stability = tuple(key for key in stability_keys if key != "configuration_sha256")
+    optional_stability = ("configuration_sha256", "weight_version_label")
+    required_stability = tuple(key for key in stability_keys if key not in optional_stability)
     missing = [key for key in required_stability if original[key] is None or current[key] is None]
+    missing.extend(
+        key
+        for key in optional_stability
+        if (original[key] is not None or current[key] is not None)
+        and (original[key] is None or current[key] is None)
+    )
     result["serving_stability"] = bind(
         original,
         current,
@@ -222,6 +230,21 @@ def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> 
         else "unavailable",
         source="server cache configuration/counters",
         detail="Repeating a prompt can warm caches; an input label cannot prove actual hits.",
+    )
+    modifiers = {
+        "lora_adapters": candidate["lora_adapters"],
+        "lora_rank": candidate["lora_rank"],
+        "lora_target": inputs["lora_target"] if candidate["lora_adapters"] else None,
+        "offload_fraction": candidate["offload_fraction"],
+        "host_bandwidth_gbps": candidate["host_bandwidth_gbps"],
+    }
+    modified = candidate["lora_adapters"] > 0 or candidate["offload_fraction"] > 0
+    result["scenario_modifiers"] = bind(
+        modifiers,
+        None,
+        state="unavailable" if modified else "not_used",
+        source="saved modeled scenario",
+        detail="Runner does not apply/attest LoRA/offload; absence describes the modeled scenario.",
     )
     result["workload"] = bind(
         execution["request"]["workload"],
@@ -287,6 +310,10 @@ def audit(candidate: dict, measurement: dict, execution: dict, bound: dict) -> d
         blockers.append("saved base decode rate precedes selected TP/PP scaling")
     if execution["failed_count"]:
         blockers.append("failed requests excluded from survivor aggregates")
+    if candidate["lora_adapters"] > 0:
+        blockers.append("modeled LoRA adapter/rank/target is not observed or applied")
+    if candidate["offload_fraction"] > 0:
+        blockers.append("modeled CPU offload fraction/host bandwidth is not observed or applied")
     aggregate = measurement["aggregate"]
     observed = aggregate["throughput_tps"]["mean"]
     base = _metric(

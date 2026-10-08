@@ -281,6 +281,85 @@ def test_fully_observed_equivalent_base_decode_delta_does_not_qualify_fleet(monk
     assert report["audit"]["slo"]["state"] == "unverified"
 
 
+@pytest.mark.parametrize("modifier", ["lora", "offload"])
+def test_modified_saved_decode_requires_real_modifier_binding(monkeypatch, modifier):
+    from chimeraforge.api import benchmark_plan
+    from chimeraforge.bench import runner
+
+    options = (
+        {"lora_adapters": 1, "lora_rank": 64}
+        if modifier == "lora"
+        else {"allow_offload": True, "gpu_overrides": {"vram_gb": 2.0, "bandwidth_gbps": 432.0}}
+    )
+    saved = plan(
+        PlanRequest(
+            models=["llama3.2-3b"],
+            allow_network=False,
+            quality_target=0,
+            budget=100000,
+            avg_tokens=4,
+            prompt_tokens=8,
+            overrides={
+                "params_b": 3.21,
+                "n_layers": 28,
+                "n_kv_heads": 8,
+                "d_head": 128,
+                "hidden_size": 3072,
+            },
+            **options,
+        )
+    )
+    candidates = saved.to_dict()["result"]["candidates"]
+    selected = next(
+        i
+        for i, row in enumerate(candidates)
+        if row["backend"] == "ollama"
+        and (row["lora_adapters"] > 0 if modifier == "lora" else row["offload_fraction"] > 0)
+    )
+    candidate = saved.candidate(selected)
+    backend = ObservedBackend(saved, device="gpu", quant=candidate.quant)
+    original = backend.observe_serving
+    context = saved.to_dict()["result"]["replay_context"]
+
+    async def observe(model):
+        data = await original(model)
+        data.update(
+            tensor_parallel=1,
+            pipeline_parallel=1,
+            replicas=candidate.n_agents,
+            hardware=context["hardware"]["effective"],
+            model_spec=context["model_specs"][model],
+            prefix_cache=False,
+        )
+        return data
+
+    backend.observe_serving = observe
+    monkeypatch.setattr(runner, "get_backend", lambda *a, **k: backend)
+    report = asyncio.run(benchmark_plan(saved, candidate_index=selected, runs=3)).to_dict()
+    metric = report["audit"]["metrics"]["base_decode_tps"]
+    assert metric["state"] == "unverified" and metric["delta"] is None
+    assert any(modifier in reason.lower() for reason in metric["blocking_facts"])
+    assert report["binding"]["scenario_modifiers"]["state"] == "unavailable"
+
+
+def test_known_sglang_weight_version_change_is_mismatch_without_digest_claim(monkeypatch):
+    saved = saved_plan()
+    backend = ObservedBackend(saved, device="gpu")
+    original = backend.observe_serving
+
+    async def observe(model):
+        data = await original(model)
+        data["weight_version_label"] = "new" if backend.options else "old"
+        return data
+
+    backend.observe_serving = observe
+    report = execute(saved, backend, monkeypatch)
+    stability = report["binding"]["serving_stability"]
+    assert stability["state"] == "mismatch"
+    assert "weight_version_label" in stability["detail"]["changed_fields"]
+    assert report["audit"]["weights"]["state"] == "unverified" and report["exit_code"] == 1
+
+
 def test_metadata_failure_keeps_real_measurement_and_closes_backend(monkeypatch):
     saved = saved_plan()
     backend = ObservedBackend(saved, device="gpu")
