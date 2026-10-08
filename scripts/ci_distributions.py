@@ -36,6 +36,15 @@ def accept(wheel: Path, root: Path, temp: Path, requirements: Path, version: str
         root,
         cwd=temp,
     )
+    run(
+        python,
+        root / "scripts/ci_local_rest.py",
+        "--expect-version",
+        version,
+        "--checkout",
+        root,
+        cwd=temp,
+    )
 
 
 def main() -> int:
