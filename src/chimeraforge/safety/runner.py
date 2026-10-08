@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from chimeraforge.bench.backends import get_backend
+from chimeraforge.bench.backends.base import backend_lifecycle
 from chimeraforge.safety.classifier import classify_refusal
 
 logger = logging.getLogger(__name__)
@@ -73,69 +74,70 @@ async def run_safety_screen(
         backend_kwargs["base_url"] = base_url
     backend = get_backend(backend_name, **backend_kwargs)  # raises ValueError if unknown
 
-    ok, msg = await backend.health_check()
-    if not ok:
-        raise RuntimeError(msg)
-    ok, msg = await backend.check_model(model)
-    if not ok:
-        raise RuntimeError(msg)
+    async with backend_lifecycle(backend):
+        ok, msg = await backend.health_check()
+        if not ok:
+            raise RuntimeError(msg)
+        ok, msg = await backend.check_model(model)
+        if not ok:
+            raise RuntimeError(msg)
 
-    refusals: list[bool] = []
-    warnings: list[str] = []
-    n_errors = 0
-    n_empty = 0
-    total = len(prompts)
+        refusals: list[bool] = []
+        warnings: list[str] = []
+        n_errors = 0
+        n_empty = 0
+        total = len(prompts)
 
-    for i, prompt in enumerate(prompts):
-        try:
-            text = await backend.generate_text(model, prompt, options)
-        except NotImplementedError:
-            raise  # backend can't generate text at all -> fail loud, not per-prompt
-        except Exception as exc:  # per-prompt resilience; surfaced via warnings below
-            n_errors += 1
-            warnings.append(f"Prompt {i + 1}/{total} failed: {exc}")
-            logger.warning("Safety prompt %d/%d failed: %s", i + 1, total, exc)
+        for i, prompt in enumerate(prompts):
+            try:
+                text = await backend.generate_text(model, prompt, options)
+            except NotImplementedError:
+                raise  # backend can't generate text at all -> fail loud, not per-prompt
+            except Exception as exc:  # per-prompt resilience; surfaced via warnings below
+                n_errors += 1
+                warnings.append(f"Prompt {i + 1}/{total} failed: {exc}")
+                logger.warning("Safety prompt %d/%d failed: %s", i + 1, total, exc)
+                if on_progress:
+                    on_progress(i + 1, total)
+                continue
+
+            if not text.strip():
+                # Excluded from the denominator, as errors already are.
+                # classify_refusal("") is False, so counting empties diluted the
+                # refusal rate toward zero -- the maximally-unsafe reading -- and the
+                # result was still reported as measured. 20 empty replies gave
+                # "refusal_rate 0.000 (measured)" derived from no information at all.
+                warnings.append(f"Prompt {i + 1}/{total} returned an empty response (not scored)")
+                n_empty += 1
+                if on_progress:
+                    on_progress(i + 1, total)
+                continue
+            refusals.append(classify_refusal(text))
             if on_progress:
                 on_progress(i + 1, total)
-            continue
 
-        if not text.strip():
-            # Excluded from the denominator, as errors already are.
-            # classify_refusal("") is False, so counting empties diluted the
-            # refusal rate toward zero -- the maximally-unsafe reading -- and the
-            # result was still reported as measured. 20 empty replies gave
-            # "refusal_rate 0.000 (measured)" derived from no information at all.
-            warnings.append(f"Prompt {i + 1}/{total} returned an empty response (not scored)")
-            n_empty += 1
-            if on_progress:
-                on_progress(i + 1, total)
-            continue
-        refusals.append(classify_refusal(text))
-        if on_progress:
-            on_progress(i + 1, total)
+        if not refusals:
+            raise RuntimeError(
+                f"All {total} prompts failed; cannot compute a refusal rate. "
+                f"First errors: {'; '.join(warnings[:3])}"
+            )
 
-    if not refusals:
-        raise RuntimeError(
-            f"All {total} prompts failed; cannot compute a refusal rate. "
-            f"First errors: {'; '.join(warnings[:3])}"
+        n_refused = sum(refusals)
+        if n_empty:
+            warnings.append(
+                f"{n_empty} of {total} prompts returned an empty response and were "
+                f"excluded from the refusal rate, which is over {len(refusals)} scored "
+                f"replies rather than {total}"
+            )
+        return SafetyScreenResult(
+            model=model,
+            backend=backend_name,
+            quant=quant,
+            n_prompts=len(refusals),
+            n_refused=n_refused,
+            n_errors=n_errors,
+            n_empty=n_empty,
+            refusal_rate=n_refused / len(refusals),
+            refusals=refusals,
+            warnings=warnings,
         )
-
-    n_refused = sum(refusals)
-    if n_empty:
-        warnings.append(
-            f"{n_empty} of {total} prompts returned an empty response and were "
-            f"excluded from the refusal rate, which is over {len(refusals)} scored "
-            f"replies rather than {total}"
-        )
-    return SafetyScreenResult(
-        model=model,
-        backend=backend_name,
-        quant=quant,
-        n_prompts=len(refusals),
-        n_refused=n_refused,
-        n_errors=n_errors,
-        n_empty=n_empty,
-        refusal_rate=n_refused / len(refusals),
-        refusals=refusals,
-        warnings=warnings,
-    )

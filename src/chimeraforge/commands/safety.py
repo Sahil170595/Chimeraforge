@@ -27,7 +27,7 @@ def safety(
         "ollama",
         "--backend",
         "-B",
-        help="Serving backend (ollama supported; vllm/tgi not yet).",
+        help="Serving backend; plugins must implement generate_text for safety screening.",
     ),
     quant: str = typer.Option(
         None,

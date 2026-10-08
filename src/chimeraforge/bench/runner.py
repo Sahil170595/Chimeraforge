@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Callable
 
 from chimeraforge.bench.backends import get_backend
-from chimeraforge.bench.backends.base import Backend
+from chimeraforge.bench.backends.base import Backend, backend_lifecycle
 from chimeraforge.bench.metrics import (
     BenchmarkResult,
     RunMetrics,
@@ -119,13 +119,19 @@ async def _run_server(
                     on_progress(completed, total)
 
     tasks: list[asyncio.Task] = []
-    for i in range(total):
-        tasks.append(asyncio.create_task(_one_request(i + 1)))
-        # Poisson inter-arrival: exponential distribution
-        delay = random.expovariate(arrival_rate)
-        await asyncio.sleep(delay)
+    try:
+        for i in range(total):
+            tasks.append(asyncio.create_task(_one_request(i + 1)))
+            # Poisson inter-arrival: exponential distribution
+            delay = random.expovariate(arrival_rate)
+            await asyncio.sleep(delay)
 
-    await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
+    finally:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
     return results, warnings
 
 
@@ -172,121 +178,124 @@ async def run_benchmark(
         backend_kwargs["base_url"] = base_url
     backend = get_backend(backend_name, **backend_kwargs)
 
-    # Pre-flight: health check
-    ok, msg = await backend.health_check()
-    if not ok:
-        raise RuntimeError(msg)
+    async with backend_lifecycle(backend):
+        # Pre-flight: health check
+        ok, msg = await backend.health_check()
+        if not ok:
+            raise RuntimeError(msg)
 
-    # Pre-flight: model check
-    ok, msg = await backend.check_model(model)
-    if not ok:
-        raise RuntimeError(msg)
+        # Pre-flight: model check
+        ok, msg = await backend.check_model(model)
+        if not ok:
+            raise RuntimeError(msg)
 
-    # Get backend version for environment info
-    backend_version = await backend.get_version()
+        # Get backend version for environment info
+        backend_version = await backend.get_version()
 
-    # Build effective prompt
-    effective_prompt = prompt or DEFAULT_PROMPT
+        # Build effective prompt
+        effective_prompt = prompt or DEFAULT_PROMPT
 
-    # Build options with context length
-    effective_options = dict(options) if options else {}
-    if backend_name == "ollama":
-        effective_options.setdefault("num_ctx", context_length)
+        # Build options with context length
+        effective_options = dict(options) if options else {}
+        if backend_name == "ollama":
+            effective_options.setdefault("num_ctx", context_length)
 
-    # Get workload profile (optionally overriding concurrency)
-    profile = get_profile(workload, rate=rate, runs=runs)
-    if concurrency is not None:
-        from dataclasses import replace
+        # Get workload profile (optionally overriding concurrency)
+        profile = get_profile(workload, rate=rate, runs=runs)
+        if concurrency is not None:
+            from dataclasses import replace
 
-        profile = replace(profile, concurrency=concurrency)
+            profile = replace(profile, concurrency=concurrency)
 
-    # Collect environment
-    env = collect_environment(backend_name, backend_version)
+        # Collect environment
+        env = collect_environment(backend_name, backend_version)
 
-    # Execute workload
-    warnings: list[str] = []
-    logger.info(
-        "Starting %s benchmark: model=%s, backend=%s, runs=%d",
-        profile.name,
-        model,
-        backend_name,
-        profile.total_requests,
-    )
-
-    if profile.name == "single":
-        run_results, run_warnings = await _run_single(
-            backend,
+        # Execute workload
+        warnings: list[str] = []
+        logger.info(
+            "Starting %s benchmark: model=%s, backend=%s, runs=%d",
+            profile.name,
             model,
-            effective_prompt,
-            effective_options,
+            backend_name,
             profile.total_requests,
-            on_progress,
-        )
-    elif profile.name == "batch":
-        run_results, run_warnings = await _run_batch(
-            backend,
-            model,
-            effective_prompt,
-            effective_options,
-            profile.total_requests,
-            profile.concurrency,
-            on_progress,
-        )
-    elif profile.name == "server":
-        arr_rate = (
-            profile.arrival_rate if profile.arrival_rate and profile.arrival_rate > 0 else 1.0
-        )
-        run_results, run_warnings = await _run_server(
-            backend,
-            model,
-            effective_prompt,
-            effective_options,
-            profile.total_requests,
-            profile.concurrency,
-            arr_rate,
-            on_progress,
-        )
-    else:
-        raise ValueError(f"Unknown workload profile: {profile.name}")
-
-    warnings.extend(run_warnings)
-
-    if not run_results:
-        raise RuntimeError(
-            f"All {profile.total_requests} benchmark runs failed. "
-            f"Errors: {'; '.join(run_warnings[:3])}"
         )
 
-    # Check for anomalies using real CV (stddev / mean)
-    throughputs = [r.throughput_tps for r in run_results]
-    if len(throughputs) > 1:
-        mean_tps = statistics.mean(throughputs)
-        if mean_tps > 0:
-            cv = statistics.stdev(throughputs) / mean_tps
-            if cv > 0.3:
-                warnings.append(f"High throughput variance (CV={cv:.2f}). Results may be noisy.")
+        if profile.name == "single":
+            run_results, run_warnings = await _run_single(
+                backend,
+                model,
+                effective_prompt,
+                effective_options,
+                profile.total_requests,
+                on_progress,
+            )
+        elif profile.name == "batch":
+            run_results, run_warnings = await _run_batch(
+                backend,
+                model,
+                effective_prompt,
+                effective_options,
+                profile.total_requests,
+                profile.concurrency,
+                on_progress,
+            )
+        elif profile.name == "server":
+            arr_rate = (
+                profile.arrival_rate if profile.arrival_rate and profile.arrival_rate > 0 else 1.0
+            )
+            run_results, run_warnings = await _run_server(
+                backend,
+                model,
+                effective_prompt,
+                effective_options,
+                profile.total_requests,
+                profile.concurrency,
+                arr_rate,
+                on_progress,
+            )
+        else:
+            raise ValueError(f"Unknown workload profile: {profile.name}")
 
-    # Warn about unmeasurable TTFT
-    ttfts = [r.ttft_ms for r in run_results]
-    if any(t < 0 for t in ttfts):
-        warnings.append(f"TTFT not measurable with {backend_name} non-streaming API.")
+        warnings.extend(run_warnings)
 
-    # Aggregate
-    agg = aggregate_runs(run_results)
+        if not run_results:
+            raise RuntimeError(
+                f"All {profile.total_requests} benchmark runs failed. "
+                f"Errors: {'; '.join(run_warnings[:3])}"
+            )
 
-    return BenchmarkResult(
-        model=model,
-        backend=backend_name,
-        quant=quant,
-        workload=profile.name,
-        runs=profile.total_requests,
-        context_length=context_length,
-        individual_runs=run_results,
-        aggregate=agg,
-        environment=env,
-        timestamp=now_iso(),
-        warnings=warnings,
-    )
+        # Check for anomalies using real CV (stddev / mean)
+        throughputs = [r.throughput_tps for r in run_results]
+        if len(throughputs) > 1:
+            mean_tps = statistics.mean(throughputs)
+            if mean_tps > 0:
+                cv = statistics.stdev(throughputs) / mean_tps
+                if cv > 0.3:
+                    warnings.append(
+                        f"High throughput variance (CV={cv:.2f}). Results may be noisy."
+                    )
+
+        # Warn about unmeasurable TTFT
+        ttfts = [r.ttft_ms for r in run_results]
+        if any(t < 0 for t in ttfts):
+            warnings.append(f"TTFT not measurable with {backend_name} non-streaming API.")
+
+        # Aggregate
+        agg = aggregate_runs(run_results)
+
+        return BenchmarkResult(
+            model=model,
+            backend=backend_name,
+            quant=quant,
+            workload=profile.name,
+            runs=profile.total_requests,
+            context_length=context_length,
+            individual_runs=run_results,
+            aggregate=agg,
+            environment=env,
+            timestamp=now_iso(),
+            warnings=warnings,
+        )
 
 
 async def run_quant_sweep(

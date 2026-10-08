@@ -12,7 +12,7 @@ console = Console()
 
 def bench(
     model: str = typer.Option(
-        ...,
+        None,
         "--model",
         "-m",
         help="Model name (e.g., llama3.2-3b, gemma3:latest).",
@@ -21,7 +21,7 @@ def bench(
         "ollama",
         "--backend",
         "-B",
-        help="Serving backend: ollama, vllm, tgi, sglang.",
+        help="Built-in or installed plugin backend (see --list-backends).",
     ),
     quant: str = typer.Option(
         None,
@@ -83,6 +83,11 @@ def bench(
         "-v",
         help="Enable debug logging.",
     ),
+    list_backends: bool = typer.Option(
+        False,
+        "--list-backends",
+        help="List built-in and installed plugin metadata without loading plugin code.",
+    ),
 ) -> None:
     """Run LLM inference benchmarks against a live backend."""
     import asyncio
@@ -96,6 +101,30 @@ def bench(
     from chimeraforge.commands._deps import require_extra
 
     require_extra("bench", "httpx")  # backends import httpx at module load
+
+    if list_backends:
+        from chimeraforge.bench.backends import list_backends as backend_listing
+
+        try:
+            backends = backend_listing()
+        except ValueError as exc:
+            console.print(f"[red]Error:[/] {exc}")
+            raise typer.Exit(code=1)
+        if output_json:
+            import json
+
+            console.print(json.dumps(backends, indent=2), highlight=False, soft_wrap=True)
+        else:
+            table = Table("Name", "Kind", "Distribution", "Entry point")
+            for row in backends:
+                table.add_row(
+                    row["name"], row["kind"], row["distribution"] or "", row["value"] or ""
+                )
+            console.print(table)
+        return
+    if not model:
+        console.print("[red]Error:[/] --model is required unless --list-backends is used.")
+        raise typer.Exit(code=1)
 
     from chimeraforge.bench.metrics import result_to_dict
     from chimeraforge.bench.runner import (
