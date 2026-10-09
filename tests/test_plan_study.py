@@ -554,6 +554,57 @@ def test_source_plan_hardlink_output_alias_refused(tmp_path, source):
     assert result.exit_code == 2 and saved.read_bytes() == original
 
 
+@pytest.mark.parametrize("role", ["corpus", "quality"])
+@pytest.mark.parametrize("hardlink", [False, True])
+def test_bundle_study_cannot_overwrite_native_producer_input(tmp_path, monkeypatch, role, hardlink):
+    from test_plan_bundle import source_plan
+
+    saved, corpus, quality = source_plan(tmp_path)
+    bundle = api.create_plan_bundle(saved, tmp_path / "bundle")
+    report = api.study_plan(bundle, [scenario("same")])
+    producer = {"corpus": corpus, "quality": quality}[role]
+    before = producer.read_bytes()
+    target = tmp_path / "producer-alias.json" if hardlink else producer
+    if hardlink:
+        target.hardlink_to(producer)
+    dispatched = []
+    monkeypatch.setattr(api.PlanArtifact, "save", lambda *args: dispatched.append(args))
+    with pytest.raises(api.PlanError, match="cannot replace"):
+        report.save(target)
+    assert not dispatched and producer.read_bytes() == before
+
+
+def test_foreign_producer_collision_is_not_interpreted_as_native(tmp_path, monkeypatch):
+    """A re-signed path-flavor fixture, not proof of an actual foreign producer."""
+    import hashlib
+    from dataclasses import replace
+    from pathlib import Path, PureWindowsPath
+
+    from test_plan_bundle import source_plan
+
+    saved, corpus, _ = source_plan(tmp_path)
+    bundle = api.create_plan_bundle(saved, tmp_path / "bundle")
+    data = json.loads(bundle._plan_bytes)
+    native_windows = isinstance(Path(), PureWindowsPath)
+    foreign = str(corpus).replace("\\", "/")[2:] if native_windows else "C:" + str(corpus)
+    binding = data["result"]["replay_context"]["corpus"]["input"]
+    binding.update(path=foreign, path_flavor="posix" if native_windows else "windows")
+    data["fingerprint"] = api._digest({k: v for k, v in data.items() if k != "fingerprint"})
+    raw = json.dumps(data).encode()
+    manifest = json.loads(bundle._manifest_bytes)
+    manifest["plan_fingerprint"] = data["fingerprint"]
+    next(row for row in manifest["files"] if row["role"] == "plan").update(
+        sha256=hashlib.sha256(raw).hexdigest(), size_bytes=len(raw)
+    )
+    held = replace(bundle, _plan_bytes=raw, _manifest_bytes=json.dumps(manifest).encode())
+    report = api.study_plan(held, [scenario("same")])
+    assert report.to_dict()["frozen_context"]["inputs"]["corpus"]["producer"]["path"] == foreign
+    dispatched = []
+    monkeypatch.setattr(api.PlanArtifact, "save", lambda *args: dispatched.append(args))
+    report.save(corpus)
+    assert dispatched
+
+
 def test_unknown_native_metrics_remain_unknown(source, monkeypatch):
     original = service.enumerate_candidates
 

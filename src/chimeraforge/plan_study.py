@@ -8,8 +8,9 @@ import json
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING, Iterable
 
-from chimeraforge.plan_check import compare, identity
+from chimeraforge.plan_check import _local_file, compare, identity
 from chimeraforge.plan_bundle import (
     PlanBundle,
     _capture_inputs,
@@ -20,6 +21,9 @@ from chimeraforge.planner import engine, hardware, service
 from chimeraforge.planner.models import _models_from_bytes
 from chimeraforge.planner.qualityfile import _quality_from_bytes, aggregate
 from chimeraforge.planner.replay import digest, json_value, policy_digest
+
+if TYPE_CHECKING:
+    from chimeraforge.api import PlanArtifact
 
 MAX_SCENARIOS = 16
 MAX_STUDY_MODELS = 16
@@ -73,7 +77,7 @@ class PlanStudy:
         PlanArtifact(self.to_dict()).save(path)
 
 
-def protect_output(path: str | Path, inputs) -> None:
+def protect_output(path: str | Path, inputs: Iterable[str | Path]) -> None:
     from chimeraforge.api import PlanError
 
     try:
@@ -143,7 +147,9 @@ def _validate_cases(cases: list[PlanScenario], inputs: dict) -> list[PlanScenari
     return result
 
 
-def _source(saved):
+def _source(
+    saved: PlanArtifact | PlanBundle | str | Path,
+) -> tuple[PlanArtifact, service.ConsumedPlanInputs, dict]:
     from chimeraforge import api
 
     if isinstance(saved, PlanBundle):
@@ -187,7 +193,7 @@ def _source(saved):
     return artifact, service.ConsumedPlanInputs(parsed["corpus"], parsed.get("quality")), receipts
 
 
-def _freeze(inputs: dict):
+def _freeze(inputs: dict) -> tuple[service.FrozenPlanFacts, dict]:
     from chimeraforge.planner.cloudprice import snapshot_age_days
     from chimeraforge.planner.platform_support import staleness_warning
 
@@ -234,7 +240,7 @@ def _freeze(inputs: dict):
     return frozen, receipt
 
 
-def _result(result, request) -> dict:
+def _result(result: service.PlanResult, request: dict) -> dict:
     candidates = json_value(result.candidates)
     selected = candidates[0] if candidates else None
     return {
@@ -257,7 +263,9 @@ def _result(result, request) -> dict:
     }
 
 
-def study(saved, scenarios: list[PlanScenario]) -> PlanStudy:
+def study(
+    saved: PlanArtifact | PlanBundle | str | Path, scenarios: list[PlanScenario]
+) -> PlanStudy:
     from chimeraforge import api
 
     try:
@@ -291,7 +299,7 @@ def study(saved, scenarios: list[PlanScenario]) -> PlanStudy:
             ),
         )
 
-        def run(changes):
+        def run(changes: dict) -> dict:
             if _policy_identity() != receipt["policy_sha256"]:
                 raise api.PlanError("study policy identity changed during execution")
             request = {**inputs, **{k: v for k, v in changes.items() if k != "gpu_cost_per_hour"}}
@@ -334,6 +342,11 @@ def study(saved, scenarios: list[PlanScenario]) -> PlanStudy:
             rows.append(row)
         receipt["sha256"] = digest(receipt)
         protected = [Path(row["local"]["path"]) for row in input_receipts.values()]
+        for row in input_receipts.values():
+            if row["producer"]["kind"] == "file":
+                producer = _local_file(row["producer"])
+                if producer is not None:
+                    protected.append(producer)
         if isinstance(saved, PlanBundle):
             protected.append(saved._directory)
         elif not isinstance(saved, api.PlanArtifact):
