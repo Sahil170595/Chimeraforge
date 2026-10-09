@@ -92,7 +92,9 @@ snapshot or turn unsigned quarantine data into trusted measurements.
 ## Frozen-context sensitivity
 
 For real endpoint requests with scheduled arrivals and queue-inclusive timing,
-use the separate [typed request-trace API](trace-replay.md). A modeled study
+use the separate [typed request-trace API](trace-replay.md). Apply explicit
+engineering policies to complete saved benchmark populations with the
+[measured regression gate](regression-gate.md). A modeled study
 does not substitute for a measured trace.
 
 This is an unreleased feature of this checkout. Install this checkout with

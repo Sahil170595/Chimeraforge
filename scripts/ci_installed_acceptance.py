@@ -172,6 +172,9 @@ def main(argv: list[str] | None = None) -> int:
 
         study_bundle = cwd / ("foreign-bundle" if args.plan_handoff is not None else "local-bundle")
         study_receipt = accept_study(cwd, env, args.checkout, snapshot_path, study_bundle)
+        from ci_regression_gate import accept as accept_gate
+
+        gate_receipt = accept_gate(cwd, env, args.checkout)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -195,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
                     "checkpoint_identity": checkpoint_receipt,
                     "portable_plan_bundle": bundle_receipt,
                     "plan_sensitivity": study_receipt,
+                    "regression_gate": gate_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

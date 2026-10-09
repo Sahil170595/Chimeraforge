@@ -22,6 +22,37 @@ def load_script(name):
     return module
 
 
+def test_regression_gate_installed_consumer_protocol_through_real_cli(tmp_path, monkeypatch):
+    """Source-only harness proof; hosted installed consumers retain their origin guard."""
+    import json
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    script = load_script("ci_regression_gate")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: None)
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == expected_code, result.output
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        return result.output
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    result = script.accept(tmp_path, {}, tmp_path / "checkout")
+    assert result["installed_cli_outcomes"] == [0, 1, 2, 3]
+    assert result["evidence_class"].startswith("synthetic protocol")
+    report = json.loads((tmp_path / "regression-gate.json").read_text())
+    report["pairs"][0]["metrics"].clear()
+    from chimeraforge.planner.replay import digest
+
+    report["fingerprint"] = digest(
+        {key: value for key, value in report.items() if key != "fingerprint"}
+    )
+    with pytest.raises(AssertionError):
+        script.validate(report, 0, (2, 2))
+
+
 def test_installed_origin_rejects_checkout_and_editable_installs(tmp_path):
     script = load_script("ci_installed_acceptance")
     with pytest.raises(AssertionError, match="checkout"):

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Scope-aware measured regression gates
+
+- `gate` and typed `gate_benchmarks` apply nonempty native metric rules to exactly declared ordered baseline/candidate populations; every pair is retained, so a favorable average cannot hide a failed pair.
+- Strict bounded held receipt reads verify fingerprints, native sample counts and recalculated aggregates; complete workload/actual lengths, before/after observed controls and paired intentional treatments govern eligibility. Persisted planner audits and client GPU labels are not evidence.
+- Complete output-token/client-wall rates remain distinct from Ollama server and SSE client decode/prefill/request timing bases. Default missing-cache refusal and an explicit absence-only opt-out preserve unknown scope and known drift; malformed, regression and inconclusive results have separate API/CLI outcomes.
+- Defensive atomic receipts protect all consumed inputs/policies and retain byte identities without private options or arbitrary provider payloads. Existing installed wheel/sdist protocol acceptance and two actual hosted CPU benchmark executions are wired without shared-machine performance thresholds; hosted evidence is pending publication.
+
 ### Real request-trace replay
 
 - `trace workload.json` and async typed `replay_trace` execute bounded explicit prompt/output-cap/arrival workloads through the existing backend lifecycle, with a concurrency limit and scheduled-phase deadline.
