@@ -115,7 +115,7 @@ The source bytes, fingerprint and producer paths are not rewritten.
 
 `chimeraforge study PLAN_OR_BUNDLE --cases cases.json --json [--out study.json]`
 accepts a JSON list of exactly `{"name": string, "changes": object}` rows.
-There must be 1–16 unique names, each at most 80 characters, and no more than 16
+There must be 1-16 unique names, each at most 80 characters, and no more than 16
 bound model targets. The case file is bounded to 64 KiB and rejects duplicate
 JSON keys and linked paths. Allowed changes are:
 

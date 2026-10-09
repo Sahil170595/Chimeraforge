@@ -344,7 +344,7 @@ are captured once. The report distinguishes those current facts from producer
 receipts, retains infeasible cases with gate reasons, and compares configurations
 and estimates in native units. A changed policy identity aborts the study.
 
-Supply 1–16 unique cases for up to 16 bound model targets. Workload, context,
+Supply 1-16 unique cases for up to 16 bound model targets. Workload, context,
 SLOs, quality/safety targets, budget, duty and cost assumptions may change;
 model, physical hardware and platform stay fixed. `gpu_cost_per_hour` is an
 operator price assumption, is refused for cloud instance pricing, and zero
@@ -698,7 +698,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **3,568 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-portable-plan-bundles/README.md) collected 3,568 cases: 3,565 passed and three skipped.
+- **3,630 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-plan-sensitivity/README.md) collected 3,630 cases: 3,627 passed and three skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

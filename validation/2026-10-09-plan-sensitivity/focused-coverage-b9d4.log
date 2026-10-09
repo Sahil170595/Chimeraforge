@@ -1,0 +1,11 @@
+......................................................                   [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                             Stmts   Miss Branch BrPart  Cover   Missing
+----------------------------------------------------------------------------
+src\chimeraforge\plan_study.py     186      9     62      6    94%   93, 107-108, 120, 124, 177, 185, 273, 296
+----------------------------------------------------------------------------
+TOTAL                              186      9     62      6    94%
+Coverage JSON written to file C:\tmp\cf-next-pr-receipts-20261008\plan-sensitivity-coverage-b9d4.json
+54 passed in 65.59s (0:01:05)
