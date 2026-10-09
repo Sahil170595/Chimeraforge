@@ -10,11 +10,14 @@ import types
 from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from pathlib import Path
+import threading
+from typing import Callable
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
 
 from chimeraforge import __version__
+from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
@@ -439,4 +442,20 @@ async def benchmark_plan(
         rate=rate,
         concurrency=concurrency,
         base_url=base_url,
+    )
+
+
+def monitor_plan(
+    saved: PlanArtifact | str | Path,
+    request: MonitorRequest,
+    *,
+    candidate_index: int = 0,
+    stop_event: threading.Event | None = None,
+    on_window: Callable[[MonitorWindow], None] | None = None,
+) -> MonitorReport:
+    """Passively observe saved candidate bindings and native SLOs as separate evidence."""
+    from chimeraforge.plan_monitor import monitor_saved
+
+    return monitor_saved(
+        saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
     )
