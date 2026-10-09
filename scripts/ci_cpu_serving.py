@@ -469,6 +469,9 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     )
     assert planned and planned[0]["mode"] == "batch"
     saved_plan_benchmark = accept_saved_plan(client, cwd, env)
+    from ci_cpu_trace import accept as accept_trace
+
+    trace_replay = accept_trace(cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION)
     error = run_cli(
         ["bench", "--model", "ci-definitely-missing-model", "--base-url", str(client.base_url)],
         cwd,
@@ -507,6 +510,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
         "bench_report_workload_plan": "passed",
         "saved_plan_benchmark": saved_plan_benchmark,
         "contribution_replay": contribution_replay,
+        "request_trace": trace_replay,
         "missing_model_identity_and_metrics_errors": "passed",
         "scope": "CPU functional integration; no performance or prediction-accuracy claim",
     }

@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**21 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**22 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -80,7 +80,7 @@ plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
 pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
 ```
 
-The checkpoint, bundle and sensitivity options below are further **unreleased source features**. They
+The checkpoint, bundle, sensitivity and request-trace options below are further **unreleased source features**. They
 require this feature's checkout; neither PyPI 0.51.0 nor the older source pin
 above contains them. From this checkout, install with `pip install '.[mcp]'`.
 
@@ -584,6 +584,38 @@ without claiming GPU prediction accuracy.
 Three workload profiles (single / batch / server-Poisson); measures throughput, TTFT, and latency with p50/p90/p95/p99; CV-based stability warnings; JSON output.
 
 Before the first request, `bench` (and `measure`) confirms the server at the URL is the engine you named: vLLM through `/version`, TGI through `/info`, SGLang through `/server_info`, and Ollama through its root banner. A port that answers `/health` but does not identify itself is refused, so another web app's numbers are never filed as vLLM.
+
+### `trace` -- real scheduled requests and joint-target goodput
+
+Create a private `workload.json` with an explicit schedule and output caps:
+
+```json
+[
+  {"request_id": "first", "prompt": "Explain KV caching briefly.", "max_output_tokens": 32, "arrival_offset_s": 0},
+  {"request_id": "second", "prompt": "List three primary colors.", "max_output_tokens": 16, "arrival_offset_s": 0.1}
+]
+```
+
+```bash
+# Requires this model to be running on the named endpoint. Prompts are sent there.
+chimeraforge trace workload.json --model llama3.2-3b --backend ollama --concurrency 1 --latency-slo 2000 --first-output-slo 500 --tpot-slo 50 --out trace.json --json
+```
+
+`trace` records every planned request, including failed, partial, cancelled and
+not-started requests. Actual client arrival, queue, first output and terminal
+times distinguish scheduler lag from serving latency. Joint-target goodput uses
+the complete planned/observed horizon; unknown required timing cannot qualify.
+Ollama streaming observes first output directly, while its native prefill time
+stays separate. Mean decode time is labeled by its basis and does not prove an
+every-token target. Other adapters without a first-output capability report it
+unknown. Output caps are requests, with actual token counts recorded separately.
+
+Receipts contain prompt hashes rather than prompts or completions. Exit 0 means
+completed execution, including an SLO breach; 1 means incomplete/failed execution,
+and 2 malformed input. No targets means no SLO qualification. This measures the
+contacted endpoint and client workload; GPU geometry, independent cold runs and
+served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
+for the Python API, limits, cancellation and timing bases.
 
 ### `eval` -- quality evaluation
 

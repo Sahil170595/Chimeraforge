@@ -1,0 +1,15 @@
+Retained red evidence (complete diagnostic logs remain with the owning builder):
+trace-replay-initial-red.log SHA256=25ac21965c068858c22bd1815ce0e0459b0f539fad28248e5d3ce9713c79694f
+tests\test_trace_replay.py:170: in test_failed_partial_requests_are_retained_and_exception_payload_is_private
+25 failed in 1.16s
+trace-replay-stream-red.log SHA256=dd11dab85a7f7d01f977aa0dc77794607b194996f69026ae02e13a05d167affa
+tests\test_trace_replay.py:330: in test_failed_terminal_client_latency_stays_known
+2 failed, 2 passed, 25 deselected in 0.75s
+trace-replay-no-origin-red.log SHA256=a915dded0e26af23bd011871e9f802bed7f867f8d18101812decf600fdd5e5ef
+2 failed, 48 deselected in 0.54s
+trace-replay-scheduling-diagnostic.log SHA256=fd99464fecfe163a4fa5a03c920bb9aaf6a7bab89fd9c822d9168a67c11108e4
+2 failed, 48 deselected in 0.60s
+trace-replay-clock-red.log SHA256=56bc2e8628cf0b0437d68755a1c0246a599292d5afd218bbaf4a6f1daaf613ed
+1 failed, 50 deselected in 0.94s
+trace-replay-population-red.log SHA256=c86aae508ec67013b77ece12ed7551d1b55a0e146bf288b04dc9c709b632dc22
+1 failed, 50 deselected in 0.97s

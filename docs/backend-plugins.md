@@ -1,6 +1,6 @@
 # Installed backend plugins
 
-ChimeraForge can select a locally installed serving adapter for `bench`, `measure`,
+ChimeraForge can select a locally installed serving adapter for `bench`, `trace`, `measure`,
 and `safety`. Install the adapter in the same Python environment as ChimeraForge,
 then select its entry-point name:
 
@@ -41,6 +41,7 @@ Implement these async methods using the actual serving engine's API:
 | `get_version()` | Return an engine version string, or `None` when unknown. |
 | `generate(model, prompt, options=None)` | Return `RunMetrics` from observed timing and server token counts; raise with context if required measurements are unavailable. |
 | `generate_text(model, prompt, options=None)` | Optional; return generated text for safety screening. The inherited implementation raises `NotImplementedError`. |
+| `generate_observed(model, prompt, options, on_first_output)` | Optional trace capability; return `GenerationObservation`, invoking the callback once on actual first client output. The inherited fallback calls `generate` and leaves first output unknown. |
 | `close()` | Optional; release clients and resources. The inherited implementation does nothing for stateless adapters. |
 
 All methods must remain async, including optional overrides. Benchmark and safety
@@ -48,6 +49,15 @@ runners close an adapter after success, preflight or generation failure, and
 cancellation. A cleanup failure is logged with context; it fails an otherwise
 successful operation and preserves an earlier operation's exception. Adapters
 must make their own cleanup safe when generation is cancelled.
+
+`trace` sends `max_tokens` as the requested output cap to plugins. Adapters must
+apply it or expose their limitation; a supplied cap is not a measured output
+length. `GenerationObservation.native` carries selected native numeric metrics,
+not prompt/completion content. First output must be observed during the active
+call; a prefill duration is not a first-output callback. Arbitrary plugin mean
+decode bases remain unavailable for the built-in TPOT qualification. Client
+terminal/queue timing still works, and a required unavailable target cannot pass.
+See [the request-trace contract](trace-replay.md).
 
 Duplicate entry-point names and collisions with `ollama`, `vllm`, `tgi`, or
 `sglang` fail deterministically during plugin discovery. Invalid or abstract
