@@ -1,0 +1,66 @@
+[
+  {
+    "argv": [
+      "plan",
+      "--model",
+      "Qwen/Qwen2.5-1.5B-Instruct",
+      "--hardware",
+      "RTX 4090 24GB",
+      "--ttft-slo",
+      "500",
+      "--tpot-slo",
+      "50",
+      "--save",
+      "C:\\tmp\\cf-readme-final-20261009\\plan.json",
+      "--json"
+    ],
+    "exit_code": 0,
+    "stdout_file": "0-stdout.txt",
+    "stderr_file": "0-stderr.txt"
+  },
+  {
+    "argv": [
+      "plan",
+      "--model-size",
+      "3b",
+      "--hardware",
+      "RTX 4090 24GB",
+      "--no-network",
+      "--save",
+      "C:\\tmp\\cf-readme-final-20261009\\offline-plan.json",
+      "--json"
+    ],
+    "exit_code": 0,
+    "stdout_file": "1-stdout.txt",
+    "stderr_file": "1-stderr.txt"
+  },
+  {
+    "argv": [
+      "check",
+      "C:\\tmp\\cf-readme-final-20261009\\offline-plan.json",
+      "--json"
+    ],
+    "exit_code": 0,
+    "stdout_file": "2-stdout.txt",
+    "stderr_file": "2-stderr.txt"
+  },
+  {
+    "argv": [
+      "deploy",
+      "--plan",
+      "C:\\tmp\\cf-readme-final-20261009\\plan.json",
+      "--candidate-index",
+      "15",
+      "--format",
+      "compose",
+      "--image",
+      "vllm/vllm-openai:v0.30.0",
+      "--out",
+      "C:\\tmp\\cf-readme-final-20261009\\compose.yaml"
+    ],
+    "exit_code": 0,
+    "selected_from_actual_artifact": 15,
+    "stdout_file": "deploy-stdout.txt",
+    "stderr_file": "deploy-stderr.txt"
+  }
+]

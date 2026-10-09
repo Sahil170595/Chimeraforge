@@ -1,0 +1,58 @@
+{
+  "services": {
+    "inference": {
+      "image": "vllm/vllm-openai:v0.30.0",
+      "entrypoint": [
+        "vllm",
+        "serve"
+      ],
+      "ports": [
+        "127.0.0.1:8000:8000"
+      ],
+      "restart": "unless-stopped",
+      "init": true,
+      "labels": {
+        "org.chimeraforge.plan-fingerprint": "16a812d7c30a451a9d9f5739699dd37e3da884c3fbde2e756c4efa22027d968f"
+      },
+      "deploy": {
+        "resources": {
+          "reservations": {
+            "devices": [
+              {
+                "driver": "nvidia",
+                "count": 1,
+                "capabilities": [
+                  "gpu"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "command": [
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--max-model-len",
+        "2048",
+        "--max-num-seqs",
+        "1",
+        "--tensor-parallel-size",
+        "1",
+        "--pipeline-parallel-size",
+        "1",
+        "--gpu-memory-utilization",
+        "0.9",
+        "--no-enable-chunked-prefill",
+        "--no-enable-prefix-caching",
+        "--dtype",
+        "float16",
+        "--kv-cache-dtype",
+        "float16"
+      ],
+      "shm_size": "1gb"
+    }
+  }
+}

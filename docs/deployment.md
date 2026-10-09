@@ -6,9 +6,11 @@ output, and reports predictions and unresolved runtime assumptions. It performs
 no network calls, package installation, engine startup or infrastructure changes.
 
 ```bash
-chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" \
+chimeraforge plan --model Qwen/Qwen2.5-1.5B-Instruct --hardware "RTX 4090 24GB" \
+  --ttft-slo 500 --tpot-slo 50 \
   --save plan.json
-chimeraforge deploy --plan plan.json --candidate-index 0 --format compose \
+CANDIDATE_INDEX=$(python -c "import json; p=json.load(open('plan.json')); print(next(i for i,c in enumerate(p['result']['candidates']) if c['backend']=='vllm' and c['quant']=='FP16' and c['n_agents']==1 and c['offload_fraction']==0))")
+chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" --format compose \
   --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
 ```
 
@@ -16,6 +18,11 @@ Create the output directory first. Choose an image matching the **selected
 candidate's backend**, with an explicit version tag or SHA256 digest; the exporter
 does not infer an image, download it, or inspect its engine version. Version tags
 can move; a digest fixes content. Existing main or companion files are refused.
+The Bash selection above uses the current artifact's zero-based index, not a
+fixed row number. On PowerShell, assign the same selection with
+`$CANDIDATE_INDEX = python -c "..."`. Inspect the selected candidate; no match is
+an error. A Hugging Face name does not make the first candidate vLLM or prove
+that its chosen quantization exists at that checkpoint.
 Printed provisioning commands use the chosen output filename, including `-f` for
 every Compose command, and shell-quote paths. Library calls to `export_deployment`
 can supply `output_path` to bind the instructions to their chosen destination.
@@ -32,7 +39,7 @@ replanning the actual checkpoint provides its actual geometry.
 | `modelfile` | Resolved Ollama checkpoint | A dedicated daemon with the printed environment settings |
 
 ```bash
-chimeraforge deploy --plan plan.json --format systemd \
+chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" --format systemd \
   --executable /opt/vllm/bin/vllm --out deployment/chimeraforge.service
 ```
 

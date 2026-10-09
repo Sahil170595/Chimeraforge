@@ -1,0 +1,980 @@
+{
+  "parsed_commands": 66,
+  "all_parsed": true,
+  "candidate_selection": "from actual plan, not fixed row",
+  "generated_corpus_block_unchanged": true,
+  "generated_block_sha256": "57742a5156a1de7a14809d98a07f0c46db9c145a93f0fb3fb70a9ad8dd275236",
+  "invocations": [
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--request-rate",
+        "2.0"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-7B-Instruct",
+        "--hardware",
+        "RTX 4090 24GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "ollama:qwen3:14b",
+        "--ollama-url",
+        "http://localhost:11434"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--hardware",
+        "H100 80GB",
+        "--tp",
+        "4"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4080 12GB",
+        "--kv-quant",
+        "q8",
+        "--pareto"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "qwen3:14b",
+        "--measure"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "suggest",
+        "--source",
+        "ollama",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--budget",
+        "500"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "3b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--no-network",
+        "--save",
+        "offline-plan.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "check",
+        "offline-plan.json",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "workload",
+        "--from-log",
+        "requests.jsonl",
+        "--out",
+        "workload.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--workload-profile",
+        "workload.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--request-rate",
+        "2",
+        "--report",
+        "brief.md"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "mcp",
+        "--transport",
+        "streamable-http",
+        "--port",
+        "8766"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--request-rate",
+        "2.0"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-7B-Instruct",
+        "--hardware",
+        "RTX 4090 24GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "ollama:qwen3:14b",
+        "--ollama-url",
+        "http://localhost:11434"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-72B-Instruct",
+        "--hardware",
+        "H100 80GB",
+        "--tp",
+        "4"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "3b",
+        "--kv-quant",
+        "q4",
+        "--pareto"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--launch"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "3b",
+        "--workload",
+        "agent",
+        "--safety-target",
+        "0.85",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "3b",
+        "--no-network",
+        "--save",
+        "plan.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "check",
+        "plan.json",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--ttft-slo",
+        "500",
+        "--tpot-slo",
+        "50",
+        "--save",
+        "plan.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "deploy",
+        "--plan",
+        "plan.json",
+        "--candidate-index",
+        "$CANDIDATE_INDEX",
+        "--format",
+        "compose",
+        "--image",
+        "vllm/vllm-openai:v0.30.0",
+        "--out",
+        "deployment/compose.yaml"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": 15
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "suggest",
+        "--source",
+        "ollama",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--budget",
+        "500"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "suggest",
+        "--source",
+        "hf",
+        "--hf-limit",
+        "8",
+        "--hardware",
+        "RTX 4080 12GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "suggest",
+        "--source",
+        "catalog",
+        "--hardware",
+        "RTX 4080 12GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "measure",
+        "--model",
+        "qwen3:14b",
+        "--ollama-url",
+        "http://localhost:11434"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "qwen3:14b",
+        "--measure"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "workload",
+        "--from-log",
+        "requests.jsonl",
+        "--out",
+        "workload.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "workload",
+        "--from-metrics",
+        "http://localhost:8000/metrics",
+        "--engine",
+        "vllm",
+        "--out",
+        "workload.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "workload",
+        "--from-metrics",
+        "http://localhost:8000/metrics",
+        "--interval",
+        "60",
+        "--engine",
+        "vllm",
+        "--hardware",
+        "H100 80GB"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "8b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--workload-profile",
+        "workload.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "validate",
+        "--matrix",
+        "matrix.json",
+        "--measurements",
+        "captured.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "monitor",
+        "--backend",
+        "vllm",
+        "--url",
+        "http://localhost:8000",
+        "--model",
+        "YOUR_SERVED_MODEL",
+        "--ttft-slo",
+        "500",
+        "--tpot-slo",
+        "50",
+        "--interval",
+        "30",
+        "--windows",
+        "1",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "monitor",
+        "--from-plan",
+        "plan.json",
+        "--candidate-index",
+        "$CANDIDATE_INDEX",
+        "--backend",
+        "vllm",
+        "--url",
+        "http://localhost:8000",
+        "--model",
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "--windows",
+        "1",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": 15
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "doctor"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "doctor",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "bench",
+        "--model",
+        "llama3.2-3b",
+        "--backend",
+        "vllm",
+        "--quant",
+        "FP16",
+        "--runs",
+        "5",
+        "--output-dir",
+        "results/"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "contribute",
+        "export",
+        "results/bench_*.json",
+        "--out",
+        "contributions/"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "contribute",
+        "verify",
+        "contributions/*.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "contribute",
+        "import",
+        "theirs.contribution.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "contribute",
+        "list"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "contribute",
+        "review",
+        "theirs.contribution.json",
+        "--decision",
+        "retain",
+        "--reason",
+        "Replay needed",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "contribute",
+        "replay",
+        "theirs.contribution.json",
+        "--prompt",
+        "Explain KV caching briefly.",
+        "--output-tokens",
+        "128",
+        "--runs",
+        "3",
+        "--base-url",
+        "http://localhost:8000",
+        "--out",
+        "replay.json",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model-size",
+        "3b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--contributions"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "catalog",
+        "--build"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "catalog"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "safety",
+        "--model",
+        "llama3.2-3b",
+        "--prompts",
+        "harmful.txt",
+        "--quant",
+        "Q4_K_M",
+        "--safety-target",
+        "0.85"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "bench",
+        "--model",
+        "llama3.2-3b",
+        "--runs",
+        "5"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "bench",
+        "--model",
+        "llama3.2-3b",
+        "--all-quants",
+        "--context",
+        "512,1024,2048,4096",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "bench",
+        "--model",
+        "llama3.2-3b",
+        "--backend",
+        "vllm",
+        "--base-url",
+        "http://localhost:8000"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "bench",
+        "--plan",
+        "plan.json",
+        "--candidate-index",
+        "$CANDIDATE_INDEX",
+        "--model",
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "--base-url",
+        "http://localhost:8000",
+        "--prompt",
+        "Explain KV caching briefly.",
+        "--runs",
+        "5",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": 15
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "eval",
+        "--task",
+        "general_knowledge",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "eval",
+        "--predictions",
+        "preds.txt",
+        "--references",
+        "refs.txt",
+        "--model",
+        "llama3.2-3b"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "compare",
+        "--baseline",
+        "run1.json",
+        "--candidate",
+        "run2.json,run3.json",
+        "--json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "refit",
+        "--bench-dir",
+        "./results/",
+        "--output",
+        "fitted_models.json",
+        "--validate"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "report",
+        "--results-dir",
+        "./results/",
+        "--format",
+        "markdown",
+        "--output",
+        "report.md"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "mcp"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "README.md",
+      "argv": [
+        "chimeraforge",
+        "mcp",
+        "--transport",
+        "streamable-http",
+        "--port",
+        "8766"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "docs/deployment.md",
+      "argv": [
+        "chimeraforge",
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--ttft-slo",
+        "500",
+        "--tpot-slo",
+        "50",
+        "--save",
+        "plan.json"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": null
+    },
+    {
+      "file": "docs/deployment.md",
+      "argv": [
+        "chimeraforge",
+        "deploy",
+        "--plan",
+        "plan.json",
+        "--candidate-index",
+        "$CANDIDATE_INDEX",
+        "--format",
+        "compose",
+        "--image",
+        "vllm/vllm-openai:v0.30.0",
+        "--out",
+        "deployment/compose.yaml"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": 15
+    },
+    {
+      "file": "docs/deployment.md",
+      "argv": [
+        "chimeraforge",
+        "deploy",
+        "--plan",
+        "plan.json",
+        "--candidate-index",
+        "$CANDIDATE_INDEX",
+        "--format",
+        "systemd",
+        "--executable",
+        "/opt/vllm/bin/vllm",
+        "--out",
+        "deployment/chimeraforge.service"
+      ],
+      "parsed": true,
+      "candidate_variable_resolved_from_actual_plan": 15
+    }
+  ],
+  "scope": "Parser/flags only; callbacks not run. Functional receipt separately covers actual plans, check, export; no serving GPU, bench/monitor network or MCP client execution claimed.",
+  "source_document_sha256": {
+    "README.md": {
+      "working_sha256": "ca0ae00671cf6fe9b3b02953afb2c166814c4ee3b1723c737b167e5416afadca",
+      "canonical_lf_sha256": "d6121b131b69d63d681902694b87cdd2e65e65e0641c680623ce8986baa060e5",
+      "conversion": "Exact CRLF to LF only"
+    },
+    "docs/deployment.md": {
+      "working_sha256": "0ed0db833b1232bf8e8187ca3299c82f4fbac2d84e5d4467ae7627368efdfd3d",
+      "canonical_lf_sha256": "f9e17ca5798c5ac853a335022baf83acda20652c358df639f325a33c078c3740",
+      "conversion": "Exact CRLF to LF only"
+    }
+  }
+}

@@ -7,7 +7,7 @@
 
 <!-- mcp-name: io.github.Sahil170595/chimeraforge -->
 
-**A local-first, model-agnostic LLM deployment planner.** It turns "which model, quantization, GPU, and backend -- how many, will it fit, will it hit my SLO, what will it cost" into a fast, honest, measured answer, from your shell, your Python, or your AI assistant.
+**A local-first, model-agnostic LLM deployment planner.** It turns "which model, quantization, GPU, and backend -- how many, will it fit, will it hit my SLO, what will it cost" into a fast answer with explicit evidence and assumptions, from your shell, your Python, or your AI assistant.
 
 ```bash
 uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
@@ -65,7 +65,20 @@ pip install "chimeraforge[refit]"     # + coefficient refitting (numpy, scipy)
 pip install "chimeraforge[all]"       # everything
 ```
 
-Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). `plan` / `suggest` / `catalog` run fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
+Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
+
+**Release and source scope (2026-10-09).** PyPI's released version is
+[0.51.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.51.0).
+This source README also covers the open review stack
+[#105](https://github.com/Sahil170595/Chimeraforge/pull/105) through
+[#109](https://github.com/Sahil170595/Chimeraforge/pull/109): saved-plan `check`,
+plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
+`review`/`replay`. Those additions require the reviewed source rather than the
+0.51.0 package. To try that exact source, including MCP:
+
+```bash
+pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
+```
 
 ## Quickstart
 
@@ -88,6 +101,10 @@ chimeraforge plan --model qwen3:14b --measure
 
 # Discover + rank what fits your GPU and budget
 chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
+
+# Save and recheck an offline plan (reviewed source; see release scope above)
+chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --no-network --save offline-plan.json
+chimeraforge check offline-plan.json --json
 ```
 
 ---
@@ -251,10 +268,17 @@ LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
 
 ```bash
 mkdir deployment
-chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --save plan.json
-chimeraforge deploy --plan plan.json --format compose --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
+chimeraforge plan --model Qwen/Qwen2.5-1.5B-Instruct --hardware "RTX 4090 24GB" --ttft-slo 500 --tpot-slo 50 --save plan.json
+# Bash: select a single-replica, resident vLLM FP16 candidate from this artifact.
+CANDIDATE_INDEX=$(python -c "import json; p=json.load(open('plan.json')); print(next(i for i,c in enumerate(p['result']['candidates']) if c['backend']=='vllm' and c['quant']=='FP16' and c['n_agents']==1 and c['offload_fraction']==0))")
+chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" --format compose --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
 ```
 
+On PowerShell, assign the same Python selection with `$CANDIDATE_INDEX = python -c "..."`.
+Inspect the saved candidate before exporting; the selection fails if none matches.
+The first candidate is not necessarily vLLM or the checkpoint's native precision.
+The image tag is an explicit example, not an assertion that it was run; use your
+qualified engine image or a digest for fixed image bytes. Output files must be new.
 Select a candidate matching the explicit image's backend. Unsupported fleets,
 offload, unresolved adapter paths and checkpoint/KV mismatches fail clearly.
 Ollama emits daemon settings and a companion Modelfile with required provisioning
@@ -343,6 +367,9 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ```bash
 chimeraforge monitor --backend vllm --url http://localhost:8000 --model YOUR_SERVED_MODEL \
   --ttft-slo 500 --tpot-slo 50 --interval 30 --windows 1 --json
+# After starting the selected candidate and generating traffic, bind its saved targets.
+chimeraforge monitor --from-plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --backend vllm --url http://localhost:8000 --model Qwen/Qwen2.5-1.5B-Instruct --windows 1 --json
 ```
 
 Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. `--from-plan plan.json --candidate-index 0` binds the saved candidate and target sources to passive serving metadata. Known identity/configuration disagreements exit 5 separately from native SLO outcomes; unavailable required endpoint identity exits 4. GPU geometry, fleet topology, workload and immutable weights remain explicitly unverified when unavailable. Independent plan-binding and native SLO Prometheus gauges are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
@@ -395,7 +422,7 @@ chimeraforge contribute verify contributions/*.json              # schema + cont
 chimeraforge contribute import theirs.contribution.json          # into the local quarantine
 chimeraforge contribute list
 chimeraforge contribute review theirs.contribution.json --decision retain --reason "Replay needed" --json
-chimeraforge contribute replay theirs.contribution.json --prompt "Explain KV caching briefly." --output-tokens 128 --runs 3 --base-url http://localhost:11434 --out replay.json --json
+chimeraforge contribute replay theirs.contribution.json --prompt "Explain KV caching briefly." --output-tokens 128 --runs 3 --base-url http://localhost:8000 --out replay.json --json
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --contributions
 ```
 
@@ -449,7 +476,8 @@ Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *
 chimeraforge bench --model llama3.2-3b --runs 5
 chimeraforge bench --model llama3.2-3b --all-quants --context 512,1024,2048,4096 --json
 chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhost:8000
-chimeraforge bench --plan plan.json --candidate-index 0 --model actual-served-id --runs 5 --json
+# Requires the selected vLLM candidate from the deploy example to be running.
+chimeraforge bench --plan plan.json --candidate-index "$CANDIDATE_INDEX" --model Qwen/Qwen2.5-1.5B-Instruct --base-url http://localhost:8000 --prompt "Explain KV caching briefly." --runs 5 --json
 ```
 
 `bench --plan` binds an immutable saved candidate to actual serving observations
@@ -548,7 +576,7 @@ A figure the vendor does not publish stays unknown, and unknown is not zero:
 - **No price** (RTX PRO 6000, Instinct, Arc Pro, R9700): the budget gate refuses the card instead of pricing it at $0. Pass `--gpu-price-per-hour`.
 - **No dense FP16 figure** (Arc Pro, and the RTX PRO 6000 Server Edition, whose "1 PFLOP" is unlabeled): TTFT is reported as the memory-bound floor, a lower bound, and a `--ttft-slo` is refused rather than checked against it. Regenerate and validate with `scripts/build_hardware_data.py`. An **unlisted** GPU is no longer a wall: `--gpu-vram-gb` and `--gpu-bandwidth-gbps` (plus optional `--gpu-fp16-tflops` / `--gpu-tdp-w` / `--gpu-interconnect-gbps` / `--gpu-price-per-hour`) plan any card, and `--hardware auto` reads the installed one.
 
-**Known limits (honest):** Speculative decoding is not yet modeled. The prefill floor is a *bound* derived from `MBU_DEFAULT`, which is calibrated on a single datapoint -- read it as "no faster than", not as a prediction. Chunked-prefill overhead is derived from the KV re-read the mechanism implies and then clamped at the one published ceiling (25% at a 512-token budget, Sarathi-Serve arXiv:2403.02310); the tile-quantization cliff (a 257-token budget measured ~32% slower than 256) is real, sharp, and deliberately *not* modeled -- the planner warns instead. Prefix caching models the prefill saving but not the KV saving (deliberately conservative). Reasoning tokens are modeled but the ratio is your input (`--reasoning-tokens`), never inferred. For MoE, active-vs-total params *are* modeled, but expert parallelism and routing load-imbalance are not. For hybrids, the attention-layer split and the Mamba-2/Mamba-1/gated-DeltaNet recurrent state are read from the model's own config and derived from shapes in transformers source; Kimi's KDA state is inferred from the DeltaNet convention and says so, and a family whose layer pattern cannot be placed (Falcon-H1, a parallel hybrid) keeps full KV on every layer rather than being guessed at. Multi-LoRA sizes adapter VRAM exactly, but its decode cost is a rank-indexed estimate from a single published sweep, and per-adapter KV fragmentation is not modeled. Heterogeneous fleets solve the allocation exactly but assume a request router that no engine currently provides, and inherit the throughput-estimate error of every GPU type in the mix. Quant coverage for vLLM/TGI/SGLang is FP16 + FP8 + AWQ/GPTQ; FP8 and W4A16 quality are estimated, not measured -- the TR quality corpus only covers GGUF k-quants. **The bundled quality corpus is 20 items, which resolves nothing smaller than ~21 percentage points** (Miller, arXiv:2411.00640 Eq. 9), so every measured quant delta in it is reported as indistinguishable from its FP16 baseline rather than as a difference -- run a real harness and pass it with `--quality-from` to get a cell that can support one. Quality is measured at 2K context and reported UNKNOWN for narrow quants at >=64K, where published losses reach 59% (arXiv:2505.20276). TP and PP throughput are comms-modelled *estimates*, not measured, and can't be combined in one plan. Queueing is analytical (variance-aware), not a discrete-event simulator. The bundled corpus is fit primarily on one rig (RTX 4080 12GB); other GPUs scale from bandwidth/compute until you `measure` on yours. How far that scaling misses is now published rather than assumed: against third-party benchmarks the roofline is optimistic on HBM parts (median +58% decode) and pessimistic on GDDR cards (median -36%), and its TTFT errors run the other way ([TR147](outputs/publish_ready/reports/Technical_Report_147.md)). Unified-memory devices plan on a share of the pool that you state (`--unified-memory-fraction`, no default). The OS reserve is your figure, one bandwidth serves the CPU and GPU so decode is an upper bound, and no vendor publishes their GPU FP16 or a per-device price. Engine availability per platform is enforced from each engine's own docs, but the deployment OS is an input (`--platform`, default linux), not something the planner can see. Where an engine's docs are silent on a platform the plan warns rather than refuses. A user-supplied card has no known vendor, so its engine support is not checked, and every candidate says so. `--hardware auto` reads the local GPU through `doctor`'s per-vendor probes and plans for this machine's OS unless `--platform` says otherwise. On a Mac, auto matches the chip and its installed memory to the variant sold in that configuration. The MCP server is stdio-only (Claude Code/Desktop, local Cursor) -- no hosted remote transport yet.
+**Known limits (honest):** Speculative decoding is not yet modeled. The prefill floor is a *bound* derived from `MBU_DEFAULT`, which is calibrated on a single datapoint -- read it as "no faster than", not as a prediction. Chunked-prefill overhead is derived from the KV re-read the mechanism implies and then clamped at the one published ceiling (25% at a 512-token budget, Sarathi-Serve arXiv:2403.02310); the tile-quantization cliff (a 257-token budget measured ~32% slower than 256) is real, sharp, and deliberately *not* modeled -- the planner warns instead. Prefix caching models the prefill saving but not the KV saving (deliberately conservative). Reasoning tokens are modeled but the ratio is your input (`--reasoning-tokens`), never inferred. For MoE, active-vs-total params *are* modeled, but expert parallelism and routing load-imbalance are not. For hybrids, the attention-layer split and the Mamba-2/Mamba-1/gated-DeltaNet recurrent state are read from the model's own config and derived from shapes in transformers source; Kimi's KDA state is inferred from the DeltaNet convention and says so, and a family whose layer pattern cannot be placed (Falcon-H1, a parallel hybrid) keeps full KV on every layer rather than being guessed at. Multi-LoRA sizes adapter VRAM exactly, but its decode cost is a rank-indexed estimate from a single published sweep, and per-adapter KV fragmentation is not modeled. Heterogeneous fleets solve the allocation exactly but assume a request router that no engine currently provides, and inherit the throughput-estimate error of every GPU type in the mix. Quant coverage for vLLM/TGI/SGLang is FP16 + FP8 + AWQ/GPTQ; FP8 and W4A16 quality are estimated, not measured -- the TR quality corpus only covers GGUF k-quants. **The bundled quality corpus is 20 items, which resolves nothing smaller than ~21 percentage points** (Miller, arXiv:2411.00640 Eq. 9), so every measured quant delta in it is reported as indistinguishable from its FP16 baseline rather than as a difference -- run a real harness and pass it with `--quality-from` to get a cell that can support one. Quality is measured at 2K context and reported UNKNOWN for narrow quants at >=64K, where published losses reach 59% (arXiv:2505.20276). TP and PP throughput are comms-modelled *estimates*, not measured, and can't be combined in one plan. Queueing is analytical (variance-aware), not a discrete-event simulator. The bundled corpus is fit primarily on one rig (RTX 4080 12GB); other GPUs scale from bandwidth/compute until you `measure` on yours. How far that scaling misses is now published rather than assumed: against third-party benchmarks the roofline is optimistic on HBM parts (median +58% decode) and pessimistic on GDDR cards (median -36%), and its TTFT errors run the other way ([TR147](outputs/publish_ready/reports/Technical_Report_147.md)). Unified-memory devices plan on a share of the pool that you state (`--unified-memory-fraction`, no default). The OS reserve is your figure, one bandwidth serves the CPU and GPU so decode is an upper bound, and no vendor publishes their GPU FP16 or a per-device price. Engine availability per platform is enforced from each engine's own docs, but the deployment OS is an input (`--platform`, default linux), not something the planner can see. Where an engine's docs are silent on a platform the plan warns rather than refuses. A user-supplied card has no known vendor, so its engine support is not checked, and every candidate says so. `--hardware auto` reads the local GPU through `doctor`'s per-vendor probes and plans for this machine's OS unless `--platform` says otherwise. On a Mac, auto matches the chip and its installed memory to the variant sold in that configuration. MCP supports stdio and an opt-in loopback Streamable HTTP transport in the reviewed source. HTTP is offline by default, has bounded sessions/workers and is not a publicly hosted service; timed-out synchronous work occupies its worker until it finishes.
 
 ---
 
@@ -577,7 +605,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **2,678 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **3,440 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-cli-readme/README.md) collected 3,440 cases: 3,438 passed and two skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

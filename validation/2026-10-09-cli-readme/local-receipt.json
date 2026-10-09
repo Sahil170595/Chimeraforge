@@ -1,0 +1,224 @@
+{
+  "dated_utc": "2026-10-09",
+  "source_code_head": "97595a4b53d2439c4af25655362b017455a824ab",
+  "source_generation_code_changed": false,
+  "suite_command": "python -m pytest --junitxml=unit.xml",
+  "independent_xml": {
+    "cases": 3440,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 2,
+    "passed": 3438
+  },
+  "pytest_summary_independent": "3438 passed, 2 skipped, 14 warnings",
+  "parsed_commands": 66,
+  "source_documents": {
+    "README.md": {
+      "working_sha256": "ca0ae00671cf6fe9b3b02953afb2c166814c4ee3b1723c737b167e5416afadca",
+      "canonical_lf_sha256": "d6121b131b69d63d681902694b87cdd2e65e65e0641c680623ce8986baa060e5",
+      "conversion": "Exact CRLF to LF only"
+    },
+    "docs/deployment.md": {
+      "working_sha256": "0ed0db833b1232bf8e8187ca3299c82f4fbac2d84e5d4467ae7627368efdfd3d",
+      "canonical_lf_sha256": "f9e17ca5798c5ac853a335022baf83acda20652c358df639f325a33c078c3740",
+      "conversion": "Exact CRLF to LF only"
+    }
+  },
+  "functional_steps": [
+    {
+      "argv": [
+        "plan",
+        "--model",
+        "Qwen/Qwen2.5-1.5B-Instruct",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--ttft-slo",
+        "500",
+        "--tpot-slo",
+        "50",
+        "--save",
+        "C:\\tmp\\cf-readme-final-20261009\\plan.json",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout_file": "0-stdout.txt",
+      "stderr_file": "0-stderr.txt"
+    },
+    {
+      "argv": [
+        "plan",
+        "--model-size",
+        "3b",
+        "--hardware",
+        "RTX 4090 24GB",
+        "--no-network",
+        "--save",
+        "C:\\tmp\\cf-readme-final-20261009\\offline-plan.json",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout_file": "1-stdout.txt",
+      "stderr_file": "1-stderr.txt"
+    },
+    {
+      "argv": [
+        "check",
+        "C:\\tmp\\cf-readme-final-20261009\\offline-plan.json",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout_file": "2-stdout.txt",
+      "stderr_file": "2-stderr.txt"
+    },
+    {
+      "argv": [
+        "deploy",
+        "--plan",
+        "C:\\tmp\\cf-readme-final-20261009\\plan.json",
+        "--candidate-index",
+        "15",
+        "--format",
+        "compose",
+        "--image",
+        "vllm/vllm-openai:v0.30.0",
+        "--out",
+        "C:\\tmp\\cf-readme-final-20261009\\compose.yaml"
+      ],
+      "exit_code": 0,
+      "selected_from_actual_artifact": 15,
+      "stdout_file": "deploy-stdout.txt",
+      "stderr_file": "deploy-stderr.txt"
+    }
+  ],
+  "files": [
+    {
+      "path": "validation/2026-10-09-cli-readme/0-stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/0-stdout.txt",
+      "sha256": "d7636b7193e3af3fbe38991e4d1783ef520e71bbec05df74abda010d374b4f0d",
+      "size_bytes": 62347,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/1-stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/1-stdout.txt",
+      "sha256": "d5283a0f153e86c4d372b686fabe4d351550f95b615556b344701162e3ad1f8f",
+      "size_bytes": 213351,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/2-stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/2-stdout.txt",
+      "sha256": "76174044c1cf3aa657522ad99e32a549dee65142ac163597087b5f104f9952f8",
+      "size_bytes": 463939,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/compose.yaml",
+      "sha256": "e368a29aba6ce65c00bd873b2c820948a5a7869c7192fe070312eadb5b97d488",
+      "size_bytes": 1267,
+      "location": "current_tree",
+      "archive_commit": null
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/deploy-stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/deploy-stdout.txt",
+      "sha256": "535ba3dc2c93b890a9df16afe78e590df897d914b41a3ad45ef0f9234d29afd4",
+      "size_bytes": 1208,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/functional.json",
+      "sha256": "a537e1ac569051a53210e86a322747aa0ce15452c9cab332c8e85612a3441b3c",
+      "size_bytes": 1370,
+      "location": "current_tree",
+      "archive_commit": null
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/offline-plan.json",
+      "sha256": "78606d3b89f7c0b41e60680c096d85a9fca06656332b757c7220a959d30ac34c",
+      "size_bytes": 256679,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/parser.json",
+      "sha256": "9a6683ec2b8057dd7e96ffc6fe4ee563f2b166c9fc057e578c918f2703444a41",
+      "size_bytes": 21374,
+      "location": "current_tree",
+      "archive_commit": null
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/plan.json",
+      "sha256": "689056afbdbc67865e7f4ecdf187c4a4653c10a5ff71517769335e53e12a2487",
+      "size_bytes": 77925,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/unit.log",
+      "sha256": "ba10952ffb16ee1c3d2b0f217823bac9cfaea9cc8d6f67cc3217dc634dd7f2ad",
+      "size_bytes": 11587,
+      "location": "current_tree",
+      "archive_commit": null
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/unit.xml",
+      "sha256": "b4f87b5f7ef3fcf86e8768008eadd5c4b66e3033fb0a6e4b17caaa27424eff45",
+      "size_bytes": 464680,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/readme-conventions-final.log",
+      "sha256": "724fd83a2e56b381b39425da750d1c407862dfc75bf77b5619bd417c02fbdf7b",
+      "size_bytes": 1544,
+      "location": "current_tree",
+      "archive_commit": null
+    }
+  ],
+  "limitations": [
+    "Parser validation does not execute callbacks. Live bench/monitor, MCP clients and GPU engines were not run in this documentation check.",
+    "Model planning fetched metadata only; no weights or new dependencies were installed. Named GPU results are predictions, not local hardware observations.",
+    "The Compose image was accepted as an explicit template input; it was not downloaded or launched.",
+    "Released 0.51.0 and the open reviewed source stack are distinguished in the README."
+  ],
+  "complete_run_archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1",
+  "complete_run_archive_url": "https://github.com/Sahil170595/Chimeraforge/tree/c7b39c32a8f768eb1828f5ecab2db374708e72a1/validation/2026-10-09-cli-readme",
+  "evidence_scope": "Full outputs and independently counted XML stay in the explicit immutable archive commit; compact receipts/log/Compose remain in this documentation diff.",
+  "final_test_count_copy_check": {
+    "command": "python -m pytest tests/test_repo_conventions.py -q",
+    "cases": 252,
+    "passed": 252,
+    "failed": 0,
+    "log": "readme-conventions-final.log",
+    "scope": "After correcting only the advertised collected-case count; code and command examples unchanged."
+  }
+}
