@@ -785,3 +785,44 @@ def test_hardware_price_and_source_are_not_observed_physical_configuration(saved
         report.to_dict()["plan_binding"]["configuration"]["fields"]["hardware"]["state"]
         == "matched"
     )
+
+
+@pytest.mark.parametrize("field", ["price_and_source", "partial_hardware", "partial_model"])
+def test_nested_observation_stability_does_not_invent_changes_from_metadata_enrichment(
+    saved, monkeypatch, field
+):
+    from chimeraforge import monitor
+    from chimeraforge.api import monitor_plan
+    from chimeraforge.bench import serving
+
+    context = saved[0].to_dict()["result"]["replay_context"]
+    hardware = context["hardware"]["effective"]
+    before = observe_scene(saved)
+    after = observe_scene(saved)
+    if field == "price_and_source":
+        before["hardware"] = dict(hardware, cost_per_hour=1, captured_at="A")
+        after["hardware"] = dict(hardware, cost_per_hour=2, captured_at="B")
+    elif field == "partial_hardware":
+        before["hardware"] = {
+            name: hardware[name] for name in ("name", "vram_gb", "bandwidth_gbps")
+        }
+        after["hardware"] = hardware
+    else:
+        before["model_spec"] = {"n_layers": 28}
+        after["model_spec"] = dict(context["model_specs"][MODEL], vocab_size=128256)
+    snapshots = iter(pair())
+    observations = iter([before, after])
+    monkeypatch.setattr(monitor, "_fetch", lambda *args: next(snapshots))
+
+    async def observe(*args):
+        return next(observations)
+
+    monkeypatch.setattr(serving, "observe_backend", observe)
+    report = monitor_plan(
+        saved[0],
+        MonitorRequest("vllm", "http://serving", MODEL, interval=0.01),
+        candidate_index=saved[1],
+    )
+    assert report.outcome == "pass" and report.exit_code == 0
+    stability = report.to_dict()["plan_binding"]["configuration"]["fields"]["serving_stability"]
+    assert stability["state"] == "unavailable" and stability["detail"]["changed_fields"] == []

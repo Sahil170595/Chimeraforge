@@ -333,6 +333,114 @@ def test_benchmark_partial_observation_never_becomes_known_mismatch_or_accuracy_
     assert report["audit"]["metrics"]["base_decode_tps"]["state"] == "unverified"
 
 
+@pytest.mark.parametrize("architecture", ["moe", "mla"])
+def test_dense_saved_shape_cannot_qualify_introduced_architecture(monkeypatch, architecture):
+    from chimeraforge.planner.resolver import spec_from_hf
+
+    config = {
+        "num_hidden_layers": 28,
+        "num_attention_heads": 24,
+        "num_key_value_heads": 8,
+        "hidden_size": 3072,
+        "vocab_size": 128256,
+    }
+    expected = spec_from_hf("org/model", config, 3.21)
+    extra = (
+        {"num_local_experts": 8, "num_experts_per_tok": 2, "intermediate_size": 512}
+        if architecture == "moe"
+        else {"kv_lora_rank": 512, "qk_rope_head_dim": 64}
+    )
+    actual = spec_from_hf("org/model", dict(config, **extra), 3.21)
+    if architecture == "moe":
+        assert (
+            not expected.is_moe
+            and actual.is_moe
+            and actual.active_params_b < expected.active_params_b
+        )
+    else:
+        assert expected.kv_lora_rank is None and actual.kv_lora_rank == 512
+    monkeypatch.setattr(
+        "chimeraforge.planner.service.resolve_spec", lambda *args, **kwargs: expected
+    )
+    saved = plan(
+        PlanRequest(
+            models=["org/model"],
+            allow_network=False,
+            quality_target=0,
+            platform="windows",
+            budget=100000,
+            avg_tokens=4,
+            prompt_tokens=8,
+        )
+    )
+    backend = ObservedBackend(saved, device="gpu")
+    original = backend.observe_serving
+
+    async def observe(model):
+        data = await original(model)
+        data.update(
+            tensor_parallel=1,
+            pipeline_parallel=1,
+            replicas=saved.candidate().n_agents,
+            hardware=saved.to_dict()["result"]["replay_context"]["hardware"]["effective"],
+            model_spec=asdict(actual),
+            prefix_cache=False,
+        )
+        return data
+
+    backend.observe_serving = observe
+    report = execute(saved, backend, monkeypatch)
+    assert report["binding"]["model_geometry"]["state"] == "mismatch"
+    assert report["audit"]["metrics"]["base_decode_tps"]["state"] == "unverified"
+
+
+@pytest.mark.parametrize("field", ["price_and_source", "partial_hardware", "partial_model"])
+def test_benchmark_nested_stability_retains_unknown_enrichment_without_false_change(
+    monkeypatch, field
+):
+    saved = saved_plan()
+    backend = ObservedBackend(saved, device="gpu")
+    original = backend.observe_serving
+    context = saved.to_dict()["result"]["replay_context"]
+    calls = []
+
+    async def observe(model):
+        data = await original(model)
+        calls.append(True)
+        first = len(calls) == 1
+        hardware = context["hardware"]["effective"]
+        if field == "price_and_source":
+            data["hardware"] = dict(
+                hardware, cost_per_hour=1 if first else 2, captured_at="A" if first else "B"
+            )
+        elif field == "partial_hardware":
+            data["hardware"] = (
+                {name: hardware[name] for name in ("name", "vram_gb", "bandwidth_gbps")}
+                if first
+                else hardware
+            )
+        else:
+            data["model_spec"] = (
+                {"n_layers": context["model_specs"][model]["n_layers"]}
+                if first
+                else dict(context["model_specs"][model], hidden_size=3072, vocab_size=128256)
+            )
+        return data
+
+    backend.observe_serving = observe
+    report = execute(saved, backend, monkeypatch)
+    stability = report["binding"]["serving_stability"]
+    assert stability["state"] == "unavailable" and stability["detail"]["changed_fields"] == []
+
+
+def test_benchmark_malformed_scalar_receipt_discards_private_nested_configuration(monkeypatch):
+    saved = saved_plan()
+    backend = ObservedBackend(saved, device="gpu", quant={"private": "nested-private-token"})
+    report = execute(saved, backend, monkeypatch)
+    assert report["binding"]["quant"]["state"] == "unavailable"
+    assert "nested-private-token" not in json.dumps(report)
+
+
 @pytest.mark.parametrize("modifier", ["lora", "offload"])
 def test_modified_saved_decode_requires_real_modifier_binding(monkeypatch, modifier):
     from chimeraforge.api import benchmark_plan

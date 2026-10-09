@@ -145,7 +145,10 @@ This remains a histogram policy observation, not a calibrated prediction audit.
 Partial matching hardware/model facts remain unavailable rather than conflicting
 with missing values. A newly observed dimension cannot contradict an unspecified
 saved dimension; a known disagreement still does. Hardware price and provenance
-dates do not define physical serving geometry. Completed native windows are
+dates do not define physical serving geometry.
+Documented dense/standard absence is distinct from unknown hidden/vocab
+dimensions; introduced MoE/MLA structure cannot be a matched geometry.
+Completed native windows are
 delivered to `on_window` even if post-window metadata is cancelled. The CLI refuses
 Prometheus output that resolves to the saved input artifact.
 

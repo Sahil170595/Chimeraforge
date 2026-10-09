@@ -147,6 +147,8 @@ Loaded GPU bytes or a GPU name do not establish full remote GPU geometry.
 Partial matching geometry remains unverified; only known contradictions are
 mismatches. Newly observed dimensions cannot contradict unspecified saved
 dimensions. Hardware cost and source dates are excluded from physical geometry.
+Documented dense/standard absence is normalized separately from unknown
+dimensions; introduced MoE/MLA structure remains a disagreement.
 
 The native-unit audit keeps modeled values, actual measurements and a labeled
 `raw_delta` even when equivalence cannot be established. That arithmetic is not
