@@ -31,6 +31,15 @@ size class, `--model org/concrete-model` can supply an unquantized HF identity. 
 override retains the size-class prediction and an explicit note; resolving and
 replanning the actual checkpoint provides its actual geometry.
 
+The unreleased [checkpoint identity](planning-api.md#checkpoint-identity) feature
+adds the resolved HF commit to vLLM/TGI/SGLang commands through their native
+`--revision` option, including their default same-repository tokenizer. Branches
+and tags are resolved before planning; exports use the saved commit, with no Hub
+call. Config-byte and declared LFS receipts do not verify downloaded or served
+weights/tokenizer bytes. Ollama conversion cannot retain an HF pin and is
+refused. Older unpinned HF snapshots still export with a missing-binding note;
+replan online to bind a commit.
+
 | Format | Supported target | Required additional input |
 | --- | --- | --- |
 | `compose` | Linux NVIDIA CUDA, vLLM/SGLang/TGI/Ollama | Explicit engine image tag/digest |

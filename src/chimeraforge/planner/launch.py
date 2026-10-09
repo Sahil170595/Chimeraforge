@@ -378,24 +378,36 @@ def build_launch_command(
         ValueError: if ``candidate.backend`` is not a known serving backend.
     """
     backend = candidate.backend
+    if spec is not None and spec.checkpoint and backend == "ollama":
+        raise ValueError(
+            "Ollama cannot preserve a Hugging Face checkpoint revision; "
+            "resolve an Ollama tag instead"
+        )
     if backend == "vllm":
-        return _build_vllm(
+        result = _build_vllm(
             candidate,
             spec,
             context_length=context_length,
             kv_quant=kv_quant,
             max_num_batched_tokens=max_num_batched_tokens,
         )
-    if backend == "ollama":
-        return _build_ollama(candidate, spec, context_length=context_length, kv_quant=kv_quant)
-    if backend == "sglang":
-        return _build_sglang(candidate, spec, context_length=context_length, kv_quant=kv_quant)
-    if backend == "tgi":
-        return _build_tgi(
+    elif backend == "ollama":
+        result = _build_ollama(candidate, spec, context_length=context_length, kv_quant=kv_quant)
+    elif backend == "sglang":
+        result = _build_sglang(candidate, spec, context_length=context_length, kv_quant=kv_quant)
+    elif backend == "tgi":
+        result = _build_tgi(
             candidate,
             spec,
             context_length=context_length,
             prompt_tokens=prompt_tokens,
             kv_quant=kv_quant,
         )
-    raise ValueError(f"no launch-command template for backend {backend!r}")
+    else:
+        raise ValueError(f"no launch-command template for backend {backend!r}")
+    if spec is not None and spec.checkpoint:
+        result.command += " \\\n  --revision " + spec.checkpoint["resolved_revision"]
+        result.notes.append(
+            "Pinned Hub metadata is not downloaded/served weight-byte or tokenizer proof."
+        )
+    return result

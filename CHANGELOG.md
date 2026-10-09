@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Immutable Hugging Face checkpoint metadata through resolution, saved plans, deployment export and recheck. Online resolution establishes one commit before reading config; receipts bind consumed config bytes and declared weight metadata without downloading weights.
+- `plan --revision REF` for one model, repeated `--revision MODEL=REF` for multiple models, and Python `PlanRequest.model_revisions` / `resolve_spec(hf_revision=...)`. Explicit revisions refuse unavailable offline targets rather than substitute another cache or registry approximation.
+- vLLM, TGI and SGLang deployment/launch commands retain the resolved commit. Ollama cannot represent an HF revision and refuses that conversion.
+- Offline checkpoint rechecks distinguish producing metadata, unknown current moving refs and unverified served weights; `check --network` explicitly refreshes Hub metadata and requested-ref state. Existing v1/v2 snapshots remain loadable without inventing missing identity.
+
 ## [0.51.0] - 2026-10-08
 
 ### Added

@@ -35,6 +35,21 @@ def test_installed_origin_rejects_checkout_and_editable_installs(tmp_path):
     )
 
 
+def test_checkpoint_seed_entrypoint_imports_under_actual_isolated_python(tmp_path):
+    import subprocess
+
+    script = Path(__file__).resolve().parents[1] / "scripts" / "ci_checkpoint_identity.py"
+    result = subprocess.run(
+        [sys.executable, "-I", str(script), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--seed" in result.stdout
+
+
 def test_mcp_http_acceptance_exercises_real_cli_and_closes_owned_process(tmp_path):
     pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
     from chimeraforge import __version__
@@ -146,3 +161,43 @@ def test_mutation_anchor_fails_closed_when_production_code_changes():
     with pytest.raises(ValueError, match="exactly once"):
         script.replace_once("anchor anchor", "anchor", "mutation")
     assert script.replace_once("one anchor only", "anchor", "mutation") == "one mutation only"
+
+
+@pytest.mark.parametrize("invalid", ["weight-proof", "lost-pin", "changed-checkpoint"])
+def test_checkpoint_acceptance_refuses_misleading_identity_evidence(monkeypatch, tmp_path, invalid):
+    import copy
+    import json
+
+    from chimeraforge.api import PlanRequest, check_plan, plan
+    from chimeraforge.deploy import export_deployment
+
+    script = load_script("ci_checkpoint_identity")
+    monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
+    seed = script.seed(live=False)
+    artifact = plan(
+        PlanRequest(
+            models=[seed["repo"]],
+            model_revisions={seed["repo"]: seed["commit"]},
+            platform="linux",
+            allow_network=False,
+            quality_target=0,
+            budget=100000,
+        )
+    )
+    data, report = artifact.to_dict(), check_plan(artifact).to_dict()
+    index = script.select_candidate(data)
+    exported = json.loads(
+        export_deployment(
+            artifact, format="compose", candidate_index=index, image="test/image:1"
+        ).content
+    )
+    script.validate(seed, data, report, exported)
+    data, report, exported = copy.deepcopy((data, report, exported))
+    if invalid == "weight-proof":
+        data["result"]["specs"][seed["repo"]]["checkpoint"]["weight_bytes_verified"] = True
+    elif invalid == "lost-pin":
+        exported["services"]["inference"]["command"].remove("--revision")
+    else:
+        report["checkpoint_view"][seed["repo"]]["pinned_metadata"]["state"] = "changed"
+    with pytest.raises(AssertionError):
+        script.validate(seed, data, report, exported)

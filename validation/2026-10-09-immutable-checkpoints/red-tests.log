@@ -1,0 +1,28 @@
+FFFFFFFFFFFFFFFFFFF.FFFFFF                                               [100%]
+=========================== short test summary info ===========================
+FAILED tests/test_checkpoint_identity.py::test_main_is_resolved_once_before_config_and_weights
+FAILED tests/test_checkpoint_identity.py::test_requested_revision_is_url_encoded_and_never_config_ref
+FAILED tests/test_checkpoint_identity.py::test_unbound_commit_refused_before_config[None]
+FAILED tests/test_checkpoint_identity.py::test_unbound_commit_refused_before_config[main]
+FAILED tests/test_checkpoint_identity.py::test_unbound_commit_refused_before_config[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+FAILED tests/test_checkpoint_identity.py::test_unbound_commit_refused_before_config[gggggggggggggggggggggggggggggggggggggggg]
+FAILED tests/test_checkpoint_identity.py::test_config_blob_mismatch_refused
+FAILED tests/test_checkpoint_identity.py::test_explicit_pin_not_replaced_by_different_cached_ref
+FAILED tests/test_checkpoint_identity.py::test_request_revision_scope_is_validated[options0]
+FAILED tests/test_checkpoint_identity.py::test_request_revision_scope_is_validated[options1]
+FAILED tests/test_checkpoint_identity.py::test_request_revision_scope_is_validated[options2]
+FAILED tests/test_checkpoint_identity.py::test_request_revision_scope_is_validated[options3]
+FAILED tests/test_checkpoint_identity.py::test_plan_roundtrip_binds_consumed_checkpoint_and_omits_token
+FAILED tests/test_checkpoint_identity.py::test_offline_check_never_contacts_hub_and_marks_alias_unknown
+FAILED tests/test_checkpoint_identity.py::test_network_check_reports_moving_alias_without_substitution
+FAILED tests/test_checkpoint_identity.py::test_deployment_and_launch_emit_resolved_commit[vllm]
+FAILED tests/test_checkpoint_identity.py::test_deployment_and_launch_emit_resolved_commit[tgi]
+FAILED tests/test_checkpoint_identity.py::test_deployment_and_launch_emit_resolved_commit[sglang]
+FAILED tests/test_checkpoint_identity.py::test_ollama_launch_cannot_discard_checkpoint_pin
+FAILED tests/test_checkpoint_identity.py::test_resigned_malformed_checkpoint_refused[revision]
+FAILED tests/test_checkpoint_identity.py::test_resigned_malformed_checkpoint_refused[hash]
+FAILED tests/test_checkpoint_identity.py::test_resigned_malformed_checkpoint_refused[weight-proof]
+FAILED tests/test_checkpoint_identity.py::test_resigned_malformed_checkpoint_refused[extra]
+FAILED tests/test_checkpoint_identity.py::test_resigned_malformed_checkpoint_refused[repo]
+FAILED tests/test_checkpoint_identity.py::test_public_cli_revision_and_check
+25 failed, 1 passed in 1.48s

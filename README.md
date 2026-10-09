@@ -80,6 +80,10 @@ plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
 pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
 ```
 
+The checkpoint options below are a further **unreleased source feature**. They
+require this feature's checkout; neither PyPI 0.51.0 nor the older source pin
+above contains them. From this checkout, install with `pip install '.[mcp]'`.
+
 ## Quickstart
 
 ```bash
@@ -106,6 +110,31 @@ chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --no-network --save offline-plan.json
 chimeraforge check offline-plan.json --json
 ```
+
+### Keep one Hub checkpoint through planning and export
+
+```bash
+# Metadata/config only: no model weights are downloaded by the planner
+chimeraforge plan --model HuggingFaceTB/SmolLM2-135M-Instruct \
+  --revision 12fd25f77366fa6b3b4b768ec3050bf629380bac \
+  --hardware "RTX 4080 12GB" --platform linux --request-rate 0.01 \
+  --quality-target 0 --budget 100000 --save checkpoint-plan.json --json
+chimeraforge check checkpoint-plan.json --json           # offline
+chimeraforge check checkpoint-plan.json --network --json # explicit Hub inspection
+```
+
+Branches and tags are accepted too; resolution first establishes one immutable
+commit, then reads that commit's config and declared file metadata. Repeat
+`--revision MODEL=REF` when planning multiple HF models. A cached moving ref is
+a dated producing observation, not proof of its current state.
+
+Select a supported saved candidate before [deployment export](docs/deployment.md).
+vLLM, TGI and SGLang commands carry `--revision` with the resolved commit; an
+Ollama conversion cannot retain that pin and is refused. The receipt hashes the
+config bytes actually consumed and records **declared** weight metadata. It
+does not verify downloaded weight/tokenizer bytes or identify a running server.
+Legacy plans still load with their original identity gaps. See the
+[Python checkpoint loop](docs/planning-api.md#checkpoint-identity).
 
 ---
 
@@ -605,7 +634,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **3,440 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-cli-readme/README.md) collected 3,440 cases: 3,438 passed and two skipped.
+- **3,498 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-checkpoint-isolated-seed/README.md) collected 3,498 cases: 3,496 passed and two skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

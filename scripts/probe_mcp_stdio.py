@@ -30,7 +30,7 @@ def tool_payload(result) -> dict:
 
 
 async def exercise(
-    command: list[str], timeout: float, cwd=None, env=None
+    command: list[str], timeout: float, cwd=None, env=None, checkpoint_request: dict | None = None
 ) -> tuple[dict, list[str]]:
     """Initialize, discover, invoke, and reject invalid requests over stdio."""
     from mcp import ClientSession, StdioServerParameters
@@ -66,6 +66,35 @@ async def exercise(
             )
             assert plan["ok"] and plan["recommended"] and plan["recommended"]["provenance"]
             assert plan["recommended"]["total_throughput_tps"] > 0
+            if checkpoint_request is not None:
+                repo, commit = checkpoint_request["repo"], checkpoint_request["commit"]
+                bound = tool_payload(
+                    await session.call_tool(
+                        "chimeraforge_plan",
+                        {
+                            "hardware": "RTX 4080 12GB",
+                            "model": repo,
+                            "model_revisions": {repo: commit},
+                            "allow_network": False,
+                            "quality_target": 0,
+                            "request_rate": 0.01,
+                        },
+                    )
+                )
+                assert bound["ok"] and bound["recommended"]
+                assert bound["model_checkpoints"][repo]["resolved_revision"] == commit
+                assert bound["model_checkpoints"][repo]["weight_bytes_verified"] is False
+                resolved = tool_payload(
+                    await session.call_tool(
+                        "chimeraforge_resolve_model",
+                        {
+                            "model": repo,
+                            "hf_revision": commit,
+                            "allow_network": False,
+                        },
+                    )
+                )
+                assert resolved["ok"] and resolved["checkpoint"]["resolved_revision"] == commit
             error = tool_payload(
                 await session.call_tool(
                     "chimeraforge_plan",
@@ -84,12 +113,19 @@ async def exercise(
 
 
 def probe(
-    command: list[str], timeout: float = 120, *, cwd=None, env=None
+    command: list[str],
+    timeout: float = 120,
+    *,
+    cwd=None,
+    env=None,
+    checkpoint_request: dict | None = None,
 ) -> tuple[dict, list[str]]:
     """Bound the entire client/server conversation, including silent servers."""
 
     async def bounded():
-        return await asyncio.wait_for(exercise(command, timeout, cwd, env), timeout=timeout)
+        return await asyncio.wait_for(
+            exercise(command, timeout, cwd, env, checkpoint_request), timeout=timeout
+        )
 
     return asyncio.run(bounded())
 
