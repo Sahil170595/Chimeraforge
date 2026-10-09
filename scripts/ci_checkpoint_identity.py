@@ -13,8 +13,6 @@ from types import SimpleNamespace
 
 import httpx
 
-from ci_installed_acceptance import assert_installed_origin, run_cli
-
 HF_REPO = "HuggingFaceTB/SmolLM2-135M-Instruct"
 HF_COMMIT = "12fd25f77366fa6b3b4b768ec3050bf629380bac"
 HF_WEIGHT_DECLARATION = "5af571cbf074e6d21a03528d2330792e532ca608f24ac70a143f6b369968ab8c"
@@ -124,6 +122,8 @@ def validate(observation: dict, data: dict, checked: dict, compose: dict) -> Non
 
 def accept(cwd: Path, env: dict, checkout: Path, *, live: bool = False) -> dict:
     """Exercise actual isolated installed CLI save/check/export with bounded metadata."""
+    from ci_installed_acceptance import assert_installed_origin, run_cli
+
     env = {key: value for key, value in env.items() if key not in ("HF_TOKEN", "PYTHONPATH")}
     process = subprocess.run(
         [

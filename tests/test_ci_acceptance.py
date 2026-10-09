@@ -35,6 +35,21 @@ def test_installed_origin_rejects_checkout_and_editable_installs(tmp_path):
     )
 
 
+def test_checkpoint_seed_entrypoint_imports_under_actual_isolated_python(tmp_path):
+    import subprocess
+
+    script = Path(__file__).resolve().parents[1] / "scripts" / "ci_checkpoint_identity.py"
+    result = subprocess.run(
+        [sys.executable, "-I", str(script), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--seed" in result.stdout
+
+
 def test_mcp_http_acceptance_exercises_real_cli_and_closes_owned_process(tmp_path):
     pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
     from chimeraforge import __version__
