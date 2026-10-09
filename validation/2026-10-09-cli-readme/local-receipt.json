@@ -14,8 +14,8 @@
   "parsed_commands": 66,
   "source_documents": {
     "README.md": {
-      "working_sha256": "7d489ff9f4c8bdf39e0247dbd7d0c8f8f3416b5c2d31f7c77d98892c4c271fb2",
-      "canonical_lf_sha256": "4549c58d35017852344406815377631d4475ba16e1706c85f6722aa3e4ddbd6e",
+      "working_sha256": "ca0ae00671cf6fe9b3b02953afb2c166814c4ee3b1723c737b167e5416afadca",
+      "canonical_lf_sha256": "d6121b131b69d63d681902694b87cdd2e65e65e0641c680623ce8986baa060e5",
       "conversion": "Exact CRLF to LF only"
     },
     "docs/deployment.md": {
@@ -170,7 +170,7 @@
     },
     {
       "path": "validation/2026-10-09-cli-readme/parser.json",
-      "sha256": "0db7aa653c4c34293eaff949ca50b7642410730b04e72d138f337042e03d6a9a",
+      "sha256": "9a6683ec2b8057dd7e96ffc6fe4ee563f2b166c9fc057e578c918f2703444a41",
       "size_bytes": 21374,
       "location": "current_tree",
       "archive_commit": null
@@ -195,6 +195,13 @@
       "size_bytes": 464680,
       "location": "immutable_archive",
       "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
+    },
+    {
+      "path": "validation/2026-10-09-cli-readme/readme-conventions-final.log",
+      "sha256": "724fd83a2e56b381b39425da750d1c407862dfc75bf77b5619bd417c02fbdf7b",
+      "size_bytes": 1544,
+      "location": "current_tree",
+      "archive_commit": null
     }
   ],
   "limitations": [
@@ -205,5 +212,13 @@
   ],
   "complete_run_archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1",
   "complete_run_archive_url": "https://github.com/Sahil170595/Chimeraforge/tree/c7b39c32a8f768eb1828f5ecab2db374708e72a1/validation/2026-10-09-cli-readme",
-  "evidence_scope": "Full outputs and independently counted XML stay in the explicit immutable archive commit; compact receipts/log/Compose remain in this documentation diff."
+  "evidence_scope": "Full outputs and independently counted XML stay in the explicit immutable archive commit; compact receipts/log/Compose remain in this documentation diff.",
+  "final_test_count_copy_check": {
+    "command": "python -m pytest tests/test_repo_conventions.py -q",
+    "cases": 252,
+    "passed": 252,
+    "failed": 0,
+    "log": "readme-conventions-final.log",
+    "scope": "After correcting only the advertised collected-case count; code and command examples unchanged."
+  }
 }

@@ -967,8 +967,8 @@
   "scope": "Parser/flags only; callbacks not run. Functional receipt separately covers actual plans, check, export; no serving GPU, bench/monitor network or MCP client execution claimed.",
   "source_document_sha256": {
     "README.md": {
-      "working_sha256": "7d489ff9f4c8bdf39e0247dbd7d0c8f8f3416b5c2d31f7c77d98892c4c271fb2",
-      "canonical_lf_sha256": "4549c58d35017852344406815377631d4475ba16e1706c85f6722aa3e4ddbd6e",
+      "working_sha256": "ca0ae00671cf6fe9b3b02953afb2c166814c4ee3b1723c737b167e5416afadca",
+      "canonical_lf_sha256": "d6121b131b69d63d681902694b87cdd2e65e65e0641c680623ce8986baa060e5",
       "conversion": "Exact CRLF to LF only"
     },
     "docs/deployment.md": {
