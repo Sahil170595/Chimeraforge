@@ -394,6 +394,8 @@ chimeraforge contribute export results/bench_*.json --out contributions/   # one
 chimeraforge contribute verify contributions/*.json              # schema + content hash
 chimeraforge contribute import theirs.contribution.json          # into the local quarantine
 chimeraforge contribute list
+chimeraforge contribute review theirs.contribution.json --decision retain --reason "Replay needed" --json
+chimeraforge contribute replay theirs.contribution.json --prompt "Explain KV caching briefly." --output-tokens 128 --runs 3 --base-url http://localhost:11434 --out replay.json --json
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --contributions
 ```
 
@@ -403,6 +405,26 @@ The first step toward a shared measured corpus.
 - **What export refuses:** a result with no GPU name, fewer than 3 runs, unknown backend-default precision, or a quant sweep label that was not applied. `--quant` declares the served checkpoint's precision; it does not change the server's loaded model. Invalid fingerprints, timestamps, samples, and inconsistent derived statistics are also refused. A decode CV above 5% is flagged as unstable but kept.
 - **What the id proves:** contributions are **unsigned**. The id shows the file is unaltered since export, not who ran it or that the numbers are real. That is why imports go into a local quarantine, and nothing there ever reaches the bundled corpus or the `measure` corpus.
 - **How `plan --contributions` uses them:** only for an exact model, engine, quant and GPU match, at the median of the matching contributions. The number is labelled `contributed` (`*`), a class below `extrapolated`, along with the contribution ids and the engine/driver clusters it came from. This project's own measured row still wins on the reference rig.
+
+`review` records an unsigned `pending` / `retain` / `reject` disposition and reason,
+bound to the original full content id and envelope digest. It reads a file or a
+full quarantined id and preserves the source, quarantine and corpus. Disposition
+receipts never certify a producer or alter planner eligibility.
+
+`replay` executes the existing benchmark runner against an explicitly contacted
+endpoint, requiring a prompt and output-token cap. It records applied workload,
+actual tokens, all requested/successful/failed counts, native samples and
+before/after serving metadata. Known CPU, engine, quant, model or configuration
+disagreements remain distinct from unavailable evidence. GPU names are canonicalized
+using observed memory; a client NVML GPU never proves remote execution.
+
+Current contribution v1 omits the original prompt/options/concurrency, immutable
+model and remote configuration bindings. Native decode/TTFT differences therefore
+remain arithmetic with unverified replay equivalence. Exit 0 means a completed
+review or replay operation without a known mismatch, **not a passed reproduction**.
+Replay exits 1 for known mismatch, failed/partial execution, and 2 for malformed
+input/options or receipt output errors. New receipts cannot overwrite contribution
+inputs or be written into quarantine; their endpoint URLs omit credentials/query.
 
 ### `catalog` -- local model catalog
 

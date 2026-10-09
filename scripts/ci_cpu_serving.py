@@ -260,6 +260,118 @@ def accept_saved_plan(client: httpx.Client, cwd: Path, env: dict) -> dict:
     }
 
 
+def validate_contribution_replay(report: dict, source: dict, runs: int) -> None:
+    """Refuse trust/accuracy claims from replaying an unsigned GPU claim on CPU."""
+    assert report["kind"] == "chimeraforge.contribution-replay"
+    assert report["contribution"]["id"] == source["id"]
+    assert report["contribution"]["attestation"]["signed"] is False
+    assert report["trust"] == {
+        "state": "unsigned_unverified",
+        "changes_quarantine": False,
+        "changes_corpus": False,
+        "authenticates_producer": False,
+    }
+    assert report["replay_equivalence"]["state"] == "unverified"
+    assert report["gpu_eligibility"]["state"] == "ineligible" and report["exit_code"] == 1
+    execution = report["execution"]
+    assert execution["requested_count"] == execution["successful_count"] == runs
+    assert execution["failed_count"] == 0 and execution["serving_after"]["device"] == "cpu"
+    samples = report["measurement"]["individual_runs"]
+    assert len(samples) == runs and all(row["tokens_generated"] > 0 for row in samples)
+    for name, unit in (("decode_tps", "tokens/second"), ("ttft_ms", "ms")):
+        metric = report["comparison"][name]
+        assert (
+            metric["state"] == "unverified" and metric["delta"] is None and metric["unit"] == unit
+        )
+        assert metric["original_count"] == len(source["measurements"][name])
+        assert metric["replayed_count"] == runs and math.isfinite(metric["replayed"])
+        assert metric["raw_delta"] == metric["replayed"] - metric["original"]
+
+
+def accept_contribution_replay(client: httpx.Client, cwd: Path, env: dict, cpu_bench: dict) -> dict:
+    """Execute installed replay against real CPU serving; fixture GPU claims stay unsigned."""
+    from chimeraforge.contrib import ContribError, build_contribution
+
+    assert cpu_bench["environment"]["gpu_name"] is None
+    try:
+        build_contribution(cpu_bench)
+    except ContribError as exc:
+        assert "names no GPU" in str(exc), (
+            "CPU export refusal came from an unrelated validation error"
+        )
+    else:
+        raise AssertionError("CPU-only benchmark was exported as GPU evidence")
+    # Explicit synthetic negative-case fixture, never an actual GPU measurement.
+    declared = {
+        "model": MODEL_NAME,
+        "backend": "ollama",
+        "quant": "Q4_K_M",
+        "workload": "single",
+        "runs": BENCH_RUNS,
+        "context_length": 1024,
+        "individual_runs": [{"throughput_tps": 1.0, "ttft_ms": 1.0} for _ in range(BENCH_RUNS)],
+        "environment": {
+            "gpu_name": "NVIDIA GeForce RTX 4090",
+            "gpu_memory_gb": 24,
+            "gpu_driver": None,
+            "cuda_version": None,
+            "os": "synthetic-fixture",
+            "platform": "synthetic-fixture",
+            "backend_name": "ollama",
+            "backend_version": OLLAMA_VERSION,
+            "chimeraforge_version": "0.46.0",
+        },
+        "timestamp": "2026-10-01T00:00:00+00:00",
+    }
+    contribution = build_contribution(declared)
+    source, output = cwd / "unsigned-legacy-gpu-claim.json", cwd / "contribution-replay.json"
+    source.write_text(json.dumps(contribution), encoding="utf-8")
+    original = source.read_bytes()
+    review = json.loads(run_cli(["contribute", "review", str(source), "--json"], cwd, env))
+    assert (
+        review["contribution"]["id"] == contribution["id"]
+        and review["trust"]["changes_quarantine"] is False
+    )
+    report = json.loads(
+        run_cli(
+            [
+                "contribute",
+                "replay",
+                str(source),
+                "--prompt",
+                "Reply with one short sentence.",
+                "--output-tokens",
+                str(MAX_OUTPUT_TOKENS),
+                "--runs",
+                str(BENCH_RUNS),
+                "--base-url",
+                str(client.base_url).rstrip("/"),
+                "--out",
+                str(output),
+                "--json",
+            ],
+            cwd,
+            env,
+            1,
+        )
+    )
+    validate_contribution_replay(report, contribution, BENCH_RUNS)
+    assert source.read_bytes() == original and json.loads(output.read_text()) == report
+    assert not (cwd / "cache/contributions").exists(), "replay changed quarantine"
+    return {
+        "source_id": contribution["id"],
+        "receipt_fingerprint": report["fingerprint"],
+        "input_evidence": "synthetic unsigned legacy GPU claim; not an actual GPU measurement",
+        "execution_evidence": (
+            "actual installed CPU/Ollama runner with native per-request tokens/timings"
+        ),
+        "gpu_eligibility": "ineligible",
+        "replay_equivalence": "unverified",
+        "cpu_gpu_export": "refused",
+        "quarantine_and_trust": "unchanged",
+    }
+
+
 def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> dict:
     """Exercise the installed product using measurements made by the real backend."""
     results = cwd / "results"
@@ -288,6 +400,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     assert len(benchmark) == 1
     validate_benchmark(benchmark[0], BENCH_RUNS)
     assert benchmark[0]["environment"]["chimeraforge_version"] == version
+    contribution_replay = accept_contribution_replay(client, cwd, env, benchmark[0])
     for fmt, filename, marker in (
         ("markdown", "report.md", "## Summary"),
         ("html", "report.html", "<!DOCTYPE html>"),
@@ -393,6 +506,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
         "interrupted_stream_recovery": "passed",
         "bench_report_workload_plan": "passed",
         "saved_plan_benchmark": saved_plan_benchmark,
+        "contribution_replay": contribution_replay,
         "missing_model_identity_and_metrics_errors": "passed",
         "scope": "CPU functional integration; no performance or prediction-accuracy claim",
     }
