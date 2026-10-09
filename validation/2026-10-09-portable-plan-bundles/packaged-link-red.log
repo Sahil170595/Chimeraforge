@@ -1,0 +1,25 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_sdk_managed_packaged_hardlink_is_snapshotted_but_members_still_reject_links _
+tests\test_plan_bundle.py:464: in test_sdk_managed_packaged_hardlink_is_snapshotted_but_members_still_reject_links
+    create(path, directory)
+tests\test_plan_bundle.py:53: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\api.py:442: in create_plan_bundle
+    return create(plan_path, output_directory)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:120: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:314: in create
+    held[role] = _read(source, MAX_INPUT_BYTES)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:52: in _read
+    _fail("member must be a bounded regular file with no links")
+src\chimeraforge\plan_bundle.py:30: in _fail
+    raise PlanError(f"invalid plan bundle: {message}")
+E   chimeraforge.api.PlanError: invalid plan bundle: member must be a bounded regular file with no links
+=========================== short test summary info ===========================
+FAILED tests/test_plan_bundle.py::test_sdk_managed_packaged_hardlink_is_snapshotted_but_members_still_reject_links
+1 failed, 47 deselected in 1.89s

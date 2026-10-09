@@ -1,0 +1,24 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+___ test_verified_snapshot_never_resolves_or_relabels_its_captured_sources ____
+tests\test_plan_bundle.py:493: in test_verified_snapshot_never_resolves_or_relabels_its_captured_sources
+    assert saved.to_dict() == before
+E   AssertionError: assert {'schema_vers...ion': 1}, ...} == {'schema_vers...ion': 1}, ...}
+E     
+E     Omitting 6 identical items, use -vv to show
+E     Differing items:
+E     {'relocations': {'corpus': {'state': 'verified_content', 'producer': {'kind': 'file', 'path': 'C:\\Users\\sahil\\AppDa...ality.json', 'path_flavor': 'windows', 'sha256': 'c17f61eac1d5765a44aa7e983e73b998d8805ef6d61623ded260fb3d033cbada'}}}} != {'relocations': {'corpus': {'state': 'verified_content', 'producer': {'kind': 'file', 'path': 'C:\\Users\\sahil\\AppDa...ality.json', 'path_flavor': 'windows', 'sha256': 'c17f61eac1d5765a44aa7e983e73b998d8805ef6d61623ded260fb3d033cbada'}}}}
+E     Use -v to get more diff
+_ test_verified_snapshot_retains_locations_after_real_directory_link_replacement _
+tests\test_plan_bundle.py:525: in test_verified_snapshot_retains_locations_after_real_directory_link_replacement
+    assert saved.to_dict() == before
+E   AssertionError: assert {'schema_vers...ion': 1}, ...} == {'schema_vers...ion': 1}, ...}
+E     
+E     Omitting 6 identical items, use -vv to show
+E     Differing items:
+E     {'relocations': {'corpus': {'state': 'verified_content', 'producer': {'kind': 'file', 'path': 'C:\\Users\\sahil\\AppDa...ality.json', 'path_flavor': 'windows', 'sha256': 'c17f61eac1d5765a44aa7e983e73b998d8805ef6d61623ded260fb3d033cbada'}}}} != {'relocations': {'corpus': {'state': 'verified_content', 'producer': {'kind': 'file', 'path': 'C:\\Users\\sahil\\AppDa...ality.json', 'path_flavor': 'windows', 'sha256': 'c17f61eac1d5765a44aa7e983e73b998d8805ef6d61623ded260fb3d033cbada'}}}}
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/test_plan_bundle.py::test_verified_snapshot_never_resolves_or_relabels_its_captured_sources
+FAILED tests/test_plan_bundle.py::test_verified_snapshot_retains_locations_after_real_directory_link_replacement
+2 failed, 48 deselected in 2.98s

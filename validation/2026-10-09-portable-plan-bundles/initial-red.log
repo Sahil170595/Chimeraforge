@@ -1,0 +1,205 @@
+FFFFFFFFFFFFFFFFFFFFFFFF                                                 [100%]
+================================== FAILURES ===================================
+_ test_actual_handoff_without_producer_files_preserves_bytes_and_native_comparison _
+tests\test_plan_bundle.py:58: in test_actual_handoff_without_producer_files_preserves_bytes_and_native_comparison
+    created = create(path, tmp_path / "bundle")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+__________________ test_implicit_external_corpus_is_portable __________________
+tests\test_plan_bundle.py:85: in test_implicit_external_corpus_is_portable
+    create(path, tmp_path / "bundle")
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+____ test_verified_bytes_are_used_even_if_file_changes_after_verification _____
+tests\test_plan_bundle.py:93: in test_verified_bytes_are_used_even_if_file_changes_after_verification
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_______________ test_manifest_mutations_are_rejected[traversal] _______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_______________ test_manifest_mutations_are_rejected[duplicate] _______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+______________ test_manifest_mutations_are_rejected[extra_role] _______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_____________ test_manifest_mutations_are_rejected[missing_role] ______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+______________ test_manifest_mutations_are_rejected[wrong_size] _______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+______________ test_manifest_mutations_are_rejected[wrong_hash] _______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_______________ test_manifest_mutations_are_rejected[bool_size] _______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+______________ test_manifest_mutations_are_rejected[extra_field] ______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+______________ test_manifest_mutations_are_rejected[fingerprint] ______________
+tests\test_plan_bundle.py:110: in test_manifest_mutations_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_______ test_membership_and_producer_semantics_are_rejected[extra_file] _______
+tests\test_plan_bundle.py:129: in test_membership_and_producer_semantics_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+______ test_membership_and_producer_semantics_are_rejected[missing_file] ______
+tests\test_plan_bundle.py:129: in test_membership_and_producer_semantics_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_______ test_membership_and_producer_semantics_are_rejected[directory] ________
+tests\test_plan_bundle.py:129: in test_membership_and_producer_semantics_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+__________ test_membership_and_producer_semantics_are_rejected[plan] __________
+tests\test_plan_bundle.py:129: in test_membership_and_producer_semantics_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_____ test_membership_and_producer_semantics_are_rejected[source_receipt] _____
+tests\test_plan_bundle.py:129: in test_membership_and_producer_semantics_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_____ test_membership_and_producer_semantics_are_rejected[parsed_digest] ______
+tests\test_plan_bundle.py:129: in test_membership_and_producer_semantics_are_rejected
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_ test_create_refuses_unsupported_or_changed_source_before_writing[changed_input] _
+tests\test_plan_bundle.py:163: in test_create_refuses_unsupported_or_changed_source_before_writing
+    with pytest.raises(api.PlanError): create(path, tmp_path / "bundle")
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+__ test_create_refuses_unsupported_or_changed_source_before_writing[legacy] ___
+tests\test_plan_bundle.py:163: in test_create_refuses_unsupported_or_changed_source_before_writing
+    with pytest.raises(api.PlanError): create(path, tmp_path / "bundle")
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_ test_create_refuses_unsupported_or_changed_source_before_writing[missing_binding] _
+tests\test_plan_bundle.py:163: in test_create_refuses_unsupported_or_changed_source_before_writing
+    with pytest.raises(api.PlanError): create(path, tmp_path / "bundle")
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+_ test_create_refuses_unsupported_or_changed_source_before_writing[contributions] _
+tests\test_plan_bundle.py:163: in test_create_refuses_unsupported_or_changed_source_before_writing
+    with pytest.raises(api.PlanError): create(path, tmp_path / "bundle")
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+____________ test_foreign_producer_paths_are_preserved_not_coerced ____________
+tests\test_plan_bundle.py:171: in test_foreign_producer_paths_are_preserved_not_coerced
+    create(path, directory)
+tests\test_plan_bundle.py:42: in create
+    return api.create_plan_bundle(path, output)
+           ^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'create_plan_bundle'
+__________ test_cli_complete_create_verify_check_and_malformed_exit ___________
+tests\test_plan_bundle.py:200: in test_cli_complete_create_verify_check_and_malformed_exit
+    assert made.exit_code == 0, made.output
+E   AssertionError: Usage: chimeraforge [OPTIONS] COMMAND [ARGS]...
+E     Try 'chimeraforge --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such command 'bundle'.                                                   \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+=========================== short test summary info ===========================
+FAILED tests/test_plan_bundle.py::test_actual_handoff_without_producer_files_preserves_bytes_and_native_comparison
+FAILED tests/test_plan_bundle.py::test_implicit_external_corpus_is_portable
+FAILED tests/test_plan_bundle.py::test_verified_bytes_are_used_even_if_file_changes_after_verification
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[traversal]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[duplicate]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[extra_role]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[missing_role]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[wrong_size]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[wrong_hash]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[bool_size]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[extra_field]
+FAILED tests/test_plan_bundle.py::test_manifest_mutations_are_rejected[fingerprint]
+FAILED tests/test_plan_bundle.py::test_membership_and_producer_semantics_are_rejected[extra_file]
+FAILED tests/test_plan_bundle.py::test_membership_and_producer_semantics_are_rejected[missing_file]
+FAILED tests/test_plan_bundle.py::test_membership_and_producer_semantics_are_rejected[directory]
+FAILED tests/test_plan_bundle.py::test_membership_and_producer_semantics_are_rejected[plan]
+FAILED tests/test_plan_bundle.py::test_membership_and_producer_semantics_are_rejected[source_receipt]
+FAILED tests/test_plan_bundle.py::test_membership_and_producer_semantics_are_rejected[parsed_digest]
+FAILED tests/test_plan_bundle.py::test_create_refuses_unsupported_or_changed_source_before_writing[changed_input]
+FAILED tests/test_plan_bundle.py::test_create_refuses_unsupported_or_changed_source_before_writing[legacy]
+FAILED tests/test_plan_bundle.py::test_create_refuses_unsupported_or_changed_source_before_writing[missing_binding]
+FAILED tests/test_plan_bundle.py::test_create_refuses_unsupported_or_changed_source_before_writing[contributions]
+FAILED tests/test_plan_bundle.py::test_foreign_producer_paths_are_preserved_not_coerced
+FAILED tests/test_plan_bundle.py::test_cli_complete_create_verify_check_and_malformed_exit
+24 failed in 6.36s
