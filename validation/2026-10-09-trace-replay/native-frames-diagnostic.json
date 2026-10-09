@@ -1,0 +1,10 @@
+{
+  "scope": "local actual HTTPX MockTransport protocol; no network or model inference",
+  "native_bytes": 580029,
+  "frames": 20001,
+  "request_timeout_seconds": 0.02,
+  "outcome": "timeout",
+  "elapsed_seconds": 0.00677990005351603,
+  "client_closed": true,
+  "ollama_source_sha256": "8c6f6f8473d14cbcbe7c5d6fd0786d849e5048e8a3f91fc582e3d37c0c315f6b"
+}

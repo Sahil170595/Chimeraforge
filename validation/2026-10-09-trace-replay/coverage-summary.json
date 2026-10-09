@@ -1,19 +1,35 @@
 {
-  "src\\chimeraforge\\bench\\trace.py": {
-    "covered_lines": 159,
-    "num_statements": 165,
-    "percent_covered": 95.16908212560386,
-    "percent_covered_display": "95",
-    "missing_lines": 6,
+  "src\\chimeraforge\\bench\\backends\\ollama.py": {
+    "covered_lines": 125,
+    "num_statements": 147,
+    "percent_covered": 83.5978835978836,
+    "percent_covered_display": "84",
+    "missing_lines": 22,
     "excluded_lines": 0,
-    "percent_statements_covered": 96.36363636363636,
-    "percent_statements_covered_display": "96",
+    "percent_statements_covered": 85.03401360544218,
+    "percent_statements_covered_display": "85",
     "num_branches": 42,
-    "num_partial_branches": 4,
-    "covered_branches": 38,
-    "missing_branches": 4,
-    "percent_branches_covered": 90.47619047619048,
-    "percent_branches_covered_display": "90"
+    "num_partial_branches": 7,
+    "covered_branches": 33,
+    "missing_branches": 9,
+    "percent_branches_covered": 78.57142857142857,
+    "percent_branches_covered_display": "79"
+  },
+  "src\\chimeraforge\\bench\\trace.py": {
+    "covered_lines": 189,
+    "num_statements": 197,
+    "percent_covered": 94.8207171314741,
+    "percent_covered_display": "95",
+    "missing_lines": 8,
+    "excluded_lines": 0,
+    "percent_statements_covered": 95.93908629441624,
+    "percent_statements_covered_display": "96",
+    "num_branches": 54,
+    "num_partial_branches": 5,
+    "covered_branches": 49,
+    "missing_branches": 5,
+    "percent_branches_covered": 90.74074074074075,
+    "percent_branches_covered_display": "91"
   },
   "src\\chimeraforge\\bench\\trace_workload.py": {
     "covered_lines": 90,
