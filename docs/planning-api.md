@@ -59,7 +59,7 @@ sources, price history and replay geometry, and retain overall exit 1.
 
 `check_plan(saved)` accepts an artifact or a file path and returns a `PlanCheck`
 with a defensive `to_dict()` copy. `chimeraforge check plan.json --json` exposes
-the same report. Checks are offline regardless of the saved `allow_network`
+the same report. Checks default to offline regardless of the saved `allow_network`
 option, preserve the artifact, and use the shared planner search. Saved full
 geometry and OS remain the replay target; `auto` never probes the current host.
 The unified-memory fraction and price multiplier are applied once. Current
@@ -75,8 +75,9 @@ recommendation identities and modeled deltas retain native units and unknown
 `null` values. A current local `resolution_view` observes metadata without
 substituting it for saved geometry. Unavailable remote metadata or a registry
 approximation is informational unverified; a changed resolved source or geometry
-is actionable even when rounded predictions match. No metadata match proves
-the identity of currently served weights or an immutable model revision.
+is actionable even when rounded predictions match. Hub checkpoint metadata can
+bind a resolved immutable revision, as described below; it cannot prove the
+identity of currently served weight bytes.
 
 Exit 0 means a completed comparison with required components unchanged; exit 1
 means changed, expired or unverified required components (or a changed local
@@ -87,6 +88,72 @@ coefficients have no invented expiry threshold. Performance remains informationa
 unverified: an unchanged modeled result is not a performance acceptance test.
 Fingerprints detect edits, including context edits, but cannot authenticate a
 snapshot or turn unsigned quarantine data into trusted measurements.
+
+## Checkpoint identity
+
+This is an unreleased source feature, beyond PyPI 0.51.0 and the README's older
+review-stack install pin. Install this feature's checkout with `pip install .`.
+
+```python
+from chimeraforge.api import PlanRequest, plan, check_plan
+from chimeraforge.deploy import export_deployment
+
+repo = "HuggingFaceTB/SmolLM2-135M-Instruct"
+commit = "12fd25f77366fa6b3b4b768ec3050bf629380bac"
+saved = plan(PlanRequest(models=[repo], model_revisions={repo: commit},
+    platform="linux", hardware="RTX 4080 12GB", request_rate=0.01,
+    quality_target=0, budget=100000))
+saved.save("checkpoint-plan.json")
+print(saved.spec(repo).checkpoint)
+print(check_plan(saved).to_dict()["checkpoint_view"])  # offline
+print(check_plan(saved, allow_network=True).to_dict()["checkpoint_view"])
+
+# Choose an actual supported row; rank zero may be a different backend/quant.
+index = next(i for i, row in enumerate(saved.to_dict()["result"]["candidates"])
+    if row["backend"] == "vllm" and row["quant"] == "FP16"
+    and row["n_agents"] == row["tensor_parallel"] == row["pipeline_parallel"] == 1
+    and row["offload_fraction"] == 0)
+config = export_deployment(saved, format="compose", candidate_index=index,
+    image="vllm/vllm-openai:v0.30.0")
+print(config.content)  # includes --revision with the resolved commit
+```
+
+`resolve_spec(repo, hf_revision=ref)` accepts a commit, branch or tag. The CLI
+uses `plan --revision REF` with one `--model`, or repeated `--revision MODEL=REF`
+for selected HF models. All online HF metadata resolution, including the default
+`main` route, first obtains one commit from Hub model metadata and reads config
+only at that commit. An explicit revision unavailable offline fails rather than
+substituting registry geometry or another cached revision. Manual overrides,
+registry geometry and Ollama metadata carry no fabricated Hub identity.
+
+`ModelSpec.checkpoint` is a versioned receipt for the requested ref, resolved
+commit, observation time, SHA256 of consumed config bytes, optional declared Git
+blob identity, safetensors parameter total and whitelisted declared weight-file
+sizes/Git/LFS hashes. Its metadata digest covers normalized declarations, not
+downloaded weights. No weight files are downloaded for resolution. The config's
+declared Git blob, when available, is checked against the consumed bytes.
+Credentials and arbitrary Hub card metadata are not retained. The receipt is
+unsigned and cannot authenticate the producer or Hub response.
+
+`checkpoint_view` separates `pinned_metadata`, `requested_ref` and
+`served_weights`. Offline checks may compare the producing cache's pinned
+metadata; a cached branch/tag does not establish its current target. Explicit
+`check --network` / `check_plan(..., allow_network=True)` inspects the pinned
+commit and current requested ref, without substituting either into replay or
+mutating the artifact/cache. A known metadata/ref change is actionable exit 1;
+optional unavailable Hub observation alone does not fail an otherwise complete
+offline comparison. Capture time alone is not an identity change. Actual
+downloaded weights, served weights and tokenizer bytes remain unverified.
+
+Existing v1/v2 snapshots load with their original bytes/fingerprint and unknown
+checkpoint identity. Newly observed identity cannot contradict an unknown
+original. Mixed or malformed new revision bindings are refused, including a
+declared explicit revision with no corresponding checkpoint receipt. Serving
+exports preserve the resolved commit for vLLM/TGI/SGLang's native `--revision`
+option; their same-repository default tokenizer follows that revision. Different
+tokenizer overrides are outside this contract. Ollama cannot represent this HF
+pin and refuses conversion. Legacy unpinned HF export remains available with an
+explicit warning to replan online for a bound checkpoint.
 
 ## Benchmark a saved candidate
 

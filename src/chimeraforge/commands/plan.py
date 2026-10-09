@@ -269,6 +269,14 @@ def plan(
         "--hf-token",
         help="Hugging Face token for gated repos (else $HF_TOKEN).",
     ),
+    revision: list[str] = typer.Option(
+        None,
+        "--revision",
+        help=(
+            "HF commit/branch/tag for one --model, or repeat MODEL=REF for selected HF models. "
+            "Metadata is pinned to the resolved commit."
+        ),
+    ),
     no_network: bool = typer.Option(
         False,
         "--no-network",
@@ -623,6 +631,28 @@ def plan(
     if measure_first and not model:
         _fail("--measure requires --model.")
 
+    model_revisions = None
+    if revision:
+        model_revisions = {}
+        for selection in revision:
+            if "=" in selection:
+                repo, ref = selection.split("=", 1)
+            elif model and len(model) == 1:
+                repo, ref = model[0], selection
+            else:
+                _fail("--revision REF needs one --model; use MODEL=REF for multiple models")
+            if repo in model_revisions:
+                _fail(f"duplicate revision for {repo}")
+            model_revisions[repo] = ref
+        from chimeraforge.planner.checkpoint import revisions
+
+        try:
+            revisions(model_revisions, model)
+        except ValueError as exc:
+            _fail(str(exc))
+        if measure_first:
+            _fail("--measure uses Ollama and cannot attest an HF checkpoint; measure separately")
+
     # Optionally benchmark the model(s) live first, folding real throughput +
     # scaling into the local corpus so the plan below runs on measured numbers.
     if measure_first and model:
@@ -770,6 +800,7 @@ def plan(
             models_path=models_path,
             ollama_url=ollama_url,
             hf_token=hf_token,
+            model_revisions=model_revisions,
             allow_network=not no_network,
             overrides=overrides,
         )

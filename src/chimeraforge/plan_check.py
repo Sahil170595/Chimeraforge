@@ -149,10 +149,17 @@ def validate_context(context: dict, result: dict, request) -> None:
     if not isinstance(specs, dict) or set(specs) != set(result["target_models"]):
         raise ValueError("replay must bind every target specification")
     for key, row in specs.items():
-        _exact(row, (f.name for f in fields(ModelSpec)), "model specification")
+        expected = {f.name for f in fields(ModelSpec)}
+        if not isinstance(row, dict) or set(row) not in (expected, expected - {"checkpoint"}):
+            raise ValueError("invalid model specification fields")
         for name, annotation in get_type_hints(ModelSpec).items():
-            _check_type(row[name], annotation, name)
+            _check_type(row.get(name) if name == "checkpoint" else row[name], annotation, name)
         ModelSpec(**row)
+        requested = (request.model_revisions or {}).get(key)
+        if requested is not None and (
+            row.get("checkpoint") is None or row["checkpoint"]["requested_revision"] != requested
+        ):
+            raise ValueError("requested revision must agree with bound checkpoint")
         if any(row[name] <= 0 for name in ("params_b", "n_layers", "n_kv_heads", "d_head")):
             raise ValueError("replay model geometry must be positive")
         canonical = key.split("ollama:", 1)[-1] if row["source"] == "ollama" else key
@@ -350,31 +357,112 @@ def compare(before: list[dict], after: list[dict]) -> dict:
     }
 
 
-def _resolution(data, context):
+def _resolution(data, context, *, allow_network=False, hf_token=None):
     from chimeraforge.planner import resolver
+    from chimeraforge.planner import checkpoint
 
     view = {}
+    checkpoint_view = {}
     for key, saved in context["model_specs"].items():
+        saved = json_value(ModelSpec(**saved))
+        bound = saved.get("checkpoint")
+        current = None
         try:
             current = json_value(
                 resolver.resolve_spec(
                     key,
-                    allow_network=False,
+                    allow_network=bool(bound and allow_network),
+                    use_cache=not bool(bound and allow_network),
+                    hf_revision=bound["resolved_revision"] if bound else None,
+                    hf_token=hf_token,
                     overrides=data["inputs"]["overrides"],
                     ollama_url=data["inputs"]["ollama_url"],
                 )
             )
             approximate = current["source"] == resolver.SOURCE_REGISTRY_APPROX
+            before, after = copy.deepcopy(saved), copy.deepcopy(current)
+            if bound:
+                before["checkpoint"] = checkpoint.facts(bound)
+                if after.get("checkpoint"):
+                    after["checkpoint"] = checkpoint.facts(after["checkpoint"])
+            else:
+                after["checkpoint"] = None  # New identity cannot contradict an unknown original.
             view[key] = component(
-                saved,
-                current,
+                before,
+                after,
                 required=False,
                 state="unverified" if approximate else None,
-                detail="Local metadata observation; served weights/revision are unverified.",
+                detail="Metadata observation only; actual served weight bytes remain unverified.",
             )
         except (resolver.ResolverError, OSError, ValueError) as exc:
             view[key] = component(saved, None, required=False, state="unverified", detail=str(exc))
-    return view
+        observed = current.get("checkpoint") if current else None
+        if bound:
+            pinned = component(
+                checkpoint.facts(bound),
+                checkpoint.facts(observed) if observed else None,
+                required=False,
+                state=None if observed else "unverified",
+                detail="Fresh Hub config/declared file metadata."
+                if allow_network
+                else "Cached producing metadata; no fresh Hub or served-file observation.",
+            )
+            ref = bound["requested_revision"]
+            alias = component(
+                bound["resolved_revision"],
+                None,
+                required=False,
+                state="unverified",
+                detail=(
+                    "Current moving-ref state is unknown offline; "
+                    "cached aliases are not fresh observations."
+                ),
+            )
+            if ref == bound["resolved_revision"]:
+                alias = component(
+                    ref,
+                    ref,
+                    required=False,
+                    detail="An immutable requested commit has no moving alias.",
+                )
+            elif allow_network:
+                try:
+                    alias = component(
+                        bound["resolved_revision"],
+                        resolver.resolve_hf_revision(key, ref, hf_token),
+                        required=False,
+                        detail="Current requested-ref commit; bound replay is not substituted.",
+                    )
+                except resolver.ResolverError as exc:
+                    alias["detail"] = str(exc)
+            checkpoint_view[key] = {
+                "pinned_metadata": pinned,
+                "requested_ref": alias,
+                "served_weights": component(
+                    None,
+                    None,
+                    required=False,
+                    state="unverified",
+                    detail=(
+                        "Hub declarations/config bytes do not attest downloaded weight bytes "
+                        "or a running server."
+                    ),
+                ),
+            }
+        else:
+            checkpoint_view[key] = {
+                "pinned_metadata": component(
+                    None,
+                    checkpoint.facts(observed) if observed else None,
+                    required=False,
+                    state="unverified",
+                    detail=(
+                        "Legacy/manual/registry/Ollama geometry has no immutable "
+                        "Hub checkpoint receipt."
+                    ),
+                )
+            }
+    return view, checkpoint_view
 
 
 def _legacy_components(data: dict) -> dict:
@@ -438,7 +526,7 @@ def _legacy_components(data: dict) -> dict:
     return rows
 
 
-def check(artifact) -> PlanCheck:
+def check(artifact, *, allow_network: bool = False, hf_token: str | None = None) -> PlanCheck:
     from chimeraforge import api
     from chimeraforge.planner import hardware, service
     from chimeraforge.planner.cloudprice import snapshot_age_days, STALE_AFTER_DAYS
@@ -451,7 +539,10 @@ def check(artifact) -> PlanCheck:
             context is not None,
             context is not None,
             state="unchanged" if context is not None else "unverified",
-            detail="Bound target geometry; immutable model weights/revisions were not captured.",
+            detail=(
+                "Bound target geometry and any captured checkpoint metadata; "
+                "no served weight-byte proof."
+            ),
         ),
     }
     report = {
@@ -459,6 +550,7 @@ def check(artifact) -> PlanCheck:
         "components": components,
         "comparison": None,
         "resolution_view": {},
+        "checkpoint_view": {},
         "performance": {
             "state": "unverified",
             "required": False,
@@ -535,7 +627,9 @@ def check(artifact) -> PlanCheck:
         required=not bool(inputs["cloud"]),
         state="not_used" if inputs["cloud"] else None,
     )
-    report["resolution_view"] = _resolution(data, context)
+    report["resolution_view"], report["checkpoint_view"] = _resolution(
+        data, context, allow_network=allow_network, hf_token=hf_token
+    )
     if not unavailable:
         try:
             result = service.replay_plan(inputs, replay)
@@ -584,6 +678,11 @@ def check(artifact) -> PlanCheck:
         for row in components.values()
     )
     changed = any(row["state"] == "changed" for row in report["resolution_view"].values())
+    changed = changed or any(
+        row["state"] == "changed"
+        for view in report["checkpoint_view"].values()
+        for row in view.values()
+    )
     changed = changed or bool(report["comparison"] and report["comparison"]["changed"])
     report.update(
         exit_code=int(failed or changed),

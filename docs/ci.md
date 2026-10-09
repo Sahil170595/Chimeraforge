@@ -49,6 +49,15 @@ path; it establishes no GPU speed, GPU compatibility, detector sensitivity or
 general planner accuracy. Shared-runner token-rate thresholds are deliberately
 absent. Downloads, startup and operations have explicit time limits.
 
+Installed wheel/sdist consumers exercise checkpoint save/check/export with an
+offline protocol fixture. The existing Linux CPU consumer additionally performs
+anonymous metadata/config reads for SmolLM2-135M-Instruct at
+`12fd25f77366fa6b3b4b768ec3050bf629380bac`, checks its declared LFS identity, then
+executes the installed CLI loop and an explicit network recheck. This adds no
+weight download. Receipts distinguish the offline fixture, real Hub metadata,
+config-byte verification and unverified loaded/weight-byte identity; neither path
+qualifies a serving engine's revision handling or GPU performance.
+
 Publishing requires a matching version tag reachable from main, consistent MCP
 metadata, and the complete reusable CI validation at that tag. The publish job
 downloads the validated distributions instead of rebuilding them, creates build

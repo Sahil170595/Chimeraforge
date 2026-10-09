@@ -80,6 +80,10 @@ plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
 pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
 ```
 
+The checkpoint options below are a further **unreleased source feature**. They
+require this feature's checkout; neither PyPI 0.51.0 nor the older source pin
+above contains them. From this checkout, install with `pip install '.[mcp]'`.
+
 ## Quickstart
 
 ```bash
@@ -106,6 +110,31 @@ chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --no-network --save offline-plan.json
 chimeraforge check offline-plan.json --json
 ```
+
+### Keep one Hub checkpoint through planning and export
+
+```bash
+# Metadata/config only: no model weights are downloaded by the planner
+chimeraforge plan --model HuggingFaceTB/SmolLM2-135M-Instruct \
+  --revision 12fd25f77366fa6b3b4b768ec3050bf629380bac \
+  --hardware "RTX 4080 12GB" --platform linux --request-rate 0.01 \
+  --quality-target 0 --budget 100000 --save checkpoint-plan.json --json
+chimeraforge check checkpoint-plan.json --json           # offline
+chimeraforge check checkpoint-plan.json --network --json # explicit Hub inspection
+```
+
+Branches and tags are accepted too; resolution first establishes one immutable
+commit, then reads that commit's config and declared file metadata. Repeat
+`--revision MODEL=REF` when planning multiple HF models. A cached moving ref is
+a dated producing observation, not proof of its current state.
+
+Select a supported saved candidate before [deployment export](docs/deployment.md).
+vLLM, TGI and SGLang commands carry `--revision` with the resolved commit; an
+Ollama conversion cannot retain that pin and is refused. The receipt hashes the
+config bytes actually consumed and records **declared** weight metadata. It
+does not verify downloaded weight/tokenizer bytes or identify a running server.
+Legacy plans still load with their original identity gaps. See the
+[Python checkpoint loop](docs/planning-api.md#checkpoint-identity).
 
 ---
 

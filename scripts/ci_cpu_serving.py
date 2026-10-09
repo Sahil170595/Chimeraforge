@@ -553,6 +553,9 @@ def main(argv: list[str] | None = None) -> int:
                 "NO_COLOR": "1",
             }
         )
+        from ci_checkpoint_identity import accept as accept_checkpoint
+
+        checkpoint_receipt = accept_checkpoint(work, env, args.checkout, live=True)
         modelfile = work / "Modelfile"
         modelfile.write_text(
             f"FROM {model}\nPARAMETER num_gpu 0\nPARAMETER num_thread 2\nPARAMETER num_ctx 1024\n"
@@ -585,6 +588,7 @@ def main(argv: list[str] | None = None) -> int:
                         timeout=OPERATION_TIMEOUT_SECONDS,
                     )
                     receipt = accept_runtime(client, work, env, args.expect_version)
+                    receipt["checkpoint_identity"] = checkpoint_receipt
                     placement = client.get("/api/ps")
                     placement.raise_for_status()
                     running = placement.json()["models"]
