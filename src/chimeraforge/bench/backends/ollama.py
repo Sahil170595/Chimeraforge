@@ -28,6 +28,8 @@ OLLAMA_BANNER = "Ollama is running"
 MAX_STREAM_BYTES = 16 * 1024 * 1024
 # Bound synchronous frame work between cancellation/deadline checkpoints.
 STREAM_FRAME_BATCH = 32
+STREAM_CHUNK_BATCH = 32
+STREAM_BYTE_BATCH = 64 * 1024
 
 
 def _native_number(data: dict, name: str, *, count: bool = False) -> int | float | None:
@@ -47,12 +49,18 @@ def _native_number(data: dict, name: str, *, count: bool = False) -> int | float
 async def _json_lines(response: httpx.Response) -> AsyncIterator[dict]:
     """Bound native NDJSON bytes without retaining prompt or completion content."""
     total, frames = 0, 0
+    chunks, buffered_work = 0, 0
     fragments = []
     # A fixed chunk_size coalesces small frames until EOF and loses first-output timing.
     async for chunk in response.aiter_bytes():
         total += len(chunk)
         if total > MAX_STREAM_BYTES:
             raise RuntimeError("Ollama stream exceeds the trace response limit")
+        chunks += 1
+        buffered_work += len(chunk)
+        if chunks >= STREAM_CHUNK_BATCH or buffered_work >= STREAM_BYTE_BATCH:
+            chunks, buffered_work = 0, 0
+            await asyncio.sleep(0)
         offset = 0
         while (end := chunk.find(b"\n", offset)) >= 0:
             fragments.append(chunk[offset:end])

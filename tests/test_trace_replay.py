@@ -777,6 +777,12 @@ async def test_native_ollama_one_chunk_many_frames_allows_control_and_closes(mon
 
     stopped, clock, parsed = asyncio.Event(), [10.0], []
     monkeypatch.setattr(trace, "_clock", lambda: clock[0])
+
+    async def controlled_sleep_until(deadline):
+        while clock[0] < deadline:
+            await asyncio.sleep(0)
+
+    monkeypatch.setattr(trace, "_sleep_until", controlled_sleep_until)
     original_loads = json.loads
 
     def instrumented_loads(value, *args, **kwargs):
@@ -856,3 +862,55 @@ async def test_native_stream_fragmented_lines_and_byte_cap_preserve_partial_unkn
     else:
         assert row["state"] == "completed" and row["native"]["tokens_generated"] == 2
         assert report["exit_code"] == 0
+
+
+@pytest.mark.parametrize("control", ["stop", "deadline"])
+@pytest.mark.asyncio
+async def test_native_ollama_many_incomplete_chunks_allow_control_before_frame(
+    monkeypatch, control
+):
+    import httpx
+    import chimeraforge.bench.trace as trace
+    import chimeraforge.bench.backends.ollama as ollama
+
+    stopped, clock, chunks = asyncio.Event(), [10.0], []
+    monkeypatch.setattr(trace, "_clock", lambda: clock[0])
+
+    async def controlled_sleep_until(deadline):
+        while clock[0] < deadline:
+            await asyncio.sleep(0)
+
+    monkeypatch.setattr(trace, "_sleep_until", controlled_sleep_until)
+
+    class Fragments(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b'{"response":"'
+            for _ in range(100001):
+                chunks.append(True)
+                if len(chunks) == 1:
+                    if control == "stop":
+                        stopped.set()
+                    else:
+                        clock[0] = 12.0
+                yield b"a" * 29
+            yield b'","done":false}\n{"done":true,"eval_count":2}\n'
+
+    def handler(request):
+        if request.url.path == "/":
+            return httpx.Response(200, text="Ollama is running")
+        if request.url.path == "/api/generate":
+            return httpx.Response(200, stream=Fragments())
+        return httpx.Response(200, json={})
+
+    real = ollama.OllamaBackend()
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    real._client = client
+    monkeypatch.setitem(BACKEND_REGISTRY, "ollama", lambda **kwargs: real)
+    report = (
+        await api.replay_trace(requests()[:1], model="served", stop_event=stopped, trace_timeout=1)
+    ).to_dict()
+    assert report["stop_reason"] == ("cancelled" if control == "stop" else "trace_deadline")
+    assert report["execution"]["cancelled"] == 1 and report["execution"]["completed"] == 0
+    assert report["requests"][0]["times"]["first_output_s"] is None
+    assert report["requests"][0]["native"]["tokens_generated"] is None
+    assert len(chunks) < 100001 and client.is_closed

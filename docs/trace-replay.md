@@ -90,7 +90,9 @@ tokens from text or chunks.
 
 The native NDJSON parser caps response bytes at 16 MiB, scans each frame without
 copying the unconsumed tail, and yields between batches of 32 frames so cancellation
-and deadlines can run even when many frames arrive in one network chunk. It keeps
+and deadlines can run even when many frames arrive in one network chunk.
+Independent checkpoints every 32 native chunks or 64 KiB also cover fragmented
+frames with no newline yet. It keeps
 native chunk delivery rather than coalescing first output until a fixed buffer fills.
 
 Existing vLLM/TGI/SGLang fallback adapters retain their standardized final
