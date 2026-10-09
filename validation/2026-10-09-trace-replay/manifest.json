@@ -1,0 +1,14 @@
+{
+  "basis": "SHA256 of canonical UTF8 LF committed bytes",
+  "implementation_commit": "b7b4841cd128bfbef850bdb059bfe6b10333c7c9",
+  "files": {
+    "coverage-summary.json": "a0dcf9f489a5c79ba8089280e678b68e018805d17b6c2d52b57c359a597ca811",
+    "focused.log": "f9cc26d58d94473156363b5ecebc33c4e58bab80ce35a138ff4f08884be88462",
+    "lint.log": "6a9cbf6d33f021e0d65ca43013d08670e3c314ae6afa8e81221961ee5cea4950",
+    "native-fragments-diagnostic.json": "ea95951d8bce1219c2b201096d5db97023a288709d89e64d733b5ca990accf4a",
+    "native-frames-diagnostic.json": "4ce2920371c8a377a379977889206d1aad89221dbe297d931c7932b4483db8b6",
+    "pytest-final.log": "2a00b043fb6f482525a5522f6e2af16a05538958acee514617a8cbb25e3dba8e",
+    "README.md": "41c4de72f79813bba2f716425154de3095a3dd20645d2e5644e82a767a548836",
+    "red-summary.txt": "19e983b0603b1166235a8f822ee90f3de2da65b4d2b438fd301ec9035a6ebe72"
+  }
+}

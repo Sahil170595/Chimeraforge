@@ -91,6 +91,10 @@ snapshot or turn unsigned quarantine data into trusted measurements.
 
 ## Frozen-context sensitivity
 
+For real endpoint requests with scheduled arrivals and queue-inclusive timing,
+use the separate [typed request-trace API](trace-replay.md). A modeled study
+does not substitute for a measured trace.
+
 This is an unreleased feature of this checkout. Install this checkout with
 `pip install .`; the earlier pinned source and PyPI 0.51.0 do not contain it.
 

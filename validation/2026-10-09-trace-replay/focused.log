@@ -1,0 +1,36 @@
+........................................................................ [ 19%]
+........................................................................ [ 38%]
+........................................................................ [ 57%]
+........................................................................ [ 76%]
+........................................................................ [ 95%]
+................                                                         [100%]
+============================== warnings summary ===============================
+tests/test_bench_runner.py::TestRunner::test_run_benchmark_single
+  C:\tmp\cf-release-051-20261008\src\chimeraforge\bench\metrics.py:159: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+    import pynvml  # type: ignore[import-untyped]
+
+tests/test_repo_conventions.py::TestReadmeTracksTheCode::test_every_command_has_a_readme_section
+tests/test_repo_conventions.py::TestReadmeTracksTheCode::test_every_command_has_a_readme_section
+tests/test_repo_conventions.py::TestGlamaJson::test_declares_the_published_schema
+tests/test_repo_conventions.py::TestServerJsonStaysInSync::test_server_version_matches_package
+tests/test_repo_conventions.py::TestServerJsonStaysInSync::test_server_version_matches_package
+  C:\tmp\cf-release-051-env-20261008\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                                        Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------------------
+src\chimeraforge\bench\backends\ollama.py     147     22     42      7    84%   44-45, 70->72, 99->exit, 113, 115, 121-122, 136-141, 156, 198-209, 231, 234
+src\chimeraforge\bench\trace.py               197      8     54      5    95%   86, 182, 245-246, 319, 341-342, 379
+src\chimeraforge\bench\trace_workload.py       98      8     38      4    91%   51-52, 83, 106, 110-111, 128, 135
+---------------------------------------------------------------------------------------
+TOTAL                                         442     38    134     16    90%
+Coverage JSON written to file C:\tmp\cf-next-pr-receipts-20261008\trace-replay-fairness-final-coverage.json
+376 passed, 6 warnings in 8.12s

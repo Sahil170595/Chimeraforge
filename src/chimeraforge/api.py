@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import asyncio
 import hashlib
 import json
 import math
@@ -15,6 +16,11 @@ from typing import Callable
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
+from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
+from chimeraforge.bench.trace_workload import (
+    DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    DEFAULT_TRACE_TIMEOUT_SECONDS,
+)
 from chimeraforge.contribution_review import ContributionReceipt
 
 from chimeraforge import __version__
@@ -443,6 +449,34 @@ def study_plan(
     from chimeraforge.plan_study import study
 
     return study(saved, scenarios)
+
+
+async def replay_trace(
+    requests: list[TraceRequest] | str | Path,
+    *,
+    model: str,
+    backend: str = "ollama",
+    base_url: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    slos: TraceSLO | None = None,
+    stop_event: asyncio.Event | None = None,
+) -> TraceReplay:
+    """Execute a bounded real workload with queue-inclusive client timing."""
+    from chimeraforge.bench.trace import replay
+
+    return await replay(
+        requests,
+        model=model,
+        backend_name=backend,
+        base_url=base_url,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        slos=slos,
+        stop_event=stop_event,
+    )
 
 
 def create_plan_bundle(plan_path: str | Path, output_directory: str | Path) -> PlanBundle:
