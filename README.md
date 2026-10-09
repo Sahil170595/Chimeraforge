@@ -142,6 +142,31 @@ Claude Desktop / Cursor (add to your MCP config file):
 
 The `--from "chimeraforge[mcp]"` pulls in the MCP SDK; `uvx` runs the server in a self-contained environment. If you have already `pip install "chimeraforge[mcp]"` into the environment your client launches, you can instead use `"command": "chimeraforge", "args": ["mcp"]`.
 
+For an HTTP-capable MCP client, start the native Streamable HTTP transport:
+
+```bash
+chimeraforge mcp --transport streamable-http --port 8766
+# Connect the client to http://127.0.0.1:8766/mcp
+```
+
+HTTP binds to loopback and defaults to offline model resolution. Only the server
+operator can enable Hugging Face lookups/discovery with `--allow-network`; HTTP
+tool callers cannot supply local file paths, endpoint URLs, or network overrides.
+Ollama endpoint resolution/discovery remains a stdio capability. The SDK rejects
+browser Origins, foreign Hosts, and bodies above 64 KiB, including chunked uploads.
+Native sessions are capped at 32 and expire after 300 idle seconds. These settings
+and the fixed two-worker capacity are configurable through `mcp --help`.
+HTTP Hugging Face discovery is capped at 16 models per call before network work
+is admitted; stdio keeps its existing discovery options.
+
+HTTP tools run off the protocol event loop. A response times out after 30 seconds;
+timed-out or cancelled synchronous work keeps its worker slot until it actually
+finishes. Further calls receive a busy error when capacity is occupied, while
+protocol ping/discovery stays responsive. Python threads are not forcibly stopped:
+server shutdown drains owned work and can wait for a slow underlying resolver.
+The transport uses the supported MCP 1.x SDK (`>=1.30,<2`), with its native
+Streamable HTTP session and request guards.
+
 Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_suggest` (the inverse -- rank what actually fits a given GPU), `chimeraforge_compare_api` (self-host vs hosted-API cost and the break-even volume), `chimeraforge_resolve_model` (grounds a model id in its real params/architecture), and `chimeraforge_list_hardware`. Every result carries the same `measured` / `extrapolated` / `estimated` / `unknown` provenance as the CLI, and the tool descriptions tell the model to prefer them over its own knowledge. `chimeraforge_plan` also returns a `launch` field -- the serve command for the recommended config -- so the assistant can answer "and how do I run it" without inventing flags. `chimeraforge_compare_api` prices against a *dated* snapshot and reports its age, so an assistant quotes a price with its capture date rather than presenting a stale figure as current.
 
 ---
@@ -458,9 +483,11 @@ Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical anal
 
 ```bash
 chimeraforge mcp
+chimeraforge mcp --transport streamable-http --port 8766
 ```
 
-Runs the stdio MCP server described above. Requires `pip install "chimeraforge[mcp]"`.
+Runs the MCP server described above; stdio is the default, and Streamable HTTP is
+an explicit loopback option. Requires `pip install "chimeraforge[mcp]"`.
 
 ---
 

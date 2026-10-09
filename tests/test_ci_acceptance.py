@@ -35,6 +35,19 @@ def test_installed_origin_rejects_checkout_and_editable_installs(tmp_path):
     )
 
 
+def test_mcp_http_acceptance_exercises_real_cli_and_closes_owned_process(tmp_path):
+    pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
+    from chimeraforge import __version__
+
+    script = load_script("ci_mcp_http")
+    receipt = script.probe([sys.executable, "-m", "chimeraforge", "mcp"], cwd=tmp_path)
+    assert receipt["serverInfo"]["version"] == __version__
+    assert len(receipt["tools"]) == 5
+    assert receipt["offline_default_plan"] == "passed"
+    assert receipt["caller_network_override"] == "rejected"
+    assert receipt["owned_process"] == "closed"
+
+
 def test_cpu_probe_refuses_corrupt_download_before_installing(tmp_path):
     script = load_script("ci_cpu_serving")
     artifact = tmp_path / "model.gguf"
