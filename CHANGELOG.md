@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Portable saved-plan handoff
+
+- `bundle create/verify/check` and typed Python APIs preserve original plan bytes/fingerprint/producer paths while carrying exactly bound corpus and quality files, including implicitly consumed measured corpora.
+- Strict role membership, SHA256/byte sizes, bounded reads and input-semantic checks reject substituted, missing, extra, linked or malformed inputs. Creation validates dependencies before atomically publishing a staged directory.
+- Offline shared-planner replay consumes held verified bytes after relocation and producer removal, exposes producer/local source receipts separately, and retains current tool/policy/hardware/price/cloud checks. Verification remains content integrity, not source authentication, served-weight proof or performance qualification.
+- Legacy missing byte bindings and nonempty contribution file dependencies are actionable refusals. Sharing harness inputs may disclose private data. Existing installed wheel/sdist consumers now accept a Linux-produced handoff on every supported OS; hosted qualification is pending publication.
+
 ### Added
 - Immutable Hugging Face checkpoint metadata through resolution, saved plans, deployment export and recheck. Online resolution establishes one commit before reading config; receipts bind consumed config bytes and declared weight metadata without downloading weights.
 - `plan --revision REF` for one model, repeated `--revision MODEL=REF` for multiple models, and Python `PlanRequest.model_revisions` / `resolve_spec(hf_revision=...)`. Explicit revisions refuse unavailable offline targets rather than substitute another cache or registry approximation.

@@ -99,6 +99,16 @@ jobs:
       - run: uv run --no-sync twine check dist/*
       - name: Record distribution identities
         run: sha256sum dist/* >> "$GITHUB_STEP_SUMMARY"
+      - name: Produce portable handoff with the exact installed wheel
+        run: |
+          uv pip install --python .venv/bin/python --no-deps --reinstall dist/*.whl
+          uv run --no-sync python scripts/ci_plan_bundle.py --checkout "$GITHUB_WORKSPACE" --produce "$RUNNER_TEMP/plan-handoff"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: plan-handoff
+          path: ${{ runner.temp }}/plan-handoff/
+          retention-days: 3
+          if-no-files-found: error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: dist
@@ -126,7 +136,12 @@ jobs:
         with:
           name: dist
           path: dist/
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: plan-handoff
+          path: plan-handoff/
       - name: Accept original and sdist-rebuilt wheels in isolated environments
+        # Exact Linux-produced plan/input bytes are consumed by every installed OS.
         run: python scripts/ci_distributions.py
 
   docker:

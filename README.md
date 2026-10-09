@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**19 commands, one tool:** `plan` - `check` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**20 commands, one tool:** `plan` - `check` - `bundle` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -289,6 +289,32 @@ a new host for an `auto` plan. Exit 0 means required modeled components are
 unchanged, 1 means changed/expired/unverified required evidence, and 2 means
 malformed input. A stable modeled recommendation does not prove serving
 performance or identify immutable model weights. See [the API contract](docs/planning-api.md).
+
+### `bundle` -- portable saved-plan handoff
+
+This is an unreleased feature of this checkout, beyond PyPI 0.51.0 and the older
+review-stack install pin above. Install this checkout with `pip install .`.
+
+**Harness files may contain private prompts or other data. Review the exact
+inputs before sharing a bundle.** Creation copies only the original plan and its
+bound coefficient/quality files; original bytes, paths and fingerprint stay intact.
+
+```bash
+chimeraforge bundle create plan.json --out handoff
+# Move the whole handoff directory to the receiving machine.
+chimeraforge bundle verify handoff --json
+chimeraforge bundle check handoff --json
+```
+
+Rechecks use verified input bytes offline even after producer files are removed.
+JSON shows producer and local source locations separately. Current tool, policy,
+hardware and applicable price/cloud changes remain actionable; verification alone
+is not a passed plan check. `verify` exits 0 for verified content, `check` exits
+0 for unchanged required facts or 1 for changed, expired or required unverified
+facts, and malformed/unsupported bundles exit 2. Legacy plans without byte
+bindings and nonempty contribution dependencies are refused before writing.
+Integrity does not authenticate a source or prove served weights or performance.
+See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
 ### `deploy` -- export serving configuration
 
