@@ -94,6 +94,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - name: Place the build environment outside the checkout
+        run: echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/chimeraforge-build" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-ci
       - run: uv run --no-sync python -m build --no-isolation
       - run: uv run --no-sync twine check dist/*
@@ -101,8 +103,8 @@ jobs:
         run: sha256sum dist/* >> "$GITHUB_STEP_SUMMARY"
       - name: Produce portable handoff with the exact installed wheel
         run: |
-          uv pip install --python .venv/bin/python --no-deps --reinstall dist/*.whl
-          uv run --no-sync python scripts/ci_plan_bundle.py --checkout "$GITHUB_WORKSPACE" --produce "$RUNNER_TEMP/plan-handoff"
+          uv pip install --python "$UV_PROJECT_ENVIRONMENT/bin/python" --no-deps --reinstall dist/*.whl
+          "$UV_PROJECT_ENVIRONMENT/bin/python" scripts/ci_plan_bundle.py --checkout "$GITHUB_WORKSPACE" --produce "$RUNNER_TEMP/plan-handoff"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: plan-handoff
