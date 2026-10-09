@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass, field
 import logging
 from pathlib import Path
 import time
+from typing import Awaitable, Callable, TypeVar
 
 import httpx
 
@@ -29,6 +30,7 @@ from chimeraforge.planner.replay import digest
 
 logger = logging.getLogger(__name__)
 _clock = time.perf_counter
+T = TypeVar("T")
 BUILTIN_TPOT_BASES = {
     "server-decode-duration/output-token-count",
     "client-first-to-last-content/(server-output-count-1)",
@@ -117,11 +119,20 @@ def _timing(row: dict) -> dict:
             return None
         return (times[end] - times[start]) * 1000
 
+    first = times["first_output_s"]
+    first_is_observed = (
+        first is not None
+        and times["start_s"] is not None
+        and times["terminal_s"] is not None
+        and times["start_s"] <= first <= times["terminal_s"]
+    )
     return {
         "scheduler_lag_ms": difference("arrival_s", "scheduled_s"),
         "client_queue_ms": difference("start_s", "arrival_s"),
         "latency_ms": difference("terminal_s", "scheduled_s"),
-        "first_output_ms": difference("first_output_s", "scheduled_s"),
+        "first_output_ms": difference("first_output_s", "scheduled_s")
+        if first_is_observed
+        else None,
         "tpot_ms": row["mean_tpot_ms"],
     }
 
@@ -160,6 +171,33 @@ async def _sleep_until(deadline: float) -> None:
         await asyncio.sleep(remaining)
 
 
+class _TraceStopped(Exception):
+    """Graceful control stop, distinct from an operational probe failure."""
+
+
+async def _until_stopped(
+    call: Callable[[], Awaitable[T]], timeout: float, stopped: asyncio.Event
+) -> T:
+    if stopped.is_set():
+        raise _TraceStopped
+    running = asyncio.create_task(call())
+    control = asyncio.create_task(stopped.wait())
+    try:
+        completed, _ = await asyncio.wait(
+            (running, control), timeout=timeout, return_when=asyncio.FIRST_COMPLETED
+        )
+        if control in completed:
+            raise _TraceStopped
+        if running in completed:
+            return await running
+        raise asyncio.TimeoutError
+    finally:
+        for task in (running, control):
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(running, control, return_exceptions=True)
+
+
 async def _execute(
     backend: Backend,
     backend_name: str,
@@ -176,6 +214,7 @@ async def _execute(
 
     async def one(request: TraceRequest, row: dict) -> None:
         times = row["times"]
+        active_generation = False
         try:
             await _sleep_until(origin + request.arrival_offset_s)
             times["arrival_s"] = _clock() - origin
@@ -185,21 +224,31 @@ async def _execute(
                 row["state"] = "running"
 
                 def first_output() -> None:
-                    if times["first_output_s"] is None:
-                        times["first_output_s"] = _clock() - origin
+                    observed = _clock() - origin
+                    if (
+                        active_generation
+                        and times["first_output_s"] is None
+                        and observed >= times["start_s"]
+                        and (times["terminal_s"] is None or observed <= times["terminal_s"])
+                    ):
+                        times["first_output_s"] = observed
 
                 cap = request.max_output_tokens
                 options = {"num_predict": cap} if backend_name == "ollama" else {"max_tokens": cap}
                 capability = getattr(backend, "generate_observed", None)
-                if capability is None:
-                    metrics = await asyncio.wait_for(
-                        backend.generate(model, request.prompt, options), request_timeout
-                    )
-                    observed = GenerationObservation(asdict(metrics))
-                else:
-                    observed = await asyncio.wait_for(
-                        capability(model, request.prompt, options, first_output), request_timeout
-                    )
+
+                async def generation() -> GenerationObservation:
+                    nonlocal active_generation
+                    active_generation = True
+                    try:
+                        if capability is None:
+                            metrics = await backend.generate(model, request.prompt, options)
+                            return GenerationObservation(asdict(metrics))
+                        return await capability(model, request.prompt, options, first_output)
+                    finally:
+                        active_generation = False
+
+                observed = await asyncio.wait_for(generation(), request_timeout)
                 native, tpot, basis = _native(observed, backend_name)
                 row.update(
                     native=native, mean_tpot_ms=tpot, mean_tpot_basis=basis, state="completed"
@@ -297,12 +346,12 @@ async def replay(
                 stop_reason = "cancelled"
             else:
                 for probe in (backend.health_check, lambda: backend.check_model(model)):
-                    ok, _ = await asyncio.wait_for(probe(), request_timeout)
+                    ok, _ = await _until_stopped(probe, request_timeout, stopped)
                     if not ok:
                         raise RuntimeError("preflight refused")
                 stage = "metadata_before"
-                observation["before"] = await asyncio.wait_for(
-                    observe_backend(backend, model), request_timeout
+                observation["before"] = await _until_stopped(
+                    lambda: observe_backend(backend, model), request_timeout, stopped
                 )
                 origin = _clock()
                 stage = "scheduled_replay"
@@ -321,9 +370,13 @@ async def replay(
                 elapsed = _clock() - origin
                 if stop_reason is None:
                     stage = "metadata_after"
-                    observation["after"] = await asyncio.wait_for(
-                        observe_backend(backend, model), request_timeout
+                    observation["after"] = await _until_stopped(
+                        lambda: observe_backend(backend, model), request_timeout, stopped
                     )
+    except _TraceStopped:
+        stop_reason = "cancelled"
+        if cleanup.get("state") == "incomplete":
+            error = _error(RuntimeError(), "cleanup")
     except Exception as exc:
         error = _error(exc, "cleanup" if cleanup.get("state") == "incomplete" else stage)
     for row in rows:

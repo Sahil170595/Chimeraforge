@@ -59,7 +59,8 @@ admission. Request timeout covers generation after acquiring a slot. The whole
 trace deadline cancels waiting and running requests and drains owned tasks.
 
 Passing `stop_event=asyncio.Event()` permits a graceful stop with a complete
-population receipt. CLI Ctrl-C sets that event. External asyncio cancellation
+population receipt, including while preflight or metadata is pending: the owned
+probe is cancelled and drained before adapter cleanup. CLI Ctrl-C sets that event. External asyncio cancellation
 closes the backend, drains tasks and propagates `CancelledError` to the caller;
 it does not fabricate a completed receipt. Adapter cleanup failure is explicit.
 
@@ -81,7 +82,9 @@ Ollama uses actual streamed output frames for first output, not
 `prompt_eval_duration`. Its final `eval_duration / eval_count` is the native
 mean server decode ms/token. Server prefill duration remains a separate native
 field with `ttft_basis=server-prefill-duration`. Thinking-only content is not
-treated as first visible output. Native final token counts are retained only
+treated as first visible output. Callbacks outside the active generation are
+ignored; first-output qualification requires an observed start-to-terminal
+timestamp and cannot mutate a completed receipt. Native final token counts are retained only
 when observed; incomplete streams keep counts unknown rather than estimate
 tokens from text or chunks.
 

@@ -633,3 +633,136 @@ async def test_no_replay_origin_cannot_claim_observed_zero_goodput(backend, stop
     assert report["goodput"]["horizon_seconds"] is None
     assert report["goodput"]["planned_horizon_seconds"] == 10
     assert report["goodput"]["qualification"] == "unavailable"
+
+
+@pytest.mark.parametrize("phase", ["health", "model", "metadata_before", "metadata_after"])
+@pytest.mark.asyncio
+async def test_graceful_stop_cancels_and_drains_setup_and_metadata(backend, phase):
+    entered, drained, stopped = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    calls = []
+
+    async def blocking():
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            drained.set()
+
+    async def health():
+        calls.append("health")
+        if phase == "health":
+            await blocking()
+        return True, ""
+
+    async def model(_):
+        calls.append("model")
+        if phase == "model":
+            await blocking()
+        return True, ""
+
+    async def metadata(_):
+        name = "metadata_after" if "metadata_before" in calls else "metadata_before"
+        calls.append(name)
+        if phase == name:
+            await blocking()
+        return {"backend": "ollama", "model": "served", "version": "fixture"}
+
+    backend.health_check, backend.check_model, backend.observe_serving = health, model, metadata
+    task = asyncio.create_task(api.replay_trace(requests(), model="served", stop_event=stopped))
+    await asyncio.wait_for(entered.wait(), 1)
+    stopped.set()
+    report = (await asyncio.wait_for(task, 0.5)).to_dict()
+    assert (
+        drained.is_set() and backend.closed and report["resource_cleanup"]["state"] == "completed"
+    )
+    assert report["stop_reason"] == "cancelled" and report["exit_code"] == 1
+    assert calls[-1] == phase
+    expected = 2 if phase == "metadata_after" else 0
+    assert report["execution"]["completed"] == report["execution"]["attempted"] == expected
+    assert report["execution"]["not_started"] == 2 - expected
+
+
+@pytest.mark.parametrize("metadata", [False, True])
+@pytest.mark.asyncio
+async def test_setup_probe_timeout_is_operational_with_closed_unstarted_population(
+    backend, metadata
+):
+    drained = asyncio.Event()
+
+    async def hanging(*_):
+        try:
+            await asyncio.Event().wait()
+        finally:
+            drained.set()
+
+    if metadata:
+        backend.observe_serving = hanging
+    else:
+        backend.health_check = hanging
+    report = (await api.replay_trace(requests(), model="served", request_timeout=0.02)).to_dict()
+    assert report["error"] == {
+        "stage": "metadata_before" if metadata else "preflight",
+        "type": "TimeoutError",
+    }
+    assert drained.is_set() and backend.closed and report["clock"]["origin"] is None
+    assert report["execution"]["not_started"] == 2 and report["exit_code"] == 1
+
+
+@pytest.mark.asyncio
+async def test_external_setup_cancellation_propagates_after_owned_probe_drained(backend):
+    entered, drained = asyncio.Event(), asyncio.Event()
+
+    async def hanging():
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            drained.set()
+
+    backend.health_check = hanging
+    owned_before = set(asyncio.all_tasks())
+    task = asyncio.create_task(api.replay_trace(requests(), model="served"))
+    await entered.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert drained.is_set() and backend.closed
+    assert not (set(asyncio.all_tasks()) - owned_before)
+
+
+@pytest.mark.parametrize("when", ["metadata_after", "after_return", "next_loop_turn"])
+@pytest.mark.asyncio
+async def test_late_first_output_callback_is_unknown_and_cannot_mutate_receipt(backend, when):
+    from chimeraforge.bench.backends.base import GenerationObservation
+    from chimeraforge.planner.replay import digest
+
+    callbacks, metadata_calls = [], []
+
+    async def generation(model, prompt, options, on_first_output):
+        callbacks.append(on_first_output)
+        if when == "next_loop_turn":
+            asyncio.get_running_loop().call_soon(on_first_output)
+        return GenerationObservation({"tokens_generated": 3})
+
+    async def metadata(_):
+        metadata_calls.append(True)
+        if len(metadata_calls) == 2 and when == "metadata_after":
+            callbacks[0]()
+        return {"backend": "ollama", "model": "served", "version": "fixture"}
+
+    backend.generate_observed, backend.observe_serving = generation, metadata
+    receipt = await api.replay_trace(
+        requests()[:1], model="served", slos=api.TraceSLO(first_output_ms=1000)
+    )
+    original = receipt.to_dict()
+    if when == "after_return":
+        callbacks[0]()
+    report = receipt.to_dict()
+    assert report == original
+    assert report["requests"][0]["times"]["first_output_s"] is None
+    assert report["requests"][0]["slo"]["joint"] == "unknown"
+    assert report["goodput"]["qualified_requests"] == 0
+    assert (
+        digest({key: value for key, value in report.items() if key != "fingerprint"})
+        == report["fingerprint"]
+    )
