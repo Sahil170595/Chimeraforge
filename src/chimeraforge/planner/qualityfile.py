@@ -126,11 +126,12 @@ def load_quality_file(path: str | Path) -> IngestedQuality:
             is an error rather than an empty ingest -- a silent zero-cell read
             would leave the caller believing their eval was in force.
     """
-    p = Path(path)
+    p = Path(path).resolve()
     if not p.exists():
         raise QualityFileError(f"quality file not found: {p}")
     try:
-        payload = json.loads(p.read_text(encoding="utf-8"))
+        raw = p.read_bytes()
+        payload = json.loads(raw)
     except json.JSONDecodeError as exc:
         raise QualityFileError(f"quality file is not valid JSON: {exc}") from exc
     if not isinstance(payload, dict):
@@ -184,7 +185,7 @@ def load_quality_file(path: str | Path) -> IngestedQuality:
     elif not isinstance(date, str):
         date = None
 
-    return IngestedQuality(
+    ingested = IngestedQuality(
         harness=HARNESS_LM_EVAL,
         harness_version=_harness_version(payload),
         date=date,
@@ -198,6 +199,10 @@ def load_quality_file(path: str | Path) -> IngestedQuality:
         cells=cells,
         tasks=sorted(tasks),
     )
+    from chimeraforge.planner.replay import file_receipt
+
+    ingested._input_receipt = file_receipt(p, raw)
+    return ingested
 
 
 def _harness_version(payload: dict) -> str | None:

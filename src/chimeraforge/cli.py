@@ -13,6 +13,7 @@ from rich.console import Console
 import chimeraforge
 from chimeraforge.commands.bench import bench
 from chimeraforge.commands.catalog import catalog
+from chimeraforge.commands.check import check
 from chimeraforge.commands.compare import compare
 from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
@@ -63,6 +64,7 @@ def main(
 # Register commands (implementations in chimeraforge.commands.*).
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
+app.command()(check)
 app.command()(deploy)
 app.command()(suggest)
 app.command()(measure)

@@ -1181,8 +1181,14 @@ class PlannerModels:
 
 def load_models(path: Path | str) -> PlannerModels:
     """Load fitted models from JSON."""
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
+    raw = Path(path).read_bytes()
+    return _models_from_bytes(path, raw)
+
+
+def _models_from_bytes(path: Path | str, raw: bytes) -> PlannerModels:
+    from chimeraforge.planner.replay import file_receipt
+
+    data = json.loads(raw)
     models = PlannerModels(
         vram=VRAMModel.from_dict(data.get("vram", {})),
         throughput=ThroughputModel.from_dict(data.get("throughput", {})),
@@ -1192,6 +1198,7 @@ def load_models(path: Path | str) -> PlannerModels:
         latency=LatencyModel.from_dict(data.get("latency", {})),
         safety=SafetyModel.from_dict(data.get("safety", {})),
     )
+    models._input_receipt = file_receipt(path, raw)
     log.info("Models loaded from %s", path)
     return models
 
@@ -1203,7 +1210,9 @@ def load_bundled_models() -> PlannerModels:
     data_dir = pkg_resources.files("chimeraforge.planner") / "data"
     models_file = data_dir / "fitted_models.json"
     with pkg_resources.as_file(models_file) as p:
-        return load_models(p)
+        models = load_models(p)
+        models._input_receipt = {"kind": "bundled", "sha256": models._input_receipt["sha256"]}
+        return models
 
 
 def load_effective_models(models_path: str | Path | None = None) -> PlannerModels:
@@ -1221,8 +1230,8 @@ def load_effective_models(models_path: str | Path | None = None) -> PlannerModel
     corpus = measured_corpus_path()
     if corpus.is_file():
         try:
-            with open(corpus, encoding="utf-8") as f:
-                raw = json.load(f)
+            consumed = corpus.read_bytes()
+            raw = json.loads(consumed)
             # The corpus embeds a snapshot of the bundled coefficients it was
             # built on. Warn (don't silently shadow) if it predates the installed
             # package, so an upgrade's improved coefficients aren't masked for
@@ -1238,7 +1247,7 @@ def load_effective_models(models_path: str | Path | None = None) -> PlannerModel
                     stamp,
                     __version__,
                 )
-            return load_models(corpus)
+            return _models_from_bytes(corpus, consumed)
         except (ValueError, OSError) as exc:
             log.warning("ignoring unreadable measured corpus %s: %s", corpus, exc)
     return load_bundled_models()

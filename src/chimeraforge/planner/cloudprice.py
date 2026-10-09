@@ -67,7 +67,7 @@ def load_cloud_prices() -> dict:
     return json.loads(text)
 
 
-def offers_for(cloud: str, gpu_name: str) -> list[CloudOffer]:
+def offers_for(cloud: str, gpu_name: str, *, snapshot: dict | None = None) -> list[CloudOffer]:
     """Every whole-GPU instance of ``cloud`` that carries ``gpu_name``."""
     if cloud not in CLOUDS:
         raise CloudPriceError(f"cloud must be one of: {', '.join(CLOUDS)}")
@@ -78,7 +78,7 @@ def offers_for(cloud: str, gpu_name: str) -> list[CloudOffer]:
             spec_source=o["spec_source"],
             price_source=o["price_source"],
         )
-        for o in load_cloud_prices()["offers"]
+        for o in (snapshot if snapshot is not None else load_cloud_prices())["offers"]
         if o["cloud"] == cloud and o["gpu"] == gpu_name
     ]
 
@@ -106,10 +106,12 @@ def fleet_hourly_cost(
     return best
 
 
-def snapshot_age_days(today: _dt.date | None = None) -> int:
-    captured = _dt.date.fromisoformat(load_cloud_prices()["captured_at"])
+def snapshot_age_days(today: _dt.date | None = None, *, snapshot: dict | None = None) -> int:
+    captured = _dt.date.fromisoformat(
+        (snapshot if snapshot is not None else load_cloud_prices())["captured_at"]
+    )
     return max(((today or _today()) - captured).days, 0)
 
 
-def is_stale(today: _dt.date | None = None) -> bool:
-    return snapshot_age_days(today) > STALE_AFTER_DAYS
+def is_stale(today: _dt.date | None = None, *, snapshot: dict | None = None) -> bool:
+    return snapshot_age_days(today, snapshot=snapshot) > STALE_AFTER_DAYS
