@@ -23,6 +23,7 @@ from mcp.client.streamable_http import streamable_http_client
 
 from chimeraforge import __version__
 from chimeraforge.mcp_server import build_server
+from chimeraforge.mcp_transport import DEFAULT_TOOL_TIMEOUT
 
 TOOLS = {
     "chimeraforge_plan",
@@ -32,6 +33,7 @@ TOOLS = {
     "chimeraforge_suggest",
 }
 ROOT = Path(__file__).resolve().parents[1]
+HTTP_RESPONSE_MARGIN_SECONDS = 5
 
 
 @asynccontextmanager
@@ -58,9 +60,11 @@ async def serving(**options):
 
 
 @asynccontextmanager
-async def connected(url):
+async def connected(url, *, timeout=3):
     async with streamable_http_client(url) as (read, write, _):
-        async with ClientSession(read, write, read_timeout_seconds=timedelta(seconds=3)) as session:
+        async with ClientSession(
+            read, write, read_timeout_seconds=timedelta(seconds=timeout)
+        ) as session:
             initialized = await session.initialize()
             yield session, initialized
 
@@ -82,7 +86,14 @@ async def test_http_sdk_client_five_tools_real_offline_plan(monkeypatch):
         return original(**kwargs)
 
     monkeypatch.setattr(tools, "run_plan", capture)
-    async with serving() as (_, url), connected(url) as (client, initialized):
+    # Receive the server's bounded response even when coverage slows real CPU planning.
+    async with (
+        serving() as (_, url),
+        connected(url, timeout=DEFAULT_TOOL_TIMEOUT + HTTP_RESPONSE_MARGIN_SECONDS) as (
+            client,
+            initialized,
+        ),
+    ):
         assert initialized.serverInfo.version == __version__
         assert {item.name for item in (await client.list_tools()).tools} == TOOLS
         result = payload(
