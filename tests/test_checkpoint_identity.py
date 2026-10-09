@@ -120,6 +120,153 @@ def test_revision_measure_refuses_before_ollama_contact(monkeypatch):
     assert "cannot attest" in result.stdout
 
 
+@pytest.mark.parametrize("mapping", [{"other/model": "main"}, {REPO: ""}, {"llama3.2-3b": "main"}])
+def test_mcp_revision_mapping_refuses_invalid_inputs_before_metadata(
+    monkeypatch, tmp_path, mapping
+):
+    from chimeraforge.mcp_server import plan_deployment
+
+    calls = hub(monkeypatch, tmp_path)
+    result = plan_deployment(
+        hardware="RTX 4080 12GB", model=REPO, model_revisions=mapping, quality_target=0
+    )
+    assert result["ok"] is False
+    assert "revision" in result["error"]
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_mcp_sdk_public_tool_schema_and_execution_retain_cached_pin(monkeypatch, tmp_path):
+    pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
+    from chimeraforge.mcp_server import build_server
+
+    calls = hub(monkeypatch, tmp_path)
+    resolver.resolve_spec(REPO, hf_revision=COMMIT)
+    calls.clear()
+    server = build_server()
+    tools = {tool.name: tool for tool in await server.list_tools()}
+    assert "model_revisions" in tools["chimeraforge_plan"].inputSchema["properties"]
+    result_blocks = await server.call_tool(
+        "chimeraforge_plan",
+        {
+            "hardware": "RTX 4080 12GB",
+            "model": REPO,
+            "model_revisions": {REPO: COMMIT},
+            "quality_target": 0,
+            "allow_network": False,
+        },
+    )
+    assert len(result_blocks) == 1 and result_blocks[0].type == "text"
+    result = json.loads(result_blocks[0].text)
+    assert result["ok"]
+    assert result["model_checkpoints"][REPO]["resolved_revision"] == COMMIT
+    assert result["model_checkpoints"][REPO]["weight_bytes_verified"] is False
+    resolved_blocks = await server.call_tool(
+        "chimeraforge_resolve_model",
+        {
+            "model": REPO,
+            "hf_revision": COMMIT,
+            "allow_network": False,
+        },
+    )
+    assert len(resolved_blocks) == 1 and resolved_blocks[0].type == "text"
+    resolved = json.loads(resolved_blocks[0].text)
+    assert resolved["checkpoint"]["resolved_revision"] == COMMIT
+    assert calls == []
+
+
+@pytest.mark.parametrize("ref", ["", "https://user:secret@host/model"])
+def test_mcp_resolver_bad_revision_is_an_actionable_error(monkeypatch, tmp_path, ref):
+    from chimeraforge.mcp_server import resolve_model
+
+    calls = hub(monkeypatch, tmp_path)
+    result = resolve_model(REPO, hf_revision=ref)
+    assert result["ok"] is False
+    assert "revision" in result["error"]
+    assert calls == []
+
+
+def test_mcp_stdio_sdk_client_retain_cached_pin(monkeypatch, tmp_path):
+    import os
+    from pathlib import Path
+    import sys
+
+    pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[1] / "scripts"))
+    from probe_mcp_stdio import probe
+
+    hub(monkeypatch, tmp_path)
+    resolver.resolve_spec(REPO, hf_revision=COMMIT)
+    _, tools = probe(
+        [sys.executable, "-m", "chimeraforge", "mcp"],
+        cwd=tmp_path,
+        env=dict(os.environ),
+        checkpoint_request={"repo": REPO, "commit": COMMIT},
+    )
+    assert "chimeraforge_plan" in tools
+
+
+def test_cli_fleet_retains_explicit_pin_against_distinct_main(monkeypatch, tmp_path):
+    from chimeraforge.planner import service
+
+    monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
+    observed = []
+    original = service.resolve_spec
+
+    def get(url, **kwargs):
+        # Exercise real response parsing with two genuinely different checkpoints.
+        commit = COMMIT if COMMIT in url else NEXT
+        config = CONFIG if commit == COMMIT else {**CONFIG, "num_hidden_layers": 16}
+        raw = json.dumps(config).encode()
+        blob = hashlib.sha1(b"blob " + str(len(raw)).encode() + b"\0" + raw).hexdigest()
+        request = httpx.Request("GET", url)
+        if "/api/models/" in url:
+            return httpx.Response(
+                200,
+                json={
+                    "id": REPO,
+                    "sha": commit,
+                    "safetensors": {"total": 100000000 if commit == COMMIT else 200000000},
+                    "siblings": [{"rfilename": "config.json", "size": len(raw), "blobId": blob}],
+                },
+                request=request,
+            )
+        return httpx.Response(200, content=raw, headers={"x-repo-commit": commit}, request=request)
+
+    def resolve(*args, **kwargs):
+        spec = original(*args, **kwargs)
+        observed.append(
+            (kwargs.get("hf_revision"), spec.checkpoint["resolved_revision"], spec.n_layers)
+        )
+        return spec
+
+    monkeypatch.setattr(httpx, "get", get)
+    monkeypatch.setattr(service, "resolve_spec", resolve)
+    result = CliRunner().invoke(
+        app,
+        [
+            "plan",
+            "--model",
+            REPO,
+            "--revision",
+            COMMIT,
+            "--fleet",
+            "RTX 4080 12GB,H100 80GB",
+            "--quality-target",
+            "0",
+            "--budget",
+            "100000",
+            "--request-rate",
+            "0.01",
+            "--json",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert json.loads(result.stdout)["fleet"]
+    assert len(observed) > 2  # homogeneous search plus real fleet capacity probes
+    assert set(observed) == {(COMMIT, COMMIT, 8)}
+
+
 def test_requested_revision_is_url_encoded_and_never_config_ref(monkeypatch, tmp_path):
     calls = hub(monkeypatch, tmp_path)
     spec = resolver.resolve_spec(REPO, hf_revision="refs/pr/12", use_cache=False)

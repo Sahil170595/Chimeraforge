@@ -126,7 +126,13 @@ def main(argv: list[str] | None = None) -> int:
         checkpoint_receipt = accept_checkpoint(cwd, env, args.checkout)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
-        info, tools = probe([sys.executable, "-I", "-m", "chimeraforge", "mcp"], cwd=cwd, env=env)
+        info, tools = probe(
+            [sys.executable, "-I", "-m", "chimeraforge", "mcp"],
+            cwd=cwd,
+            env=env,
+            checkpoint_request=checkpoint_receipt,
+        )
+        checkpoint_receipt["installed_mcp_revision"] = "passed"
         assert info["version"] == args.expect_version
         http_receipt = probe_http(
             [sys.executable, "-I", "-m", "chimeraforge", "mcp"], cwd=cwd, env=env

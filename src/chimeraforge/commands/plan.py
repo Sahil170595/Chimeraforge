@@ -872,6 +872,7 @@ def plan(
                 # merits with the same gates the single-GPU path applies.
                 plan_kwargs=dict(
                     models=model or None,
+                    model_revisions=model_revisions,
                     model_size=model_size,
                     latency_slo=latency_slo,
                     quality_target=quality_target,

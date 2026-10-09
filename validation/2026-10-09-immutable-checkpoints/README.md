@@ -37,3 +37,16 @@ Linux CPU consumer adds real anonymous pinned metadata/config and explicit netwo
 recheck, with no extra weight download. Those exact-head hosted results are pending
 publication; local protocol tests are not substituted for them. Full-suite results
 are recorded in the final validation follow-up after the immutable code commit.
+
+The first immutable code head `6f5900fb14c1208dd9cf75f112991e8f32ecf5f4`
+completed the full suite with **1 failed, 3486 passed, 2 skipped** in 126.02s.
+The existing MCP shared-surface parity test found the missing revision argument;
+it was retained unchanged. Independent review also demonstrated fleet probes
+switching the explicit checkpoint A to a different `main` checkpoint B.
+`surface-red.log` records five meaningful regressions before fixes: invalid-map
+MCP rejection, public SDK schema/execution and actual distinct-checkpoint fleet
+selection. The fix exposes/forwards the map through MCP, retains checkpoint
+receipts and selected refs through resolve/plan, and forwards the map into all
+fleet probes. The installed MCP consumer also checks the cached pin through a
+real SDK stdio conversation. The original full result is prior-head evidence,
+not a success claim for the final feature.

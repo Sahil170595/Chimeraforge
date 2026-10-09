@@ -126,6 +126,12 @@ only at that commit. An explicit revision unavailable offline fails rather than
 substituting registry geometry or another cached revision. Manual overrides,
 registry geometry and Ollama metadata carry no fabricated Hub identity.
 
+MCP exposes the same map as `chimeraforge_plan.model_revisions`, returns
+`model_checkpoints` alongside the candidate envelope, and accepts `hf_revision`
+on `chimeraforge_resolve_model`. HTTP still applies the operator's network policy;
+a revision cannot enable network access. Heterogeneous fleet probes retain the
+same explicit mapping rather than falling back to `main`.
+
 `ModelSpec.checkpoint` is a versioned receipt for the requested ref, resolved
 commit, observation time, SHA256 of consumed config bytes, optional declared Git
 blob identity, safetensors parameter total and whitelisted declared weight-file

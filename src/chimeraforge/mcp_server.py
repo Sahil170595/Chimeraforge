@@ -155,6 +155,7 @@ def plan_deployment(
     think_time_s: float | None = None,
     session_turns: int | None = None,
     allow_network: bool = True,
+    model_revisions: dict[str, str] | None = None,
 ) -> dict:
     """Plan a deployment; return the top candidates or an actionable error.
 
@@ -172,6 +173,8 @@ def plan_deployment(
     to what the fleet's free KV can keep for idle conversations between turns.
     ``mode="batch"`` plans an offline backlog (no latency gate, ranked by $/1M
     tokens); a latency target with it is an error. ``latency_slo_ms`` None = 5000.
+    ``model_revisions`` maps the selected HF model to a commit/branch/tag; metadata
+    is bound to one immutable commit, not proof of served weight bytes.
     """
     if workload not in WORKLOAD_CV2:
         return {
@@ -252,6 +255,7 @@ def plan_deployment(
             think_time_s=think_time_s,
             session_turns=session_turns,
             allow_network=allow_network,
+            model_revisions=model_revisions,
         )
     except ResolverError as exc:
         return {
@@ -273,6 +277,9 @@ def plan_deployment(
             "ok": True,
             "hardware": hardware,
             "platform": result.platform,
+            "model_checkpoints": {
+                key: asdict(spec)["checkpoint"] for key, spec in result.specs.items()
+            },
             "recommended": None,
             "launch": None,
             "alternatives": [],
@@ -302,6 +309,9 @@ def plan_deployment(
         "ok": True,
         "hardware": hardware,
         "platform": result.platform,
+        "model_checkpoints": {
+            key: asdict(spec)["checkpoint"] for key, spec in result.specs.items()
+        },
         "recommended": _candidate_summary(best),
         "launch": launch,
         "alternatives": [_candidate_summary(c) for c in result.candidates[1:_MAX_CANDIDATES]],
@@ -314,15 +324,19 @@ def plan_deployment(
     }
 
 
-def resolve_model(model: str, allow_network: bool = True) -> dict:
+def resolve_model(model: str, allow_network: bool = True, hf_revision: str | None = None) -> dict:
     """Resolve a model id to real parameters + attention geometry (no planning).
 
     Use to ground a bare fact question ('how many params / layers does <model> have')
     instead of answering from memory. ``model``: registry name, Ollama tag, or HF repo.
     """
     try:
-        spec = resolve_spec(model, allow_network=allow_network)
-    except ResolverError as exc:
+        spec = resolve_spec(
+            model,
+            allow_network=allow_network,
+            **({"hf_revision": hf_revision} if hf_revision is not None else {}),
+        )
+    except (ResolverError, ValueError) as exc:
         return {"ok": False, "error": str(exc)}
     return {"ok": True, **asdict(spec)}
 
