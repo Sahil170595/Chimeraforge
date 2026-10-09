@@ -50,6 +50,57 @@ def test_checkpoint_seed_entrypoint_imports_under_actual_isolated_python(tmp_pat
     assert "--seed" in result.stdout
 
 
+@pytest.mark.parametrize(
+    "mutation", ["source_authentication", "performance", "local_sha256", "exit_code"]
+)
+def test_portable_installed_consumer_refuses_incomplete_or_promoted_evidence(tmp_path, mutation):
+    import copy
+    import json
+    from chimeraforge.api import PlanRequest, plan, create_plan_bundle, check_plan_bundle
+
+    script = load_script("ci_plan_bundle")
+    corpus, quality, path = (
+        tmp_path / "models.json",
+        tmp_path / "quality.json",
+        tmp_path / "plan.json",
+    )
+    corpus.write_text(json.dumps({"vram": {"overhead_factor": 1.123}}))
+    quality.write_text(
+        json.dumps({"results": {"mmlu": {"acc,none": 0.83}}, "n-samples": {"mmlu": 5000}})
+    )
+    plan(PlanRequest(allow_network=False, models_path=str(corpus), quality_from=str(quality))).save(
+        path
+    )
+    directory = tmp_path / "bundle"
+    create_plan_bundle(path, directory)
+    corpus.unlink()
+    quality.unlink()
+    raw = path.read_bytes()
+    checked = check_plan_bundle(directory).to_dict()
+    script.validate(checked, raw, directory)
+    checked = copy.deepcopy(checked)
+    if mutation == "source_authentication":
+        checked["bundle"]["source_authentication"] = "verified"
+    elif mutation == "performance":
+        checked["performance"]["state"] = "passed"
+    elif mutation == "local_sha256":
+        checked["bundle"]["relocations"]["quality"]["local"]["sha256"] = "0" * 64
+    else:
+        checked["exit_code"] = 1
+    with pytest.raises(AssertionError):
+        script.validate(checked, raw, directory)
+
+
+def test_bundle_harness_cli_commands_in_source_protocol_fixture(tmp_path, monkeypatch):
+    # Exercise command wiring here; actual installed-origin proof is a separate hosted gate.
+    script = load_script("ci_plan_bundle")
+    installed = load_script("ci_installed_acceptance")
+    monkeypatch.setattr(installed, "assert_installed_origin", lambda *_: None)
+    receipt = script.produce(tmp_path / "handoff", Path(__file__).resolve().parents[1])
+    assert receipt["producer_paths_absent"] is True
+    assert len(receipt["plan_sha256"]) == 64
+
+
 def test_mcp_http_acceptance_exercises_real_cli_and_closes_owned_process(tmp_path):
     pytest.importorskip("mcp", reason="optional [mcp] extra not installed")
     from chimeraforge import __version__

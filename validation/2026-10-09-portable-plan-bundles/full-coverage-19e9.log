@@ -1,0 +1,250 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 20%]
+.............................ss......................................... [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................F............................... [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+....................................s................................... [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 74%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+........................................                                 [100%]
+================================== FAILURES ===================================
+______________ test_http_sdk_client_five_tools_real_offline_plan ______________
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\tmp\cf-release-051-20261008\tests\test_mcp_http.py", line 85, in test_http_sdk_client_five_tools_real_offline_plan
+  |     async with serving() as (_, url), connected(url) as (client, initialized):
+  |                                       ^^^^^^^^^^^^^^
+  |   File "C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "C:\tmp\cf-release-051-20261008\tests\test_mcp_http.py", line 62, in connected
+  |     async with streamable_http_client(url) as (read, write, _):
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\client\streamable_http.py", line 672, in streamable_http_client
+  |     async with anyio.create_task_group() as tg:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\client\streamable_http.py", line 695, in streamable_http_client
+    |     yield (
+    |   File "C:\tmp\cf-release-051-20261008\tests\test_mcp_http.py", line 63, in connected
+    |     async with ClientSession(read, write, read_timeout_seconds=timedelta(seconds=3)) as session:
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\shared\session.py", line 238, in __aexit__
+    |     return await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_backends\_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\streams\memory.py", line 118, in receive
+      |     return self.receive_nowait()
+      |            ^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\streams\memory.py", line 113, in receive_nowait
+      |     raise WouldBlock
+      | anyio._core._exceptions.WouldBlock
+      | 
+      | During handling of the above exception, another exception occurred:
+      | 
+      | Traceback (most recent call last):
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_core\_tasks.py", line 152, in fail_at
+      |     yield cancel_scope
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_core\_tasks.py", line 179, in fail_after
+      |     yield scope
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\shared\session.py", line 292, in send_request
+      |     response_or_error = await response_stream_reader.receive()
+      |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\streams\memory.py", line 126, in receive
+      |     await receive_event.wait()
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_backends\_asyncio.py", line 1936, in wait
+      |     await self._event.wait()
+      |   File "C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\asyncio\locks.py", line 212, in wait
+      |     await fut
+      | asyncio.exceptions.CancelledError: Cancelled via cancel scope 1df639a2490; reason: deadline exceeded
+      | 
+      | During handling of the above exception, another exception occurred:
+      | 
+      | Traceback (most recent call last):
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\shared\session.py", line 291, in send_request
+      |     with anyio.fail_after(timeout):
+      |          ^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 158, in __exit__
+      |     self.gen.throw(value)
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_core\_tasks.py", line 178, in fail_after
+      |     with fail_at(deadline, shield=shield, reason=reason) as scope:
+      |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\contextlib.py", line 158, in __exit__
+      |     self.gen.throw(value)
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\anyio\_core\_tasks.py", line 155, in fail_at
+      |     raise TimeoutError(reason) if reason else TimeoutError
+      | TimeoutError
+      | 
+      | During handling of the above exception, another exception occurred:
+      | 
+      | Traceback (most recent call last):
+      |   File "C:\tmp\cf-release-051-20261008\tests\test_mcp_http.py", line 65, in connected
+      |     yield session, initialized
+      |   File "C:\tmp\cf-release-051-20261008\tests\test_mcp_http.py", line 108, in test_http_sdk_client_five_tools_real_offline_plan
+      |     await client.call_tool("chimeraforge_suggest", {"hardware": "RTX 4090 24GB"})
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\client\session.py", line 401, in call_tool
+      |     result = await self.send_request(
+      |              ^^^^^^^^^^^^^^^^^^^^^^^^
+      |   File "C:\tmp\cf-release-051-env-20261008\Lib\site-packages\mcp\shared\session.py", line 294, in send_request
+      |     raise McpError(
+      | mcp.shared.exceptions.McpError: Timed out while waiting for response to ClientRequest. Waited 3.0 seconds.
+      +------------------------------------
+============================== warnings summary ===============================
+tests/test_accuracy.py: 1 warning
+tests/test_fleet.py: 1 warning
+tests/test_gha_plan_comment.py: 1 warning
+tests/test_hardware_resolution.py: 1 warning
+tests/test_provenance_labels.py: 1 warning
+tests/test_quality_intervals.py: 3 warnings
+tests/test_repo_conventions.py: 5 warnings
+  C:\tmp\cf-release-051-env-20261008\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+tests/test_reporting_degenerates.py::TestEvalDisclosesPlaceholderPredictions::test_json_marks_a_run_where_the_model_was_never_queried
+  C:\tmp\cf-release-051-20261008\src\chimeraforge\eval\metrics.py:331: UserWarning: BERTScore unavailable (install `evaluate` and `bert-score`). Returning 0.0; the composite redistributes its weight to ROUGE-L and records `composite_weights` so the two schemes are distinguishable.
+    bs = compute_bert_score(predictions, references)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                                            Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------------------------------------
+src\chimeraforge\__main__.py                        3      3      2      0     0%   7-10
+src\chimeraforge\api.py                           340     23    142     22    91%   108, 135, 137, 197, 248, 263, 305, 340, 343, 350, 357, 369, 371, 373, 377, 383, 389, 398, 401, 403, 416, 419, 434
+src\chimeraforge\bench\backends\_streaming.py      63      3     20      0    96%   40-42
+src\chimeraforge\bench\backends\base.py            69      6     14      2    90%   41-43, 108, 118, 143->145, 148
+src\chimeraforge\bench\backends\ollama.py          75     15     14      2    79%   35->exit, 49, 58, 72-77, 134-145
+src\chimeraforge\bench\backends\plugin.py          65      2     22      0    98%   65-66
+src\chimeraforge\bench\backends\sglang.py          83      9     18      2    89%   63->exit, 82-83, 91, 113-118
+src\chimeraforge\bench\backends\tgi.py             90     13     26      4    85%   49->exit, 62, 71-72, 86, 101, 105-110, 165-167
+src\chimeraforge\bench\backends\vllm.py            72     14     14      3    78%   62, 71-72, 80, 94-105
+src\chimeraforge\bench\metrics.py                 108      1     10      1    98%   102
+src\chimeraforge\bench\plan.py                    102      3     30      3    95%   147, 246, 255
+src\chimeraforge\bench\runner.py                  166     10     56      6    93%   80-82, 87, 116-119, 124, 287, 311->319, 389->394
+src\chimeraforge\bench\serving.py                 228     13     72     11    92%   119, 140, 144, 259->258, 264->263, 299, 315-319, 348, 367, 369, 372
+src\chimeraforge\bench\serving_binding.py         108      2     36      0    99%   52-53
+src\chimeraforge\cli.py                            52      2      2      1    94%   47-48
+src\chimeraforge\commands\bench.py                110     39     34      5    62%   140, 142-145, 152-154, 160-165, 197-198, 214-215, 230-231, 240-241, 278-328
+src\chimeraforge\commands\bench_plan.py            46     14     10      4    64%   42, 46, 67-68, 73-75, 80-81, 85-100
+src\chimeraforge\commands\bundle.py                30      1      4      1    94%   23
+src\chimeraforge\commands\catalog.py               40     22     12      3    40%   52-59, 69-74, 84-112
+src\chimeraforge\commands\check.py                 24      9     10      2    50%   33, 38-45
+src\chimeraforge\commands\compare.py               29      3      8      2    86%   61-62, 74
+src\chimeraforge\commands\contribute.py           117     16     30      3    84%   53-54, 63, 108-109, 143-155, 182-184
+src\chimeraforge\commands\deploy.py                27      1     12      1    95%   50
+src\chimeraforge\commands\doctor.py                66     21     20      3    67%   58-69, 71->91, 92-100
+src\chimeraforge\commands\eval.py                  65     15     30      7    75%   89-91, 95-101, 120-121, 123-124, 145->161, 154-155, 156->161, 158->157
+src\chimeraforge\commands\mcp.py                   21      1      6      1    93%   57
+src\chimeraforge\commands\measure.py               52     45      8      0    12%   43-103, 107-139
+src\chimeraforge\commands\monitor.py               40      6     22      5    82%   39, 43-44, 45->47, 61, 77, 79
+src\chimeraforge\commands\plan.py                 285     39    160     15    87%   487, 491-501, 542, 545, 591-592, 607, 609, 632, 643, 659-674, 716->718, 721->723, 724, 814, 854-856, 920-921, 1037-1039, 1040->1044, 1062-1064
+src\chimeraforge\commands\refit.py                 67     15     32      6    75%   72-76, 81-82, 92, 131-137, 142, 165
+src\chimeraforge\commands\report.py                48     12     20      3    72%   72-76, 81-82, 113-125
+src\chimeraforge\commands\safety.py                95     13     24      5    83%   109, 122-123, 179, 183-186, 188, 193->197, 200-203
+src\chimeraforge\commands\serve.py                 15     12      0      0    20%   13-26
+src\chimeraforge\commands\suggest.py               57     30     20      4    43%   68-69, 71-72, 100-149
+src\chimeraforge\commands\validate.py             122     33     58      6    72%   134->146, 137-138, 148-150, 156-161, 198-239, 277, 278->280, 300, 313
+src\chimeraforge\commands\workload.py              87      7     48      4    92%   101, 109, 119, 134-135, 167-168, 185->187
+src\chimeraforge\compare\comparator.py            126      2     28      2    97%   37, 309
+src\chimeraforge\contrib.py                       192     14     80     10    91%   97-98, 130-131, 149, 184, 187, 199, 211, 214, 222, 229, 269, 272
+src\chimeraforge\contribution_review.py           210     13     62      4    94%   84-86, 87->exit, 90, 130-132, 208, 303-305, 357, 362
+src\chimeraforge\deploy.py                        247     13    128     14    93%   128, 133, 138-143, 148, 184, 193, 195, 204, 206, 213, 217, 219, 288->308
+src\chimeraforge\doctor.py                        408     45    128     19    88%   148-151, 164, 168-169, 189, 215, 229->236, 273, 276-277, 281-283, 294, 298, 304-305, 325, 339-340, 396, 455->457, 480-481, 484, 502, 506-507, 525-526, 531-532, 542, 545-546, 562-566, 613, 650-651, 654->656, 698->702, 727
+src\chimeraforge\eval\metrics.py                  120      2     38      2    97%   90, 120
+src\chimeraforge\eval\runner.py                    67      1     18      1    98%   139
+src\chimeraforge\mcp_server.py                    119      9     30      1    89%   426-427, 571->573, 591-597
+src\chimeraforge\mcp_transport.py                 136      5     38      3    95%   54, 80->86, 117-119, 138
+src\chimeraforge\measure.py                        90     15     14      3    81%   153-157, 166->180, 198-217
+src\chimeraforge\monitor.py                       408     31    184     25    91%   59, 63-64, 189, 194, 197, 203, 213, 216, 221, 229, 246-247, 255, 262, 266, 270, 272, 307, 329, 337->339, 342, 344, 346, 420-421, 458, 492-493, 497-498, 561->582, 601
+src\chimeraforge\plan_bundle.py                   246     17    108     17    90%   63, 70, 78, 91, 109, 151, 170, 172, 180, 185, 188, 219, 248, 293, 310, 325, 355
+src\chimeraforge\plan_check.py                    349     38    172     28    87%   89, 105, 117, 147, 154, 162, 164, 167, 169, 179, 187, 211, 220, 224, 231, 233, 235, 241, 249, 254, 261, 265, 273, 278-279, 283, 386->390, 436-437, 486-487, 522-523, 601-604, 623, 629, 652-653
+src\chimeraforge\plan_monitor.py                  119      6     38      2    95%   36, 76-82, 93-94, 147->exit
+src\chimeraforge\planner\apicost.py                75      2      8      0    98%   120-121
+src\chimeraforge\planner\brief.py                 169      6     60     12    92%   172, 336->338, 338->340, 340->349, 401, 457, 459, 461, 465->483, 510->514, 517, 518->521
+src\chimeraforge\planner\checkpoint.py            152     20     78     21    82%   65, 110, 114, 121, 126, 135, 141, 145, 154, 160, 162, 180, 190, 192, 196, 218, 221, 227, 229->235, 241, 252
+src\chimeraforge\planner\cloudprice.py             53      1      8      0    98%   43
+src\chimeraforge\planner\discovery.py              97     38     16      3    60%   43-51, 58-71, 82-87, 101-110, 197, 199, 214-215, 226-228
+src\chimeraforge\planner\engine.py                596      6    282      9    98%   393, 396, 501->507, 830->834, 1327, 1333, 1339->1344, 1393, 1447
+src\chimeraforge\planner\evalstats.py              58      2      6      1    95%   91, 158
+src\chimeraforge\planner\fleet.py                 183     11     72     10    92%   98, 137, 140, 227-228, 247, 312, 319, 332, 381, 397, 430->438
+src\chimeraforge\planner\formatter.py             269     53     80      8    79%   222, 264->270, 282-283, 291->exit, 304-352, 356-361, 370, 386-393, 398-399, 452-467, 472-478, 553->568, 564
+src\chimeraforge\planner\hardware.py              171      1     64      1    99%   373
+src\chimeraforge\planner\hybrid.py                181     11     72      8    92%   138, 153, 163, 172, 180, 186->196, 224, 327, 383, 388-390
+src\chimeraforge\planner\identity.py               73      2     26      2    96%   89, 123
+src\chimeraforge\planner\launch.py                174      9     92      8    94%   86, 138->143, 148, 160-162, 233, 243, 254, 271
+src\chimeraforge\planner\models.py                484     13    142     15    96%   285, 353, 401, 471, 485, 488->495, 523, 536, 540->547, 652, 659->656, 1054->1057, 1062, 1069, 1250, 1258-1259
+src\chimeraforge\planner\platform_support.py      128      5     54      1    95%   139-143
+src\chimeraforge\planner\provenance.py             48      1     14      1    97%   140
+src\chimeraforge\planner\qualityfile.py           123     10     56      9    89%   57-59, 79, 101-102, 112->116, 114->112, 141, 162, 197->200, 229, 241
+src\chimeraforge\planner\replay.py                 39      2     16      2    93%   18, 38
+src\chimeraforge\planner\resolver.py              334     28     90      5    92%   345-347, 437->439, 587, 591-593, 611-612, 630-641, 652, 666-669, 711, 778
+src\chimeraforge\planner\service.py                87      0     30      1    99%   265->268
+src\chimeraforge\refit\fitter.py                  231      5     84      9    96%   76->69, 102->96, 138->133, 253, 304->302, 315->313, 394, 530->525, 533-535
+src\chimeraforge\report\analysis.py                77      7     30      7    87%   71, 73, 96, 129, 131, 135, 215
+src\chimeraforge\report\generator.py              307     21    118     19    89%   84->80, 190, 276->296, 284->296, 306->312, 416-417, 484, 486, 537->542, 543-547, 550-554, 600, 712, 733-734, 737->748, 739->741, 741->743, 743->745, 745->748, 766-767
+src\chimeraforge\rest_server.py                   152     14     52      7    90%   76->exit, 79-80, 86, 92->exit, 95-96, 133-134, 140-141, 150, 162->166, 171-174
+src\chimeraforge\safety\runner.py                  68      9     22      5    82%   74, 101, 110-114, 117, 127
+src\chimeraforge\validate.py                      462     35    180     23    90%   196, 256, 269, 273, 349, 376, 409, 421, 429, 614, 623, 749-750, 806-815, 855->861, 866-867, 883-884, 917, 934->933, 938, 967-968, 970, 1000->1005, 1005->1007, 1022-1026, 1032-1036
+src\chimeraforge\workload.py                      397     22    168     24    92%   214->216, 216->218, 218->220, 220->222, 244, 290, 293, 304-305, 349->368, 456, 464->463, 493, 496->510, 628->637, 630->637, 641->645, 646->651, 708->715, 715->722, 727->738, 737, 738->exit, 746, 810-811, 833, 853-864
+-------------------------------------------------------------------------------------------
+TOTAL                                           11430   1018   4070    479    89%
+
+19 files skipped due to complete coverage.
+Coverage JSON written to file C:\tmp\cf-next-pr-receipts-20261008\portable-plan-bundles-coverage.json
+=========================== short test summary info ===========================
+FAILED tests/test_mcp_http.py::test_http_sdk_client_five_tools_real_offline_plan
+1 failed, 3564 passed, 3 skipped, 14 warnings in 1140.14s (0:19:00)

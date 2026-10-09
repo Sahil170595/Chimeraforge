@@ -20,6 +20,7 @@ from chimeraforge.contribution_review import ContributionReceipt
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.plan_check import PlanCheck
+from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
@@ -432,6 +433,27 @@ def check_plan(
     if type(allow_network) is not bool or (hf_token is not None and type(hf_token) is not str):
         raise PlanError("invalid check network options")
     return check(artifact, allow_network=allow_network, hf_token=hf_token)
+
+
+def create_plan_bundle(plan_path: str | Path, output_directory: str | Path) -> PlanBundle:
+    """Copy original plan and exact bound inputs atomically; harness files may be private."""
+    from chimeraforge.plan_bundle import create
+
+    return create(plan_path, output_directory)
+
+
+def verify_plan_bundle(directory: str | Path) -> PlanBundle:
+    """Validate fixed membership and producer bindings; retain bounded consumed bytes."""
+    from chimeraforge.plan_bundle import verify
+
+    return verify(directory)
+
+
+def check_plan_bundle(saved: PlanBundle | str | Path) -> PlanCheck:
+    """Replay verified handoff inputs offline, with separate producer/local evidence."""
+    from chimeraforge.plan_bundle import check
+
+    return check(saved)
 
 
 async def benchmark_plan(

@@ -1,0 +1,201 @@
+FFFFFFFFFFF                                                              [100%]
+================================== FAILURES ===================================
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload0] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1193: in _models_from_bytes
+    vram=VRAMModel.from_dict(data.get("vram", {})),
+                             ^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[None] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1193: in _models_from_bytes
+    vram=VRAMModel.from_dict(data.get("vram", {})),
+                             ^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[not a corpus] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1193: in _models_from_bytes
+    vram=VRAMModel.from_dict(data.get("vram", {})),
+                             ^^^^^^^^
+E   AttributeError: 'str' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[42] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1193: in _models_from_bytes
+    vram=VRAMModel.from_dict(data.get("vram", {})),
+                             ^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload4] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1193: in _models_from_bytes
+    vram=VRAMModel.from_dict(data.get("vram", {})),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:229: in from_dict
+    overhead_factor=d.get("overhead_factor", 1.10),
+                    ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload5] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1194: in _models_from_bytes
+    throughput=ThroughputModel.from_dict(data.get("throughput", {})),
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:561: in from_dict
+    lookup=d.get("lookup", {}),
+           ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload6] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1195: in _models_from_bytes
+    scaling=ScalingModel.from_dict(data.get("scaling", {})),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:605: in from_dict
+    serial_fractions=d.get("serial_fractions", {}),
+                     ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload7] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1196: in _models_from_bytes
+    quality=QualityModel.from_dict(data.get("quality", {})),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:777: in from_dict
+    lookup=d.get("lookup", {}),
+           ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload8] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1197: in _models_from_bytes
+    cost=CostModel.from_dict(data.get("cost", {})),
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:875: in from_dict
+    return cls(hw_cost_per_hour=d.get("hw_cost_per_hour", 0.035))
+                                ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload9] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1198: in _models_from_bytes
+    latency=LatencyModel.from_dict(data.get("latency", {})),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:1103: in from_dict
+    service_times=d.get("service_times", {}),
+                  ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+_ test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload10] _
+tests\test_plan_bundle.py:554: in test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:230: in _prepare
+    _models_from_bytes(local_path, raw)
+src\chimeraforge\planner\models.py:1199: in _models_from_bytes
+    safety=SafetyModel.from_dict(data.get("safety", {})),
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\models.py:1160: in from_dict
+    lookup=d.get("lookup", {}),
+           ^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+=========================== short test summary info ===========================
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload0]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[None]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[not a corpus]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[42]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload4]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload5]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload6]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload7]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload8]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload9]
+FAILED tests/test_plan_bundle.py::test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli[payload10]
+11 failed, 50 deselected in 8.30s

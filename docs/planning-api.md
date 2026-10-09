@@ -89,6 +89,72 @@ unverified: an unchanged modeled result is not a performance acceptance test.
 Fingerprints detect edits, including context edits, but cannot authenticate a
 snapshot or turn unsigned quarantine data into trusted measurements.
 
+## Portable plan bundles
+
+This is an unreleased source feature. Install the current feature checkout with
+`pip install .`; neither PyPI 0.51.0 nor the README's older review-stack pin
+contains it. **Quality harness files may contain private prompts/configuration:
+review their contents before creating or sharing a handoff.**
+
+```python
+from chimeraforge.api import create_plan_bundle, verify_plan_bundle, check_plan_bundle
+
+created = create_plan_bundle("plan.json", "handoff")
+# Copy/move the complete directory. Original producer files can now be absent.
+verified = verify_plan_bundle("receiving/handoff")
+print(verified.to_dict())  # defensive metadata; excludes raw harness payloads
+print(check_plan_bundle(verified).to_dict())
+```
+
+The corresponding CLI is `bundle create PLAN --out DIRECTORY [--json]`,
+`bundle verify DIRECTORY --json`, and `bundle check DIRECTORY --json`. The new
+destination must not exist and its parent must exist. Creation validates every
+dependency before writing, stages files in a sibling directory, and publishes
+the complete directory; interrupted writes remove that task-owned staging tree.
+Do not edit the original plan or its producer receipts to relocate it.
+
+Manifest version 1 admits only fixed roles `plan` (`plan.json`), `corpus`
+(`corpus.json`) and, when consumed, `quality` (`quality.json`). Each records
+SHA256 and exact byte size; the manifest also binds the original fingerprint.
+Unknown/duplicate fields or roles, traversal/renamed members, extra/missing files,
+directories, symlinks/reparse points and hardlinked members are refused. Limits
+are 64 KiB for the manifest, 8 MiB for the saved plan and 32 MiB per input, keeping
+verification bounded rather than capturing arbitrary directories.
+
+The original plan bytes, fingerprint, options and producing absolute paths remain
+unchanged. Both explicit and implicitly selected external measured corpora are
+included from their recorded receipts. Bundled coefficients can be included only
+when current resource bytes and parsed coefficient digest match the producing
+bindings. Quality bytes must also reproduce the saved scores, aggregation and
+source labels. Legacy snapshots lacking required original byte bindings cannot
+be upgraded by reading a convenient current file. Nonempty contribution
+dependencies bind semantic records rather than original file bytes and are
+currently unsupported: save a plan without those dependencies to bundle it.
+
+Verification consumes each required file once. `PlanBundle` retains private
+immutable bytes, revalidates its manifest and input semantics on reuse, and gives
+the shared planner already parsed inputs without path rereads. A verified object
+is a snapshot of the consumed bytes; checking that object does not observe later
+filesystem changes. Passing a directory instead verifies its current files.
+Captured receiving source labels also stay fixed if that directory is later
+replaced by a link; checking the directory path then refuses the link.
+
+Bundle checks preserve ordinary `PlanCheck` policy and current-fact observations,
+adding `bundle.relocations` with the original producer receipt and the actual
+local content receipt. Only the verified role can relocate its source labels;
+general provenance is not stripped. Original path availability is not fabricated.
+For originally bundled coefficients, current installed bundled coefficients are
+also observed separately; an unrelated bundled corpus is not a required input
+for an external-corpus handoff. Saved geometry/OS remains the replay target,
+including `auto`; no new host probe or implicit network permission occurs.
+
+Creation/verification exit 0 for completed integrity operations. Checking exits
+0 for unchanged required comparisons, 1 for changed/expired/required unverified
+facts, and 2 for malformed or unsupported inputs. `source_authentication` and
+performance remain unverified. A self-consistent bundle can be re-signed by
+anyone; hashes cannot authenticate the producing source, qualify actual served
+weights, or establish measured prediction accuracy.
+
 ## Checkpoint identity
 
 This is an unreleased source feature, beyond PyPI 0.51.0 and the README's older

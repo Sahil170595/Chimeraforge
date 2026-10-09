@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**19 commands, one tool:** `plan` - `check` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**20 commands, one tool:** `plan` - `check` - `bundle` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -289,6 +289,32 @@ a new host for an `auto` plan. Exit 0 means required modeled components are
 unchanged, 1 means changed/expired/unverified required evidence, and 2 means
 malformed input. A stable modeled recommendation does not prove serving
 performance or identify immutable model weights. See [the API contract](docs/planning-api.md).
+
+### `bundle` -- portable saved-plan handoff
+
+This is an unreleased feature of this checkout, beyond PyPI 0.51.0 and the older
+review-stack install pin above. Install this checkout with `pip install .`.
+
+**Harness files may contain private prompts or other data. Review the exact
+inputs before sharing a bundle.** Creation copies only the original plan and its
+bound coefficient/quality files; original bytes, paths and fingerprint stay intact.
+
+```bash
+chimeraforge bundle create plan.json --out handoff
+# Move the whole handoff directory to the receiving machine.
+chimeraforge bundle verify handoff --json
+chimeraforge bundle check handoff --json
+```
+
+Rechecks use verified input bytes offline even after producer files are removed.
+JSON shows producer and local source locations separately. Current tool, policy,
+hardware and applicable price/cloud changes remain actionable; verification alone
+is not a passed plan check. `verify` exits 0 for verified content, `check` exits
+0 for unchanged required facts or 1 for changed, expired or required unverified
+facts, and malformed/unsupported bundles exit 2. Legacy plans without byte
+bindings and nonempty contribution dependencies are refused before writing.
+Integrity does not authenticate a source or prove served weights or performance.
+See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
 ### `deploy` -- export serving configuration
 
@@ -634,7 +660,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **3,498 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-checkpoint-isolated-seed/README.md) collected 3,498 cases: 3,496 passed and two skipped.
+- **3,568 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-portable-plan-bundles/README.md) collected 3,568 cases: 3,565 passed and three skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

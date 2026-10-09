@@ -34,6 +34,8 @@ def accept(wheel: Path, root: Path, temp: Path, requirements: Path, version: str
         version,
         "--checkout",
         root,
+        "--plan-handoff",
+        root / "plan-handoff",
         cwd=temp,
     )
     run(
