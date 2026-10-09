@@ -11,6 +11,7 @@ from pathlib import Path
 from chimeraforge.bench.gate_inputs import (
     MAX_POLICY_BYTES,
     MAX_TOTAL_BYTES,
+    MAX_TOKEN_COUNT,
     SERIALIZATION_ROUNDOFF,
     WALL_BASIS,
     fail,
@@ -247,6 +248,9 @@ def _cache(receipt: dict) -> dict:
         "disabled_observed": disabled,
         "known_counts": sorted(value for value in counts if value is not None),
         "unknown_count": sum(value is None for value in counts),
+        "unknown_prompt_capacities": [
+            row.prompt_tokens for row in receipt["samples"] if row.cached_prompt_tokens is None
+        ],
         "basis": "observed per-request cached tokens"
         if known
         else "observed disabled prefix cache"
@@ -258,10 +262,18 @@ def _cache(receipt: dict) -> dict:
 def _cache_compatible(left: dict, right: dict) -> bool:
     """Unknown slots may explain absence, never a known contradictory population."""
     left_known, right_known = Counter(left["known_counts"]), Counter(right["known_counts"])
-    return (
-        sum((left_known - right_known).values()) <= right["unknown_count"]
-        and sum((right_known - left_known).values()) <= left["unknown_count"]
-    )
+
+    def fits(required: Counter, available: dict) -> bool:
+        wanted = sorted(required.elements())
+        capacities = sorted(
+            0 if available["disabled_observed"] else MAX_TOKEN_COUNT if value is None else value
+            for value in available["unknown_prompt_capacities"]
+        )
+        return len(wanted) <= len(capacities) and all(
+            value <= cap for value, cap in zip(wanted, capacities[-len(wanted) :])
+        )
+
+    return fits(left_known - right_known, right) and fits(right_known - left_known, left)
 
 
 def _evidence_id(receipt: dict) -> str:

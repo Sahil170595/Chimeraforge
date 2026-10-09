@@ -82,7 +82,9 @@ unknown/uncontrolled cache scope. It cannot waive contradictory counters, known
 cache changes or a required prefix-cache expectation. Known cross-arm cache
 changes require paired cache treatments. No path assumes zero hits or cold runs.
 Partial counters retain known values and unknown slots: the absence-only waiver
-cannot conceal populations whose known counts cannot possibly agree. Identical
+cannot conceal populations whose known counts cannot possibly agree. Unknown
+counters are bounded by their own observed prompt-token lengths when testing
+whether missing slots could explain residual known counts. Identical
 cache-treatment expectations are not a declaration of changed cache behavior.
 
 ```python

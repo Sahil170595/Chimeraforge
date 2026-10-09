@@ -774,3 +774,64 @@ def test_finite_large_ignored_numbers_are_allowed_and_do_not_change_execution_id
     right = receipt(elapsed=0.9)
     right["measurement"]["environment"]["ignored"] = 1e308
     assert gate(candidate=seal(right))["exit_code"] == 0
+
+
+def test_partial_cache_unknown_slots_cannot_exceed_their_observed_prompt_capacity():
+    left, right = receipt(), receipt(elapsed=0.9)
+    for row, counts in ((left, (0, 8, 8)), (right, (None, 0, 8))):
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = True
+        for sample, prompt, cached in zip(row["execution"]["individual_runs"], (1, 8, 8), counts):
+            sample.update(prompt_tokens=prompt, cached_prompt_tokens=cached)
+        seal(row)
+    result = gate(left, right, policy(require_cache_evidence=False))
+    assert result["exit_code"] == 3 and "observed_cache_hits_changed" in result["blockers"]
+
+
+def test_partial_cache_residuals_that_fit_observed_prompt_capacity_remain_unknown():
+    left, right = receipt(), receipt(elapsed=0.9)
+    for row, counts in ((left, (0, 8, 8)), (right, (0, None, 8))):
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = True
+        for sample, prompt, cached in zip(row["execution"]["individual_runs"], (1, 8, 8), counts):
+            sample.update(prompt_tokens=prompt, cached_prompt_tokens=cached)
+        seal(row)
+    assert gate(left, right)["exit_code"] == 3
+    report = gate(left, right, policy(require_cache_evidence=False))
+    assert report["exit_code"] == 0
+
+
+@pytest.mark.parametrize("candidate_cached,expected", [(8, 3), (0, 0)])
+def test_observed_disabled_cache_bounds_unknown_counters_without_filling_them(
+    candidate_cached, expected
+):
+    left, right = receipt(), receipt(elapsed=0.9)
+    for sample in left["execution"]["individual_runs"]:
+        sample["cached_prompt_tokens"] = None
+    for phase in ("serving_before", "serving_after"):
+        right["execution"][phase]["prefix_cache"] = None
+    for sample in right["execution"]["individual_runs"]:
+        sample["cached_prompt_tokens"] = candidate_cached
+    report = gate(seal(left), seal(right), policy(require_cache_evidence=False))
+    assert report["exit_code"] == expected
+    assert report["pairs"][0]["cache"]["baseline"]["known_counts"] == []
+    assert report["pairs"][0]["cache"]["baseline"]["unknown_count"] == 3
+
+
+def test_missing_prompt_and_cache_counts_remain_inconclusive_without_exception():
+    left, right = receipt(backend="tgi"), receipt(backend="tgi", elapsed=0.9)
+    for row in (left, right):
+        row["execution"]["request"]["options"] = {"max_tokens": 4}
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = None
+        for sample in row["execution"]["individual_runs"]:
+            sample.update(
+                prompt_tokens=None,
+                cached_prompt_tokens=None,
+                ttft_basis="client-stream-first-content",
+            )
+        seal(row)
+    report = gate(left, right, policy(require_cache_evidence=False))
+    assert report["exit_code"] == 3
+    assert "observed_token_lengths_unavailable" in report["blockers"]
+    assert report["pairs"][0]["cache"]["candidate"]["unknown_prompt_capacities"] == [None] * 3
