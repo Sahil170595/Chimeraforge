@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
@@ -118,7 +119,9 @@ class Backend(ABC):
 
 
 @asynccontextmanager
-async def backend_lifecycle(backend: Backend) -> AsyncIterator[Backend]:
+async def backend_lifecycle(
+    backend: Backend, *, _cleanup: dict | None = None
+) -> AsyncIterator[Backend]:
     """Close an adapter on success, error, or cancellation without hiding the original failure."""
     failed = False
     try:
@@ -127,12 +130,22 @@ async def backend_lifecycle(backend: Backend) -> AsyncIterator[Backend]:
         failed = True
         raise
     finally:
+        if _cleanup is not None:
+            _cleanup["state"] = "started"
         try:
             # Keep the existing optional-close protocol used by doctor and legacy adapters.
             close = getattr(backend, "close", None)
             if close is not None:
                 await close()
+            if _cleanup is not None:
+                _cleanup["state"] = "completed"
+        except asyncio.CancelledError:
+            if _cleanup is not None:
+                _cleanup["state"] = "incomplete"
+            raise
         except Exception as exc:
+            if _cleanup is not None:
+                _cleanup["state"] = "incomplete"
             name = getattr(backend, "name", type(backend).__name__)
             logger.warning("Backend '%s' cleanup failed: %s", name, exc, exc_info=True)
             if not failed:

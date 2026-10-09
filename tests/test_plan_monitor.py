@@ -362,14 +362,91 @@ def test_metadata_cancellation_closes_adapter_and_preserves_completed_breach(sav
         return observe_scene(saved)
 
     monkeypatch.setattr(serving, "observe_backend", observe)
+    callbacks = []
     result = monitor_plan(
         saved[0],
         MonitorRequest("vllm", "http://serving", MODEL, interval=0.01),
         candidate_index=saved[1],
         stop_event=stop,
+        on_window=callbacks.append,
     )
     assert len(closed) == 2 and result.cancelled and len(result.windows) == 1
     assert result.outcome == "breach" and result.exit_code == 3
+    assert callbacks == result.windows
+
+
+def test_slow_supported_transport_cleanup_has_separate_bounded_receipt(monkeypatch):
+    import asyncio
+    import time
+    import httpx
+    from chimeraforge import plan_monitor
+    from chimeraforge.bench import serving
+    from chimeraforge.bench.backends.vllm import VLLMBackend
+
+    class SlowTransport(httpx.AsyncBaseTransport):
+        closed = False
+
+        async def aclose(self):
+            await asyncio.sleep(0.12)
+            self.closed = True
+
+    transport = SlowTransport()
+    backend = VLLMBackend(transport=transport)
+    monkeypatch.setattr(plan_monitor, "get_backend", lambda *args, **kwargs: backend)
+
+    async def observe(*args):
+        await backend._get_client()
+        await asyncio.sleep(1)
+
+    monkeypatch.setattr(serving, "observe_backend", observe)
+
+    async def run():
+        start = time.perf_counter()
+        result = await plan_monitor._observe(
+            MonitorRequest("vllm", "http://serving", MODEL, timeout=0.03), threading.Event()
+        )
+        assert time.perf_counter() - start < 0.12
+        assert result["resource_cleanup"]["state"] == "incomplete"
+        assert result["resource_cleanup"]["budget_seconds"] == 0.03
+        assert not transport.closed and backend._client.is_closed
+        assert len(asyncio.all_tasks()) == 1
+
+    asyncio.run(run())
+
+
+def test_prometheus_output_cannot_overwrite_saved_plan(saved, monkeypatch, tmp_path):
+    from chimeraforge import monitor
+    from chimeraforge.cli import app
+    from typer.testing import CliRunner
+
+    source = tmp_path / "plan.json"
+    saved[0].save(source)
+    original = source.read_bytes()
+    monkeypatch.setattr(
+        monitor, "_fetch", lambda *args: pytest.fail("collision must be refused before contact")
+    )
+    result = CliRunner().invoke(
+        app,
+        [
+            "monitor",
+            "--backend",
+            "vllm",
+            "--url",
+            "http://server",
+            "--model",
+            MODEL,
+            "--from-plan",
+            str(source),
+            "--candidate-index",
+            str(saved[1]),
+            "--prometheus",
+            str(source),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "must not overwrite" in json.loads(result.stdout)["error"]
+    assert source.read_bytes() == original
 
 
 def test_custom_metrics_path_has_unavailable_metadata_without_guessing_server_root(
@@ -627,3 +704,84 @@ def test_actual_sglang_adapter_keeps_scoped_config_and_native_ttft(saved, monkey
     assert fields["immutable_weights"]["state"] == "unavailable"
     assert requests == [("GET", "/server_info"), ("GET", "/model_info")] * 2
     assert all(client._client.is_closed for client in clients)
+
+
+def test_extra_observed_hidden_vocab_does_not_contradict_unknown_saved_geometry(monkeypatch):
+    artifact = plan(
+        PlanRequest(
+            models=["llama3.2-3b"], allow_network=False, quality_target=0, budget=1e8, ttft_slo=500
+        )
+    )
+    index = next(
+        i
+        for i, row in enumerate(artifact.to_dict()["result"]["candidates"])
+        if row["backend"] == "vllm" and row["quant"] == "FP16"
+    )
+    saved = artifact, index
+    expected = artifact.to_dict()["result"]["replay_context"]["model_specs"]["llama3.2-3b"]
+    assert expected["hidden_size"] is None and expected["vocab_size"] is None
+    scene = dict(
+        observe_scene(saved),
+        model="llama3.2-3b",
+        model_spec=dict(expected, hidden_size=3072, vocab_size=128256),
+    )
+    from chimeraforge import monitor
+    from chimeraforge.api import monitor_plan
+    from chimeraforge.bench import serving
+
+    snapshots = iter(pair())
+    monkeypatch.setattr(monitor, "_fetch", lambda *args: next(snapshots))
+
+    async def observe(*args):
+        return scene
+
+    monkeypatch.setattr(serving, "observe_backend", observe)
+    # Histograms select this candidate's exact model, without assigning org/model evidence to it.
+    first, second = pair()
+    snapshots = iter([text.replace(MODEL, "llama3.2-3b") for text in (first, second)])
+    report = monitor_plan(
+        artifact,
+        MonitorRequest("vllm", "http://server", "llama3.2-3b", interval=0.01),
+        candidate_index=index,
+    )
+    assert report.outcome == "pass" and report.exit_code == 0
+    assert (
+        report.to_dict()["plan_binding"]["configuration"]["fields"]["model_geometry"]["state"]
+        == "unavailable"
+    )
+
+
+def test_partial_physical_hardware_agreement_is_unavailable_but_known_contradiction_is_mismatch(
+    saved, monkeypatch
+):
+    expected = saved[0].to_dict()["result"]["replay_context"]["hardware"]["effective"]
+    partial = {name: expected[name] for name in ("name", "vram_gb", "bandwidth_gbps")}
+    scene = dict(observe_scene(saved), hardware=partial)
+    report, _ = execute(saved, monkeypatch, scene=scene)
+    assert report.exit_code == 0
+    assert (
+        report.to_dict()["plan_binding"]["configuration"]["fields"]["hardware"]["state"]
+        == "unavailable"
+    )
+    partial["vram_gb"] = 1
+    report, _ = execute(saved, monkeypatch, scene=scene)
+    assert report.exit_code == 5
+
+
+def test_hardware_price_and_source_are_not_observed_physical_configuration(saved, monkeypatch):
+    hardware = saved[0].to_dict()["result"]["replay_context"]["hardware"]["effective"]
+    scene = dict(
+        observe_scene(saved),
+        hardware=dict(
+            hardware,
+            cost_per_hour=99,
+            captured_at="different date",
+            source_url="https://different-source",
+        ),
+    )
+    report, _ = execute(saved, monkeypatch, scene=scene)
+    assert report.exit_code == 0
+    assert (
+        report.to_dict()["plan_binding"]["configuration"]["fields"]["hardware"]["state"]
+        == "matched"
+    )

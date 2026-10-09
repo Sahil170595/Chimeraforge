@@ -144,6 +144,9 @@ Missing capabilities or refused metadata are unavailable, not supplied defaults.
 Known configuration changes during a run are mismatches; a lazy-loaded unknown
 pre-state remains unverified. Client NVML describes the benchmark client host.
 Loaded GPU bytes or a GPU name do not establish full remote GPU geometry.
+Partial matching geometry remains unverified; only known contradictions are
+mismatches. Newly observed dimensions cannot contradict unspecified saved
+dimensions. Hardware cost and source dates are excluded from physical geometry.
 
 The native-unit audit keeps modeled values, actual measurements and a labeled
 `raw_delta` even when equivalence cannot be established. That arithmetic is not
@@ -197,7 +200,10 @@ and backend identity is observed across each histogram window; known configurati
 disagreements are separate from native SLO breaches and missing evidence.
 Metadata uses the same supported serving observation/binding seam as benchmarking,
 without executing a workload. An entire metadata observation is bounded by the
-monitor timeout and closes its adapter. Metric/reset/window semantics stay those
+monitor timeout, followed when cancelled by a cooperative cleanup budget of
+`min(timeout, 1 second)`. Receipts distinguish completed cleanup from incomplete
+transport closure; arbitrary cancellation-ignoring transports are not covered by
+the timing guarantee. Metric/reset/window semantics stay those
 of the [monitoring guide](monitoring.md).
 
 `report.outcome` remains the native histogram policy outcome. Plan mode exit codes

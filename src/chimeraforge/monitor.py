@@ -506,13 +506,13 @@ def run_monitor(
                 tpot_slo=request.tpot_slo,
             )
             windows.append(result)
+            if on_window:
+                on_window(result)
             if _on_scrape:
                 _on_scrape()
             if stop.is_set():
                 cancelled = True
                 break
-            if on_window:
-                on_window(result)
             first, start = second, end
     except KeyboardInterrupt:
         cancelled = True

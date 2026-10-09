@@ -254,7 +254,31 @@ def test_single_profile_receipt_has_no_applied_arrival_rate(monkeypatch):
 
 
 def test_fully_observed_equivalent_base_decode_delta_does_not_qualify_fleet(monkeypatch):
-    saved = saved_plan()
+    from chimeraforge.planner.resolver import spec_from_hf
+
+    spec = spec_from_hf(
+        "org/model",
+        {
+            "num_hidden_layers": 28,
+            "num_attention_heads": 24,
+            "num_key_value_heads": 8,
+            "hidden_size": 3072,
+            "vocab_size": 128256,
+        },
+        3.21,
+    )
+    monkeypatch.setattr("chimeraforge.planner.service.resolve_spec", lambda *args, **kwargs: spec)
+    saved = plan(
+        PlanRequest(
+            models=["org/model"],
+            allow_network=False,
+            quality_target=0,
+            platform="windows",
+            budget=100000,
+            avg_tokens=4,
+            prompt_tokens=8,
+        )
+    )
     backend = ObservedBackend(saved, device="gpu")
     original = backend.observe_serving
     context = saved.to_dict()["result"]["replay_context"]
@@ -279,6 +303,34 @@ def test_fully_observed_equivalent_base_decode_delta_does_not_qualify_fleet(monk
     assert report["audit"]["weights"]["state"] == "unverified"
     assert report["audit"]["metrics"]["fleet_tps"]["state"] == "unverified"
     assert report["audit"]["slo"]["state"] == "unverified"
+
+
+@pytest.mark.parametrize("field", ["model_geometry", "hardware"])
+def test_benchmark_partial_observation_never_becomes_known_mismatch_or_accuracy_proof(
+    monkeypatch, field
+):
+    saved = saved_plan()
+    backend = ObservedBackend(saved, device="gpu")
+    original = backend.observe_serving
+    context = saved.to_dict()["result"]["replay_context"]
+
+    async def observe(model):
+        data = await original(model)
+        if field == "model_geometry":
+            expected = context["model_specs"][model]
+            assert expected["hidden_size"] is None and expected["vocab_size"] is None
+            data["model_spec"] = dict(expected, hidden_size=3072, vocab_size=128256)
+        else:
+            data["hardware"] = {
+                name: context["hardware"]["effective"][name]
+                for name in ("name", "vram_gb", "bandwidth_gbps")
+            }
+        return data
+
+    backend.observe_serving = observe
+    report = execute(saved, backend, monkeypatch)
+    assert report["binding"][field]["state"] == "unavailable"
+    assert report["audit"]["metrics"]["base_decode_tps"]["state"] == "unverified"
 
 
 @pytest.mark.parametrize("modifier", ["lora", "offload"])

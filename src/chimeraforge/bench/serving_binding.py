@@ -26,6 +26,28 @@ GEOMETRY_FIELDS = (
     "parallel_hybrid",
 )
 BACKEND_WRAPPERS = {"llama.cpp": "ollama"}
+UNKNOWN_GEOMETRY_FIELDS = ("hidden_size", "vocab_size")
+PHYSICAL_HARDWARE_FIELDS = (
+    "name",
+    "vram_gb",
+    "bandwidth_gbps",
+    "fp16_tflops",
+    "tdp_watts",
+    "interconnect_gbps",
+    "fp8_supported",
+    "tflops_basis",
+    "vendor",
+    "product_line",
+    "unified_memory",
+)
+
+
+def _hardware_known(name: str, value: Any) -> bool:
+    if name in ("fp8_supported", "unified_memory"):
+        return type(value) is bool
+    if name in ("name", "tflops_basis", "vendor", "product_line"):
+        return isinstance(value, str) and bool(value)
+    return type(value) in (int, float) and value > 0
 
 
 def bind(
@@ -118,12 +140,38 @@ def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> d
             detail="CPU execution cannot qualify the modeled GPU configuration.",
         )
     else:
+        expected_physical = (
+            {name: hardware.get(name) for name in PHYSICAL_HARDWARE_FIELDS}
+            if isinstance(hardware, dict)
+            else None
+        )
+        observed_physical = (
+            {name: observed_hw.get(name) for name in PHYSICAL_HARDWARE_FIELDS}
+            if isinstance(observed_hw, dict)
+            else None
+        )
+        hardware_state = "unavailable"
+        if expected_physical is not None and observed_physical is not None:
+            changed = any(
+                _hardware_known(name, expected_physical[name])
+                and _hardware_known(name, observed_physical[name])
+                and expected_physical[name] != observed_physical[name]
+                for name in PHYSICAL_HARDWARE_FIELDS
+            )
+            missing = any(
+                not _hardware_known(name, expected_physical[name])
+                or not _hardware_known(name, observed_physical[name])
+                for name in PHYSICAL_HARDWARE_FIELDS
+            )
+            hardware_state = "mismatch" if changed else "unavailable" if missing else "matched"
         result["hardware"] = bind(
-            hardware,
-            observed_hw,
+            expected_physical,
+            observed_physical,
             source=source,
-            state="unavailable" if hardware is None or observed_hw is None else None,
-            detail="Client NVML and server GPU-loaded bytes do not establish serving GPU geometry.",
+            state=hardware_state,
+            detail="Partial agreeing hardware remains unavailable; "
+            "price and source dates are not physical geometry. "
+            "Client NVML and server GPU-loaded bytes do not establish serving GPU geometry.",
         )
     spec = (context or {}).get("model_specs", {}).get(candidate["model"])
     actual_spec = after.get("model_spec")
@@ -137,12 +185,15 @@ def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> d
     if wanted_geometry is not None and isinstance(actual_spec, dict):
         changed_geometry = any(
             name in actual_spec
+            and wanted_geometry[name] is not None
             and actual_geometry[name] is not None
             and wanted_geometry[name] != actual_geometry[name]
             for name in GEOMETRY_FIELDS
         )
         missing_geometry = any(
             name not in actual_spec
+            or name in UNKNOWN_GEOMETRY_FIELDS
+            and wanted_geometry[name] is None
             or wanted_geometry[name] is not None
             and actual_geometry[name] is None
             for name in GEOMETRY_FIELDS

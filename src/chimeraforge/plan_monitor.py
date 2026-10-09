@@ -23,6 +23,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 CANCELLATION_POLL_SECONDS = 0.05
+MAX_CLEANUP_SECONDS = (
+    1.0  # HTTPX pool closure needs no server round trip; cap cancellation cleanup.
+)
 IDENTITY_FIELDS = ("backend", "model", "metric_backend", "metric_model")
 
 
@@ -37,41 +40,64 @@ def _serving_url(url: str) -> str | None:
 
 
 async def _observe(request: MonitorRequest, stop: threading.Event) -> dict:
-    """One deadline covers metadata requests and adapter closure, including cancellation."""
+    """Bound metadata traffic and cooperative cleanup separately, with explicit limits."""
     url = _serving_url(request.url)
     if url is None:
         return {"source": "custom metrics route does not establish a serving metadata base URL"}
 
+    cleanup = {
+        "state": "not_started",
+        "metadata_budget_seconds": request.timeout,
+        "budget_seconds": min(request.timeout, MAX_CLEANUP_SECONDS),
+    }
+
     async def operation() -> dict:
         backend = get_backend(request.backend, base_url=url)
-        async with backend_lifecycle(backend):
+        async with backend_lifecycle(backend, _cleanup=cleanup):
             return await serving.observe_backend(backend, request.model)
 
     task = asyncio.create_task(operation())
     loop = asyncio.get_running_loop()
     deadline = loop.time() + request.timeout
+    result = {}
     try:
         while True:
             remaining = deadline - loop.time()
             if stop.is_set() or remaining <= 0:
                 logger.info("monitor metadata observation cancelled or exceeded its total deadline")
-                return {
+                result = {
                     "source": "metadata cancelled" if stop.is_set() else "metadata total timeout"
                 }
+                break
             done, _ = await asyncio.wait({task}, timeout=min(remaining, CANCELLATION_POLL_SECONDS))
             if done:
-                return serving.safe_observation(task.result())
+                result = serving.safe_observation(task.result())
+                break
     except Exception as exc:
         logger.warning(
             "monitor metadata unavailable (%s): %s",
             type(exc).__name__,
             serving.sanitize_message(str(exc)),
         )
-        return {"source": "metadata observation unavailable", "limitations": [type(exc).__name__]}
+        result = {"source": "metadata observation unavailable", "limitations": [type(exc).__name__]}
     finally:
         if not task.done():
             task.cancel()
-        await asyncio.gather(task, return_exceptions=True)
+        try:
+            await asyncio.wait_for(task, cleanup["budget_seconds"])
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            if cleanup["state"] != "completed":
+                logger.warning(
+                    "monitor adapter cleanup incomplete within its bounded cancellation budget"
+                )
+        except Exception as exc:
+            logger.warning(
+                "monitor adapter operation failed during closure (%s): %s",
+                type(exc).__name__,
+                serving.sanitize_message(str(exc)),
+            )
+    result["resource_cleanup"] = cleanup
+    return result
 
 
 def _aggregate(rows: list[dict], fields: tuple[str, ...], *, configuration: bool = False) -> str:

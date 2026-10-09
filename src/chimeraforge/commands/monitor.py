@@ -37,6 +37,13 @@ def monitor(
     try:
         if from_plan is None and candidate_index != 0:
             raise MonitorError("--candidate-index requires --from-plan")
+        if from_plan is not None and prometheus is not None:
+            try:
+                collision = from_plan.resolve() == prometheus.resolve()
+            except (OSError, RuntimeError) as exc:
+                raise MonitorError(f"cannot resolve saved input/output paths: {exc}") from exc
+            if collision:
+                raise MonitorError("--prometheus must not overwrite the saved --from-plan artifact")
         request = MonitorRequest(
             backend, url, model, ttft_slo, tpot_slo, interval, windows, timeout
         )

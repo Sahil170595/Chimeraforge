@@ -121,7 +121,14 @@ vLLM `/version`, `/v1/models` and structured `/server_info?config_format=json`, 
 SGLang `/server_info` (legacy fallback `/get_server_info`) and `/model_info`.
 No inference, health-check or model-download request is made. Each entire
 metadata call shares the monitor timeout rather than multiplying it by the
-number of metadata requests. Adapters close on completion, timeout and cancellation.
+number of metadata requests. Cancellation then allows a separate cleanup budget
+of `min(timeout, 1 second)` for the supported cooperative HTTPX adapter. A
+`resource_cleanup` receipt records the metadata and additional cleanup budgets,
+and completion or incomplete closure. A transport whose close exceeds the cleanup
+budget is cancelled; its underlying resources are not claimed fully closed.
+Custom transports that ignore cooperative cancellation are outside this timing
+guarantee. Normal built-in clients close on completion, timeout and cancellation;
+no background observation task is retained.
 A custom metrics path that cannot establish a serving base URL leaves metadata
 unavailable. Refused optional metadata does not erase valid histogram evidence.
 
@@ -134,6 +141,13 @@ and immutable weights are explicit evidence limits, not universal failures of a
 normal passive SLO check. An endpoint identity match does not qualify the full
 deployment. Loading never replans, probes hardware or contacts a model repository.
 This remains a histogram policy observation, not a calibrated prediction audit.
+
+Partial matching hardware/model facts remain unavailable rather than conflicting
+with missing values. A newly observed dimension cannot contradict an unspecified
+saved dimension; a known disagreement still does. Hardware price and provenance
+dates do not define physical serving geometry. Completed native windows are
+delivered to `on_window` even if post-window metadata is cancelled. The CLI refuses
+Prometheus output that resolves to the saved input artifact.
 
 | Saved-plan evidence | Exit code |
 | --- | --- |
