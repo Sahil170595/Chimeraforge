@@ -1185,10 +1185,17 @@ def load_models(path: Path | str) -> PlannerModels:
     return _models_from_bytes(path, raw)
 
 
-def _models_from_bytes(path: Path | str, raw: bytes) -> PlannerModels:
+def _models_from_bytes(
+    path: Path | str, raw: bytes, *, captured_source: bool = False
+) -> PlannerModels:
     from chimeraforge.planner.replay import file_receipt
 
     data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError("model corpus must be a JSON object")
+    for name in ("vram", "throughput", "scaling", "quality", "cost", "latency", "safety"):
+        if name in data and not isinstance(data[name], dict):
+            raise ValueError(f"model corpus section {name} must be a JSON object")
     models = PlannerModels(
         vram=VRAMModel.from_dict(data.get("vram", {})),
         throughput=ThroughputModel.from_dict(data.get("throughput", {})),
@@ -1198,7 +1205,7 @@ def _models_from_bytes(path: Path | str, raw: bytes) -> PlannerModels:
         latency=LatencyModel.from_dict(data.get("latency", {})),
         safety=SafetyModel.from_dict(data.get("safety", {})),
     )
-    models._input_receipt = file_receipt(path, raw)
+    models._input_receipt = file_receipt(path, raw, captured_source=captured_source)
     log.info("Models loaded from %s", path)
     return models
 

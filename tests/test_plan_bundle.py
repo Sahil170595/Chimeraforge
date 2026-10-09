@@ -472,3 +472,155 @@ def test_sdk_managed_packaged_hardlink_is_snapshotted_but_members_still_reject_l
     os.link(directory / "corpus.json", tmp_path / "unsafe-member-alias")
     with pytest.raises(api.PlanError, match="links"):
         api.verify_plan_bundle(directory)
+
+
+def test_verified_snapshot_never_resolves_or_relabels_its_captured_sources(tmp_path, monkeypatch):
+    path, _, _ = source_plan(tmp_path)
+    directory = tmp_path / "bundle"
+    create(path, directory)
+    saved = api.verify_plan_bundle(directory)
+    before = saved.to_dict()
+    resolve = Path.resolve
+    calls = []
+
+    def redirected(self, *args, **kwargs):
+        if self.parent == directory:
+            calls.append(self)
+            return tmp_path / "new-target" / self.name
+        return resolve(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", redirected)
+    assert saved.to_dict() == before
+    assert api.check_plan_bundle(saved).to_dict()["bundle"] == before
+    assert calls == []
+
+
+def test_verified_snapshot_retains_locations_after_real_directory_link_replacement(tmp_path):
+    import subprocess
+    import sys
+
+    path, _, _ = source_plan(tmp_path)
+    directory = tmp_path / "bundle"
+    create(path, directory)
+    saved = api.verify_plan_bundle(directory)
+    before = saved.to_dict()
+    moved = tmp_path / "moved"
+    directory.rename(moved)
+    if sys.platform == "win32":
+
+        def quoted(value):
+            return "'" + str(value).replace("'", "''") + "'"
+
+        command = (
+            "New-Item -ItemType Junction -Path "
+            + quoted(directory)
+            + " -Target "
+            + quoted(moved)
+            + " | Out-Null"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert result.returncode == 0, result.stderr
+    else:
+        directory.symlink_to(moved, target_is_directory=True)
+    try:
+        assert saved.to_dict() == before
+        assert api.check_plan_bundle(saved).to_dict()["bundle"] == before
+        with pytest.raises(api.PlanError, match="links"):
+            api.verify_plan_bundle(directory)
+    finally:
+        # Remove only the task-owned link, never its moved target tree.
+        directory.rmdir() if sys.platform == "win32" else directory.unlink()
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        None,
+        "not a corpus",
+        42,
+        *(
+            {key: []}
+            for key in ("vram", "throughput", "scaling", "quality", "cost", "latency", "safety")
+        ),
+    ],
+)
+def test_malformed_selfconsistent_corpus_has_domain_error_on_disk_held_and_cli(tmp_path, payload):
+    path, _, _ = source_plan(tmp_path)
+    directory = tmp_path / "bundle"
+    saved = create(path, directory)
+    raw = json.dumps(payload).encode()
+    data = json.loads(saved._plan_bytes)
+    data["result"]["replay_context"]["corpus"]["input"]["sha256"] = hashlib.sha256(raw).hexdigest()
+    raw_plan = json.dumps(resign_plan(data)).encode()
+    spec = json.loads(saved._manifest_bytes)
+    spec["plan_fingerprint"] = data["fingerprint"]
+    for row in spec["files"]:
+        value = raw if row["role"] == "corpus" else raw_plan if row["role"] == "plan" else None
+        if value is not None:
+            row.update(sha256=hashlib.sha256(value).hexdigest(), size_bytes=len(value))
+    raw_manifest = json.dumps(spec).encode()
+    held = replace(
+        saved,
+        _plan_bytes=raw_plan,
+        _manifest_bytes=raw_manifest,
+        _input_bytes=tuple(
+            (role, raw if role == "corpus" else value) for role, value in saved._input_bytes
+        ),
+    )
+    for operation in (held.to_dict, lambda: api.check_plan_bundle(held)):
+        with pytest.raises(api.PlanError):
+            operation()
+    (directory / "corpus.json").write_bytes(raw)
+    (directory / "plan.json").write_bytes(raw_plan)
+    (directory / "manifest.json").write_bytes(raw_manifest)
+    with pytest.raises(api.PlanError):
+        api.verify_plan_bundle(directory)
+    result = CliRunner().invoke(app, ["bundle", "verify", str(directory), "--json"])
+    assert result.exit_code == 2 and json.loads(result.output)["error"]
+
+
+def test_malformed_quality_timestamp_preserves_domain_errors_for_held_disk_cli(tmp_path):
+    path, _, _ = source_plan(tmp_path)
+    directory = tmp_path / "bundle"
+    saved = create(path, directory)
+    bad = json.dumps(
+        {
+            "results": {"mmlu": {"acc,none": 0.83}},
+            "n-samples": {"mmlu": 5000},
+            "date": 1e300,
+        }
+    ).encode()
+    data = json.loads(saved._plan_bytes)
+    data["result"]["replay_context"]["quality"]["input"]["sha256"] = hashlib.sha256(bad).hexdigest()
+    raw_plan = json.dumps(resign_plan(data)).encode()
+    spec = json.loads(saved._manifest_bytes)
+    spec["plan_fingerprint"] = data["fingerprint"]
+    for row in spec["files"]:
+        value = bad if row["role"] == "quality" else raw_plan if row["role"] == "plan" else None
+        if value is not None:
+            row.update(sha256=hashlib.sha256(value).hexdigest(), size_bytes=len(value))
+    raw_manifest = json.dumps(spec).encode()
+    held = replace(
+        saved,
+        _plan_bytes=raw_plan,
+        _manifest_bytes=raw_manifest,
+        _input_bytes=tuple(
+            (role, bad if role == "quality" else value) for role, value in saved._input_bytes
+        ),
+    )
+    for operation in (held.to_dict, lambda: api.check_plan_bundle(held)):
+        with pytest.raises(api.PlanError):
+            operation()
+    (directory / "quality.json").write_bytes(bad)
+    (directory / "plan.json").write_bytes(raw_plan)
+    (directory / "manifest.json").write_bytes(raw_manifest)
+    with pytest.raises(api.PlanError):
+        api.verify_plan_bundle(directory)
+    result = CliRunner().invoke(app, ["bundle", "check", str(directory), "--json"])
+    assert result.exit_code == 2 and json.loads(result.output)["error"]

@@ -136,6 +136,8 @@ immutable bytes, revalidates its manifest and input semantics on reuse, and give
 the shared planner already parsed inputs without path rereads. A verified object
 is a snapshot of the consumed bytes; checking that object does not observe later
 filesystem changes. Passing a directory instead verifies its current files.
+Captured receiving source labels also stay fixed if that directory is later
+replaced by a link; checking the directory path then refuses the link.
 
 Bundle checks preserve ordinary `PlanCheck` policy and current-fact observations,
 adding `bundle.relocations` with the original producer receipt and the actual

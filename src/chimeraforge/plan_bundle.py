@@ -227,9 +227,9 @@ class PlanBundle:
                 _fail(f"{role} bytes disagree with producer binding")
             local_path = self._directory / ROLE_PATHS[role]
             parsed[role] = (
-                _models_from_bytes(local_path, raw)
+                _models_from_bytes(local_path, raw, captured_source=True)
                 if role == "corpus"
-                else _quality_from_bytes(local_path, raw)
+                else _quality_from_bytes(local_path, raw, captured_source=True)
             )
             local = parsed[role]._input_receipt
             if role == "corpus":
@@ -270,6 +270,7 @@ def verify(directory: str | Path) -> PlanBundle:
 
     root = Path(os.path.abspath(directory))
     _plain_path(root)
+    root = root.resolve()
     if not root.is_dir():
         _fail("bundle directory is missing")
     manifest_raw = _read(root / "manifest.json", MAX_MANIFEST_BYTES)
@@ -302,6 +303,7 @@ def create(plan_path: str | Path, output_directory: str | Path) -> PlanBundle:
 
     root = Path(os.path.abspath(output_directory))
     _plain_path(root)
+    root = root.resolve()
     if root.exists():
         _fail("destination must not exist")
     if not root.parent.is_dir():
