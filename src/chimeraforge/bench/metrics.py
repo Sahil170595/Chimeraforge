@@ -29,6 +29,9 @@ class RunMetrics:
     total_duration_ms: float
     prompt_eval_duration_ms: float
     eval_duration_ms: float
+    prompt_tokens: int | None = None
+    cached_prompt_tokens: int | None = None
+    ttft_basis: str = "unknown"
 
 
 @dataclass

@@ -402,7 +402,16 @@ Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *
 chimeraforge bench --model llama3.2-3b --runs 5
 chimeraforge bench --model llama3.2-3b --all-quants --context 512,1024,2048,4096 --json
 chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhost:8000
+chimeraforge bench --plan plan.json --candidate-index 0 --model actual-served-id --runs 5 --json
 ```
+
+`bench --plan` binds an immutable saved candidate to actual serving observations
+and the applied workload. It records modeled/measured native values, arithmetic
+differences, config mismatches and unavailable evidence; supplied quant/TP labels
+cannot verify an endpoint. Partial requests and different timing bases cannot
+pass a modeled SLO. See [the planning API guide](docs/planning-api.md#benchmark-a-saved-candidate)
+for receipts, adapter limits and exit codes. Hosted CPU checks exercise this path
+without claiming GPU prediction accuracy.
 
 Three workload profiles (single / batch / server-Poisson); measures throughput, TTFT, and latency with p50/p90/p95/p99; CV-based stability warnings; JSON output.
 
