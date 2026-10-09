@@ -88,6 +88,11 @@ timestamp and cannot mutate a completed receipt. Native final token counts are r
 when observed; incomplete streams keep counts unknown rather than estimate
 tokens from text or chunks.
 
+The native NDJSON parser caps response bytes at 16 MiB, scans each frame without
+copying the unconsumed tail, and yields between batches of 32 frames so cancellation
+and deadlines can run even when many frames arrive in one network chunk. It keeps
+native chunk delivery rather than coalescing first output until a fixed buffer fills.
+
 Existing vLLM/TGI/SGLang fallback adapters retain their standardized final
 metrics. When their decode basis is client first-to-last content, the mean
 interval uses that duration divided by server output count minus one. This

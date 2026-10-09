@@ -7,6 +7,7 @@ from the final JSON response, matching the banterhearts measurement pattern.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
 import json
 import math
@@ -25,6 +26,8 @@ from chimeraforge.bench.metrics import RunMetrics
 # What Ollama's root route returns (server/routes.go, v0.34.4): its self-identification.
 OLLAMA_BANNER = "Ollama is running"
 MAX_STREAM_BYTES = 16 * 1024 * 1024
+# Bound synchronous frame work between cancellation/deadline checkpoints.
+STREAM_FRAME_BATCH = 32
 
 
 def _native_number(data: dict, name: str, *, count: bool = False) -> int | float | None:
@@ -43,19 +46,30 @@ def _native_number(data: dict, name: str, *, count: bool = False) -> int | float
 
 async def _json_lines(response: httpx.Response) -> AsyncIterator[dict]:
     """Bound native NDJSON bytes without retaining prompt or completion content."""
-    total, buffer = 0, b""
+    total, frames = 0, 0
+    fragments = []
     # A fixed chunk_size coalesces small frames until EOF and loses first-output timing.
     async for chunk in response.aiter_bytes():
         total += len(chunk)
         if total > MAX_STREAM_BYTES:
             raise RuntimeError("Ollama stream exceeds the trace response limit")
-        buffer += chunk
-        while b"\n" in buffer:
-            line, buffer = buffer.split(b"\n", 1)
+        offset = 0
+        while (end := chunk.find(b"\n", offset)) >= 0:
+            fragments.append(chunk[offset:end])
+            line = b"".join(fragments)
+            fragments.clear()
+            offset = end + 1
             if line.strip():
                 yield json.loads(line)
-    if buffer.strip():
-        yield json.loads(buffer)
+            frames += 1
+            if frames == STREAM_FRAME_BATCH:
+                frames = 0
+                await asyncio.sleep(0)
+        fragments.append(chunk[offset:])
+    final = b"".join(fragments)
+    if final.strip():
+        await asyncio.sleep(0)
+        yield json.loads(final)
 
 
 class OllamaBackend(Backend):
