@@ -94,77 +94,107 @@
     {
       "path": "validation/2026-10-09-cli-readme/0-stderr.txt",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/0-stdout.txt",
       "sha256": "d7636b7193e3af3fbe38991e4d1783ef520e71bbec05df74abda010d374b4f0d",
-      "size_bytes": 62347
+      "size_bytes": 62347,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/1-stderr.txt",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/1-stdout.txt",
       "sha256": "d5283a0f153e86c4d372b686fabe4d351550f95b615556b344701162e3ad1f8f",
-      "size_bytes": 213351
+      "size_bytes": 213351,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/2-stderr.txt",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/2-stdout.txt",
       "sha256": "76174044c1cf3aa657522ad99e32a549dee65142ac163597087b5f104f9952f8",
-      "size_bytes": 463939
+      "size_bytes": 463939,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/compose.yaml",
       "sha256": "e368a29aba6ce65c00bd873b2c820948a5a7869c7192fe070312eadb5b97d488",
-      "size_bytes": 1267
+      "size_bytes": 1267,
+      "location": "current_tree",
+      "archive_commit": null
     },
     {
       "path": "validation/2026-10-09-cli-readme/deploy-stderr.txt",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size_bytes": 0
+      "size_bytes": 0,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/deploy-stdout.txt",
       "sha256": "535ba3dc2c93b890a9df16afe78e590df897d914b41a3ad45ef0f9234d29afd4",
-      "size_bytes": 1208
+      "size_bytes": 1208,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/functional.json",
       "sha256": "a537e1ac569051a53210e86a322747aa0ce15452c9cab332c8e85612a3441b3c",
-      "size_bytes": 1370
+      "size_bytes": 1370,
+      "location": "current_tree",
+      "archive_commit": null
     },
     {
       "path": "validation/2026-10-09-cli-readme/offline-plan.json",
       "sha256": "78606d3b89f7c0b41e60680c096d85a9fca06656332b757c7220a959d30ac34c",
-      "size_bytes": 256679
+      "size_bytes": 256679,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/parser.json",
       "sha256": "0db7aa653c4c34293eaff949ca50b7642410730b04e72d138f337042e03d6a9a",
-      "size_bytes": 21374
+      "size_bytes": 21374,
+      "location": "current_tree",
+      "archive_commit": null
     },
     {
       "path": "validation/2026-10-09-cli-readme/plan.json",
       "sha256": "689056afbdbc67865e7f4ecdf187c4a4653c10a5ff71517769335e53e12a2487",
-      "size_bytes": 77925
+      "size_bytes": 77925,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     },
     {
       "path": "validation/2026-10-09-cli-readme/unit.log",
       "sha256": "ba10952ffb16ee1c3d2b0f217823bac9cfaea9cc8d6f67cc3217dc634dd7f2ad",
-      "size_bytes": 11587
+      "size_bytes": 11587,
+      "location": "current_tree",
+      "archive_commit": null
     },
     {
       "path": "validation/2026-10-09-cli-readme/unit.xml",
       "sha256": "b4f87b5f7ef3fcf86e8768008eadd5c4b66e3033fb0a6e4b17caaa27424eff45",
-      "size_bytes": 464680
+      "size_bytes": 464680,
+      "location": "immutable_archive",
+      "archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1"
     }
   ],
   "limitations": [
@@ -172,5 +202,8 @@
     "Model planning fetched metadata only; no weights or new dependencies were installed. Named GPU results are predictions, not local hardware observations.",
     "The Compose image was accepted as an explicit template input; it was not downloaded or launched.",
     "Released 0.51.0 and the open reviewed source stack are distinguished in the README."
-  ]
+  ],
+  "complete_run_archive_commit": "c7b39c32a8f768eb1828f5ecab2db374708e72a1",
+  "complete_run_archive_url": "https://github.com/Sahil170595/Chimeraforge/tree/c7b39c32a8f768eb1828f5ecab2db374708e72a1/validation/2026-10-09-cli-readme",
+  "evidence_scope": "Full outputs and independently counted XML stay in the explicit immutable archive commit; compact receipts/log/Compose remain in this documentation diff."
 }

@@ -25,7 +25,12 @@ input and was not fetched or launched. Export acceptance does not qualify an
 engine image or establish GPU prediction accuracy.
 
 The README distinguishes published 0.51.0 from the open reviewed features.
-The stdout/stderr, saved plans, Compose file and test outputs retain their exact
-bytes under the scoped `.gitattributes` rule. Earlier exploratory examples are
+The [complete exact run](https://github.com/Sahil170595/Chimeraforge/tree/c7b39c32a8f768eb1828f5ecab2db374708e72a1/validation/2026-10-09-cli-readme)
+is retained in immutable commit `c7b39c32a8f768eb1828f5ecab2db374708e72a1`.
+Full stdout/stderr, saved plans and JUnit stay there rather than duplicating
+large planner outputs in this documentation diff. The compact receipts,
+human-readable unit log and Compose output remain here. `local-receipt.json`
+identifies each archived file and its original SHA256/size. Exact bytes are
+preserved by the scoped `.gitattributes` rule. Earlier exploratory examples are
 retained externally under `C:\tmp\cf-readme-examples-20261009`, including the
 invalid guessed `plan --backend` attempt; that flag is not documented.
