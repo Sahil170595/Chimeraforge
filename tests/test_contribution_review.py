@@ -465,18 +465,180 @@ def test_replay_artifact_redacts_endpoint_credentials_and_cannot_write_quarantin
         report.save(quarantine_dir() / "review.json")
 
 
-def test_malformed_hardware_metadata_is_unavailable_without_crashing(legacy, monkeypatch):
+@pytest.mark.parametrize(
+    "name,vram",
+    [
+        (7, 24),
+        (True, 24),
+        ("", 24),
+        ("RTX 4060 Ti", "8"),
+        ("NVIDIA GeForce RTX 4090", "not-numeric"),
+        ("NVIDIA GeForce RTX 4090", float("nan")),
+        ("NVIDIA GeForce RTX 4090", -1),
+        ("NVIDIA GeForce RTX 4090", True),
+    ],
+)
+def test_malformed_hardware_metadata_is_unavailable_without_crashing(
+    legacy, monkeypatch, name, vram
+):
     backend = ReplayBackend(device="cuda")
     observer = backend.observe_serving
 
     async def wrong_type(model):
         result = await observer(model)
-        result["hardware"] = {"name": "NVIDIA GeForce RTX 4090", "vram_gb": "not-numeric"}
+        result["hardware"] = {"name": name, "vram_gb": vram}
         return result
 
     backend.observe_serving = wrong_type
     data = execute(legacy[0], backend, monkeypatch).to_dict()
     assert data["gpu_eligibility"]["state"] == "unverified"
+
+
+@pytest.mark.parametrize(
+    "recorded,observed,wanted",
+    [(23.6, 23.6, "unverified"), (None, 23.6, "unverified"), (23.6, 24, "ineligible")],
+)
+def test_gpu_capacity_compares_recorded_observation_not_marketed_nominal(
+    legacy, monkeypatch, recorded, observed, wanted
+):
+    from chimeraforge.contrib import _content_id
+
+    contribution = legacy[0]
+    contribution["fingerprint"]["gpu_memory_gb"] = recorded
+    contribution["id"] = _content_id(contribution["fingerprint"], contribution["measurements"])
+    backend = ReplayBackend(device="cuda")
+    observer = backend.observe_serving
+
+    async def hardware(model):
+        result = await observer(model)
+        result["hardware"] = {"name": "NVIDIA GeForce RTX 4090", "vram_gb": observed}
+        return result
+
+    backend.observe_serving = hardware
+    data = execute(contribution, backend, monkeypatch).to_dict()
+    assert data["gpu_eligibility"]["state"] == wanted
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["file:///invalid", "", "localhost:11434", "http:///missing", "http://localhost:not-a-port", 7],
+)
+def test_invalid_endpoint_is_refused_before_actual_adapter_contact(legacy, monkeypatch, url):
+    from chimeraforge.api import replay_contribution
+    from chimeraforge.bench import runner
+
+    contacted = []
+    monkeypatch.setattr(runner, "get_backend", lambda *a, **k: contacted.append(True))
+    with pytest.raises(ContribError, match="HTTP"):
+        asyncio.run(
+            replay_contribution(legacy[0], prompt="explicit", output_tokens=4, base_url=url)
+        )
+    assert contacted == []
+
+
+def test_actual_adapter_operational_protocol_failure_keeps_failed_receipt(legacy, monkeypatch):
+    import httpx
+    from chimeraforge.bench.backends.ollama import OllamaBackend
+
+    def fail(request):
+        raise httpx.RemoteProtocolError(
+            "ERROR_SECRET_SENTINEL at http://user:USERINFO_SECRET_SENTINEL@localhost/?token=QUERY_SECRET_SENTINEL",
+            request=request,
+        )
+
+    backend = OllamaBackend(base_url="http://localhost:9999")
+    backend._client = httpx.AsyncClient(transport=httpx.MockTransport(fail))
+    data = execute(legacy[0], backend, monkeypatch, base_url="http://localhost:9999").to_dict()
+    assert backend._client.is_closed
+    assert data["status"] == "failed" and data["exit_code"] == 1
+    assert data["error"]["type"] == "RemoteProtocolError"
+    assert data["execution"]["attempted_count"] == 0 and data["execution"]["not_started_count"] == 3
+    assert data["measurement"] is None and data["requested_execution"]["output_token_cap"] == 4
+    leaked = [
+        value
+        for value in ("ERROR_SECRET_SENTINEL", "USERINFO_SECRET_SENTINEL", "QUERY_SECRET_SENTINEL")
+        if value in json.dumps(data)
+    ]
+    assert leaked == []
+
+
+@pytest.mark.parametrize("adapter", ["vllm", "sglang", "tgi"])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        None,
+        [],
+        {"data": "private"},
+        {"data": [{"id": 7}], "model_id": 7},
+        {"data": [{}], "model_id": []},
+    ],
+)
+def test_actual_adapter_malformed_model_response_is_failed_receipt(
+    legacy, monkeypatch, adapter, payload
+):
+    import httpx
+    from chimeraforge.api import replay_contribution
+    from chimeraforge.bench import runner
+    from chimeraforge.bench.backends import get_backend
+
+    info_reads = 0
+
+    def handle(request):
+        nonlocal info_reads
+        if request.url.path == "/health":
+            return httpx.Response(200)
+        if request.url.path in {"/version", "/server_info", "/get_server_info"}:
+            return httpx.Response(200, json={"version": "0.30.0"})
+        if request.url.path == "/info":
+            info_reads += 1
+            if info_reads == 1:
+                return httpx.Response(200, json={"version": "3.3.7"})
+        assert request.url.path in {"/v1/models", "/info"}
+        return httpx.Response(
+            200, text="not JSON private secret" if payload is None else json.dumps(payload)
+        )
+
+    backend = get_backend(
+        adapter, base_url="http://localhost:9999", transport=httpx.MockTransport(handle)
+    )
+    monkeypatch.setattr(runner, "get_backend", lambda *a, **k: backend)
+    data = asyncio.run(
+        replay_contribution(legacy[0], prompt="explicit", output_tokens=4, runs=3, backend=adapter)
+    ).to_dict()
+    assert backend._client.is_closed
+    assert data["status"] == "failed" and data["error"]["type"] == "RuntimeError"
+    assert data["execution"]["attempted_count"] == 0 and data["execution"]["not_started_count"] == 3
+    assert "private" not in json.dumps(data) and "secret" not in json.dumps(data)
+
+
+def test_actual_invalid_endpoint_cli_has_input_exit_without_traceback(legacy):
+    result = CliRunner().invoke(
+        app,
+        [
+            "contribute",
+            "replay",
+            str(legacy[1]),
+            "--prompt",
+            "explicit",
+            "--output-tokens",
+            "4",
+            "--base-url",
+            "file:///invalid",
+        ],
+    )
+    assert result.exit_code == 2 and isinstance(result.exception, SystemExit)
+    assert "HTTP" in result.output
+
+
+def test_receipt_output_failure_is_domain_error_and_cli_input_exit(legacy, tmp_path):
+    from chimeraforge.api import review_contribution
+
+    target = tmp_path / "nonexistent-parent" / "receipt.json"
+    with pytest.raises(ContribError, match="save|write"):
+        review_contribution(legacy[0]).save(target)
+    result = CliRunner().invoke(app, ["contribute", "review", str(legacy[1]), "--out", str(target)])
+    assert result.exit_code == 2 and isinstance(result.exception, SystemExit)
+    assert not target.exists()
 
 
 def test_hosted_replay_guard_rejects_trust_or_equivalence_promotion(legacy, monkeypatch):

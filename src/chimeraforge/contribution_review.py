@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 import statistics
 
+import httpx
+
 from chimeraforge import __version__
 from chimeraforge.bench.metrics import now_iso, result_to_dict
 from chimeraforge.bench.plan import MAX_BENCHMARK_REQUESTS
@@ -88,10 +90,14 @@ class ContributionReceipt:
             raise ContribError("receipt output path cannot be resolved") from exc
 
     def save(self, path: str | Path) -> None:
-        from chimeraforge.api import PlanArtifact
+        from chimeraforge.api import PlanArtifact, PlanError
 
         self.check_output(path)
-        PlanArtifact(self.to_dict()).save(path)
+        try:
+            PlanArtifact(self.to_dict()).save(path)
+        except PlanError as exc:
+            log.debug("contribution receipt output failed: %s", type(exc).__name__)
+            raise ContribError("cannot save contribution receipt") from exc
 
 
 def _load(source: dict | str | Path) -> tuple[dict, Path | None]:
@@ -252,17 +258,26 @@ def _gpu(fp: dict, execution: dict) -> dict:
     cpu = any(
         item.get("device") == "cpu" or item.get("loaded_gpu_bytes") == 0 for item in observations
     )
-    hardware = [item["hardware"] for item in observations if isinstance(item.get("hardware"), dict)]
+    hardware = []
+    for item in observations:
+        raw = item.get("hardware")
+        if not isinstance(raw, dict):
+            continue
+        name, memory = raw.get("name"), raw.get("vram_gb")
+        name = name.strip() if isinstance(name, str) and name.strip() else None
+        memory = (
+            memory
+            if type(memory) in (int, float) and math.isfinite(memory) and memory > 0
+            else None
+        )
+        hardware.append({"name": name, "vram_gb": memory})
     names = [item.get("name") for item in hardware]
     cards = [match_driver_name(item.get("name") or "", item.get("vram_gb")) for item in hardware]
     different = declared is not None and any(
         card is not None and card.name != declared.name for card in cards
     )
-    wrong_memory = declared is not None and any(
-        type(item.get("vram_gb")) in (int, float)
-        and item["vram_gb"] > 0
-        and item["vram_gb"] != declared.vram_gb
-        for item in hardware
+    wrong_memory = fp["gpu_memory_gb"] is not None and any(
+        item["vram_gb"] is not None and item["vram_gb"] != fp["gpu_memory_gb"] for item in hardware
     )
     different = different or wrong_memory
     return {
@@ -351,6 +366,15 @@ async def replay(
         raise ContribError("model must be nonempty")
     if not isinstance(backend, str) or backend not in {row["name"] for row in list_backends()}:
         raise ContribError("backend must name a supported installed adapter")
+    if base_url is not None:
+        if not isinstance(base_url, str) or not base_url.strip():
+            raise ContribError("base_url must be a nonempty HTTP(S) URL with a host")
+        try:
+            endpoint = httpx.URL(base_url)
+        except httpx.InvalidURL as exc:
+            raise ContribError("base_url must be a valid HTTP(S) URL with a host") from exc
+        if endpoint.scheme not in {"http", "https"} or not endpoint.host:
+            raise ContribError("base_url must be an HTTP(S) URL with a host")
     report = _base(data, kind="chimeraforge.contribution-replay")
     model = model.removeprefix("ollama:")
     report["requested_execution"] = {
@@ -387,7 +411,7 @@ async def replay(
             _evidence=execution,
         )
         measurement = result_to_dict(result)
-    except RuntimeError as exc:
+    except (RuntimeError, httpx.RequestError, httpx.HTTPStatusError) as exc:
         log.info("contribution replay execution failed: %s", type(exc).__name__)
         error = {
             "type": type(exc).__name__,
