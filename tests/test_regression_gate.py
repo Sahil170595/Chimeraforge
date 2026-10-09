@@ -618,3 +618,159 @@ def test_boolean_condition_aliases_are_not_accepted(condition):
 def test_geometry_condition_scalar_types_are_strict(condition):
     with pytest.raises(api.PlanError):
         gate(chosen=policy(fixed_controls=condition))
+
+
+def test_partial_known_cache_change_is_not_waived_by_missing_counts():
+    left, right = receipt(), receipt(elapsed=0.9)
+    for row in (left, right):
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = True
+    for sample, known in zip(right["execution"]["individual_runs"], (None, None, 1)):
+        sample["cached_prompt_tokens"] = known
+    result = gate(seal(left), seal(right), policy(require_cache_evidence=False))
+    assert result["exit_code"] == 3
+    assert "observed_cache_hits_changed" in result["blockers"]
+
+
+def test_two_partial_cache_populations_retain_proven_incompatibility():
+    left, right = receipt(), receipt(elapsed=0.9)
+    for row, counts in ((left, (None, 0, 0)), (right, (None, 1, 1))):
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = True
+        for sample, known in zip(row["execution"]["individual_runs"], counts):
+            sample["cached_prompt_tokens"] = known
+        seal(row)
+    assert gate(left, right, policy(require_cache_evidence=False))["exit_code"] == 3
+
+
+@pytest.mark.parametrize("location", ["options", "ignored_metadata"])
+def test_overflow_json_number_is_rejected_before_digest_normalization(location, monkeypatch):
+    from pathlib import Path
+    from chimeraforge import plan_bundle
+
+    left, right = receipt(), receipt(elapsed=0.9)
+    if location == "options":
+        left["execution"]["request"]["options"]["temperature"] = None
+        right["execution"]["request"]["options"]["temperature"] = float("inf")
+    else:
+        right["measurement"]["environment"]["untrusted_ignored"] = float("inf")
+    raw = {
+        "baseline.json": json.dumps(seal(left)).encode(),
+        "candidate.json": json.dumps(seal(right)).replace("Infinity", "1e309").encode(),
+    }
+    monkeypatch.setattr(plan_bundle, "_read", lambda path, limit: raw[path.name])
+    with pytest.raises(api.PlanError):
+        api.gate_benchmarks([Path("baseline.json")], [Path("candidate.json")], policy=policy())
+
+
+def test_strict_policy_held_parser_refuses_overflow_nested_numbers(monkeypatch):
+    from pathlib import Path
+    from chimeraforge import plan_bundle
+    from chimeraforge.bench.gate_inputs import held_json, MAX_POLICY_BYTES
+
+    monkeypatch.setattr(
+        plan_bundle, "_read", lambda *args: b'{"rules":{"decode_tps":0.1},"nested":[1e309]}'
+    )
+    with pytest.raises(api.PlanError):
+        held_json(Path("policy.json"), MAX_POLICY_BYTES)
+
+
+@pytest.mark.parametrize("label", ["client_environment", "serving_extra", "hardware_price"])
+def test_ignored_labels_cannot_manufacture_distinct_execution_evidence(label):
+    left, right = receipt(), receipt()
+    if label == "client_environment":
+        left["execution"][label] = {"python_version": "first-label"}
+        right["execution"][label] = {"python_version": "second-label"}
+    elif label == "serving_extra":
+        for phase in ("serving_before", "serving_after"):
+            right["execution"][phase].update(
+                private_extra="ignored-label", captured_at="other-date"
+            )
+    else:
+        for row, price in ((left, 1), (right, 2)):
+            for phase in ("serving_before", "serving_after"):
+                row["execution"][phase]["hardware"] = {"cost_per_hour": price}
+    result = gate(seal(left), seal(right))
+    assert result["exit_code"] == 3 and "duplicate_execution_payload" in result["blockers"]
+
+
+@pytest.mark.parametrize(
+    "backend,basis",
+    [("ollama", "server-prefill-duration"), ("vllm", "client-stream-first-content")],
+)
+def test_supported_positive_ttft_aliases_cannot_contradict_native_prefill(backend, basis):
+    left, right = receipt(backend=backend), receipt(elapsed=0.9, backend=backend)
+    for row in (left, right):
+        for sample in row["execution"]["individual_runs"]:
+            sample["ttft_basis"] = basis
+    for sample in right["execution"]["individual_runs"]:
+        sample["prompt_eval_duration_ms"] = 1000
+    with pytest.raises(api.PlanError):
+        gate(seal(left), seal(right), api.RegressionPolicy(rules={"ttft_ms": 0.05}))
+
+
+def test_equal_cache_treatment_labels_cannot_waive_known_changed_hits():
+    left, right = receipt(), receipt(elapsed=0.9)
+    for row in (left, right):
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = True
+    for sample in right["execution"]["individual_runs"]:
+        sample["cached_prompt_tokens"] = 1
+    result = gate(
+        seal(left),
+        seal(right),
+        policy(
+            baseline_treatment={"prefix_cache": True}, candidate_treatment={"prefix_cache": True}
+        ),
+    )
+    assert result["exit_code"] == 3
+
+
+def test_compatible_partial_cache_is_unknown_without_a_fabricated_contradiction():
+    left, right = receipt(), receipt(elapsed=0.9)
+    for row, counts in ((left, (None, 0, 0)), (right, (None, 0, 1))):
+        for phase in ("serving_before", "serving_after"):
+            row["execution"][phase]["prefix_cache"] = True
+        for sample, known in zip(row["execution"]["individual_runs"], counts):
+            sample["cached_prompt_tokens"] = known
+        seal(row)
+    assert gate(left, right)["exit_code"] == 3
+    report = gate(left, right, policy(require_cache_evidence=False))
+    assert report["exit_code"] == 0
+    assert report["pairs"][0]["cache"]["candidate"]["known_counts"] == [0, 1]
+    assert report["pairs"][0]["cache"]["candidate"]["unknown_count"] == 1
+
+
+def test_actual_distinct_cache_treatment_is_allowed_with_complete_evidence():
+    right = receipt(elapsed=0.9)
+    for phase in ("serving_before", "serving_after"):
+        right["execution"][phase]["prefix_cache"] = True
+    for sample in right["execution"]["individual_runs"]:
+        sample["cached_prompt_tokens"] = 1
+    chosen = policy(
+        baseline_treatment={"prefix_cache": False}, candidate_treatment={"prefix_cache": True}
+    )
+    assert gate(candidate=seal(right), chosen=chosen)["exit_code"] == 0
+
+
+def test_supported_observed_treatment_changes_remain_distinct_execution_payloads():
+    right = receipt()
+    for phase in ("serving_before", "serving_after"):
+        right["execution"][phase]["version"] = "0.35.2"
+    report = gate(
+        candidate=seal(right),
+        chosen=policy(
+            baseline_treatment={"version": "0.35.1"}, candidate_treatment={"version": "0.35.2"}
+        ),
+    )
+    assert report["exit_code"] == 0
+    assert (
+        report["inputs"]["baseline"][0]["evidence_sha256"]
+        != report["inputs"]["candidate"][0]["evidence_sha256"]
+    )
+
+
+def test_finite_large_ignored_numbers_are_allowed_and_do_not_change_execution_identity():
+    right = receipt(elapsed=0.9)
+    right["measurement"]["environment"]["ignored"] = 1e308
+    assert gate(candidate=seal(right))["exit_code"] == 0

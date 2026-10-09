@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import copy
 import statistics
+from collections import Counter
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from chimeraforge.bench.gate_inputs import (
     MAX_POLICY_BYTES,
     MAX_TOTAL_BYTES,
+    SERIALIZATION_ROUNDOFF,
     WALL_BASIS,
     fail,
     finite,
@@ -243,12 +245,59 @@ def _cache(receipt: dict) -> dict:
         "state": "mismatch" if contradiction else "known" if known or disabled else "unknown",
         "counts_sha256": digest(sorted(counts)) if known else None,
         "disabled_observed": disabled,
+        "known_counts": sorted(value for value in counts if value is not None),
+        "unknown_count": sum(value is None for value in counts),
         "basis": "observed per-request cached tokens"
         if known
         else "observed disabled prefix cache"
         if disabled
         else "unavailable; not assumed cold",
     }
+
+
+def _cache_compatible(left: dict, right: dict) -> bool:
+    """Unknown slots may explain absence, never a known contradictory population."""
+    left_known, right_known = Counter(left["known_counts"]), Counter(right["known_counts"])
+    return (
+        sum((left_known - right_known).values()) <= right["unknown_count"]
+        and sum((right_known - left_known).values()) <= left["unknown_count"]
+    )
+
+
+def _evidence_id(receipt: dict) -> str:
+    """Ignore labels outside validated native execution and supported observed controls."""
+    rows = [asdict(row) for row in receipt["samples"]]
+    for row in rows:
+        for key in (
+            "throughput_tps",
+            "ttft_ms",
+            "total_duration_ms",
+            "prompt_eval_duration_ms",
+            "eval_duration_ms",
+        ):
+            row[key] = float(row[key])
+    if receipt["legacy"]:
+        return digest({"samples": rows, "legacy": True})
+    execution = receipt["execution"]
+    before, after = _observations(receipt)
+    workload, _ = _workload(receipt)
+    observed = {
+        phase: {key: _fact(values, key) for key in sorted(FACTS)}
+        for phase, values in (("before", before), ("after", after))
+    }
+    return digest(
+        {
+            "samples": rows,
+            "workload": workload,
+            "counts": {
+                key: execution[key]
+                for key in ("requested_count", "successful_count", "failed_count")
+            },
+            "elapsed_seconds": float(execution["elapsed_seconds"]),
+            "elapsed_seconds_basis": execution.get("elapsed_seconds_basis"),
+            "observed_controls": observed,
+        }
+    )
 
 
 def _metric(receipt: dict, name: str) -> tuple[float | None, str | None]:
@@ -289,7 +338,12 @@ def _metric(receipt: dict, name: str) -> tuple[float | None, str | None]:
         import math
 
         if any(
-            not math.isclose(value, row.throughput_tps, rel_tol=1e-12, abs_tol=1e-12)
+            not math.isclose(
+                value,
+                row.throughput_tps,
+                rel_tol=SERIALIZATION_ROUNDOFF,
+                abs_tol=SERIALIZATION_ROUNDOFF,
+            )
             for value, row in zip(values, rows)
         ):
             fail("stored native decode rate disagrees with counts/duration/basis")
@@ -340,12 +394,11 @@ def _pair(left: dict, right: dict, policy: RegressionPolicy, index: int) -> dict
         blockers.append("cache_contradiction")
     if any(row["state"] == "unknown" for row in caches.values()) and policy.require_cache_evidence:
         blockers.append("cache_evidence_unavailable")
-    known_counts = [row["counts_sha256"] for row in caches.values()]
-    if (
-        all(value is not None for value in known_counts)
-        and known_counts[0] != known_counts[1]
-        and "prefix_cache" not in policy.baseline_treatment
-    ):
+    cache_treatment = (
+        "prefix_cache" in policy.baseline_treatment
+        and policy.baseline_treatment["prefix_cache"] != policy.candidate_treatment["prefix_cache"]
+    )
+    if not _cache_compatible(caches["baseline"], caches["candidate"]) and not cache_treatment:
         blockers.append("observed_cache_hits_changed")
     metrics = {}
     for name, threshold in policy.rules.items():
@@ -435,6 +488,8 @@ def gate_benchmarks(
         "candidate": [load_receipt(row) for row in candidate_receipts],
     }
     all_rows = [row for rows in arms.values() for row in rows]
+    for row in all_rows:
+        row["evidence_sha256"] = _evidence_id(row)
     if sum(row["size_bytes"] for row in all_rows) > MAX_TOTAL_BYTES:
         fail("total receipt bytes exceed 32 MiB")
     blockers = []

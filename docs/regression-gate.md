@@ -81,6 +81,9 @@ commonly omits both, yielding an honest inconclusive decision. Predeclaring
 unknown/uncontrolled cache scope. It cannot waive contradictory counters, known
 cache changes or a required prefix-cache expectation. Known cross-arm cache
 changes require paired cache treatments. No path assumes zero hits or cold runs.
+Partial counters retain known values and unknown slots: the absence-only waiver
+cannot conceal populations whose known counts cannot possibly agree. Identical
+cache-treatment expectations are not a declaration of changed cache behavior.
 
 ```python
 from chimeraforge import api
@@ -105,6 +108,11 @@ identities, all pairs, native units and scoped blockers. Private option values,
 prompts, completions, arbitrary metadata and provider diagnostics are not copied.
 Atomic output refuses aliases of every input/policy, including hard links.
 Duplicate execution payloads remain inconclusive when producer clocks change.
+The canonical execution identity also excludes client labels, unsupported
+metadata, hardware prices and capture dates, while retaining validated native
+samples, workload timing and supported observed conditions. Nonfinite JSON
+numbers, including exponent overflow, and contradictory positive native TTFT
+aliases are malformed.
 Integrity does not authenticate the source.
 
 Exits: `0` conditional pass, `1` regression under a fully satisfied policy,

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from chimeraforge.bench.metrics import BENCHMARK_WALL_BASIS, RunMetrics, aggregate_runs
 from chimeraforge.bench.plan import PlanBenchmark
+from chimeraforge.bench.serving import safe_observation
 from chimeraforge.planner.replay import digest
 
 MAX_RECEIPT_BYTES = 8 * 1024 * 1024
@@ -18,6 +19,8 @@ MAX_TOTAL_BYTES = 32 * 1024 * 1024
 MAX_SAMPLES = 1000
 MAX_TOKEN_COUNT = 2**31 - 1
 MAX_POLICY_BYTES = 64 * 1024
+# Float roundoff only for recalculated native arithmetic, never types/counts/identity.
+SERIALIZATION_ROUNDOFF = 1e-12
 WALL_BASIS = BENCHMARK_WALL_BASIS
 ENVELOPE_KEYS = {
     "schema_version",
@@ -65,6 +68,13 @@ def sha(value: object) -> bool:
     )
 
 
+def _finite_float(text: str) -> float:
+    value = float(text)
+    if not math.isfinite(value):
+        fail("nonfinite JSON number")
+    return value
+
+
 def held_json(source: object, limit: int) -> tuple[dict, bytes, Path | None]:
     """Read once and reject duplicate/nonfinite JSON, including public typed snapshots."""
     from chimeraforge.api import PlanError, _unique_object
@@ -84,7 +94,10 @@ def held_json(source: object, limit: int) -> tuple[dict, bytes, Path | None]:
         if not 0 < len(raw) <= limit:
             fail("JSON exceeds byte limit")
         data = json.loads(
-            raw, object_pairs_hook=_unique_object, parse_constant=lambda _: fail("nonfinite JSON")
+            raw,
+            object_pairs_hook=_unique_object,
+            parse_constant=lambda _: fail("nonfinite JSON"),
+            parse_float=_finite_float,
         )
         if type(data) is not dict:
             fail("JSON root must be an object")
@@ -108,7 +121,9 @@ def _equal_numbers(actual: object, expected: object) -> bool:
     return (
         finite(actual)
         and finite(expected)
-        and math.isclose(actual, expected, rel_tol=1e-12, abs_tol=1e-12)
+        and math.isclose(
+            actual, expected, rel_tol=SERIALIZATION_ROUNDOFF, abs_tol=SERIALIZATION_ROUNDOFF
+        )
     )
 
 
@@ -226,21 +241,28 @@ def load_receipt(source: object) -> dict:
         for phase in ("serving_before", "serving_after"):
             if type(execution.get(phase)) is not dict:
                 fail("serving observations must be objects")
-    # Ignore producer clocks and precomputed binding/audit in duplicate evidence detection.
-    duplicate_execution = copy.deepcopy(execution)
-    if duplicate_execution:
-        for phase in ("serving_before", "serving_after"):
-            duplicate_execution[phase] = {
-                key: value
-                for key, value in duplicate_execution[phase].items()
-                if key not in ("captured_at", "source", "limitations")
-            }
-    evidence = {
-        "samples": measurement["individual_runs"],
-        "execution": duplicate_execution,
-        "backend": measurement["backend"],
-        "workload": measurement["workload"],
-    }
+        before, after = [
+            safe_observation(execution[key]) for key in ("serving_before", "serving_after")
+        ]
+        engine = after.get("backend")
+        if before.get("backend") == engine:
+            for row in rows:
+                supported = (
+                    (engine == "ollama" and row.ttft_basis == "server-prefill-duration")
+                    or engine in ("vllm", "tgi", "sglang")
+                    and row.ttft_basis == "client-stream-first-content"
+                )
+                if (
+                    supported
+                    and row.ttft_ms > 0
+                    and not math.isclose(
+                        row.ttft_ms,
+                        row.prompt_eval_duration_ms,
+                        rel_tol=SERIALIZATION_ROUNDOFF,
+                        abs_tol=SERIALIZATION_ROUNDOFF,
+                    )
+                ):
+                    fail("native TTFT disagrees with its supported prefill alias")
     return {
         "measurement": measurement,
         "execution": execution,
@@ -248,7 +270,6 @@ def load_receipt(source: object) -> dict:
         "legacy": legacy,
         "sha256": hashlib.sha256(raw).hexdigest(),
         "fingerprint": data.get("fingerprint"),
-        "evidence_sha256": digest(evidence),
         "size_bytes": len(raw),
         "path": path,
     }
