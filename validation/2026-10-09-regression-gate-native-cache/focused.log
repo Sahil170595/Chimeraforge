@@ -1,0 +1,10 @@
+........................................................................ [ 48%]
+........................................................................ [ 96%]
+.....                                                                    [100%]
+============================== warnings summary ===============================
+tests/test_regression_gate.py::test_actual_public_saved_benchmark_runner_supplies_gate_clock_and_coverage
+  C:\tmp\cf-release-051-20261008\src\chimeraforge\bench\metrics.py:160: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+    import pynvml  # type: ignore[import-untyped]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+149 passed, 1 warning in 7.38s

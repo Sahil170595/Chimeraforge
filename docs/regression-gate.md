@@ -134,4 +134,5 @@ explicitly synthetic protocol fixtures. The existing hosted CPU endpoint makes
 two actual installed benchmark executions. It checks native cache/workload/
 condition evidence and two-rule arithmetic, retaining an observed conditional
 pass, regression or inconclusive result. It asserts no shared-runner performance
-threshold. Corrected-head hosted qualification remains pending.
+threshold. The [dated consumer checks](../validation/2026-10-09-regression-gate-native-cache/README.md)
+separate source-protocol validation from actual installed execution.
