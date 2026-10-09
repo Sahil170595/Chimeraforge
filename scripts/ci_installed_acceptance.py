@@ -33,7 +33,9 @@ def assert_installed_origin(origin: str | Path, checkout: str | Path) -> None:
     )
 
 
-def run_cli(arguments: list[str], cwd: Path, env: dict, expected_code: int = 0) -> str:
+def run_cli(
+    arguments: list[str], cwd: Path, env: dict, expected_code: int | tuple[int, ...] = 0
+) -> str:
     """Invoke the installed module with checkout and PYTHONPATH isolation."""
     result = subprocess.run(
         [sys.executable, "-I", "-m", "chimeraforge", *arguments],
@@ -43,7 +45,8 @@ def run_cli(arguments: list[str], cwd: Path, env: dict, expected_code: int = 0) 
         capture_output=True,
         timeout=CLI_TIMEOUT_SECONDS,
     )
-    assert result.returncode == expected_code, (
+    allowed = expected_code if isinstance(expected_code, tuple) else (expected_code,)
+    assert result.returncode in allowed, (
         arguments,
         result.returncode,
         result.stdout,
@@ -172,6 +175,9 @@ def main(argv: list[str] | None = None) -> int:
 
         study_bundle = cwd / ("foreign-bundle" if args.plan_handoff is not None else "local-bundle")
         study_receipt = accept_study(cwd, env, args.checkout, snapshot_path, study_bundle)
+        from ci_regression_gate import accept as accept_gate
+
+        gate_receipt = accept_gate(cwd, env, args.checkout)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -195,6 +201,7 @@ def main(argv: list[str] | None = None) -> int:
                     "checkpoint_identity": checkpoint_receipt,
                     "portable_plan_bundle": bundle_receipt,
                     "plan_sensitivity": study_receipt,
+                    "regression_gate": gate_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

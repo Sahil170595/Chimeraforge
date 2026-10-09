@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**22 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**23 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -80,7 +80,7 @@ plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
 pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
 ```
 
-The checkpoint, bundle, sensitivity and request-trace options below are further **unreleased source features**. They
+The checkpoint, bundle, sensitivity, request-trace and measured-gate options below are further **unreleased source features**. They
 require this feature's checkout; neither PyPI 0.51.0 nor the older source pin
 above contains them. From this checkout, install with `pip install '.[mcp]'`.
 
@@ -585,6 +585,33 @@ Three workload profiles (single / batch / server-Poisson); measures throughput, 
 
 Before the first request, `bench` (and `measure`) confirms the server at the URL is the engine you named: vLLM through `/version`, TGI through `/info`, SGLang through `/server_info`, and Ollama through its root banner. A port that answers `/health` but does not identify itself is refused, so another web app's numbers are never filed as vLLM.
 
+### `gate` -- explicit measured regression policy
+
+Save a policy with nonempty native metric rules, the exact number of ordered
+replicates and observed controls/treatments. Each rule must pass on every pair;
+all declared receipts and their raw sample aggregates are validated.
+
+```json
+{"rules":{"completed_token_rate_tps":0.05,"ttft_ms":0.10},"expected_replicates":2,"fixed_controls":{"device":"cpu","backend":"ollama"},"require_cache_evidence":true}
+```
+
+```bash
+chimeraforge gate --baseline baseline-1.json --baseline baseline-2.json --candidate candidate-1.json --candidate candidate-2.json --policy policy.json --out gate.json --json
+```
+
+Use actual `bench --plan` receipt files. Exit `0` is a conditional engineering
+pass, `1` a regression, `2` malformed input/output and `3` inconclusive. Native
+Ollama server prefill/decode/total times differ from SSE client timings; the
+complete-token/client-wall rule can compare explicitly changed backends.
+Required unknown controls, failed requests, different observed lengths and copied
+execution payloads cannot pass. Cache evidence follows observed native counts
+and configuration; missing required facts or known changes yield `3`.
+Explicitly predeclaring `require_cache_evidence:false`
+waives absence only, retains uncontrolled-cache scope and preserves known-drift
+refusals. No decision authenticates weights or proves independent cold runs,
+confidence, GPU accuracy or queue-inclusive SLO attainment. See the complete
+[policy/API contract](docs/regression-gate.md). This is an unreleased source command.
+
 ### `trace` -- real scheduled requests and joint-target goodput
 
 Create a private `workload.json` with an explicit schedule and output caps:
@@ -730,7 +757,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **3,701 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-trace-replay/README.md) collected 3,701 cases: 3,698 passed and three skipped.
+- **3,828 automated tests** (collected by `pytest --collect-only tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated collection and consumer checks](validation/2026-10-09-regression-gate-native-cache/README.md) distinguish collection from execution. The [prior full local run](validation/2026-10-09-regression-gate/README.md) recorded 3,798 passed and three skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

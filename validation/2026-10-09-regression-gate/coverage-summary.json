@@ -1,0 +1,74 @@
+{
+  "implementation_commit": "a6f3f72c0f0e2b1f429c0b86173bced3cb351771",
+  "scope": "focused source protocol only; global/installed/actual CPU hosted qualification pending",
+  "files": {
+    "src/chimeraforge/bench/gate.py": {
+      "covered_lines": 238,
+      "num_statements": 247,
+      "percent_covered": 94.95798319327731,
+      "percent_covered_display": "95",
+      "missing_lines": 9,
+      "excluded_lines": 0,
+      "percent_statements_covered": 96.35627530364373,
+      "percent_statements_covered_display": "96",
+      "num_branches": 110,
+      "num_partial_branches": 9,
+      "covered_branches": 101,
+      "missing_branches": 9,
+      "percent_branches_covered": 91.81818181818181,
+      "percent_branches_covered_display": "92"
+    },
+    "src/chimeraforge/bench/gate_inputs.py": {
+      "covered_lines": 129,
+      "num_statements": 145,
+      "percent_covered": 87.01298701298701,
+      "percent_covered_display": "87",
+      "missing_lines": 16,
+      "excluded_lines": 0,
+      "percent_statements_covered": 88.96551724137932,
+      "percent_statements_covered_display": "89",
+      "num_branches": 86,
+      "num_partial_branches": 14,
+      "covered_branches": 72,
+      "missing_branches": 14,
+      "percent_branches_covered": 83.72093023255815,
+      "percent_branches_covered_display": "84"
+    }
+  },
+  "totals": {
+    "covered_lines": 367,
+    "num_statements": 392,
+    "percent_covered": 91.83673469387755,
+    "percent_covered_display": "92",
+    "missing_lines": 25,
+    "excluded_lines": 0,
+    "percent_statements_covered": 93.62244897959184,
+    "percent_statements_covered_display": "94",
+    "num_branches": 196,
+    "num_partial_branches": 23,
+    "covered_branches": 173,
+    "missing_branches": 23,
+    "percent_branches_covered": 88.26530612244898,
+    "percent_branches_covered_display": "88"
+  },
+  "python310_grammar_files": [
+    "src/chimeraforge/bench/gate.py",
+    "src/chimeraforge/bench/gate_inputs.py",
+    "src/chimeraforge/commands/gate.py",
+    "scripts/ci_regression_gate.py",
+    "tests/test_regression_gate.py"
+  ],
+  "public_annotations": [
+    "baseline_receipts",
+    "candidate_receipts",
+    "policy",
+    "return"
+  ],
+  "runtime": {
+    "format": 3,
+    "version": "7.16.2",
+    "timestamp": "2026-10-09T11:30:15.249730",
+    "branch_coverage": true,
+    "show_contexts": false
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "scope": "actual retained source test outputs; hashes of original log bytes outside checkout; prior heads are not final proof",
+  "failures": [
+    {
+      "file": "regression-gate-red.log",
+      "cause": "Initial missing API TDD",
+      "result": "36 failed in2.53s",
+      "sha256": "01feb83803f0cac0542e67eed4485bb630c01466e8f4f4e6bb60075900302026"
+    },
+    {
+      "file": "regression-gate-geometry-red.log",
+      "cause": "Typed model geometry rejection",
+      "result": "4 failed",
+      "sha256": "fc7bca8431c456df29892b8db654dcc847ec301cc44c704b298aa793fe0a5909"
+    },
+    {
+      "file": "regression-gate-focused.log",
+      "cause": "Initial protocol clock fixture mismatch",
+      "result": "1 failed,165 passed; corrected binary-exact synthetic clock step, no product clock rounding",
+      "sha256": "36bf2d8c808f470941459fc936645dbf0fdc31a129b9016eb8cc606943a76c2a"
+    },
+    {
+      "file": "regression-gate-review-red.log",
+      "cause": "Partial known cache and exponent-overflow strict JSON",
+      "result": "5 failed in0.73s",
+      "sha256": "708a3648909648e58ceacb4da0626b8e79c791aeb16427c9334d264a7caa95ab"
+    },
+    {
+      "file": "regression-gate-review-additional-red.log",
+      "cause": "Canonical duplicate identity, TTFT alias and identical cache treatment",
+      "result": "6 failed in0.70s",
+      "sha256": "fb527f0c4551a80d5a8b22b99a2696250a2984ce801fc07f87b7a92624ae2579"
+    },
+    {
+      "file": "regression-gate-cache-capacity-red.log",
+      "cause": "Missing cache slot bounded by observed prompt length",
+      "result": "1 failed,1 passed in0.58s",
+      "sha256": "d0b26ac076e8fed01ac1574b8ced686d9f7d9a68c60bc88f7185e24c640607a6"
+    },
+    {
+      "file": "regression-gate-disabled-capacity-red.log",
+      "cause": "Observed disabled cache bounds missing counter without zero fill",
+      "result": "1 failed,1 passed in0.55s",
+      "sha256": "9b8607b5e5b0a13fd913c168cbe2fb5a08d9ff6f3875a2da92228bf53a0047c7"
+    }
+  ],
+  "prior_head_full_passes": [
+    {
+      "head": "b41935452b0b6bb9a779adf71d6971c61d8a4606",
+      "file": "regression-gate-full-source.log",
+      "result": {
+        "passed": 3778,
+        "skipped": 3,
+        "warnings": 14,
+        "elapsed_seconds": 113.2
+      },
+      "sha256": "3166e653cbbae84d3472fdf7f0f6cb76d4ff0e25e70db2fd5466aa102b63810f",
+      "exit_code": 0
+    },
+    {
+      "head": "2eda9abd47d35f2cd38f3c86a4bb6a6835bb6106",
+      "file": "regression-gate-fixed-full.log",
+      "result": {
+        "passed": 3793,
+        "skipped": 3,
+        "warnings": 14,
+        "elapsed_seconds": 103.7
+      },
+      "sha256": "968b3911882a3e5fda68b044a3f2d5df30b5315dae202b9eecd71c46f44c7cc3",
+      "exit_code": 0
+    }
+  ]
+}

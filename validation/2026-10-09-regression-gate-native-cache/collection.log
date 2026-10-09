@@ -1,0 +1,4 @@
+Command: python -m pytest tests/ --collect-only -q
+Exit:0
+Raw terminal summary (node IDs omitted):
+3828 tests collected in 1.91s

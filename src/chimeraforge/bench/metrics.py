@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 # NVML reports bytes; the hardware DB and nvidia-smi speak in GiB.
 GIB = 1024**3
+BENCHMARK_WALL_BASIS = "client-workload-wall; preflight and metadata excluded"
 
 
 @dataclass

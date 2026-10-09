@@ -18,6 +18,7 @@ from chimeraforge.commands.check import check
 from chimeraforge.commands.compare import compare
 from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
+from chimeraforge.commands.gate import gate
 from chimeraforge.commands.deploy import deploy
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
@@ -78,6 +79,7 @@ app.command()(catalog)
 app.command()(safety)
 app.command()(bench)
 app.command()(trace)
+app.command()(gate)
 app.command()(refit)
 app.command()(compare)
 app.command(name="eval")(eval_cmd)

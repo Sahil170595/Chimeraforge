@@ -252,11 +252,25 @@ def accept_saved_plan(client: httpx.Client, cwd: Path, env: dict) -> dict:
     assert source.read_bytes() == original, "benchmark modified its saved plan"
     (receipt,) = directory.glob("plan-bench_*.json")
     assert json.loads(receipt.read_text(encoding="utf-8")) == report
+    from ci_regression_gate import accept_cpu
+
+    gate_receipt = accept_cpu(
+        cwd,
+        env,
+        source,
+        chosen,
+        receipt,
+        MODEL_NAME,
+        str(client.base_url),
+        OLLAMA_VERSION,
+        BENCH_RUNS,
+    )
     return {
         "saved_fingerprint": saved["fingerprint"],
         "receipt_fingerprint": report["fingerprint"],
         "observed_config": "Ollama quant/context/CPU device; TP/PP and GPU identity unavailable",
         "comparison": "native values and arithmetic delta; accuracy and SLO unverified",
+        "regression_gate": gate_receipt,
     }
 
 
