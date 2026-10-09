@@ -89,6 +89,79 @@ unverified: an unchanged modeled result is not a performance acceptance test.
 Fingerprints detect edits, including context edits, but cannot authenticate a
 snapshot or turn unsigned quarantine data into trusted measurements.
 
+## Frozen-context sensitivity
+
+This is an unreleased feature of this checkout. Install this checkout with
+`pip install .`; the earlier pinned source and PyPI 0.51.0 do not contain it.
+
+```python
+from chimeraforge.api import PlanScenario, study_plan
+
+study = study_plan("plan.json", [
+    PlanScenario("peak", {"request_rate": 2.0}),
+    PlanScenario("half-duty", {"duty_cycle": 0.5}),
+    PlanScenario("no-budget", {"budget": 0}),
+])
+study.save("study.json")
+print(study.to_dict()["scenarios"])
+```
+
+The source may be a `PlanArtifact`, a verified `PlanBundle`, a saved-plan file or
+a bundle directory. A bundle supplies held verified files after producer removal.
+An ordinary file/object requires the original bound coefficient/quality bytes
+(including an implicitly consumed measured corpus), and refuses changed or
+missing bytes. Legacy plans without complete replay/byte bindings refuse.
+The source bytes, fingerprint and producer paths are not rewritten.
+
+`chimeraforge study PLAN_OR_BUNDLE --cases cases.json --json [--out study.json]`
+accepts a JSON list of exactly `{"name": string, "changes": object}` rows.
+There must be 1-16 unique names, each at most 80 characters, and no more than 16
+bound model targets. The case file is bounded to 64 KiB and rejects duplicate
+JSON keys and linked paths. Allowed changes are:
+
+| Scope | Fields |
+|---|---|
+| Workload | `request_rate`, `avg_tokens`, `reasoning_tokens`, `prompt_tokens`, `context_length`, `prefix_cache_hit_rate`, `workload_cv2` |
+| Targets | `latency_slo`, `ttft_slo`, `tpot_slo`, `quality_target`, `safety_target`, `budget` |
+| Cost assumptions | `duty_cycle`, `electricity_rate`, `gpu_price_multiplier`, `gpu_cost_per_hour` |
+
+Types, finite values and combinations use existing `PlanRequest` validation.
+Unspecified values inherit the saved request. Model, physical hardware, deployment
+platform, mode, parallelism, adapter setup, contribution permission and source
+selection remain fixed in this version. Latency targets unsupported by the saved
+mode refuse. `gpu_cost_per_hour` changes only the assumed hourly price of the
+bound GPU; its operator basis is recorded per case, and zero remains unknown
+instead of a free GPU. Cloud cases refuse this override because the cloud prices
+whole instances. Price multipliers retain the ordinary planner's semantics.
+
+The shared search receives saved full model/raw GPU geometry (the unified-memory
+fraction is applied once), held parsed coefficients/quality, and one captured
+current engine-support/cloud/grid/quarantine context. Grid/price staleness uses
+one observed date and existing expiry rules. Current policy tables and hardware
+registry identities are checked before/after each search; changes abort rather
+than mix cases. A current frozen context is not an original historical snapshot.
+`producer_inputs`/`producer_fact_receipts` and `base.comparison_to_saved` preserve
+that distinction, including changed provenance. Unsigned contributions stay
+quarantined and expose record hashes and the IDs actually used.
+
+`PlanStudy.to_dict()` returns a defensive JSON value. Its frozen-context digest
+covers recorded facts, not source authenticity. Each case retains every feasible
+candidate and rejection trace, a recommendation or `null`, feasibility changes,
+added/removed identities, ordering, provenance, native-unit deltas and a
+configuration-switch flag. Unknown estimates remain `null` with unknown deltas.
+The selected planned configuration includes candidate identity, effective batch,
+context length, KV quantization and the fixed batched-token setting; a context
+or batch change is visible even when model/quant/backend/replica identity stays
+the same. These are planned settings, not observations of a deployed server.
+Known source/case/bundle member files cannot be overwritten by `--out`; writes
+are atomic through the existing artifact writer. Exit 0 means the study
+completed, even when cases are infeasible; malformed, unavailable or unsupported
+inputs and changing policies exit 2.
+
+This performs no network resolution, host probe, model download or serving
+requests. Sensitivity is conditional modeled arithmetic, not measurement,
+confidence intervals, immutable served-weight proof or a performance guarantee.
+
 ## Portable plan bundles
 
 This is an unreleased source feature. Install the current feature checkout with

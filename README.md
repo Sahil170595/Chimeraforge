@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**20 commands, one tool:** `plan` - `check` - `bundle` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**21 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -80,7 +80,7 @@ plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
 pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
 ```
 
-The checkpoint options below are a further **unreleased source feature**. They
+The checkpoint, bundle and sensitivity options below are further **unreleased source features**. They
 require this feature's checkout; neither PyPI 0.51.0 nor the older source pin
 above contains them. From this checkout, install with `pip install '.[mcp]'`.
 
@@ -315,6 +315,44 @@ facts, and malformed/unsupported bundles exit 2. Legacy plans without byte
 bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
+
+### `study` -- frozen-context workload and cost sensitivity
+
+An unreleased feature of this checkout. Use `pip install .` from this source.
+Compare explicit assumptions against one saved plan or portable bundle offline:
+
+```json
+[
+  {"name": "twice-the-load", "changes": {"request_rate": 2}},
+  {"name": "half-duty", "changes": {"duty_cycle": 0.5}},
+  {"name": "no-budget", "changes": {"budget": 0}}
+]
+```
+
+Save that list as `cases.json`, then run:
+
+```bash
+chimeraforge study plan.json --cases cases.json --out study.json --json
+# A portable bundle works even with the producer's input files absent.
+chimeraforge study handoff --cases cases.json --json
+```
+
+The ordinary search uses the same bound model/GPU geometry and verified
+coefficient/quality bytes for every case. Current engine-support, applicable
+cloud prices, grid intensity, quarantine records and their time observations
+are captured once. The report distinguishes those current facts from producer
+receipts, retains infeasible cases with gate reasons, and compares configurations
+and estimates in native units. A changed policy identity aborts the study.
+
+Supply 1-16 unique cases for up to 16 bound model targets. Workload, context,
+SLOs, quality/safety targets, budget, duty and cost assumptions may change;
+model, physical hardware and platform stay fixed. `gpu_cost_per_hour` is an
+operator price assumption, is refused for cloud instance pricing, and zero
+keeps the native unknown-price behavior. Output cannot overwrite known inputs.
+Exit 0 means a completed modeled study, including infeasible cases; invalid or
+unavailable inputs exit 2. No weights are downloaded or serving traffic generated.
+Integrity and modeled deltas do not authenticate inputs or qualify performance.
+See [the Python and case contract](docs/planning-api.md#frozen-context-sensitivity).
 
 ### `deploy` -- export serving configuration
 
@@ -660,7 +698,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **3,568 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-portable-plan-bundles/README.md) collected 3,568 cases: 3,565 passed and three skipped.
+- **3,630 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-plan-sensitivity/README.md) collected 3,630 cases: 3,627 passed and three skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

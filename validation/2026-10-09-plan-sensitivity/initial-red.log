@@ -1,0 +1,157 @@
+FFFFFFFFFFFFFFFFFFFFFFFF                                                 [100%]
+================================== FAILURES ===================================
+_________ test_real_study_retains_infeasible_cases_and_native_deltas __________
+tests\test_plan_study.py:39: in test_real_study_retains_infeasible_cases_and_native_deltas
+    report = api.study_plan(
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+____ test_scenarios_equal_shared_ordinary_plans_not_an_alternative_engine _____
+tests\test_plan_study.py:59: in test_scenarios_equal_shared_ordinary_plans_not_an_alternative_engine
+    report = api.study_plan(source, [scenario("changed", **changes)]).to_dict()
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+____ test_current_sources_captured_once_and_geometry_never_resolved_again _____
+tests\test_plan_study.py:87: in test_current_sources_captured_once_and_geometry_never_resolved_again
+    report = api.study_plan(source, [scenario("one"), scenario("two")]).to_dict()
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_______ test_cloud_and_quarantine_consumed_once_and_staleness_is_frozen _______
+tests\test_plan_study.py:125: in test_cloud_and_quarantine_consumed_once_and_staleness_is_frozen
+    report = api.study_plan(saved, [scenario("one"), scenario("two")]).to_dict()
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_loader_mutation_during_search_cannot_substitute_frozen_support _____
+tests\test_plan_study.py:142: in test_loader_mutation_during_search_cannot_substitute_frozen_support
+    report = api.study_plan(source, [scenario("same"), scenario("same-again")]).to_dict()
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+________ test_policy_change_mid_search_refuses_instead_of_mixing_cases ________
+tests\test_plan_study.py:157: in test_policy_change_mid_search_refuses_instead_of_mixing_cases
+    api.study_plan(source, [scenario("same")])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes0] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes1] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes2] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes3] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes4] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes5] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes6] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes7] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes8] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes9] ______
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes10] _____
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_____ test_invalid_or_unsupported_cases_refused_before_loading[changes11] _____
+tests\test_plan_study.py:169: in test_invalid_or_unsupported_cases_refused_before_loading
+    api.study_plan(source, [api.PlanScenario("bad", changes)])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+____________ test_duplicate_names_empty_or_too_many_cases_refused _____________
+tests\test_plan_study.py:173: in test_duplicate_names_empty_or_too_many_cases_refused
+    for cases in ([], [scenario("same"), scenario("same")], [scenario(str(i)) for i in range(17)]):
+                       ^^^^^^^^^^^^^^^^
+tests\test_plan_study.py:34: in scenario
+    return api.PlanScenario(name=name, changes=changes)
+           ^^^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'PlanScenario'
+____ test_explicit_price_scenario_changes_bound_cost_not_physical_hardware ____
+tests\test_plan_study.py:179: in test_explicit_price_scenario_changes_bound_cost_not_physical_hardware
+    report = api.study_plan(source, [scenario("expensive", gpu_cost_per_hour=2.0)]).to_dict()
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_______________ test_bundle_study_after_original_inputs_deleted _______________
+tests\test_plan_study.py:202: in test_bundle_study_after_original_inputs_deleted
+    report = api.study_plan(bundle, [scenario("same"), scenario("larger", context_length=4096)]).to_dict()
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+_________________ test_legacy_missing_frozen_binding_refused __________________
+tests\test_plan_study.py:217: in test_legacy_missing_frozen_binding_refused
+    api.study_plan(legacy, [scenario("same")])
+    ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+__________ test_cli_public_study_infeasible_is_a_completed_operation __________
+tests\test_plan_study.py:228: in test_cli_public_study_infeasible_is_a_completed_operation
+    assert result.exit_code == 0, result.output
+E   AssertionError: Usage: chimeraforge [OPTIONS] COMMAND [ARGS]...
+E     Try 'chimeraforge --help' for help.
+E     \u250c\u2500 Error \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510
+E     \u2502 No such command 'study'.                                                    \u2502
+E     \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518
+E     
+E   assert 2 == 0
+E    +  where 2 = <Result SystemExit(2)>.exit_code
+__________ test_report_defensive_copy_and_python_type_introspection ___________
+tests\test_plan_study.py:240: in test_report_defensive_copy_and_python_type_introspection
+    result = api.study_plan(source, [scenario("same")])
+             ^^^^^^^^^^^^^^
+E   AttributeError: module 'chimeraforge.api' has no attribute 'study_plan'
+=========================== short test summary info ===========================
+FAILED tests/test_plan_study.py::test_real_study_retains_infeasible_cases_and_native_deltas
+FAILED tests/test_plan_study.py::test_scenarios_equal_shared_ordinary_plans_not_an_alternative_engine
+FAILED tests/test_plan_study.py::test_current_sources_captured_once_and_geometry_never_resolved_again
+FAILED tests/test_plan_study.py::test_cloud_and_quarantine_consumed_once_and_staleness_is_frozen
+FAILED tests/test_plan_study.py::test_loader_mutation_during_search_cannot_substitute_frozen_support
+FAILED tests/test_plan_study.py::test_policy_change_mid_search_refuses_instead_of_mixing_cases
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes0]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes1]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes2]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes3]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes4]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes5]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes6]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes7]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes8]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes9]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes10]
+FAILED tests/test_plan_study.py::test_invalid_or_unsupported_cases_refused_before_loading[changes11]
+FAILED tests/test_plan_study.py::test_duplicate_names_empty_or_too_many_cases_refused
+FAILED tests/test_plan_study.py::test_explicit_price_scenario_changes_bound_cost_not_physical_hardware
+FAILED tests/test_plan_study.py::test_bundle_study_after_original_inputs_deleted
+FAILED tests/test_plan_study.py::test_legacy_missing_frozen_binding_refused
+FAILED tests/test_plan_study.py::test_cli_public_study_infeasible_is_a_completed_operation
+FAILED tests/test_plan_study.py::test_report_defensive_copy_and_python_type_introspection
+24 failed in 2.97s

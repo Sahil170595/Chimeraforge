@@ -113,6 +113,16 @@ from chimeraforge.planner.resolver import (
 )
 
 
+@dataclass(frozen=True)
+class FrozenEngineInputs:
+    """Private held sources for a finite study using the ordinary search."""
+
+    support_data: dict
+    contributions: list[dict] | None
+    cloud_data: dict | None
+    cloud_stale: bool | None
+
+
 @dataclass
 class Candidate:
     model: str
@@ -322,6 +332,7 @@ def enumerate_candidates(
     session_turns: int | None = None,
     _consumed: dict | None = None,
     _hardware_spec: GPUSpec | None = None,
+    _frozen_inputs: FrozenEngineInputs | None = None,
 ) -> list[Candidate]:
     """Search (model, quant, backend, N) space with gates.
 
@@ -438,8 +449,16 @@ def enumerate_candidates(
     gpu, unified_warnings = apply_unified_fraction(gpu, unified_memory_fraction)
     hardware_warnings = [*hardware_warnings, *unified_warnings]
     # Quarantined contributions are read only on request, never by default.
-    contributions = load_quarantine() if use_contributions else None
-    support_data = load_engine_support()
+    contributions = (
+        _frozen_inputs.contributions
+        if _frozen_inputs is not None
+        else load_quarantine()
+        if use_contributions
+        else None
+    )
+    support_data = (
+        _frozen_inputs.support_data if _frozen_inputs is not None else load_engine_support()
+    )
     if _consumed is not None:
         from chimeraforge.planner.replay import digest, json_value, policy_digest
 
@@ -494,10 +513,16 @@ def enumerate_candidates(
                 "--cloud prices the GPU from that cloud's list; --gpu-price-per-hour is a "
                 "second price for the same GPU -- pass one or the other"
             )
-        cloud_data = load_cloud_prices()
+        cloud_data = (
+            _frozen_inputs.cloud_data if _frozen_inputs is not None else load_cloud_prices()
+        )
         cloud_offers = offers_for(cloud, gpu.name, snapshot=cloud_data)
         cloud_captured = cloud_data["captured_at"]
-        cloud_stale = cloud_is_stale(snapshot=cloud_data)
+        cloud_stale = (
+            _frozen_inputs.cloud_stale
+            if _frozen_inputs is not None
+            else cloud_is_stale(snapshot=cloud_data)
+        )
         if _consumed is not None:
             _consumed["cloud"] = {
                 "cloud": cloud,

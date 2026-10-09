@@ -21,6 +21,7 @@ from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
+from chimeraforge.plan_study import PlanScenario, PlanStudy
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
@@ -433,6 +434,15 @@ def check_plan(
     if type(allow_network) is not bool or (hf_token is not None and type(hf_token) is not str):
         raise PlanError("invalid check network options")
     return check(artifact, allow_network=allow_network, hf_token=hf_token)
+
+
+def study_plan(
+    saved: PlanArtifact | PlanBundle | str | Path, scenarios: list[PlanScenario]
+) -> PlanStudy:
+    """Compare bounded scenarios offline against one frozen source context."""
+    from chimeraforge.plan_study import study
+
+    return study(saved, scenarios)
 
 
 def create_plan_bundle(plan_path: str | Path, output_directory: str | Path) -> PlanBundle:
