@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict, fields
 import json
 import logging
+import math
 import re
 from typing import Any, TYPE_CHECKING
 from urllib.parse import urlsplit, urlunsplit
@@ -58,17 +59,70 @@ def safe_observation(raw: dict) -> dict:
         "execution_engine",
     }
     result = {key: raw[key] for key in allowed if key in raw}
+    string_fields = {
+        "backend",
+        "version",
+        "model",
+        "model_digest",
+        "quant",
+        "source",
+        "captured_at",
+        "device",
+        "serving_data_parallel_scope",
+        "configuration_sha256",
+        "weight_version_label",
+        "execution_engine",
+    }
+    for key in string_fields & result.keys():
+        if not isinstance(result[key], str) or not result[key]:
+            result[key] = None
+    integer_fields = {
+        "context_length",
+        "tensor_parallel",
+        "pipeline_parallel",
+        "replicas",
+        "serving_data_parallel_size",
+        "loaded_bytes",
+        "router_max_total_tokens",
+        "router_max_input_tokens",
+    }
+    for key in integer_fields & result.keys():
+        result[key] = positive_int(result[key])
+    if "loaded_gpu_bytes" in result and (
+        type(result["loaded_gpu_bytes"]) is not int or result["loaded_gpu_bytes"] < 0
+    ):
+        result["loaded_gpu_bytes"] = None
+    if "prefix_cache" in result and type(result["prefix_cache"]) is not bool:
+        result["prefix_cache"] = None
+    if "limitations" in result:
+        value = result["limitations"]
+        result["limitations"] = (
+            [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
+        )
     for key, cls in (("model_spec", ModelSpec), ("hardware", GPUSpec)):
         value = result.get(key)
         if isinstance(value, dict):
             names = {item.name for item in fields(cls)}
-            result[key] = {name: value[name] for name in names if name in value}
+            result[key] = {
+                name: value[name]
+                for name in names
+                if name in value
+                and (
+                    value[name] is None
+                    or type(value[name]) in (str, int, float, bool)
+                    or name == "memory_options_gb"
+                    and isinstance(value[name], (list, tuple))
+                    and all(type(item) in (int, float) for item in value[name])
+                )
+            }
         elif value is not None:
             result[key] = None
 
     def clean(value: Any) -> Any:
         if isinstance(value, str):
             return sanitize_message(value)
+        if isinstance(value, float) and not math.isfinite(value):
+            return None
         if isinstance(value, dict):
             return {key: clean(item) for key, item in value.items()}
         if isinstance(value, (list, tuple)):

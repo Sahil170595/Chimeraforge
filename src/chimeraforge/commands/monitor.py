@@ -18,7 +18,12 @@ def monitor(
     windows: int = typer.Option(1, "--windows", help="Finite number of observation windows."),
     timeout: float = typer.Option(10.0, "--timeout", help="Metrics request timeout, seconds."),
     from_plan: Path | None = typer.Option(
-        None, "--from-plan", help="Read targets from a saved plan."
+        None,
+        "--from-plan",
+        help="Bind a saved candidate and its targets to observed serving metadata.",
+    ),
+    candidate_index: int = typer.Option(
+        0, "--candidate-index", help="Saved candidate index (requires --from-plan)."
     ),
     output_json: bool = typer.Option(False, "--json", help="Print one aggregate JSON report."),
     prometheus: Path | None = typer.Option(
@@ -26,20 +31,20 @@ def monitor(
     ),
 ) -> None:
     """Monitor bounded two-scrape SLO windows (pass 0, breach 3, unknown 4)."""
-    from chimeraforge.api import PlanError, load_plan
+    from chimeraforge.api import PlanError, monitor_plan
     from chimeraforge.monitor import MonitorError, MonitorRequest, run_monitor, write_prometheus
 
     try:
-        if from_plan is not None:
-            inputs = load_plan(from_plan).to_dict()["inputs"]
-            if ttft_slo is None:
-                ttft_slo = inputs["ttft_slo"]
-            if tpot_slo is None:
-                tpot_slo = inputs["tpot_slo"]
+        if from_plan is None and candidate_index != 0:
+            raise MonitorError("--candidate-index requires --from-plan")
         request = MonitorRequest(
             backend, url, model, ttft_slo, tpot_slo, interval, windows, timeout
         )
-        report = run_monitor(request)
+        report = (
+            monitor_plan(from_plan, request, candidate_index=candidate_index)
+            if from_plan is not None
+            else run_monitor(request)
+        )
         if prometheus is not None:
             write_prometheus(report, prometheus)
     except (MonitorError, PlanError) as exc:
@@ -63,4 +68,9 @@ def monitor(
                 typer.echo(f"  {name}: {metric.outcome}; P95 upper bound {bound}; {metric.reason}")
         if report.cancelled:
             typer.echo("  cancelled: incomplete observation cannot establish a pass")
-    raise typer.Exit({"pass": 0, "breach": 3, "unknown": 4}[report.outcome])
+        if report.plan_binding is not None:
+            typer.echo(
+                f"  plan identity: {report.plan_binding['identity']['state']}; "
+                f"configuration: {report.plan_binding['configuration']['state']}"
+            )
+    raise typer.Exit(report.exit_code)

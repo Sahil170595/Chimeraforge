@@ -175,3 +175,35 @@ Protocol references: [Ollama running models](https://docs.ollama.com/api/ps),
 [vLLM0.30.0 server info](https://github.com/vllm-project/vllm/blob/v0.30.0/vllm/entrypoints/serve/dev/server_info/api_router.py),
 [TGI3.3.7 Info schema](https://github.com/huggingface/text-generation-inference/blob/v3.3.7/router/src/lib.rs),
 [SGLang0.5.20 server/model info](https://github.com/sgl-project/sglang/blob/v0.5.20/python/sglang/srt/entrypoints/http_server.py).
+
+## Passively monitor a saved candidate
+
+```python
+from chimeraforge.api import monitor_plan
+from chimeraforge.monitor import MonitorRequest
+
+report = monitor_plan("plan.json", MonitorRequest(
+    backend="vllm", url="http://localhost:8000", model="org/served-model",
+    interval=30, windows=2, timeout=10,
+), candidate_index=0)
+print(report.to_dict(), report.exit_code)
+```
+
+The synchronous API fills a copy of missing targets from the saved request and
+preserves both artifact and input request. Standalone `run_monitor` still requires
+at least one explicit target. The plan binding records fingerprint, producing
+tool version, exact candidate identity and each target's source. Required model
+and backend identity is observed across each histogram window; known configuration
+disagreements are separate from native SLO breaches and missing evidence.
+Metadata uses the same supported serving observation/binding seam as benchmarking,
+without executing a workload. An entire metadata observation is bounded by the
+monitor timeout and closes its adapter. Metric/reset/window semantics stay those
+of the [monitoring guide](monitoring.md).
+
+`report.outcome` remains the native histogram policy outcome. Plan mode exit codes
+are 5 for known identity/configuration disagreement, 3 for valid SLO breach, 4 for
+unknown required identity/SLO or incomplete observation, and 0 for an observed
+model/backend match plus native SLO pass. Exit 0 retains explicit unavailable GPU,
+fleet, workload and immutable-weight limits; it does not certify deployment or
+planner accuracy. CLI operational/input/output errors exit 1. Target override
+attribution and separate Prometheus binding gauges are included in the guide.

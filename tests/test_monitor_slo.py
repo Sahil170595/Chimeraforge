@@ -445,6 +445,11 @@ def test_cli_saved_plan_imports_explicit_targets_without_replanning(tmp_path, mo
         "chimeraforge.planner.service.run_plan",
         lambda **kwargs: pytest.fail("loading a plan must not replan"),
     )
+
+    async def unavailable(*args):
+        return {"source": "metadata unavailable"}
+
+    monkeypatch.setattr("chimeraforge.bench.serving.observe_backend", unavailable)
     with metrics_server(pair()) as url:
         result = CliRunner().invoke(
             app,
@@ -463,8 +468,20 @@ def test_cli_saved_plan_imports_explicit_targets_without_replanning(tmp_path, mo
                 "--json",
             ],
         )
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == 5, result.output
     assert json.loads(result.output)["windows"][0]["metrics"]["ttft"]["target_ms"] == 150
+
+
+def test_short_native_window_keeps_positive_elapsed_time_with_coarse_monotonic_clock(monkeypatch):
+    from chimeraforge import monitor
+
+    snapshots = iter(pair())
+    monkeypatch.setattr(monitor, "_fetch", lambda *args: next(snapshots))
+    monkeypatch.setattr(monitor.time, "monotonic", lambda: 100.0)
+    report = run_monitor(
+        MonitorRequest("vllm", "http://metrics", MODEL, ttft_slo=150, interval=0.001)
+    )
+    assert report.outcome == "pass" and report.windows[0].seconds > 0
 
 
 def test_cli_human_output_and_failed_output_write(tmp_path):

@@ -143,9 +143,26 @@ class MonitorReport:
     windows: list[MonitorWindow] = field(default_factory=list)
     cancelled: bool = False
     schema_version: int = SCHEMA_VERSION
+    plan_binding: dict | None = None
+
+    @property
+    def exit_code(self) -> int:
+        if self.plan_binding is not None:
+            if any(
+                self.plan_binding[key]["state"] == "mismatch"
+                for key in ("identity", "configuration")
+            ):
+                return 5
+            if self.outcome == "breach":
+                return 3
+            if self.plan_binding["identity"]["state"] != "matched":
+                return 4
+        return {"pass": 0, "breach": 3, "unknown": 4}[self.outcome]
 
     def to_dict(self) -> dict:
         result = asdict(self)
+        if self.plan_binding is None:
+            result.pop("plan_binding")
         result["metric_contract_source"] = METRIC_SOURCES[self.backend]
         result["notes"] = [
             "P95 bounds describe observed histogram deltas, not statistical confidence intervals.",
@@ -455,6 +472,7 @@ def run_monitor(
     *,
     stop_event: threading.Event | None = None,
     on_window: Callable[[MonitorWindow], None] | None = None,
+    _on_scrape: Callable[[], None] | None = None,
 ) -> MonitorReport:
     """Observe a finite number of windows in the caller; cancellation cannot pass."""
     request.validate()
@@ -466,13 +484,15 @@ def run_monitor(
             return MonitorReport(request.backend, request.model, "unknown", cancelled=True)
         url = _metrics_url(request.url)
         first = _fetch(url, request.timeout)
-        start = time.monotonic()
+        start = time.perf_counter()
+        if _on_scrape:
+            _on_scrape()
         for _ in range(request.windows):
             if stop.wait(request.interval):
                 cancelled = True
                 break
             second = _fetch(url, request.timeout)
-            end = time.monotonic()
+            end = time.perf_counter()
             if stop.is_set():
                 cancelled = True
                 break
@@ -486,6 +506,11 @@ def run_monitor(
                 tpot_slo=request.tpot_slo,
             )
             windows.append(result)
+            if _on_scrape:
+                _on_scrape()
+            if stop.is_set():
+                cancelled = True
+                break
             if on_window:
                 on_window(result)
             first, start = second, end
@@ -511,6 +536,28 @@ def prometheus_text(report: MonitorReport) -> str:
             f'chimeraforge_monitor_outcome{{{labels},outcome="{outcome}"}} '
             f"{int(report.outcome == outcome)}"
         )
+    if report.plan_binding is not None:
+        plan = report.plan_binding["plan"]
+        plan_labels = (
+            labels
+            + f',fingerprint="{plan["fingerprint"]}",candidate_index="{plan["candidate_index"]}"'
+        )
+        for kind, states in (
+            ("identity", ("matched", "mismatch", "unavailable")),
+            ("configuration", ("unverified", "mismatch")),
+        ):
+            name = "chimeraforge_monitor_plan_" + kind
+            rows.extend(
+                [
+                    f"# HELP {name} Observed plan binding; independent of native SLO outcome.",
+                    f"# TYPE {name} gauge",
+                ]
+            )
+            for state in states:
+                rows.append(
+                    f'{name}{{{plan_labels},state="{state}"}} '
+                    f"{int(report.plan_binding[kind]['state'] == state)}"
+                )
     if report.windows:
         name = "chimeraforge_monitor_metric_outcome"
         rows.extend([f"# HELP {name} Latest window metric outcome.", f"# TYPE {name} gauge"])
