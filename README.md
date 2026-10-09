@@ -604,8 +604,9 @@ pass, `1` a regression, `2` malformed input/output and `3` inconclusive. Native
 Ollama server prefill/decode/total times differ from SSE client timings; the
 complete-token/client-wall rule can compare explicitly changed backends.
 Required unknown controls, failed requests, different observed lengths and copied
-execution payloads cannot pass. Pinned Ollama commonly lacks cache evidence:
-default `3` is expected. Explicitly predeclaring `require_cache_evidence:false`
+execution payloads cannot pass. Cache evidence follows observed native counts
+and configuration; missing required facts or known changes yield `3`.
+Explicitly predeclaring `require_cache_evidence:false`
 waives absence only, retains uncontrolled-cache scope and preserves known-drift
 refusals. No decision authenticates weights or proves independent cold runs,
 confidence, GPU accuracy or queue-inclusive SLO attainment. See the complete
@@ -756,7 +757,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **3,801 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-regression-gate/README.md) collected 3,801 cases: 3,798 passed and three skipped.
+- **3,828 collected test cases** (`pytest --collect-only tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated full local run](validation/2026-10-09-regression-gate/README.md) recorded 3,798 passed and three skipped before the native-cache acceptance correction; corrected-head hosted qualification is pending.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 

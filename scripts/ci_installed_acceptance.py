@@ -33,7 +33,9 @@ def assert_installed_origin(origin: str | Path, checkout: str | Path) -> None:
     )
 
 
-def run_cli(arguments: list[str], cwd: Path, env: dict, expected_code: int = 0) -> str:
+def run_cli(
+    arguments: list[str], cwd: Path, env: dict, expected_code: int | tuple[int, ...] = 0
+) -> str:
     """Invoke the installed module with checkout and PYTHONPATH isolation."""
     result = subprocess.run(
         [sys.executable, "-I", "-m", "chimeraforge", *arguments],
@@ -43,7 +45,8 @@ def run_cli(arguments: list[str], cwd: Path, env: dict, expected_code: int = 0) 
         capture_output=True,
         timeout=CLI_TIMEOUT_SECONDS,
     )
-    assert result.returncode == expected_code, (
+    allowed = expected_code if isinstance(expected_code, tuple) else (expected_code,)
+    assert result.returncode in allowed, (
         arguments,
         result.returncode,
         result.stdout,

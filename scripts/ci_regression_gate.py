@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import copy
+from collections import Counter
 from dataclasses import asdict
+import hashlib
 import json
+import math
 from pathlib import Path
+import statistics
+
+CPU_GATE_RULES = {"completed_token_rate_tps": 0.05, "ttft_ms": 0.1}
 
 
 def protocol_receipt(elapsed: float, ttft: float = 2.0) -> dict:
@@ -170,6 +176,230 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
     }
 
 
+def _cpu_cache(samples: list[dict], before: dict, after: dict) -> dict:
+    """Derive cache evidence from native counters, never an assumed cold state."""
+    from chimeraforge.planner.replay import digest
+
+    counts = [row["cached_prompt_tokens"] for row in samples]
+    complete = all(value is not None for value in counts)
+    disabled = before.get("prefix_cache") is False and after.get("prefix_cache") is False
+    contradiction = disabled and any(value is not None and value > 0 for value in counts)
+    return {
+        "state": "mismatch" if contradiction else "known" if complete or disabled else "unknown",
+        "counts_sha256": digest(sorted(counts)) if complete else None,
+        "disabled_observed": disabled,
+        "known_counts": sorted(value for value in counts if value is not None),
+        "unknown_count": counts.count(None),
+        "unknown_prompt_capacities": [
+            row["prompt_tokens"] for row in samples if row["cached_prompt_tokens"] is None
+        ],
+        "basis": "observed per-request cached tokens"
+        if complete
+        else "observed disabled prefix cache"
+        if disabled
+        else "unavailable; not assumed cold",
+    }
+
+
+def validate_cpu(report: dict, originals: tuple[bytes, bytes], version: str, runs: int) -> dict:
+    """Check this CPU policy's native facts and decision without a machine-speed gate."""
+    from chimeraforge.bench.gate import FACTS, RegressionPolicy, _evidence_id, _fact
+    from chimeraforge.bench.gate_inputs import SERIALIZATION_ROUNDOFF, load_receipt
+    from chimeraforge.bench.metrics import BENCHMARK_WALL_BASIS
+    from chimeraforge.bench.serving import safe_observation
+    from chimeraforge.planner.replay import digest
+
+    code = report["exit_code"]
+    assert type(code) is int and code in (0, 1, 3)
+    validate(report, code, (1, 1))
+    controls = {"device": "cpu", "backend": "ollama", "version": version}
+    rules = dict(CPU_GATE_RULES)
+    assert report["policy"] == asdict(RegressionPolicy(rules=rules, fixed_controls=controls))
+    assert len(report["pairs"]) == 1
+    pair = report["pairs"][0]
+    assert pair["index"] == 0 and set(pair["metrics"]) == set(rules)
+    rows = [json.loads(raw) for raw in originals]
+    phases, caches, native, values, workloads, identities = {}, {}, {}, {}, {}, []
+    blockers = set()
+    for arm, raw, row in zip(("baseline", "candidate"), originals, rows):
+        assert row["fingerprint"] == digest({k: v for k, v in row.items() if k != "fingerprint"})
+        execution, samples = row["execution"], row["measurement"]["individual_runs"]
+        assert len(samples) == execution["requested_count"] == execution["successful_count"] == runs
+        assert execution["failed_count"] == 0 and execution["individual_runs"] == samples
+        assert all(
+            type(sample["prompt_tokens"]) is int and sample["prompt_tokens"] > 0
+            for sample in samples
+        )
+        assert all(
+            type(sample["tokens_generated"]) is int and sample["tokens_generated"] > 0
+            for sample in samples
+        )
+        held = load_receipt(row)
+        identity = _evidence_id(held)
+        identities.append(identity)
+        assert report["inputs"][arm] == [
+            {
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                "fingerprint": row["fingerprint"],
+                "size_bytes": len(raw),
+                "evidence_sha256": identity,
+                "legacy": False,
+            }
+        ]
+        before, after = (
+            safe_observation(execution[key]) for key in ("serving_before", "serving_after")
+        )
+        phases[arm] = (before, after)
+        caches[arm] = _cpu_cache(samples, before, after)
+        assert pair["cache"][arm] == caches[arm]
+        if caches[arm]["state"] == "unknown":
+            blockers.add("cache_evidence_unavailable")
+        if caches[arm]["state"] == "mismatch":
+            blockers.add("cache_contradiction")
+        native[arm] = {
+            name: [sample[name] for sample in samples]
+            for name in (
+                "prompt_tokens",
+                "cached_prompt_tokens",
+                "tokens_generated",
+            )
+        }
+        request = execution["request"]
+        options = copy.deepcopy(request["options"])
+        cap = options.pop("num_predict")
+        assert type(cap) is int and cap > 0
+        assert all(sample["tokens_generated"] <= cap for sample in samples)
+        workloads[arm] = {
+            "prompt_sha256": request["prompt_sha256"],
+            "profile": request["workload"],
+            "concurrency": request["concurrency"],
+            "arrival_rate": request["arrival_rate"],
+            "output_cap": cap,
+            "options_sha256": digest(options),
+            "requested_count": runs,
+            "actual_lengths_sha256": digest(
+                sorted(
+                    zip(native[arm]["prompt_tokens"], native[arm]["tokens_generated"]),
+                    key=lambda value: (str(value[0]), value[1]),
+                )
+            ),
+        }
+        assert pair["workload"][arm] == workloads[arm]
+        elapsed = execution["elapsed_seconds"]
+        assert (
+            math.isfinite(elapsed)
+            and elapsed > 0
+            and execution["elapsed_seconds_basis"] == BENCHMARK_WALL_BASIS
+        )
+        rate = sum(native[arm]["tokens_generated"]) / elapsed
+        ttft = statistics.mean(sample["ttft_ms"] for sample in samples)
+        native_prefill = before.get("backend") == after.get("backend") == "ollama" and all(
+            sample["ttft_basis"] == "server-prefill-duration" and sample["ttft_ms"] > 0
+            for sample in samples
+        )
+        values[arm] = {
+            "completed_token_rate_tps": rate,
+            "ttft_ms": ttft if native_prefill else None,
+        }
+    assert pair["cache"] == caches
+    assert set(pair["conditions"]) == FACTS
+    unavailable = []
+    for name, condition in pair["conditions"].items():
+        observed = {arm: [_fact(phase, name) for phase in phases[arm]] for arm in phases}
+        known = [value for phases in observed.values() for value in phases if value is not None]
+        mismatch = (
+            any(value != known[0] for value in known[1:])
+            or name in controls
+            and any(value != controls[name] for value in known)
+        )
+        missing = any(value is None for phases in observed.values() for value in phases)
+        state = "mismatch" if mismatch else "unavailable" if missing else "matched"
+        assert condition["observed"] == observed and condition["state"] == state
+        assert condition["required"] is (name in controls) and condition["treatment"] is False
+        assert condition["expected"] == (
+            {arm: controls[name] for arm in phases} if name in controls else None
+        )
+        if mismatch or name in controls and missing:
+            blockers.add("condition:" + name)
+        if state == "unavailable":
+            unavailable.append(name)
+    assert pair["uncontrolled_or_unavailable_facts"] == sorted(unavailable)
+    if workloads["baseline"] != workloads["candidate"]:
+        blockers.add("workload_or_actual_lengths_changed")
+    for left, right in (
+        (caches["baseline"], caches["candidate"]),
+        (caches["candidate"], caches["baseline"]),
+    ):
+        residual = sorted(
+            (Counter(left["known_counts"]) - Counter(right["known_counts"])).elements()
+        )
+        capacity = sorted(
+            0 if right["disabled_observed"] else value
+            for value in right["unknown_prompt_capacities"]
+        )
+        if len(residual) > len(capacity) or any(
+            value > cap for value, cap in zip(residual, capacity[len(capacity) - len(residual) :])
+        ):
+            blockers.add("observed_cache_hits_changed")
+    regression = False
+    for name, threshold in rules.items():
+        metric = pair["metrics"][name]
+        left, right = values["baseline"][name], values["candidate"][name]
+        assert metric["baseline"] == left and metric["candidate"] == right
+        basis = (
+            BENCHMARK_WALL_BASIS
+            if name == "completed_token_rate_tps"
+            else "server-prefill-duration"
+        )
+        assert metric["baseline_basis"] == (basis if left is not None else None)
+        assert metric["candidate_basis"] == (basis if right is not None else None)
+        assert metric["max_regression_fraction"] == threshold
+        if left is None or right is None:
+            blockers.add("metric_basis_or_value_unavailable:" + name)
+            assert metric["regression_fraction"] is None
+        else:
+            fraction = (
+                (left - right) / left
+                if name == "completed_token_rate_tps"
+                else (right - left) / left
+            )
+            assert math.isclose(
+                metric["regression_fraction"],
+                fraction,
+                rel_tol=SERIALIZATION_ROUNDOFF,
+                abs_tol=SERIALIZATION_ROUNDOFF,
+            )
+            regression |= fraction > threshold
+    assert pair["blockers"] == sorted(blockers)
+    if identities[0] == identities[1]:
+        blockers.add("duplicate_execution_payload")
+    assert report["blockers"] == sorted(blockers)
+    expected = 3 if blockers else 1 if regression else 0
+    assert (
+        code == expected
+        and report["outcome"]
+        == {0: "conditional_pass", 1: "regression", 3: "inconclusive"}[expected]
+    )
+    for name, metric in pair["metrics"].items():
+        assert metric["state"] == (
+            "inconclusive"
+            if pair["blockers"]
+            else "regression"
+            if metric["regression_fraction"] > rules[name]
+            else "pass"
+        )
+    return {
+        "exit_code": code,
+        "outcome": report["outcome"],
+        "native_counts": native,
+        "cache": caches,
+        "blockers": report["blockers"],
+        "native_metrics": pair["metrics"],
+        "performance_threshold_qualification": "not asserted",
+        "gpu_accuracy": "unverified",
+    }
+
+
 def accept_cpu(
     cwd: Path,
     env: dict,
@@ -226,7 +456,7 @@ def accept_cpu(
     policy.write_text(
         json.dumps(
             {
-                "rules": {"completed_token_rate_tps": 0.05, "ttft_ms": 0.1},
+                "rules": CPU_GATE_RULES,
                 "fixed_controls": {"device": "cpu", "backend": "ollama", "version": version},
             }
         )
@@ -241,11 +471,34 @@ def accept_cpu(
         str(policy),
         "--json",
     ]
-    actual = json.loads(run_cli(args, cwd, env, 3))
-    validate(actual, 3, (1, 1))
+    actual = json.loads(run_cli(args, cwd, env, (0, 1, 3)))
+    originals = (baseline_path.read_bytes(), candidate_path.read_bytes())
+    print(
+        json.dumps(
+            {
+                "cpu_gate_native_evidence": {
+                    "validation": "pending following native-derived oracle",
+                    "reported_cache": actual["pairs"][0]["cache"],
+                    "reported_blockers": actual["blockers"],
+                    "reported_exit_code": actual["exit_code"],
+                    "native_counts": {
+                        arm: {
+                            name: [sample[name] for sample in row["measurement"]["individual_runs"]]
+                            for name in (
+                                "prompt_tokens",
+                                "cached_prompt_tokens",
+                                "tokens_generated",
+                            )
+                        }
+                        for arm, row in (("baseline", baseline), ("candidate", candidate))
+                    },
+                }
+            },
+            sort_keys=True,
+        )
+    )
+    observed = validate_cpu(actual, originals, version, runs)
     pair = actual["pairs"][0]
-    assert pair["cache"]["baseline"]["state"] == pair["cache"]["candidate"]["state"] == "unknown"
-    assert "cache_evidence_unavailable" in actual["blockers"]
     for arm, row in (("baseline", baseline), ("candidate", candidate)):
         native_tokens = sum(
             sample["tokens_generated"] for sample in row["measurement"]["individual_runs"]
@@ -280,8 +533,7 @@ def accept_cpu(
         "successful_requests_per_execution": runs,
         "receipts": [baseline["fingerprint"], candidate["fingerprint"]],
         "gate_fingerprint": actual["fingerprint"],
-        "exit_code": 3,
-        "cause": "required cache evidence unavailable; additional native limitations retained",
+        **observed,
         "metrics": sorted(pair["metrics"]),
         "copied_receipt_refused": True,
         "performance_threshold_qualification": "not asserted",

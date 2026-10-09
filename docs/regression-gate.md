@@ -75,8 +75,13 @@ needs paired expectations. Observed digests are unauthenticated metadata, not
 actual weight-byte hashes.
 
 Cache evidence is required by default: complete per-request cached-token counts
-or observed disabled prefix caching before and after execution. Pinned Ollama
-commonly omits both, yielding an honest inconclusive decision. Predeclaring
+or observed disabled prefix caching before and after execution. Ollama0.35.1
+can report nullable `prompt_eval_cached_count` independently of unavailable
+prefix-cache configuration. Its `prompt_eval_count` already includes cached and
+new tokens; cached counts are never added again. See the
+[pinned native metrics](https://github.com/ollama/ollama/blob/v0.35.1/api/types.go#L515-L523)
+and [total-count mapping](https://github.com/ollama/ollama/blob/v0.35.1/llm/llama_server.go#L1488-L1500).
+Unavailable counters and known changes remain distinct blockers. Predeclaring
 `require_cache_evidence:false` waives missing evidence only and retains prominent
 unknown/uncontrolled cache scope. It cannot waive contradictory counters, known
 cache changes or a required prefix-cache expectation. Known cross-arm cache
@@ -126,6 +131,7 @@ served weights or queue-inclusive SLO attainment.
 
 Existing installed wheel/sdist acceptance exercises all four outcomes using
 explicitly synthetic protocol fixtures. The existing hosted CPU endpoint makes
-two actual installed benchmark executions and exercises missing-cache refusal;
-shared-runner rates receive no performance qualification threshold. Hosted proof
-remains pending publication.
+two actual installed benchmark executions. It checks native cache/workload/
+condition evidence and two-rule arithmetic, retaining an observed conditional
+pass, regression or inconclusive result. It asserts no shared-runner performance
+threshold. Corrected-head hosted qualification remains pending.
