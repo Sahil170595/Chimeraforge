@@ -1,0 +1,20 @@
+Config only: wrote C:\tmp\cf-readme-final-20261009\compose.yaml
+Note: Config only: GPU runtime, installed engine/image compatibility, model 
+access and actual throughput/SLO attainment are not verified. Match the visible
+GPU(s) to the saved plan.
+Note: TTFT/TPOT SLOs gate the PREDICTED value, not an attainment percentage: 
+the planner models a point estimate, not a latency distribution, so this is not
+a '99% of requests' guarantee
+Note: model declares a 32768-token sliding window but no layer pattern, so KV 
+is sized at full context (conservative) -- the real cache is smaller
+Note: priced at $0.060/GPU-hour on the amortised-purchase basis: amortised card
+purchase price, not a rental rate -- it excludes power, which is reported 
+separately, and every other running cost
+Note: off-registry model (hf): throughput is a roofline estimate, not measured
+Note: quality estimated from family prior, not measured
+Note: vLLM GPU memory utilization 0.9 is a starting point, not a derived 
+capacity guarantee.
+Validate the config: docker compose -f 
+'C:\tmp\cf-readme-final-20261009\compose.yaml' config
+Then start it: docker compose -f 'C:\tmp\cf-readme-final-20261009\compose.yaml'
+up -d

@@ -1,0 +1,149 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\tmp\cf-release-051-20261008
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, hypothesis-6.168.3, platformdirs-4.12.3, asyncio-1.4.0, cov-7.1.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 3440 items
+
+tests\test_accuracy.py ..............                                    [  0%]
+tests\test_apicost.py ............................                       [  1%]
+tests\test_attention_shapes.py .........................                 [  1%]
+tests\test_backend_plugins.py ..........................                 [  2%]
+tests\test_backend_plugins_installed.py .                                [  2%]
+tests\test_batch_i_remainder.py .......................                  [  3%]
+tests\test_batch_mode.py .......................                         [  4%]
+tests\test_bench_backends.py ....................                        [  4%]
+tests\test_bench_cli.py ......                                           [  4%]
+tests\test_bench_decode.py ........                                      [  5%]
+tests\test_bench_environment.py ...                                      [  5%]
+tests\test_bench_identity.py ........................                    [  5%]
+tests\test_bench_metrics.py ............................                 [  6%]
+tests\test_bench_runner.py .................                             [  7%]
+tests\test_blind_review_round1.py ..............................         [  8%]
+tests\test_brief.py ...................................                  [  9%]
+tests\test_carbon.py ..................................                  [ 10%]
+tests\test_ci_acceptance.py .........                                    [ 10%]
+tests\test_ci_coverage.py ....                                           [ 10%]
+tests\test_ci_local_rest.py ...                                          [ 10%]
+tests\test_cli_fail_loud.py ..................                           [ 11%]
+tests\test_cloud_prices.py ...................                           [ 11%]
+tests\test_compare.py .......................                            [ 12%]
+tests\test_contribution_review.py ...................................... [ 13%]
+...................................                                      [ 14%]
+tests\test_contributions.py ............................................ [ 15%]
+.............................                                            [ 16%]
+tests\test_corpus_integrity.py ..............                            [ 16%]
+tests\test_corpus_shape.py .......                                       [ 17%]
+tests\test_cost_realism.py ..........................                    [ 17%]
+tests\test_deploy.py ................................................... [ 19%]
+...................                                                      [ 19%]
+tests\test_deploy_acceptance.py ....ss                                   [ 20%]
+tests\test_disaggregation_advisory.py ..................                 [ 20%]
+tests\test_discovery.py ............                                     [ 20%]
+tests\test_doctor.py .................................................   [ 22%]
+tests\test_engine_support.py ...............................             [ 23%]
+tests\test_eval.py .................................................     [ 24%]
+tests\test_fleet.py ........................................             [ 25%]
+tests\test_fp8.py ....................................                   [ 26%]
+tests\test_gha_plan_comment.py ............................              [ 27%]
+tests\test_goodput.py ..................                                 [ 28%]
+tests\test_gpu_2026.py ..............................................    [ 29%]
+tests\test_hardware_resolution.py ...................................... [ 30%]
+...............................................                          [ 32%]
+tests\test_hardware_spec_propagation.py .........                        [ 32%]
+tests\test_hybrid_state.py ............................................. [ 33%]
+......                                                                   [ 33%]
+tests\test_launch.py ...........................                         [ 34%]
+tests\test_mcp.py ..............                                         [ 34%]
+tests\test_mcp_http.py ..........................                        [ 35%]
+tests\test_mcp_surface.py .........................................      [ 36%]
+tests\test_measure.py ......                                             [ 37%]
+tests\test_moe.py .......................                                [ 37%]
+tests\test_monitor_slo.py .............................................. [ 39%]
+.................                                                        [ 39%]
+tests\test_monitoring.py .....                                           [ 39%]
+tests\test_multi_lora.py ..............................................  [ 41%]
+tests\test_mutation_gaps.py .................................            [ 42%]
+tests\test_offload.py ...................                                [ 42%]
+tests\test_plan_artifact.py ...............................              [ 43%]
+tests\test_plan_benchmark.py ...................................         [ 44%]
+tests\test_plan_check.py ...........................................     [ 45%]
+tests\test_plan_monitor.py ................................              [ 46%]
+tests\test_plan_serving.py ...............                               [ 47%]
+tests\test_planner_cli.py ..................                             [ 47%]
+tests\test_planner_core.py ......................                        [ 48%]
+tests\test_planner_engine.py ........................................... [ 49%]
+...................................                                      [ 50%]
+tests\test_planner_models.py ........................................... [ 51%]
+.................................                                        [ 52%]
+tests\test_planner_properties.py ........                                [ 52%]
+tests\test_platform_gate.py .........................................    [ 54%]
+tests\test_prefill_floor.py ............................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+.......................................                                  [ 67%]
+tests\test_prefix_cache.py ......................                        [ 67%]
+tests\test_provenance_classes.py ....................................... [ 68%]
+........................................................................ [ 70%]
+....................                                                     [ 71%]
+tests\test_provenance_labels.py ........................................ [ 72%]
+..                                                                       [ 72%]
+tests\test_quality_intervals.py ........................................ [ 73%]
+...............                                                          [ 74%]
+tests\test_reasoning_tokens.py .............                             [ 74%]
+tests\test_reference_data.py ....................                        [ 75%]
+tests\test_refit.py ................................................     [ 76%]
+tests\test_repo_conventions.py ......................................... [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 82%]
+...................................................................      [ 84%]
+tests\test_report.py ................................                    [ 84%]
+tests\test_reporting_degenerates.py ........................             [ 85%]
+tests\test_resolution_honesty.py ..........................              [ 86%]
+tests\test_resolver.py ...................................               [ 87%]
+tests\test_rest_api.py ................                                  [ 87%]
+tests\test_safety.py ................................................... [ 89%]
+...                                                                      [ 89%]
+tests\test_session_residency.py ....................                     [ 90%]
+tests\test_sglang.py .................                                   [ 90%]
+tests\test_sglang_bench.py .................                             [ 91%]
+tests\test_surface_contract.py ......................................... [ 92%]
+....                                                                     [ 92%]
+tests\test_unified_memory.py ......................................      [ 93%]
+tests\test_validate.py ............................................      [ 94%]
+tests\test_validate_provenance.py ...................................... [ 95%]
+..........                                                               [ 96%]
+tests\test_validation_corpus.py ...............                          [ 96%]
+tests\test_verified_findings.py .............                            [ 96%]
+tests\test_w4a16.py .....................                                [ 97%]
+tests\test_workload.py ................................................. [ 98%]
+........                                                                 [ 99%]
+tests\test_workload_engine_metrics.py ............................       [100%]
+
+============================== warnings summary ===============================
+tests/test_accuracy.py: 1 warning
+tests/test_fleet.py: 1 warning
+tests/test_gha_plan_comment.py: 1 warning
+tests/test_hardware_resolution.py: 1 warning
+tests/test_provenance_labels.py: 1 warning
+tests/test_quality_intervals.py: 3 warnings
+tests/test_repo_conventions.py: 5 warnings
+  C:\tmp\cf-release-051-env-20261008\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+tests/test_reporting_degenerates.py::TestEvalDisclosesPlaceholderPredictions::test_json_marks_a_run_where_the_model_was_never_queried
+  C:\tmp\cf-release-051-20261008\src\chimeraforge\eval\metrics.py:331: UserWarning: BERTScore unavailable (install `evaluate` and `bert-score`). Returning 0.0; the composite redistributes its weight to ROUGE-L and records `composite_weights` so the two schemes are distinguishable.
+    bs = compute_bert_score(predictions, references)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+-------- generated xml file: C:\tmp\cf-readme-final-20261009\unit.xml ---------
+========== 3438 passed, 2 skipped, 14 warnings in 114.43s (0:01:54) ===========
