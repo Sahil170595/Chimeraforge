@@ -1,0 +1,12 @@
+{
+  "basis": "SHA256 of canonical UTF8 LF committed Git bytes",
+  "implementation_commit": "a6f3f72c0f0e2b1f429c0b86173bced3cb351771",
+  "files": {
+    "README.md": "207af61409c94010acfd37967c92a0b473d6365129c8d3f0716ca8d8b1804426",
+    "coverage-summary.json": "9b80b5500d2fa0a88bf5ce0ee36a763809116bf78e1e008980bd11a0f3cf5933",
+    "focused.log": "696485f6fc19ad3befce546a39c2e33d5a24dccdc3c3cc7869b7413ba977fcc4",
+    "lint.log": "8425efbfdabacd5de7c9fa4116048c3a8979ae0cfae8ac7ccbdab8e4a9598fe6",
+    "pytest-final.log": "37ad64e77bba84c3b02456c6cbcd061d7871965774cf78f43381780cb5003227",
+    "red-summary.json": "d942220dc6aea2be0739e035663d1fd458a6b09dd58a821af881cd09f27ff14d"
+  }
+}
