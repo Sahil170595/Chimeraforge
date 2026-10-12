@@ -91,8 +91,7 @@ snapshot or turn unsigned quarantine data into trusted measurements.
 
 ## Frozen-context sensitivity
 
-This is an unreleased feature of this checkout. Install this checkout with
-`pip install .`; the earlier pinned source and PyPI 0.51.0 do not contain it.
+This feature is available in Chimeraforge 0.59.0. Install `pip install "chimeraforge==0.59.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955013473); each release separately qualifies its versioned artifacts.
 
 ```python
 from chimeraforge.api import PlanScenario, study_plan
