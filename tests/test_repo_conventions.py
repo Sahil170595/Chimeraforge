@@ -196,6 +196,19 @@ class TestServerJsonStaysInSync:
     def test_package_entry_version_matches(self, server_json, pyproject_version):
         assert server_json["packages"][0]["version"] == pyproject_version
 
+    def test_registry_runtime_uses_exact_extra_without_from(self, server_json, pyproject_version):
+        package = server_json["packages"][0]
+        assert package["identifier"] == "chimeraforge"
+        assert package["registryType"] == "pypi"
+        assert package["runtimeHint"] == "uvx"
+        assert package["transport"] == {"type": "stdio"}
+        arguments = package["runtimeArguments"]
+        assert len(arguments) == 1
+        assert arguments[0]["type"] == "named"
+        assert arguments[0]["name"] == "--with"
+        assert arguments[0]["value"] == f"chimeraforge[mcp]=={pyproject_version}"
+        assert "registryBaseUrl" not in package
+
     def test_dunder_version_matches(self, pyproject_version):
         import chimeraforge
 

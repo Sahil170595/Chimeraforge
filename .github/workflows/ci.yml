@@ -145,6 +145,11 @@ jobs:
       - name: Accept original and sdist-rebuilt wheels in isolated environments
         # Exact Linux-produced plan/input bytes are consumed by every installed OS.
         run: python scripts/ci_distributions.py
+      - uses: ./.github/actions/setup-ci
+        if: matrix.os == 'ubuntu-latest'
+      - name: Exercise the exact registry invocation against the candidate wheel
+        if: matrix.os == 'ubuntu-latest'
+        run: uv run --no-sync python scripts/ci_registry_runtime.py --candidate-dist dist
 
   docker:
     needs: build
