@@ -63,5 +63,10 @@ metadata, and the complete reusable CI validation at that tag. The publish job
 downloads the validated distributions instead of rebuilding them, creates build
 provenance, and uses PyPI OIDC publishing. MCP metadata is validated before the
 PyPI upload and its publisher binary is digest-pinned. Ordinary CI never publishes.
+Public registry readiness checks exact non-yanked file hashes and the pinned uv
+resolver's supported dry-run under one deadline, using the MCP SDK child environment.
+Only an unavailable exact release is polled; other resolution failures stop publication.
+The existing installed-distribution job exercises the same resolver against the candidate
+wheel. Each path runs its MCP application probe once after resolution qualifies.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.

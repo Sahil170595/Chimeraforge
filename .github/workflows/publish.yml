@@ -97,21 +97,9 @@ jobs:
           curl --fail --location --retry 3 https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz -o "$archive"
           echo "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc  $archive" | sha256sum --check
           tar -xzf "$archive" -C "$RUNNER_TEMP" mcp-publisher
-      - name: Wait for the validated release on PyPI
-        env:
-          REF_NAME: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          tag="${REF_NAME#v}"
-          for attempt in $(seq 1 30); do
-            if curl -fsS "https://pypi.org/pypi/chimeraforge/$tag/json" >/dev/null; then
-              exit 0
-            fi
-            echo "attempt $attempt: waiting for PyPI indexing"
-            sleep 10
-          done
-          echo "::error::Release never became visible on PyPI"
-          exit 1
+      - uses: ./.github/actions/setup-ci
+      - name: Exercise the exact published registry invocation
+        run: uv run --no-sync python scripts/ci_registry_runtime.py --wait-pypi
       - name: Publish registry metadata
         run: |
           "$RUNNER_TEMP/mcp-publisher" login github-oidc

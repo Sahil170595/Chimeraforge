@@ -157,8 +157,7 @@ weights, or establish measured prediction accuracy.
 
 ## Checkpoint identity
 
-This is an unreleased source feature, beyond PyPI 0.51.0 and the README's older
-review-stack install pin. Install this feature's checkout with `pip install .`.
+This feature is available in Chimeraforge 0.57.0. Install `pip install "chimeraforge==0.57.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37953617963); each release separately qualifies its versioned artifacts.
 
 ```python
 from chimeraforge.api import PlanRequest, plan, check_plan
