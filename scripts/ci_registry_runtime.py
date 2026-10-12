@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,7 @@ UV_SIMPLE_ACCEPT = (
     "application/vnd.pypi.simple.v1+json, "
     "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
 )
+PYTHON_LIBRARY_RE = re.compile(r"\blibpython\d+\.\d+\.so(?:\.\d+)*\b")
 
 
 def public_resolution_ready(
@@ -35,7 +37,7 @@ def public_resolution_ready(
         "pip",
         "install",
         "--dry-run",
-        "--ignore-installed",
+        "--reinstall",
         "--no-cache",
         "--python",
         sys.executable,
@@ -59,6 +61,15 @@ def public_resolution_ready(
     missing = f"Because there is no version of {PACKAGE}=={version} and "
     if result.returncode == 1 and missing in error and f"you require {PACKAGE}" in error:
         return False
+    diagnostic = {"version": version, "exit_code": result.returncode, "reason": "resolver_error"}
+    library = PYTHON_LIBRARY_RE.search(error)
+    if "error while loading shared libraries" in error and library is not None:
+        diagnostic.update(reason="python_shared_library", library=library.group())
+    elif "unexpected argument" in error:
+        diagnostic["reason"] = "cli_unknown_argument"
+    elif "Failed to inspect Python interpreter" in error:
+        diagnostic["reason"] = "python_discovery"
+    print(json.dumps({"uv_resolution_failure": diagnostic}), flush=True)
     raise RuntimeError(f"Public exact-version resolution failed (uv exit {result.returncode})")
 
 

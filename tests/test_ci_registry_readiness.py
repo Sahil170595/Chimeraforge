@@ -79,7 +79,7 @@ def test_native_readiness_uses_sdk_environment_and_dry_run(monkeypatch, status):
         "pip",
         "install",
         "--dry-run",
-        "--ignore-installed",
+        "--reinstall",
         "--no-cache",
         "--python",
         sys.executable,
@@ -220,3 +220,25 @@ def test_line_wrapped_exact_release_absence_is_recognized(monkeypatch):
         lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, "", error),
     )
     assert module.public_resolution_ready("0.57.0", 7) is False
+
+
+def test_native_failure_diagnostic_identifies_loader_without_raw_body(monkeypatch, capsys):
+    module = script()
+    error = (
+        "error: Failed to inspect Python interpreter\n"
+        "error while loading shared libraries: libpython3.12.so.1.0: cannot open shared object file\n"
+        "private-response-sentinel"
+    )
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 2, "", error),
+    )
+    with pytest.raises(RuntimeError):
+        module.public_resolution_ready("0.57.0", 7)
+    output = capsys.readouterr().out
+    diagnostic = json.loads(output)["uv_resolution_failure"]
+    assert diagnostic["reason"] == "python_shared_library"
+    assert diagnostic["library"] == "libpython3.12.so.1.0"
+    assert diagnostic["version"] == "0.57.0" and diagnostic["exit_code"] == 2
+    assert "private-response-sentinel" not in output
