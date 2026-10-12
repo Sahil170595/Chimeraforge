@@ -1,0 +1,2 @@
+# Preserve exact consumed/output bytes in this dated CLI documentation run.
+validation/2026-10-09-cli-readme/** -text

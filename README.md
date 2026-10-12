@@ -7,7 +7,7 @@
 
 <!-- mcp-name: io.github.Sahil170595/chimeraforge -->
 
-**A local-first, model-agnostic LLM deployment planner.** It turns "which model, quantization, GPU, and backend -- how many, will it fit, will it hit my SLO, what will it cost" into a fast, honest, measured answer, from your shell, your Python, or your AI assistant.
+**A local-first, model-agnostic LLM deployment planner.** It turns "which model, quantization, GPU, and backend -- how many, will it fit, will it hit my SLO, what will it cost" into a fast answer with explicit evidence and assumptions, from your shell, your Python, or your AI assistant.
 
 ```bash
 uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
@@ -65,7 +65,13 @@ pip install "chimeraforge[refit]"     # + coefficient refitting (numpy, scipy)
 pip install "chimeraforge[all]"       # everything
 ```
 
-Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). `plan` / `suggest` / `catalog` run fully offline; `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
+Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
+
+**Release scope (2026-10-12).** This README documents [Chimeraforge 0.56.1](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.56.1). The workflows below are available in this version.
+
+```bash
+pip install "chimeraforge[mcp]==0.56.1"
+```
 
 ## Quickstart
 
@@ -88,6 +94,10 @@ chimeraforge plan --model qwen3:14b --measure
 
 # Discover + rank what fits your GPU and budget
 chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
+
+# Save and recheck an offline plan
+chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --no-network --save offline-plan.json
+chimeraforge check offline-plan.json --json
 ```
 
 ---
@@ -251,10 +261,17 @@ LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
 
 ```bash
 mkdir deployment
-chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --save plan.json
-chimeraforge deploy --plan plan.json --format compose --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
+chimeraforge plan --model Qwen/Qwen2.5-1.5B-Instruct --hardware "RTX 4090 24GB" --ttft-slo 500 --tpot-slo 50 --save plan.json
+# Bash: select a single-replica, resident vLLM FP16 candidate from this artifact.
+CANDIDATE_INDEX=$(python -c "import json; p=json.load(open('plan.json')); print(next(i for i,c in enumerate(p['result']['candidates']) if c['backend']=='vllm' and c['quant']=='FP16' and c['n_agents']==1 and c['offload_fraction']==0))")
+chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" --format compose --image vllm/vllm-openai:v0.30.0 --out deployment/compose.yaml
 ```
 
+On PowerShell, assign the same Python selection with `$CANDIDATE_INDEX = python -c "..."`.
+Inspect the saved candidate before exporting; the selection fails if none matches.
+The first candidate is not necessarily vLLM or the checkpoint's native precision.
+The image tag is an explicit example, not an assertion that it was run; use your
+qualified engine image or a digest for fixed image bytes. Output files must be new.
 Select a candidate matching the explicit image's backend. Unsupported fleets,
 offload, unresolved adapter paths and checkpoint/KV mismatches fail clearly.
 Ollama emits daemon settings and a companion Modelfile with required provisioning
@@ -343,6 +360,9 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ```bash
 chimeraforge monitor --backend vllm --url http://localhost:8000 --model YOUR_SERVED_MODEL \
   --ttft-slo 500 --tpot-slo 50 --interval 30 --windows 1 --json
+# After starting the selected candidate and generating traffic, bind its saved targets.
+chimeraforge monitor --from-plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --backend vllm --url http://localhost:8000 --model Qwen/Qwen2.5-1.5B-Instruct --windows 1 --json
 ```
 
 Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. `--from-plan plan.json --candidate-index 0` binds the saved candidate and target sources to passive serving metadata. Known identity/configuration disagreements exit 5 separately from native SLO outcomes; unavailable required endpoint identity exits 4. GPU geometry, fleet topology, workload and immutable weights remain explicitly unverified when unavailable. Independent plan-binding and native SLO Prometheus gauges are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
@@ -395,7 +415,7 @@ chimeraforge contribute verify contributions/*.json              # schema + cont
 chimeraforge contribute import theirs.contribution.json          # into the local quarantine
 chimeraforge contribute list
 chimeraforge contribute review theirs.contribution.json --decision retain --reason "Replay needed" --json
-chimeraforge contribute replay theirs.contribution.json --prompt "Explain KV caching briefly." --output-tokens 128 --runs 3 --base-url http://localhost:11434 --out replay.json --json
+chimeraforge contribute replay theirs.contribution.json --prompt "Explain KV caching briefly." --output-tokens 128 --runs 3 --base-url http://localhost:8000 --out replay.json --json
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --contributions
 ```
 
@@ -449,7 +469,8 @@ Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *
 chimeraforge bench --model llama3.2-3b --runs 5
 chimeraforge bench --model llama3.2-3b --all-quants --context 512,1024,2048,4096 --json
 chimeraforge bench --model llama3.2-3b --backend vllm --base-url http://localhost:8000
-chimeraforge bench --plan plan.json --candidate-index 0 --model actual-served-id --runs 5 --json
+# Requires the selected vLLM candidate from the deploy example to be running.
+chimeraforge bench --plan plan.json --candidate-index "$CANDIDATE_INDEX" --model Qwen/Qwen2.5-1.5B-Instruct --base-url http://localhost:8000 --prompt "Explain KV caching briefly." --runs 5 --json
 ```
 
 `bench --plan` binds an immutable saved candidate to actual serving observations
@@ -577,7 +598,7 @@ Phase 2 (TR123-TR133, ~106,000 measurements) distilled into an artifact-backed d
 - **~204,000 primary measurements** across 32 technical reports (TR108-TR137 + the TR142/TR146 safety provenance), on an RTX 4080 Laptop (12 GB; 192-bit GDDR6, 432 GB/s), which is the reference rig every cross-GPU estimate is scaled from. De-duplicated: TR137/TR142 are syntheses of already-counted data. The planner's own lookup tables are a small subset of this (23 throughput rows); the table under the introduction gives their exact size.
 - **Rigor:** fresh-process isolation per run (no warm-cache bias), forced cold starts, 3-5 runs per config for statistical confidence, structured JSON/CSV logging with full provenance. Every claim traces to raw data you can re-run.
 - **Program context:** ChimeraForge is the actionable CLI splice of the parent Banterhearts program (~1,337,000 primary + judge measurements across 54 TRs); the safety attack-surface and serving-stack research lives in sibling repos.
-- **2,678 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite.
+- **3,440 automated tests** (`pytest tests/`) cover the planner models, gate search, resolver, discovery, safety, bench backends, and the MCP server -- GPU-decoupled, no live backend required for the core suite. The [dated local run](validation/2026-10-09-cli-readme/README.md) collected 3,440 cases: 3,438 passed and two skipped.
 
 Reproduce any number: find the claim in a report under `outputs/publish_ready/reports/`, follow its reference to the data folder, inspect the CSV/JSON, and re-run the provided scripts or notebooks. See [`docs/archive/methodology.md`](docs/archive/methodology.md).
 
