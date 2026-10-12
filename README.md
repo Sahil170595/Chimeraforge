@@ -320,7 +320,7 @@ chimeraforge monitor --backend vllm --url http://localhost:8000 --model YOUR_SER
   --ttft-slo 500 --tpot-slo 50 --interval 30 --windows 1 --json
 ```
 
-Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. Optional saved-plan targets and atomic Prometheus textfile export are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
+Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. `--from-plan plan.json --candidate-index 0` binds the saved candidate and target sources to passive serving metadata. Known identity/configuration disagreements exit 5 separately from native SLO outcomes; unavailable required endpoint identity exits 4. GPU geometry, fleet topology, workload and immutable weights remain explicitly unverified when unavailable. Independent plan-binding and native SLO Prometheus gauges are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
 
 ### `doctor` -- check this machine (read-only)
 
