@@ -226,7 +226,8 @@ def test_native_failure_diagnostic_identifies_loader_without_raw_body(monkeypatc
     module = script()
     error = (
         "error: Failed to inspect Python interpreter\n"
-        "error while loading shared libraries: libpython3.12.so.1.0: cannot open shared object file\n"
+        "error while loading shared libraries: libpython3.12.so.1.0: "
+        "cannot open shared object file\n"
         "private-response-sentinel"
     )
     monkeypatch.setattr(
