@@ -78,6 +78,13 @@ Conditional comparability requires:
 - Ollama `server-all-output/decode-duration` rate. Client stream intervals and
   whole-workload token rates cannot qualify a GPU decode prediction.
 
+Optional underlying `execution_engine` observations are checked in both phases.
+A supplied known contradiction or drift makes the row a binding mismatch; losing
+or gaining an otherwise matching known observation leaves comparability unavailable.
+Missing observations in both phases remain explicitly unverified and do not invent
+an underlying-engine authentication requirement. Matching declarations also do not
+authenticate the underlying execution engine.
+
 Built-in observations do not supply full serving GPU geometry. Real hosted CPU
 evidence remains received but ineligible, even with matching rates or client GPU
 labels. A capability-shaped complete metadata fixture demonstrates conditional

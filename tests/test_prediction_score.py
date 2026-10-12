@@ -304,6 +304,36 @@ def test_gpu_placement_must_be_known_not_merely_stable(frozen, device):
     assert report["rows"][0]["measured"] == 32
 
 
+@pytest.mark.parametrize(
+    "before,after,state,binding_state",
+    [
+        ("vllm", "vllm", "binding_mismatch", "mismatch"),
+        ("ollama", "vllm", "binding_mismatch", "mismatch"),
+        ("vllm", "ollama", "binding_mismatch", "mismatch"),
+        ("vllm", None, "binding_mismatch", "mismatch"),
+        ("ollama", None, "unavailable", "unavailable"),
+        (None, "ollama", "unavailable", "unavailable"),
+        (None, None, "within_band", "unavailable"),
+        ("ollama", "ollama", "within_band", "matched"),
+    ],
+)
+def test_optional_execution_engine_contradiction_drift_and_presence(
+    frozen, before, after, state, binding_state
+):
+    receipt = native(frozen)
+    for phase, engine in zip(("serving_before", "serving_after"), (before, after)):
+        if engine is not None:
+            receipt["execution"][phase]["execution_engine"] = engine
+    report = score(frozen, [seal(receipt)])
+    row = report["rows"][0]
+    assert row["state"] == state and row["binding_states"]["execution_engine"] == binding_state
+    assert row["measured"] == 32
+    assert (report["exit_code"], row["relative_error"]) == (
+        (0, 0.25) if state == "within_band" else (3, None)
+    )
+    assert report["assurance"]["underlying_engine_authentication"] == "unverified"
+
+
 def test_unique_breach_survives_whole_duplicate_group(frozen):
     report = score(
         frozen,

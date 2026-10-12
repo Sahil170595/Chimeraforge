@@ -144,6 +144,7 @@ def validate(report: dict, expected: int, saved: dict, source: dict | None) -> N
     assert report["assurance"]["source_authentication"] == "unverified"
     assert report["assurance"]["physical_hardware"] == "unverified"
     assert report["assurance"]["actual_serving_modifiers"] == "unverified"
+    assert report["assurance"]["underlying_engine_authentication"] == "unverified"
     assert "synthetic-private-sentinel" not in json.dumps(report)
     coverage = report["coverage"][0]
     if source is None:
@@ -222,6 +223,17 @@ def accept(cwd: Path, env: dict, checkout: Path, source: Path) -> dict:
         unknown,
     )
     validate(json.loads(run_cli(common, cwd, env, 3)), 3, saved, None)
+    for engines in (("vllm", "vllm"), ("ollama", "vllm"), ("ollama", None)):
+        contradictory = protocol_receipt(saved, index)
+        for phase, engine in zip(("serving_before", "serving_after"), engines):
+            if engine is not None:
+                contradictory["execution"][phase]["execution_engine"] = engine
+        receipt_path.write_text(json.dumps(seal(contradictory)))
+        report = json.loads(run_cli([*common, "--benchmark", str(receipt_path)], cwd, env, 3))
+        validate(report, 3, saved, contradictory)
+        assert report["rows"][0]["binding_states"]["execution_engine"] == (
+            "unavailable" if engines[1] is None else "mismatch"
+        )
     malformed = protocol_receipt(saved, index)
     malformed["measurement"]["aggregate"]["throughput_tps"]["mean"] = 999
     receipt_path.write_text(json.dumps(seal(malformed)))

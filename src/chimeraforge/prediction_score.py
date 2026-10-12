@@ -387,6 +387,20 @@ def _row(
         "serving_stability",
     )
     row["binding_states"] = {name: bound[name]["state"] for name in required}
+    engines = [
+        _fact(execution[phase], "execution_engine") for phase in ("serving_before", "serving_after")
+    ]
+    known_engines = [engine for engine in engines if engine is not None]
+    engine_state = "unavailable"
+    if any(engine != candidate["backend"] for engine in known_engines):
+        mismatch.append("execution_engine")
+        engine_state = "mismatch"
+    elif len(known_engines) == 1:
+        unavailable.append("execution_engine_presence")
+    elif len(known_engines) == 2:
+        engine_state = "matched"
+    # Optional missing attestation is unverified; supplied contradictions cannot be waived.
+    row["binding_states"]["execution_engine"] = engine_state
     for name in required:
         state = bound[name]["state"]
         if state == "mismatch":
@@ -535,6 +549,7 @@ def score_predictions(
                 "physical_hardware": "unverified",
                 "immutable_weights": "unverified",
                 "actual_serving_modifiers": "unverified",
+                "underlying_engine_authentication": "unverified",
                 "independent_executions": "unverified",
                 "calibration": "not_performed",
                 "candidate_digest_scope": (
