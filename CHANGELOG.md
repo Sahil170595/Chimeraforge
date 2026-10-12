@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.0] - 2026-10-12
+
+### Real request-trace replay
+
+- `trace workload.json` and async typed `replay_trace` execute bounded explicit prompt/output-cap/arrival workloads through the existing backend lifecycle, with a concurrency limit and scheduled-phase deadline.
+- Complete population receipts retain failures, partial output, cancellation and not-started requests. High-resolution monotonic client timing separates scheduler lag, client queue, observed first output and queue-inclusive terminal latency; goodput uses the full workload horizon.
+- Ollama streaming observes real first output while preserving native prefill and mean server-decode bases. Legacy adapters keep unsupported first-output timing unknown; missing required evidence cannot qualify a joint target. Requested caps and actual native token counts remain separate.
+- Receipts bind canonical workload and original file SHA256 without prompts, completions or provider error bodies, reject output/input aliases, and preserve observed serving metadata and cleanup outcomes. Existing installed CPU acceptance runs varied real traces on the pinned endpoint without a machine-speed or GPU qualification gate; The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955012604); release publication repeats qualification on the versioned artifacts.
+
+### Validation
+- Released independently from PR #114; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.59.0] - 2026-10-12
 
 ### Frozen-context workload and cost sensitivity

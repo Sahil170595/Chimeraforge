@@ -1,0 +1,11 @@
+{
+  "scope": "local actual HTTPX MockTransport protocol; no network/model inference",
+  "declared_native_bytes": 2900112,
+  "declared_fragments": 100001,
+  "observed_fragments": 63,
+  "request_timeout_seconds": 0.02,
+  "outcome": "timeout",
+  "elapsed_seconds": 0.0016004000790417194,
+  "client_closed": true,
+  "byte_count_basis": "computed from exact fixture chunks"
+}

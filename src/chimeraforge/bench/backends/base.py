@@ -7,6 +7,8 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import asdict, dataclass
+from typing import Callable
 
 import httpx
 
@@ -16,6 +18,15 @@ logger = logging.getLogger(__name__)
 
 # Identity probes are a GET of a tiny JSON document; a slow answer is not an engine.
 IDENTITY_TIMEOUT_S = 10
+
+
+@dataclass(frozen=True)
+class GenerationObservation:
+    """Native final metrics and an explicitly scoped mean decode interval."""
+
+    native: dict
+    mean_tpot_ms: float | None = None
+    mean_tpot_basis: str = "unavailable"
 
 
 def identity_message(engine: str, base_url: str, why: str) -> str:
@@ -116,6 +127,22 @@ class Backend(ABC):
     async def observe_serving(self, model: str) -> dict:
         """Observed metadata; replicas means full endpoint topology, not engine DP size."""
         return {"source": "serving metadata capability unavailable"}
+
+    async def generate_observed(
+        self,
+        model: str,
+        prompt: str,
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        """Legacy fallback has no first-output callback; never infer one from prefill."""
+        metrics = await self.generate(model, prompt, options)
+        interval = None
+        basis = "unavailable"
+        if metrics.ttft_basis == "client-stream-first-content" and metrics.tokens_generated >= 2:
+            interval = metrics.eval_duration_ms / (metrics.tokens_generated - 1)
+            basis = "client-first-to-last-content/(server-output-count-1)"
+        return GenerationObservation(asdict(metrics), interval, basis)
 
 
 @asynccontextmanager
