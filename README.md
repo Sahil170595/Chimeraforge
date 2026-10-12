@@ -67,17 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release and source scope (2026-10-09).** PyPI's released version is
-[0.51.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.51.0).
-This source README also covers the open review stack
-[#105](https://github.com/Sahil170595/Chimeraforge/pull/105) through
-[#109](https://github.com/Sahil170595/Chimeraforge/pull/109): saved-plan `check`,
-plan-bound `bench` and `monitor`, Streamable HTTP MCP, and contribution
-`review`/`replay`. Those additions require the reviewed source rather than the
-0.51.0 package. To try that exact source, including MCP:
+**Release scope (2026-10-12).** This README documents [Chimeraforge 0.56.1](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.56.1). The workflows below are available in this version.
 
 ```bash
-pip install "chimeraforge[mcp] @ git+https://github.com/Sahil170595/Chimeraforge.git@97595a4b53d2439c4af25655362b017455a824ab"
+pip install "chimeraforge[mcp]==0.56.1"
 ```
 
 ## Quickstart
@@ -102,7 +95,7 @@ chimeraforge plan --model qwen3:14b --measure
 # Discover + rank what fits your GPU and budget
 chimeraforge suggest --source ollama --hardware "RTX 4090 24GB" --budget 500
 
-# Save and recheck an offline plan (reviewed source; see release scope above)
+# Save and recheck an offline plan
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --no-network --save offline-plan.json
 chimeraforge check offline-plan.json --json
 ```

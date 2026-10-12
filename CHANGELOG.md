@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.1] - 2026-10-12
+
+### Changed
+- The CLI README documents the individually released saved-plan check/benchmark/monitor, Streamable HTTP MCP and contribution review/replay workflows.
+- Deployment examples select a matching saved vLLM/FP16/single-replica candidate before using a versioned engine image and carry explicit SLOs into subsequent commands. No runtime implementation changes.
+
+### Validation
+- Released independently from PR #110; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.56.0] - 2026-10-12
 
 ### Added
