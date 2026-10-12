@@ -89,7 +89,20 @@ class SGLangBackend(Backend):
             resp = await client.get(f"{self.base_url}/v1/models", timeout=MODEL_LIST_TIMEOUT_S)
             if resp.status_code != 200:
                 return False, f"Cannot list models (status {resp.status_code})"
-            model_ids = [m["id"] for m in resp.json().get("data", [])]
+            try:
+                data = resp.json()
+            except ValueError:
+                logger.debug("SGLang model-list response is not JSON")
+                return False, "SGLang model-list response is malformed"
+            rows = data.get("data") if isinstance(data, dict) else None
+            if not isinstance(rows, list) or any(
+                not isinstance(row, dict)
+                or not isinstance(row.get("id"), str)
+                or not row["id"].strip()
+                for row in rows
+            ):
+                return False, "SGLang model-list response is malformed"
+            model_ids = [row["id"] for row in rows]
             if model in model_ids:
                 return True, ""
             return False, (

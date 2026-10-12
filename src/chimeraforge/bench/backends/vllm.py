@@ -8,6 +8,7 @@ final chunk with empty ``choices``, before ``data: [DONE]``).
 
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Callable
 
@@ -16,6 +17,8 @@ import httpx
 from chimeraforge.bench.backends._streaming import stream_openai_completion
 from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
+
+logger = logging.getLogger(__name__)
 
 
 class VLLMBackend(Backend):
@@ -75,8 +78,20 @@ class VLLMBackend(Backend):
             resp = await client.get(f"{self.base_url}/v1/models", timeout=30)
             if resp.status_code != 200:
                 return False, f"Cannot list models (status {resp.status_code})"
-            data = resp.json()
-            model_ids = [m["id"] for m in data.get("data", [])]
+            try:
+                data = resp.json()
+            except ValueError:
+                logger.debug("vLLM model-list response is not JSON")
+                return False, "vLLM model-list response is malformed"
+            rows = data.get("data") if isinstance(data, dict) else None
+            if not isinstance(rows, list) or any(
+                not isinstance(row, dict)
+                or not isinstance(row.get("id"), str)
+                or not row["id"].strip()
+                for row in rows
+            ):
+                return False, "vLLM model-list response is malformed"
+            model_ids = [row["id"] for row in rows]
             if model in model_ids:
                 return True, ""
             return False, (

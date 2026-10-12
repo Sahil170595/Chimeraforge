@@ -123,3 +123,118 @@ def list_cmd(output_json: bool = typer.Option(False, "--json", help="Print as JS
             str(len(c.get("flags") or [])),
         )
     console.print(table)
+
+
+def _print_receipt(receipt, output_json: bool, out: Path | None) -> None:
+    from chimeraforge.contrib import ContribError
+
+    if out is not None:
+        try:
+            receipt.save(out)
+        except (ContribError, OSError) as exc:
+            err_console.print(f"[red]Error:[/] {escape(str(exc))}")
+            raise typer.Exit(code=2)
+    data = receipt.to_dict()
+    if output_json:
+        console.print(
+            json_mod.dumps(data, indent=2, allow_nan=False), highlight=False, soft_wrap=True
+        )
+    else:
+        console.print(
+            f"{data['status']}: unsigned contribution {data['contribution']['id'][:ID_PREFIX_LEN]}"
+        )
+        console.print(
+            "Replay equivalence and producer authenticity remain unverified; "
+            "quarantine is unchanged."
+        )
+        if "decision" in data:
+            console.print(f"Disposition: {data['decision']['disposition']} (review receipt only).")
+        if "gpu_eligibility" in data:
+            console.print(f"GPU eligibility: {data['gpu_eligibility']['state']}")
+            metric = data["comparison"]["decode_tps"]
+            console.print(
+                f"Decode tok/s: declared {metric['original']}, replayed {metric['replayed']}; "
+                "arithmetic only."
+            )
+    raise typer.Exit(code=receipt.exit_code)
+
+
+@contribute_app.command("review")
+def review_cmd(
+    source: str = typer.Argument(..., help="Contribution file or full quarantined id."),
+    decision: str = typer.Option(
+        "pending", help="pending, retain or reject; never changes quarantine/trust."
+    ),
+    reason: str | None = typer.Option(
+        None, help="Unsigned review rationale; required for retain/reject."
+    ),
+    out: Path | None = typer.Option(None, help="Atomic review receipt destination."),
+    output_json: bool = typer.Option(False, "--json", help="Print the complete receipt as JSON."),
+) -> None:
+    """Inspect unsigned evidence and record a disposition without importing/promoting it."""
+    from chimeraforge.api import review_contribution
+    from chimeraforge.contrib import ContribError
+
+    try:
+        report = review_contribution(source, decision=decision, reason=reason)
+        if out is not None:
+            report.check_output(out)
+    except ContribError as exc:
+        err_console.print(f"[red]Error:[/] {escape(str(exc))}")
+        raise typer.Exit(code=2)
+    _print_receipt(report, output_json, out)
+
+
+@contribute_app.command("replay")
+def replay_cmd(
+    source: str = typer.Argument(..., help="Contribution file or full quarantined id."),
+    prompt: str = typer.Option(
+        ..., help="Explicit prompt sent to the endpoint; receipt stores its hash."
+    ),
+    output_tokens: int = typer.Option(
+        ..., help="Applied output-token cap, not guaranteed returned length."
+    ),
+    runs: int = typer.Option(5, help="Replay request count (1-1000)."),
+    model: str | None = typer.Option(
+        None, help="Explicit served model override; differences stay visible."
+    ),
+    backend: str | None = typer.Option(None, help="Serving adapter override."),
+    base_url: str | None = typer.Option(
+        None, help="Serving endpoint; persisted URL omits credentials/query."
+    ),
+    workload: str | None = typer.Option(
+        None, help="single, batch or server; defaults to the declared profile."
+    ),
+    rate: float | None = typer.Option(
+        None, help="Explicit server-workload Poisson arrival-rate parameter."
+    ),
+    concurrency: int | None = typer.Option(None, help="Applied batch/server concurrency."),
+    out: Path | None = typer.Option(None, help="Atomic replay receipt destination."),
+    output_json: bool = typer.Option(False, "--json", help="Print the complete receipt as JSON."),
+) -> None:
+    """Execute a live probe and retain unknown legacy bindings and known mismatches."""
+    import asyncio
+    from chimeraforge.api import replay_contribution, review_contribution
+    from chimeraforge.contrib import ContribError
+
+    try:
+        if out is not None:
+            review_contribution(source).check_output(out)
+        report = asyncio.run(
+            replay_contribution(
+                source,
+                prompt=prompt,
+                output_tokens=output_tokens,
+                runs=runs,
+                model=model,
+                backend=backend,
+                base_url=base_url,
+                workload=workload,
+                rate=rate,
+                concurrency=concurrency,
+            )
+        )
+    except ContribError as exc:
+        err_console.print(f"[red]Error:[/] {escape(str(exc))}")
+        raise typer.Exit(code=2)
+    _print_receipt(report, output_json, out)

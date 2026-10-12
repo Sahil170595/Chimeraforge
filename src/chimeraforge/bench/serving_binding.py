@@ -112,7 +112,7 @@ def bind(
     }
 
 
-def _observed_model(value: Any, requested: str) -> str | None:
+def observed_model(value: Any, requested: str) -> str | None:
     if not isinstance(value, str):
         return None
     wanted = requested.removeprefix("ollama:")
@@ -121,7 +121,7 @@ def _observed_model(value: Any, requested: str) -> str | None:
     return value
 
 
-def _stability(before: dict, after: dict) -> dict:
+def serving_stability(before: dict, after: dict) -> dict:
     stability_keys = (
         "backend",
         "version",
@@ -224,7 +224,7 @@ def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> d
     )
     result["model"] = bind(
         candidate["model"].removeprefix("ollama:"),
-        _observed_model(after.get("model"), candidate["model"]),
+        observed_model(after.get("model"), candidate["model"]),
         source=source,
         detail="Serving alias does not prove planned model identity; geometry is separate.",
     )
@@ -312,7 +312,7 @@ def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> d
         "unknown dimensions remain unavailable. "
         "Metadata geometry does not bind an immutable planned weights revision.",
     )
-    result["serving_stability"] = _stability(before, after)
+    result["serving_stability"] = serving_stability(before, after)
     for name, row in result.items():
         row["scope"] = (
             "serving engine configuration; not endpoint/load-balancer fleet"

@@ -15,6 +15,7 @@ from typing import Callable
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
+from chimeraforge.contribution_review import ContributionReceipt
 
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
@@ -458,4 +459,46 @@ def monitor_plan(
 
     return monitor_saved(
         saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
+    )
+
+
+def review_contribution(
+    source: dict | str | Path,
+    *,
+    decision: str = "pending",
+    reason: str | None = None,
+) -> ContributionReceipt:
+    """Read an unsigned contribution and record a disposition without changing trust."""
+    from chimeraforge.contribution_review import review
+
+    return review(source, decision=decision, reason=reason)
+
+
+async def replay_contribution(
+    source: dict | str | Path,
+    *,
+    prompt: str,
+    output_tokens: int,
+    runs: int = 5,
+    model: str | None = None,
+    backend: str | None = None,
+    base_url: str | None = None,
+    workload: str | None = None,
+    rate: float | None = None,
+    concurrency: int | None = None,
+) -> ContributionReceipt:
+    """Run an explicit live probe and report legacy equivalence gaps and native differences."""
+    from chimeraforge.contribution_review import replay
+
+    return await replay(
+        source,
+        prompt=prompt,
+        output_tokens=output_tokens,
+        runs=runs,
+        model=model,
+        backend=backend,
+        base_url=base_url,
+        workload=workload,
+        rate=rate,
+        concurrency=concurrency,
     )

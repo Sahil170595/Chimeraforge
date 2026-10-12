@@ -243,3 +243,42 @@ there is no unbounded executor submission queue. Protocol controls remain on the
 event loop. Lifespan shutdown stops admission and drains owned workers, rather
 than claiming Python can preempt a hung synchronous operation. Ordinary clients
 should use the supported SDK `streamable_http_client` and `ClientSession`.
+
+## Review and replay quarantined contributions
+
+```python
+from chimeraforge.api import review_contribution, replay_contribution
+
+review = review_contribution("unsigned.contribution.json", decision="retain",
+                             reason="Keep for a controlled comparison")
+review.save("review.json")
+replay = await replay_contribution("unsigned.contribution.json", prompt="Explain KV caching.",
+                                   output_tokens=128, runs=3, base_url="http://localhost:11434")
+replay.save("replay.json")
+```
+
+Both return a defensive `ContributionReceipt` with `to_dict()`, atomic `save()`
+and `exit_code`. A full quarantine id can replace the path. Contribution schema,
+verification, import, trust and planner-selection semantics are unchanged.
+Disposition is an unsigned reviewer statement, not a signer attestation; retain
+and reject require a reason and never mutate quarantine. The full source content
+id, canonical envelope digest, flags and unsigned attestation travel with receipts.
+
+Live replay reuses the actual runner's applied prompt hash/options/profile,
+counts, before/after typed metadata and per-request native timings. Explicit
+model/backend/workload overrides preserve known disagreement with declared
+labels. The output-token option is a cap, distinct from observed token counts.
+Server workloads require an explicit positive finite arrival rate; concurrency
+and request counts are validated before contact. Operational preflight/all-failed
+receipts preserve intent, successful/failed/not-started counts and a safe error
+class/reason. Cancellation propagates through the runner's existing lifecycle.
+
+Legacy v1 lacks original prompt, token-count, configuration, immutable-weight,
+timing-basis and remote-hardware bindings. `replay_equivalence` and metric
+comparability remain unverified, with native arithmetic `raw_delta` separate from
+the unavailable qualified `delta`. CPU or known different GPU observations are
+ineligible to qualify the declared GPU measurement; label agreement alone does
+not verify either run. Exit 0 denotes completed operation only, 1 known mismatch
+or failed/partial replay, and new CLI commands use 2 for malformed input/options
+or output errors. Receipt output guards refuse source/contribution overwrites and
+quarantine writes before execution. URL credentials/query values are redacted.

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.0] - 2026-10-12
+
+### Added
+- `contribute review` and `contribute replay` plus typed APIs produce fingerprinted receipts for explicit dispositions and bounded new executions of unsigned legacy contributions.
+- Receipts preserve missing original bindings, actual counts, unknown timing and hardware/backend mismatches without changing quarantine or promoting unsigned declarations into trusted measurements.
+- Registry publication waits for exact version filenames and SHA256 visibility in both PyPI JSON and the installer's Simple API before the public runtime probe. CPU acceptance logs only aggregate hardware states and before/after device/size/context fields, retaining strict mismatch and qualification assertions.
+
+### Validation
+- Released independently from PR #109; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.55.0] - 2026-10-12
 
 ### Added

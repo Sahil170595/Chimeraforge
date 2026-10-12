@@ -9,6 +9,7 @@ Read from TGI source at v3.3.7: each event is a ``StreamResponse`` with a
 
 from __future__ import annotations
 
+import logging
 import time
 from collections.abc import Callable
 
@@ -17,6 +18,8 @@ import httpx
 from chimeraforge.bench.backends._streaming import StreamTiming, decode_metrics, parse_sse
 from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
 from chimeraforge.bench.metrics import RunMetrics
+
+logger = logging.getLogger(__name__)
 
 
 class TGIBackend(Backend):
@@ -81,8 +84,14 @@ class TGIBackend(Backend):
             resp = await client.get(f"{self.base_url}/info", timeout=30)
             if resp.status_code != 200:
                 return False, f"Cannot get model info (status {resp.status_code})"
-            data = resp.json()
-            loaded = data.get("model_id", "")
+            try:
+                data = resp.json()
+            except ValueError:
+                logger.debug("TGI model-info response is not JSON")
+                return False, "TGI model-info response is malformed"
+            loaded = data.get("model_id") if isinstance(data, dict) else None
+            if not isinstance(loaded, str) or not loaded.strip():
+                return False, "TGI model-info response is malformed"
             # Exact match or model is a path component of loaded model_id
             if model == loaded:
                 return True, ""
