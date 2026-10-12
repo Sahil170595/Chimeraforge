@@ -91,7 +91,16 @@ def seal(data):
 
 
 def receipt(
-    *, duration=0.12, queued=0.0, count=2, elapsed=None, origin=0.0, first=True, cache=0, mean=True
+    *,
+    duration=0.12,
+    queued=0.0,
+    count=2,
+    elapsed=None,
+    origin=0.0,
+    first=True,
+    cache=0,
+    mean=True,
+    concurrency=2,
 ):
     rows = []
     targets = {"latency_ms": 2000.0, "first_output_ms": None, "tpot_ms": None}
@@ -105,8 +114,11 @@ def receipt(
         "device": "cpu",
         "prefix_cache": False,
     }
+    batches = [0.0]
+    for _ in range(count // concurrency + 1):
+        batches.append(batches[-1] + duration)
     for i in range(count):
-        start = i * queued
+        start = i * queued if queued else batches[i // concurrency]
         row = {
             "descriptor": {
                 "request_id": str(i),
@@ -164,7 +176,7 @@ def receipt(
             "partial": 0,
             "cancelled": 0,
             "not_started": 0,
-            "concurrency": 1,
+            "concurrency": concurrency,
             "request_timeout_seconds": 300,
             "trace_timeout_seconds": 600,
             "elapsed_seconds": elapsed,
@@ -179,7 +191,9 @@ def receipt(
             "first_output_ms": "scheduled-arrival-to-client-first-output",
             "tpot_ms": "per-request explicitly named mean decode basis; not every-token latency",
         },
-        "deadline_scope": "scheduled replay only; preflight/metadata separately bounded, cleanup cooperative",
+        "deadline_scope": (
+            "scheduled replay only; preflight/metadata separately bounded, cleanup cooperative"
+        ),
         "goodput": {
             "qualification": "observed_targets",
             "qualified_requests": count,
@@ -212,7 +226,7 @@ def receipt(
     from chimeraforge.bench.serving_binding import serving_stability
 
     data["serving_stability"] = serving_stability(serving, serving)
-    return seal(data)
+    return finish(data)
 
 
 def policy(**kw):
@@ -567,12 +581,12 @@ def test_same_file_population_is_read_once_and_held_against_later_changes(tmp_pa
 
 
 def test_full_p95_includes_queue_outlier_without_average_filtering():
-    value = receipt(count=20, duration=0.1)
+    value = receipt(count=20, duration=0.1, concurrency=20)
     value["requests"][-1]["times"].update(start_s=0.4, first_output_s=0.42, terminal_s=0.5)
     value["execution"]["elapsed_seconds"] = 0.51
     finish(value)
     chosen = api.TraceGatePolicy(rules={"latency_p95_ms": 0.1})
-    result = api.gate_traces([receipt(count=20)], [value], policy=chosen).to_dict()
+    result = api.gate_traces([receipt(count=20, concurrency=20)], [value], policy=chosen).to_dict()
     assert result["pairs"][0]["metrics"]["latency_p95_ms"]["candidate"] == pytest.approx(120)
 
 
@@ -635,3 +649,64 @@ def test_cooperative_drained_elapsed_may_exceed_requested_timeout():
     assert result["exit_code"] == 0 and result["pairs"][0]["metrics"]["goodput_rps"][
         "baseline"
     ] == pytest.approx(2 / 4000)
+
+
+@pytest.mark.parametrize(
+    "field", ["request_timeout", "trace_timeout", "target", "arrival", "hardware", "model_size"]
+)
+def test_numeric_representation_cannot_manufacture_execution_identity(field):
+    left, right = receipt(), receipt(duration=0.1)
+    if field in ("hardware", "model_size"):
+        for report in (left, right):
+            for phase in ("serving_before", "serving_after"):
+                report[phase].update(
+                    {"hardware": {"vram_gb": 24}}
+                    if field == "hardware"
+                    else {"model_spec": {"params_b": 1}}
+                )
+            finish(report)
+    copies = [copy.deepcopy(left), copy.deepcopy(right)]
+    for value in copies:
+        if field in ("request_timeout", "trace_timeout"):
+            key = field + "_seconds"
+            value["execution"][key] = float(value["execution"][key])
+        elif field == "target":
+            value["targets"]["latency_ms"] = int(value["targets"]["latency_ms"])
+        elif field == "arrival":
+            for row in value["requests"]:
+                row["descriptor"]["arrival_offset_s"] = 0
+                row["times"]["scheduled_s"] = 0
+        else:
+            for phase in ("serving_before", "serving_after"):
+                if field == "hardware":
+                    value[phase]["hardware"]["vram_gb"] = 24.0
+                else:
+                    value[phase]["model_spec"]["params_b"] = 1.0
+        finish(value)
+    result = api.gate_traces(
+        [left, copies[0]], [right, copies[1]], policy=policy(expected_replicates=2)
+    ).to_dict()
+    assert result["exit_code"] == 3 and "duplicate_execution_payload" in result["blockers"]
+
+
+def test_positive_execution_intervals_cannot_exceed_declared_concurrency():
+    value = receipt()
+    value["execution"]["concurrency"] = 1
+    finish(value)
+    with pytest.raises(api.PlanError, match="concurrency"):
+        api.gate_traces([value], [receipt(duration=0.1)], policy=policy())
+
+
+def test_tied_boundaries_release_before_admission_and_zero_intervals_are_valid():
+    assert (
+        api.gate_traces(
+            [receipt(count=4)], [receipt(count=4, duration=0.1)], policy=policy()
+        ).to_dict()["exit_code"]
+        == 0
+    )
+    result = api.gate_traces(
+        [receipt(duration=0, first=False)],
+        [receipt(first=False)],
+        policy=api.TraceGatePolicy(rules={"latency_p95_ms": 0.1}),
+    ).to_dict()
+    assert result["exit_code"] == 3

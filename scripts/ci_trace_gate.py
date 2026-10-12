@@ -90,7 +90,7 @@ def protocol_receipt(duration: float, *, queued: float = 0) -> dict:
             "partial": 0,
             "cancelled": 0,
             "not_started": 0,
-            "concurrency": 1,
+            "concurrency": 2,
             "request_timeout_seconds": 300,
             "trace_timeout_seconds": 600,
             "elapsed_seconds": elapsed,

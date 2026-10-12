@@ -53,6 +53,8 @@ strict integer populations, finite nonnegative observations, applied schedule,
 relative arrival/start/first/terminal chronology, native count/interval arithmetic,
 output-cap states, execution counts, SLO states and goodput. Arithmetic comparisons
 allow serialization roundoff only; counts, identities and expectations remain strict.
+Positive execution intervals must respect declared concurrency; tied terminals
+release before new starts, and zero-duration observations require no interval slot.
 
 Elapsed is a fingerprint-bound **observed primitive measured after draining
 tasks**. Terminals cannot exceed it; elapsed is not physically re-proven from
@@ -123,6 +125,8 @@ Duplicate-execution digests include semantic prompt descriptors, relative
 measurements, controls and supported observations. They ignore created/tool/
 endpoint labels, fingerprints, clock origins and cosmetic request IDs. Relabeling
 IDs and resealing their workload hash cannot manufacture an independent replicate.
+Equivalent integer/float representations of real-valued time and observed controls
+also retain the same execution identity; integer counts and identifiers stay strict.
 Full IDs/workload hashes still bind paired comparison. Digest diversity does not
 prove physical independence.
 

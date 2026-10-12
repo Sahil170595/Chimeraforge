@@ -149,12 +149,33 @@ def _evidence(row: dict) -> str:
     view = _view(row)
     workload, _ = _workload(row)
     workload.pop("canonical_workload_sha256")
+    for name in ("request_timeout_seconds", "trace_timeout_seconds"):
+        workload[name] = float(workload[name])
+    workload["targets"] = {
+        name: float(value) if value is not None else None
+        for name, value in workload["targets"].items()
+    }
     workload["ordered_descriptors_sha256"] = digest(
         [
-            {key: value for key, value in request["descriptor"].items() if key != "request_id"}
+            {
+                key: float(value) if key == "arrival_offset_s" else value
+                for key, value in request["descriptor"].items()
+                if key != "request_id"
+            }
             for request in data["requests"]
         ]
     )
+    # These supported facts accept either numeric representation; integer counters do not.
+    real_facts = {
+        "hardware": ("vram_gb", "bandwidth_gbps", "fp16_tflops", "tdp_watts", "interconnect_gbps"),
+        "model_spec": ("params_b", "recurrent_state_bytes_per_seq"),
+    }
+    for observation in view["execution"].values():
+        for group, names in real_facts.items():
+            for name in names:
+                value = observation[group][name]
+                if value is not None:
+                    observation[group][name] = float(value)
     measurements = []
     for r in data["requests"]:
         native = dict(r["native"])

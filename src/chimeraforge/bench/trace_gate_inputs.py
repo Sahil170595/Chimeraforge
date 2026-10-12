@@ -395,6 +395,17 @@ def load_trace(source: object, *, limit: int = MAX_RECEIPT_BYTES) -> dict:
         )
     ):
         fail("trace applied concurrency/timeouts are invalid")
+    intervals = []
+    for row in rows:
+        start, terminal = row["times"]["start_s"], row["times"]["terminal_s"]
+        if start is not None and terminal is not None and start < terminal:
+            intervals.extend(((start, 1), (terminal, -1)))
+    active = 0
+    # Half-open intervals release before admission at ties; zero durations need no slot.
+    for _, change in sorted(intervals):
+        active += change
+        if active > execution["concurrency"]:
+            fail("trace execution intervals exceed applied concurrency")
     planned = max(row["descriptor"]["arrival_offset_s"] for row in rows)
     if planned > execution["trace_timeout_seconds"]:
         fail("trace schedule exceeds applied trace timeout")
