@@ -1,0 +1,30 @@
+{
+  "scope": "actual anonymous Hub metadata/config using current source, not installed artifact or inference",
+  "params_b": 0.134515008,
+  "checkpoint": {
+    "version": 1,
+    "provider": "huggingface",
+    "repo": "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "requested_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "resolved_revision": "12fd25f77366fa6b3b4b768ec3050bf629380bac",
+    "captured_at": "2026-10-09T11:03:30.718676+00:00",
+    "config": {
+      "path": "config.json",
+      "sha256": "8eb740e8bbe4cff95ea7b4588d17a2432deb16e8075bc5828ff7ba9be94d982a",
+      "git_blob_sha1": "36293b6099200eb8aeb55ae2c01bca2ba46d80d0"
+    },
+    "safetensors": 134515008,
+    "weights": [
+      {
+        "path": "model.safetensors",
+        "size": 269060552,
+        "git_blob_sha1": "2ef707371406f95f8aa91fb03a75f22f3c568299",
+        "lfs_sha256": "5af571cbf074e6d21a03528d2330792e532ca608f24ac70a143f6b369968ab8c"
+      }
+    ],
+    "weight_bytes_verified": false,
+    "metadata_sha256": "e464941262675872f69340edc7c1fc735d1e7c338b9baf7a34db8f5f0391d874"
+  },
+  "weight_downloads": 0,
+  "served_identity": "unverified"
+}

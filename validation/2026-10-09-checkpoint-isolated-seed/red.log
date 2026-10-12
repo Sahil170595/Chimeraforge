@@ -1,0 +1,15 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+____ test_checkpoint_seed_entrypoint_imports_under_actual_isolated_python _____
+tests\test_ci_acceptance.py:46: in test_checkpoint_seed_entrypoint_imports_under_actual_isolated_python
+    assert result.returncode == 0, result.stderr
+E   AssertionError: Traceback (most recent call last):
+E       File "C:\tmp\cf-release-051-20261008\scripts\ci_checkpoint_identity.py", line 16, in <module>
+E         from ci_installed_acceptance import assert_installed_origin, run_cli
+E     ModuleNotFoundError: No module named 'ci_installed_acceptance'
+E     
+E   assert 1 == 0
+E    +  where 1 = CompletedProcess(args=['C:\\tmp\\cf-release-051-env-20261008\\Scripts\\python.exe', '-I', 'C:\\tmp\\cf-release-051-202...cceptance import assert_installed_origin, run_cli\nModuleNotFoundError: No module named \'ci_installed_acceptance\'\n').returncode
+=========================== short test summary info ===========================
+FAILED tests/test_ci_acceptance.py::test_checkpoint_seed_entrypoint_imports_under_actual_isolated_python
+1 failed in 2.34s

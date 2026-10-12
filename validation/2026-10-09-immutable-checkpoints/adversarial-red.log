@@ -1,0 +1,10 @@
+..........................FF............                                 [100%]
+================================== FAILURES ===================================
+E   Failed: DID NOT RAISE PlanError
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:232: Failed: DID NOT RAISE PlanError
+E   AttributeError: 'NoneType' object has no attribute 'casefold'
+C:\tmp\cf-release-051-20261008\src\chimeraforge\planner\checkpoint.py:151: AttributeError: 'NoneType' object has no attribute 'casefold'
+=========================== short test summary info ===========================
+FAILED tests/test_checkpoint_identity.py::test_v1_cannot_claim_explicit_revision_without_checkpoint
+FAILED tests/test_checkpoint_identity.py::test_malformed_hub_metadata_is_domain_error[fields0]
+2 failed, 38 passed in 1.67s

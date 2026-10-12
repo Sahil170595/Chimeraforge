@@ -174,6 +174,7 @@ def run_plan(
     hf_token: str | None = None,
     allow_network: bool = True,
     overrides: dict | None = None,
+    model_revisions: dict[str, str] | None = None,
 ) -> PlanResult:
     """Resolve inputs once and run the shared candidate search."""
     return _run_plan(**locals())
@@ -226,6 +227,7 @@ def _run_plan(
     hf_token: str | None = None,
     allow_network: bool = True,
     overrides: dict | None = None,
+    model_revisions: dict[str, str] | None = None,
     _replay: dict | None = None,
 ) -> PlanResult:
     """Resolve targets and run the gate search; return a structured result.
@@ -276,6 +278,9 @@ def _run_plan(
             platform = DEFAULT_PLAN_PLATFORM
 
     specs: dict[str, ModelSpec] = {}
+    from chimeraforge.planner.checkpoint import revisions
+
+    revisions(model_revisions, models)
     if _replay is not None:
         specs = {key: ModelSpec(**row) for key, row in _replay["model_specs"].items()}
         target_models = list(specs)
@@ -286,6 +291,7 @@ def _run_plan(
                 ident,
                 ollama_url=ollama_url,
                 hf_token=hf_token,
+                hf_revision=(model_revisions or {}).get(ident),
                 overrides=overrides,
                 allow_network=allow_network,
             )

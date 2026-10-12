@@ -22,12 +22,13 @@ Network failures raise ``ResolverError`` -- never a silent fallback.
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
 
 import json
 import logging
 import os
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 
 from chimeraforge.planner.constants import (
@@ -51,6 +52,7 @@ from chimeraforge.planner.constants import (
 )
 from chimeraforge.planner.hybrid import hybrid_from_config, unwrap_text_config
 from chimeraforge.planner.identity import parse_identity, parse_quant, resolve_model
+from chimeraforge.planner import checkpoint
 
 log = logging.getLogger("chimeraforge.planner.resolver")
 
@@ -133,6 +135,10 @@ class ModelSpec:
     recurrent_kind: str | None = None
     recurrent_state_dtype_declared: bool = False
     parallel_hybrid: bool = False
+    checkpoint: dict | None = None
+
+    def __post_init__(self) -> None:
+        checkpoint.validate(self.checkpoint, repo=self.name, source=self.source)
 
     @property
     def is_moe(self) -> bool:
@@ -529,7 +535,9 @@ def measured_corpus_path() -> Path:
     return _cache_dir().parent / "fitted_models.json"
 
 
-def _cache_key(identifier: str) -> str:
+def _cache_key(identifier: str, revision: str | None = None) -> str:
+    if revision is not None:
+        return hashlib.sha256(json.dumps([identifier, revision]).encode()).hexdigest()
     return re.sub(r"[^\w.-]", "_", identifier.lower())
 
 
@@ -549,7 +557,7 @@ def _cache_age_days(captured: str | None) -> int | None:
         return None
 
 
-def _cache_load(identifier: str) -> ModelSpec | None:
+def _cache_load(identifier: str, revision: str | None = None) -> ModelSpec | None:
     """Read a cached spec, ignoring one that is older than ``SPEC_CACHE_TTL_DAYS``.
 
     The cache is consulted ahead of the network, so without an expiry a repo whose
@@ -558,7 +566,7 @@ def _cache_load(identifier: str) -> ModelSpec | None:
     Entries written before stamping existed have no date and are treated as
     expired rather than trusted.
     """
-    path = _cache_dir() / f"{_cache_key(identifier)}.json"
+    path = _cache_dir() / f"{_cache_key(identifier, revision)}.json"
     if not path.is_file():
         return None
     try:
@@ -569,6 +577,15 @@ def _cache_load(identifier: str) -> ModelSpec | None:
             log.debug("spec cache for %s is stale (age=%s d), refetching", identifier, age)
             return None
         spec = ModelSpec.from_dict(raw)
+        if spec.name not in (identifier, identifier.removeprefix("ollama:")):
+            return None
+        if revision is not None:
+            if spec.checkpoint is None or revision not in (
+                spec.checkpoint["requested_revision"],
+                spec.checkpoint["resolved_revision"],
+            ):
+                return None
+            spec = replace(spec, checkpoint={**spec.checkpoint, "requested_revision": revision})
         log.debug("spec cache hit for %s (age %s d)", identifier, age)
         return spec
     except (ValueError, TypeError) as exc:
@@ -576,15 +593,21 @@ def _cache_load(identifier: str) -> ModelSpec | None:
         return None
 
 
-def _cache_store(identifier: str, spec: ModelSpec) -> None:
+def _cache_store(identifier: str, spec: ModelSpec, revision: str | None = None) -> None:
     try:
         d = _cache_dir()
         d.mkdir(parents=True, exist_ok=True)
         payload = dict(spec.to_dict())
         payload[_CACHE_STAMP] = _dt.date.today().isoformat()
-        (d / f"{_cache_key(identifier)}.json").write_text(
-            json.dumps(payload, indent=2), encoding="utf-8"
-        )
+        refs = {revision}
+        if spec.checkpoint is not None:
+            refs.update(
+                (spec.checkpoint["requested_revision"], spec.checkpoint["resolved_revision"])
+            )
+        for ref in refs:
+            (d / f"{_cache_key(identifier, ref)}.json").write_text(
+                json.dumps(payload, indent=2), encoding="utf-8"
+            )
     except OSError as exc:
         log.warning("could not write spec cache for %s: %s", identifier, exc)
 
@@ -618,45 +641,32 @@ def fetch_ollama_show(tag: str, base_url: str = DEFAULT_OLLAMA_URL) -> dict:
         raise ResolverError(f"Ollama returned a non-JSON response at {base_url}: {exc}") from exc
 
 
-def fetch_hf(repo: str, hf_token: str | None = None) -> tuple[dict, float | None]:
-    """Fetch ``config.json`` and the safetensors param count for an HF repo."""
+def fetch_hf(
+    repo: str, hf_token: str | None = None, *, revision: str = "main"
+) -> checkpoint.HFMetadata:
+    """Bind a commit before reading config and declared safetensors metadata."""
     httpx = _httpx()
-    headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
-    cfg_url = f"https://huggingface.co/{repo}/resolve/main/config.json"
-    info_url = f"https://huggingface.co/api/models/{repo}?expand[]=safetensors"
     try:
-        cfg_resp = httpx.get(
-            cfg_url, headers=headers, timeout=_NETWORK_TIMEOUT_S, follow_redirects=True
-        )
-        # HF returns 401 for BOTH gated and nonexistent repos (anti-enumeration);
-        # the X-Error-Code header disambiguates (GatedRepo vs absent).
-        if cfg_resp.status_code in (401, 403):
-            if cfg_resp.headers.get("x-error-code") == "GatedRepo":
-                raise ResolverError(
-                    f"HF repo '{repo}' is gated; set HF_TOKEN (or pass --hf-token)."
-                )
-            raise ResolverError(
-                f"HF repo '{repo}' not found or not accessible (check the org/name; "
-                f"set HF_TOKEN if it is gated)."
-            )
-        if cfg_resp.status_code == 404:
-            raise ResolverError(f"HF repo '{repo}' not found (check the org/name).")
-        cfg_resp.raise_for_status()
-        config = cfg_resp.json()
-
-        params_b: float | None = None
-        info_resp = httpx.get(
-            info_url, headers=headers, timeout=_NETWORK_TIMEOUT_S, follow_redirects=True
-        )
-        if info_resp.status_code == 200:
-            total = (info_resp.json().get("safetensors") or {}).get("total")
-            if isinstance(total, (int, float)):
-                params_b = float(total) / 1e9
-        return config, params_b
+        return checkpoint.fetch(httpx, repo, hf_token, revision)
     except httpx.HTTPError as exc:
-        raise ResolverError(f"could not fetch HF metadata for '{repo}': {exc}") from exc
-    except ValueError as exc:  # malformed JSON in config.json / model_info
-        raise ResolverError(f"HF returned a non-JSON response for '{repo}': {exc}") from exc
+        raise ResolverError(
+            f"could not fetch HF checkpoint metadata for '{repo}' ({type(exc).__name__})"
+        ) from exc
+    except ValueError as exc:
+        raise ResolverError(f"invalid HF checkpoint metadata for '{repo}': {exc}") from exc
+
+
+def resolve_hf_revision(repo: str, revision: str, hf_token: str | None = None) -> str:
+    """Observe a current Hub ref only when a caller explicitly allows network use."""
+    httpx = _httpx()
+    try:
+        return checkpoint.model_info(httpx, repo, revision, hf_token or os.environ.get("HF_TOKEN"))[
+            "sha"
+        ]
+    except httpx.HTTPError as exc:
+        raise ResolverError(f"could not inspect HF revision ({type(exc).__name__})") from exc
+    except ValueError as exc:
+        raise ResolverError(f"invalid HF revision metadata: {exc}") from exc
 
 
 # -- Top-level resolver ------------------------------------------------
@@ -667,6 +677,7 @@ def resolve_spec(
     *,
     ollama_url: str | None = None,
     hf_token: str | None = None,
+    hf_revision: str | None = None,
     overrides: dict | None = None,
     use_cache: bool = True,
     allow_network: bool = True,
@@ -678,6 +689,8 @@ def resolve_spec(
             HF repo (``org/name``).
         ollama_url: Ollama base URL; enables the Ollama path when set.
         hf_token: Token for gated HF repos (falls back to ``$HF_TOKEN``).
+        hf_revision: Optional HF commit, branch or tag. An explicit unavailable
+            revision refuses approximation; online metadata is bound to one commit.
         overrides: Manual ``{params_b, n_layers, n_kv_heads, d_head, ...}``.
         use_cache: Read/write the on-disk spec cache.
         allow_network: If False, never touch the network (registry/cache only).
@@ -686,11 +699,16 @@ def resolve_spec(
         ResolverError: If no source can produce a complete spec.
     """
     overrides = overrides or {}
+    checkpoint.revisions(
+        {identifier: hf_revision} if hf_revision is not None else None, [identifier]
+    )
     hf_token = hf_token or os.environ.get("HF_TOKEN")
 
     # 1. Manual overrides win outright.
     manual = spec_from_overrides(identifier, overrides)
     if manual is not None:
+        if hf_revision is not None:
+            raise ResolverError("manual geometry cannot verify a requested HF checkpoint revision")
         return manual
 
     # 2. Exact registry hit.
@@ -699,7 +717,7 @@ def resolve_spec(
 
     # 3. Cache.
     if use_cache:
-        cached = _cache_load(identifier)
+        cached = _cache_load(identifier, hf_revision)
         if cached is not None:
             return cached
 
@@ -739,10 +757,14 @@ def resolve_spec(
 
     # 4. Hugging Face (slashed repo).
     if allow_network and is_hf:
-        config, params_b = fetch_hf(identifier, hf_token)
+        fetched = fetch_hf(
+            identifier, hf_token, **({"revision": hf_revision} if hf_revision else {})
+        )
+        config, params_b = fetched
         spec = spec_from_hf(identifier, config, params_b)
+        spec = replace(spec, checkpoint=getattr(fetched, "checkpoint", None))
         if use_cache:
-            _cache_store(identifier, spec)
+            _cache_store(identifier, spec, hf_revision)
         return spec
 
     # 5. Ollama. On failure (unreachable / not pulled), fall back to an offline
@@ -762,4 +784,8 @@ def resolve_spec(
             return _approx_or_raise()
 
     # 6. Family/size approximation against the registry (offline last resort).
+    if hf_revision is not None:
+        raise ResolverError(
+            "requested HF checkpoint is unavailable offline; resolve/cache that revision first"
+        )
     return _approx_or_raise()

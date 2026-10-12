@@ -87,6 +87,7 @@ class PlanRequest:
     models_path: str | None = None
     ollama_url: str | None = None
     hf_token: str | None = None
+    model_revisions: dict[str, str] | None = None
     allow_network: bool = True
     overrides: dict | None = None
 
@@ -104,6 +105,12 @@ class PlanRequest:
         )
         if self.models is not None and any(not model.strip() for model in self.models):
             raise PlanError("model identifiers must be non-empty")
+        from chimeraforge.planner.checkpoint import revisions
+
+        try:
+            revisions(self.model_revisions, self.models)
+        except ValueError as exc:
+            raise PlanError(str(exc)) from exc
         names = get_type_hints(validate_plan_inputs)
         validate_plan_inputs(**{k: v for k, v in values.items() if k in names})
         for name in ("budget", "workload_cv2", "lora_adapters", "reasoning_tokens"):
@@ -341,7 +348,7 @@ def artifact_from_dict(data: dict) -> PlanArtifact:
         ):
             raise PlanError("invalid corpus fingerprint")
         expected_inputs = {f.name for f in fields(PlanRequest)} - {"hf_token"}
-        if set(data["inputs"]) != expected_inputs:
+        if set(data["inputs"]) not in (expected_inputs, expected_inputs - {"model_revisions"}):
             raise PlanError("saved plan must record every noncredential request field")
         request = PlanRequest(**data["inputs"])
         request.validate()
@@ -370,12 +377,19 @@ def artifact_from_dict(data: dict) -> PlanArtifact:
         for row in rows:
             _validate_candidate(row)
         for key, row in result["specs"].items():
+            expected_spec = {f.name for f in fields(ModelSpec)}
+            if set(row) not in (expected_spec, expected_spec - {"checkpoint"}):
+                raise PlanError("invalid saved model specification fields")
             for name, annotation in get_type_hints(ModelSpec).items():
-                _check_type(row[name], annotation, name)
+                _check_type(row.get(name) if name == "checkpoint" else row[name], annotation, name)
             ModelSpec(**row)
             canonical = key.split("ollama:", 1)[-1] if row["source"] == "ollama" else key
             if row["name"] not in (key, canonical):
                 raise PlanError("specification identity must match its recorded target")
+        for repo, ref in (request.model_revisions or {}).items():
+            bound = result["specs"].get(repo, {}).get("checkpoint")
+            if bound is None or bound["requested_revision"] != ref:
+                raise PlanError("requested revision must agree with recorded checkpoint metadata")
         _check_type(result["target_models"], list[str], "target_models")
         if any(row["model"] not in result["target_models"] for row in rows):
             raise PlanError("every candidate must name a recorded target model")
@@ -406,14 +420,18 @@ def _validate_candidate(row: dict) -> None:
     Candidate(**row)
 
 
-def check_plan(saved: PlanArtifact | str | Path) -> PlanCheck:
-    """Compare a saved plan offline without changing its artifact or bound target."""
+def check_plan(
+    saved: PlanArtifact | str | Path, *, allow_network: bool = False, hf_token: str | None = None
+) -> PlanCheck:
+    """Compare without changing the artifact/target; Hub inspection is explicit opt-in."""
     from chimeraforge.plan_check import check
 
     artifact = (
         artifact_from_dict(saved.to_dict()) if isinstance(saved, PlanArtifact) else load_plan(saved)
     )
-    return check(artifact)
+    if type(allow_network) is not bool or (hf_token is not None and type(hf_token) is not str):
+        raise PlanError("invalid check network options")
+    return check(artifact, allow_network=allow_network, hf_token=hf_token)
 
 
 async def benchmark_plan(

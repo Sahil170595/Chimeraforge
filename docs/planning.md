@@ -40,6 +40,15 @@ Key inputs (all have explicit units and defaults; see `plan --help`):
 | `--budget` | max USD/month | 100 |
 | `--safety-target` | min refusal rate 0-1 (opt-in gate) | off |
 | `--hardware` | GPU name (`plan --list-hardware`) | RTX 4080 12GB |
+| `--revision` | HF ref for one model, or repeated `MODEL=REF` | `main` when fetching HF metadata |
+
+`--revision` is an unreleased source option (see the README install scope).
+Online HF resolution first binds a commit, then reads its config and declared
+weight metadata. `--no-network` can reuse a cached receipt for that revision;
+an unavailable explicit pin is refused. Manual geometry cannot attest an HF
+revision, and `--measure` uses Ollama, so combining it with an HF revision is
+refused before contacting an endpoint. See [checkpoint identity](planning-api.md#checkpoint-identity)
+for the saved-plan/export/check loop and its evidence limits.
 
 Reading the output: the **Performance** panel reports N=1 throughput, **TTFT**
 (prefill, compute-bound), **TPOT** (per output token, bandwidth-bound), end-to-end

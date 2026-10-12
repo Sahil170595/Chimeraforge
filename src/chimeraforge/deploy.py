@@ -326,6 +326,17 @@ def _hf_argv(
         raise DeploymentError(
             "this backend's implicit KV dtype does not establish the planned fp16 cache; replan q8"
         )
+    if spec and spec.checkpoint:
+        argv += ["--revision", spec.checkpoint["resolved_revision"]]
+        notes.append(
+            "HF commit is pinned; config bytes and declared LFS metadata do not verify "
+            "downloaded/served weights or tokenizer bytes."
+        )
+    elif spec and spec.source == SOURCE_HF:
+        notes.append(
+            "Legacy HF metadata has no immutable revision binding; "
+            "replan online to pin the checkpoint."
+        )
     return argv, notes
 
 

@@ -121,9 +121,18 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         assert manual and manual[0]["model_source"] == "manual"
+        from ci_checkpoint_identity import accept as accept_checkpoint
+
+        checkpoint_receipt = accept_checkpoint(cwd, env, args.checkout)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
-        info, tools = probe([sys.executable, "-I", "-m", "chimeraforge", "mcp"], cwd=cwd, env=env)
+        info, tools = probe(
+            [sys.executable, "-I", "-m", "chimeraforge", "mcp"],
+            cwd=cwd,
+            env=env,
+            checkpoint_request=checkpoint_receipt,
+        )
+        checkpoint_receipt["installed_mcp_revision"] = "passed"
         assert info["version"] == args.expect_version
         http_receipt = probe_http(
             [sys.executable, "-I", "-m", "chimeraforge", "mcp"], cwd=cwd, env=env
@@ -135,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
                     "version": args.expect_version,
                     "origin": installed["origin"],
                     "resources": list(installed["resources"]),
+                    "checkpoint_identity": checkpoint_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

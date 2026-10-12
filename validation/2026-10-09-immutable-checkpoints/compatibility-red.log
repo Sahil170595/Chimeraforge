@@ -1,0 +1,11 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert 'changed' == 'unchanged'
+
+      - unchanged
+      ? --
+      + changed
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:311: AssertionError: assert 'changed' == 'unchanged'
+=========================== short test summary info ===========================
+FAILED tests/test_checkpoint_identity.py::test_legacy_unknown_checkpoint_enrichment_is_not_known_change
+1 failed, 40 deselected in 0.61s

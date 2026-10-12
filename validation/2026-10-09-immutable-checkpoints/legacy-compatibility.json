@@ -1,0 +1,24 @@
+[
+  {
+    "path": "C:\\tmp\\cf-release-051-receipts-20261008\\legacy-v1-plan-from-pypi.json",
+    "source": "fresh installed PyPI 0.51.0 schema1",
+    "sha256": "32e8823f3d9e54c2cafc12653cb32e531aa14fc6ff97accdf109f30d4934281c",
+    "fingerprint": "87c25a17bafcd6d70d0b9caee09134ea3ed3c35749d506b2089c914e5fcb61cd",
+    "schema": 1,
+    "candidate_count": 76,
+    "exit_code": 1,
+    "status": "unverified",
+    "bytes_unchanged": true
+  },
+  {
+    "path": "C:\\tmp\\cf-readme-final-20261009\\offline-plan.json",
+    "source": "frozen reviewed62de/c7 source schema2",
+    "sha256": "78606d3b89f7c0b41e60680c096d85a9fca06656332b757c7220a959d30ac34c",
+    "fingerprint": "f167eaa96d938157403f5a3b9277b8c1bfa5eee75e20afe0d0385a8091cb7387",
+    "schema": 2,
+    "candidate_count": 76,
+    "exit_code": 0,
+    "status": "unchanged",
+    "bytes_unchanged": true
+  }
+]

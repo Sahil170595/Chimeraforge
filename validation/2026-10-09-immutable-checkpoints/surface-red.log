@@ -1,0 +1,23 @@
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+E   TypeError: plan_deployment() got an unexpected keyword argument 'model_revisions'
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:128: TypeError: plan_deployment() got an unexpected keyword argument 'model_revisions'
+E   TypeError: plan_deployment() got an unexpected keyword argument 'model_revisions'
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:128: TypeError: plan_deployment() got an unexpected keyword argument 'model_revisions'
+E   TypeError: plan_deployment() got an unexpected keyword argument 'model_revisions'
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:128: TypeError: plan_deployment() got an unexpected keyword argument 'model_revisions'
+E   AssertionError: assert 'model_revisions' in {'hardware': {'title': 'Hardware', 'type': 'string'}, 'model': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'defa...le': 'Model Size', 'type': 'string'}, 'request_rate': {'default': 1.0, 'title': 'Request Rate', 'type': 'number'}, ...}
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:146: AssertionError: assert 'model_revisions' in {'hardware': {'title': 'Hardware', 'type': 'string'}, 'model': {'anyOf': [{'type': 'string'}, {'type': 'null'}], 'defa...le': 'Model Size', 'type': 'string'}, 'request_rate': {'default': 1.0, 'title': 'Request Rate', 'type': 'number'}, ...}
+E   AssertionError: assert {(None, 'bbbb...aaaaaaaa', 8)} == {('aaaaaaaaaa...aaaaaaaa', 8)}
+
+      Extra items in the left set:
+      (None, 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 16)
+      Use -v to get more diff
+C:\tmp\cf-release-051-20261008\tests\test_checkpoint_identity.py:198: AssertionError: assert {(None, 'bbbb...aaaaaaaa', 8)} == {('aaaaaaaaaa...aaaaaaaa', 8)}
+=========================== short test summary info ===========================
+FAILED tests/test_checkpoint_identity.py::test_mcp_revision_mapping_refuses_invalid_inputs_before_metadata[mapping0]
+FAILED tests/test_checkpoint_identity.py::test_mcp_revision_mapping_refuses_invalid_inputs_before_metadata[mapping1]
+FAILED tests/test_checkpoint_identity.py::test_mcp_revision_mapping_refuses_invalid_inputs_before_metadata[mapping2]
+FAILED tests/test_checkpoint_identity.py::test_mcp_sdk_public_tool_schema_and_execution_retain_cached_pin
+FAILED tests/test_checkpoint_identity.py::test_cli_fleet_retains_explicit_pin_against_distinct_main
+5 failed, 44 deselected in 1.35s

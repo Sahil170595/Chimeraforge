@@ -49,10 +49,24 @@ path; it establishes no GPU speed, GPU compatibility, detector sensitivity or
 general planner accuracy. Shared-runner token-rate thresholds are deliberately
 absent. Downloads, startup and operations have explicit time limits.
 
+Installed wheel/sdist consumers exercise checkpoint save/check/export with an
+offline protocol fixture. The existing Linux CPU consumer additionally performs
+anonymous metadata/config reads for SmolLM2-135M-Instruct at
+`12fd25f77366fa6b3b4b768ec3050bf629380bac`, checks its declared LFS identity, then
+executes the installed CLI loop and an explicit network recheck. This adds no
+weight download. Receipts distinguish the offline fixture, real Hub metadata,
+config-byte verification and unverified loaded/weight-byte identity; neither path
+qualifies a serving engine's revision handling or GPU performance.
+
 Publishing requires a matching version tag reachable from main, consistent MCP
 metadata, and the complete reusable CI validation at that tag. The publish job
 downloads the validated distributions instead of rebuilding them, creates build
 provenance, and uses PyPI OIDC publishing. MCP metadata is validated before the
 PyPI upload and its publisher binary is digest-pinned. Ordinary CI never publishes.
+Public registry readiness checks exact non-yanked file hashes and the pinned uv
+resolver's supported dry-run under one deadline, using the MCP SDK child environment.
+Only an unavailable exact release is polled; other resolution failures stop publication.
+The existing installed-distribution job exercises the same resolver against the candidate
+wheel. Each path runs its MCP application probe once after resolution qualifies.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.
