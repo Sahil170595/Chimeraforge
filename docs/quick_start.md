@@ -3,7 +3,10 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-The published CLI is 0.61.0. The unpublished 0.64.0 candidate adds
+The published CLI is 0.61.0. The unpublished 0.65.0 candidate adds
+[signed contributions and private replay](signed-contribution-v2.md) with the
+optional `sign` extra, explicit trusted keys and matching private input files.
+The preceding unpublished 0.64.0 candidate adds
 [`trace-campaign`](trace-campaign.md) for serial frozen-workload executions.
 The preceding unpublished 0.63.0 candidate adds
 [`gate --kind trace`](trace-regression-gate.md); use its candidate source or wheel
@@ -15,7 +18,7 @@ unpublished. Benchmark gating remains the default.
 ### 1. Install Prerequisites
 
 ```bash
-# Python 3.11+
+# Python 3.10+
 python --version
 
 # Rust 1.70+ (optional, for Rust agents)
@@ -31,8 +34,7 @@ ollama --version
 git clone https://github.com/Sahil170595/Chimeraforge.git
 cd Chimeraforge
 
-# Python dependencies (editable install with the bench extra: the agent demos
-# and benchmark harness need httpx, which the [bench] extra provides).
+# Python dependencies (httpx is core; bench adds benchmark environment metadata).
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -e ".[bench]"

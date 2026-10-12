@@ -57,7 +57,17 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.64.0 (unpublished release candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.65.0 (unpublished release candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Candidate signed contributions: `contribute sign` signs a bounded current native
+PlanBenchmark projection with optional `sign` dependencies. `verify --trusted-key`
+separates signature validity from receiver trust; async
+`api.replay_signed_contribution` / `replay --private-workload` bind private inputs
+before contact. V2 is standalone outside planner quarantine/aggregation. See
+[the signed contribution contract](docs/signed-contribution-v2.md). Outcomes are
+0 qualified operation, 1 known signature/input/control mismatch, 2 malformed/output
+failure, 3 unavailable or untrusted. Measurement truth, original wire defaults,
+hardware, weights and original Poisson schedule remain unverified.
 
 Candidate serial campaigns: `chimeraforge trace-campaign workload.json --model served
 --replicates 3 --campaign-timeout 1800 --out campaign.json --json` and async

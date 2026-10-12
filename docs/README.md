@@ -15,6 +15,7 @@ planner's data came from; those guides are archived below.
 - **[API Reference](API.md)** - the public Python API (`chimeraforge.planner`, resolver, discovery, measure)
 - **[Trace regression gates](trace-regression-gate.md)** - unpublished 0.63.0 candidate, queue-inclusive saved evidence
 - **[Serial trace campaigns](trace-campaign.md)** - unpublished 0.64.0 candidate, frozen ordered replica populations
+- **[Signed contributions and private replay](signed-contribution-v2.md)** - unpublished 0.65.0 candidate, exact-byte signatures and explicit receiver trust
 
 ```bash
 pip install chimeraforge
@@ -73,4 +74,6 @@ The canonical technical-report archive lives in `outputs/publish_ready/reports/`
 - Commands assume execution from the repository root unless noted
 - Links are relative to this `docs/` directory
 
-**Documents ChimeraForge v0.6.0.** See the [Changelog](../CHANGELOG.md) for version history.
+Published CLI: **0.61.0**. This checkout prepares **0.65.0**; the linked 0.62.0-0.65.0
+candidate features require their source or wheels until release. See the
+[Changelog](../CHANGELOG.md) for version history.

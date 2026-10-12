@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.65.0] - Unreleased candidate
+
+### Signed contributions and private replay
+
+- Optional Ed25519 signing authenticates the exact public payload bytes and signer key. Current PlanBenchmark populations, aggregates and supported native arithmetic are validated; private prompts/options become commitments, while completions, raw options, endpoint paths and provider messages are omitted.
+- Explicit receiver keys establish trust separately from signature validity. Async private replay matches the original prompt and recorded adapter map before contact, retaining native populations, known contradictions, descriptive metrics and unavailable facts. Original wire defaults and realized Poisson schedules remain unverified.
+- Current Ollama option injection and omitted/default tags are normalized in separate comparison views without rewriting original signed facts. Partial/unknown-basis evidence cannot yield favorable comparisons; inconsistent postcontact counters retain known components without fabricated not-started totals.
+- CLI v1/v2 dispatch preserves unsigned workflows, emits bounded JSON errors, and protects consumed receipt/key/workload files and aliases before replay. Signed artifacts remain outside planner quarantine and aggregation. Shared runner diagnostics retain failure categories/counts without provider exception bodies.
+- The direct optional `sign` extra uses cryptography 50.0.2-compatible interfaces and is included by `all`. Existing installed consumers qualify candidate artifacts separately from source mocks and native inference.
+
+### Validation
+
+- Version 0.65.0 requires unpublished candidate source or wheels. The exact-head local, independent and hosted results are recorded on its PR. Signatures do not prove measurement truth, served weights, original hardware, independent execution or planner calibration.
+
 ## [0.64.0] - Unreleased candidate
 
 ### Serial trace campaigns
