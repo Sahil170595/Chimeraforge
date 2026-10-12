@@ -112,6 +112,9 @@ jobs:
           done
           echo "::error::Release never became visible on PyPI"
           exit 1
+      - uses: ./.github/actions/setup-ci
+      - name: Exercise the exact published registry invocation
+        run: uv run --no-sync python scripts/ci_registry_runtime.py
       - name: Publish registry metadata
         run: |
           "$RUNNER_TEMP/mcp-publisher" login github-oidc

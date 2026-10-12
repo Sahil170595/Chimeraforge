@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.0] - 2026-10-12
+
+### Added
+- `mcp --transport streamable-http` exposes the native MCP transport on loopback with server-owned network policy, bounded sessions/body sizes and fixed synchronous-tool admission.
+- Timeout or client cancellation does not release an occupied worker until its underlying work finishes. Protocol controls remain responsive and shutdown drains owned workers. Stdio remains available.
+- Registry runtime arguments use the supported `--with` extra pinned to the advertised package version and omit the incompatible PyPI root index URL. The actual metadata-generated command is exercised against the built candidate before publishing and against public PyPI before registry publication.
+- The real five-tool HTTP integration client now waits for the server's existing response deadline plus transport margin; production deadlines, admission limits and adversarial test budgets are unchanged.
+
+### Validation
+- Released independently from PR #108; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.54.0] - 2026-10-12
+
+### Added
+- Plan-bound `monitor` and typed `api.monitor_plan` carry saved TTFT/TPOT targets into bounded passive monitoring and bracket completed windows with serving metadata.
+- Native SLO outcomes remain separate from model/backend binding; missing geometry, workload, replica topology or immutable weights stays unverified. Cancellation retains bounded cooperative adapter cleanup.
+
+### Validation
+- Released independently from PR #107; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.53.0] - 2026-10-12
+
+### Added
+- Plan-bound `bench` and typed `api.benchmark_plan` compare one saved candidate with observed serving configuration and native request measurements.
+- Receipts retain actual prompt/output counts, cache observations, request failures and model/hardware/backend contradictions. Single-stream, fleet, queueing and immutable-weight claims remain distinct.
+
+### Validation
+- Released independently from PR #106; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.52.0] - 2026-10-12
+
+### Added
+- `check` and typed `api.check_plan` recheck saved deployment plans against current offline facts, retaining changed inputs, native gate reasons, candidate transitions and modeled deltas.
+- Newly saved plans bind resolved model/hardware/platform facts, consumed corpus and quality bytes, cloud context and contribution membership for offline replay without reprobe or input mutation.
+- Released schema-v1 plans retain partial checks with unavailable bindings explicit. Unchanged recommendations do not establish serving performance or immutable weights.
+
+### Validation
+- Released independently from PR #105. The exact versioned candidate is validated by the publishing workflow, including installed distributions, actual CPU serving and MCP container calls.
+
 ## [0.51.0] - 2026-10-08
 
 ### Added

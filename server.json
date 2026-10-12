@@ -7,13 +7,12 @@
     "url": "https://github.com/Sahil170595/Chimeraforge",
     "source": "github"
   },
-  "version": "0.51.0",
+  "version": "0.55.0",
   "packages": [
     {
       "registryType": "pypi",
-      "registryBaseUrl": "https://pypi.org",
       "identifier": "chimeraforge",
-      "version": "0.51.0",
+      "version": "0.55.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -21,9 +20,9 @@
       "runtimeArguments": [
         {
           "type": "named",
-          "name": "--from",
-          "value": "chimeraforge[mcp]",
-          "description": "Install ChimeraForge with the optional MCP server extra"
+          "name": "--with",
+          "value": "chimeraforge[mcp]==0.55.0",
+          "description": "Install the same released ChimeraForge version with its MCP server extra"
         }
       ],
       "packageArguments": [
