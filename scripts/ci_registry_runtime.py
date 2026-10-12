@@ -5,6 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -13,6 +16,50 @@ PACKAGE = "chimeraforge"
 MAX_INDEX_WAIT_SECONDS = 300
 INDEX_POLL_SECONDS = 10
 INDEX_REQUEST_TIMEOUT_SECONDS = 15
+RESOLVER_TIMEOUT_SECONDS = 60
+# The pinned uv 0.12.23 client negotiates this representation; PyPI varies on Accept.
+UV_SIMPLE_ACCEPT = (
+    "application/vnd.pypi.simple.v1+json, "
+    "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
+)
+
+
+def public_resolution_ready(
+    version: str, timeout: float, *, candidate_dist: Path | None = None
+) -> bool:
+    """Resolve without installing, using the SDK's actual child environment boundary."""
+    from mcp.client.stdio import get_default_environment
+
+    command = [
+        "uv",
+        "pip",
+        "install",
+        "--dry-run",
+        "--ignore-installed",
+        "--no-cache",
+        "--python",
+        sys.executable,
+    ]
+    if candidate_dist is not None:
+        command += ["--find-links", str(candidate_dist.resolve(strict=True))]
+    command.append(f"{PACKAGE}[mcp]=={version}")
+    result = subprocess.run(
+        command,
+        cwd=tempfile.gettempdir(),
+        env=get_default_environment(),
+        timeout=timeout,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if result.returncode == 0:
+        return True
+    error = " ".join(result.stderr.split())
+    missing = f"Because there is no version of {PACKAGE}=={version} and "
+    if result.returncode == 1 and missing in error and f"you require {PACKAGE}" in error:
+        return False
+    raise RuntimeError(f"Public exact-version resolution failed (uv exit {result.returncode})")
 
 
 def public_files_ready(release: dict, simple: dict, version: str) -> bool:
@@ -50,7 +97,8 @@ def wait_for_public_files(version: str) -> None:
                 raise TimeoutError(
                     "PyPI exact files did not become installable within the deadline"
                 )
-            request = Request(url, headers={"Accept": "application/vnd.pypi.simple.v1+json"})
+            accept = UV_SIMPLE_ACCEPT if "/simple/" in url else "application/json"
+            request = Request(url, headers={"Accept": accept})
             try:
                 with urlopen(
                     request, timeout=min(INDEX_REQUEST_TIMEOUT_SECONDS, remaining)
@@ -60,10 +108,29 @@ def wait_for_public_files(version: str) -> None:
                 if error.code != 404:
                     raise
                 payloads.append({})
-        ready = public_files_ready(*payloads, version)
+        files_ready = public_files_ready(*payloads, version)
+        resolver_ready = None
+        if files_ready:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("PyPI resolution did not qualify within the deadline")
+            resolver_ready = public_resolution_ready(
+                version, min(RESOLVER_TIMEOUT_SECONDS, remaining)
+            )
+        if time.monotonic() >= deadline:
+            raise TimeoutError("PyPI resolution did not qualify within the deadline")
+        ready = files_ready and resolver_ready is True
         print(
             json.dumps(
-                {"pypi_index_readiness": {"version": version, "attempt": attempt, "ready": ready}}
+                {
+                    "pypi_index_readiness": {
+                        "version": version,
+                        "attempt": attempt,
+                        "ready": ready,
+                        "files_ready": files_ready,
+                        "resolver_ready": resolver_ready,
+                    }
+                }
             ),
             flush=True,
         )
@@ -116,6 +183,10 @@ def main() -> int:
     if args.wait_pypi:
         assert args.candidate_dist is None, "index readiness is for the public invocation only"
         wait_for_public_files(expected)
+    elif args.candidate_dist is not None:
+        assert public_resolution_ready(
+            expected, RESOLVER_TIMEOUT_SECONDS, candidate_dist=args.candidate_dist
+        ), "native resolution refused the existing candidate wheel"
     from probe_mcp_stdio import probe
 
     info, tools = probe(command)

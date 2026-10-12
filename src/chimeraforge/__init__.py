@@ -5,4 +5,4 @@ on consumer GPUs. Plan, benchmark, evaluate, and optimize LLM
 inference deployments.
 """
 
-__version__ = "0.56.1"
+__version__ = "0.57.0"

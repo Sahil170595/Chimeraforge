@@ -67,15 +67,11 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-12).** This README documents [Chimeraforge 0.56.1](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.56.1). The workflows below are available in this version.
+**Release scope (2026-10-12).** This README documents [Chimeraforge 0.57.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.57.0). The workflows below are available in this version.
 
 ```bash
-pip install "chimeraforge[mcp]==0.56.1"
+pip install "chimeraforge[mcp]==0.57.0"
 ```
-
-The checkpoint options below are a further **unreleased source feature**. They
-require this feature's checkout; neither PyPI 0.51.0 nor the older source pin
-above contains them. From this checkout, install with `pip install '.[mcp]'`.
 
 ## Quickstart
 
