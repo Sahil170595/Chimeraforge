@@ -57,7 +57,15 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.62.0 (release candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.63.0 (unpublished release candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Candidate trace decisions: `chimeraforge gate --kind trace --baseline baseline.json
+--candidate candidate.json --policy policy.json --out gate.json --json` compares
+saved queue-inclusive populations without inference. Public typed API:
+`api.TraceGatePolicy` / `api.gate_traces`; see
+[the trace gate contract](docs/trace-regression-gate.md). Benchmark remains the
+default. Outcomes are 0 conditional pass, 1 regression, 2 malformed/output failure,
+3 inconclusive; source/physical/independent-cold/GPU qualification remains unverified.
 
 ## Quick Reference
 

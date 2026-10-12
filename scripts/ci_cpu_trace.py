@@ -150,9 +150,32 @@ def accept(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dic
         )
     )
     assert invalid["error"] and source.read_bytes() == raw
+    policy = cwd / "cpu-trace-gate-policy.json"
+    policy.write_text(json.dumps({"rules": {"goodput_rps": 0.1}}))
+    duplicate = json.loads(
+        run_cli(
+            [
+                "gate",
+                "--kind",
+                "trace",
+                "--baseline",
+                str(output),
+                "--candidate",
+                str(output),
+                "--policy",
+                str(policy),
+                "--json",
+            ],
+            cwd,
+            env,
+            3,
+        )
+    )
+    assert "duplicate_execution_payload" in duplicate["blockers"]
     return {
         "scope": "actual installed CPU workload; SLO outcomes retained without a speed gate",
         "trace_replay": report,
         "source_bytes_unchanged": True,
         "output_alias_refused": True,
+        "trace_gate_duplicate_execution": duplicate,
     }

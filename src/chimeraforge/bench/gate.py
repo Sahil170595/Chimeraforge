@@ -7,6 +7,7 @@ import statistics
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Protocol
 
 from chimeraforge.bench.gate_inputs import (
     MAX_POLICY_BYTES,
@@ -70,6 +71,19 @@ class RegressionPolicy:
     baseline_treatment: dict = field(default_factory=dict)
     candidate_treatment: dict = field(default_factory=dict)
     require_cache_evidence: bool = True
+
+
+class ObservedControlPolicy(Protocol):
+    """Shared observed-condition contract, independent of metric-policy validation."""
+
+    @property
+    def fixed_controls(self) -> dict: ...
+
+    @property
+    def baseline_treatment(self) -> dict: ...
+
+    @property
+    def candidate_treatment(self) -> dict: ...
 
 
 def _fact(observed: dict, name: str) -> object:
@@ -148,7 +162,7 @@ def _observations(receipt: dict) -> tuple[dict, dict]:
 
 
 def _condition_states(
-    left: dict, right: dict, policy: RegressionPolicy
+    left: dict, right: dict, policy: ObservedControlPolicy
 ) -> tuple[dict, list[str], list[str]]:
     phases = {"baseline": _observations(left), "candidate": _observations(right)}
     states, blockers, unknown = {}, [], []
