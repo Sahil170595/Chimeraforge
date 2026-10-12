@@ -1,8 +1,6 @@
 # Real request-trace replay
 
-This unreleased source feature executes actual requests against an existing
-endpoint. Install this checkout; PyPI 0.51.0 and the older source pin in the
-README do not contain `trace`. It does not launch a server or download a model.
+Chimeraforge 0.60.0 executes actual requests against an existing endpoint. Install `pip install "chimeraforge[bench]==0.60.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955012604); each release separately qualifies its versioned artifacts. It does not launch a server or download a model.
 Prompts are private inputs sent to the selected endpoint.
 
 ```python

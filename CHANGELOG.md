@@ -7,32 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.0] - 2026-10-12
+
 ### Real request-trace replay
 
 - `trace workload.json` and async typed `replay_trace` execute bounded explicit prompt/output-cap/arrival workloads through the existing backend lifecycle, with a concurrency limit and scheduled-phase deadline.
 - Complete population receipts retain failures, partial output, cancellation and not-started requests. High-resolution monotonic client timing separates scheduler lag, client queue, observed first output and queue-inclusive terminal latency; goodput uses the full workload horizon.
 - Ollama streaming observes real first output while preserving native prefill and mean server-decode bases. Legacy adapters keep unsupported first-output timing unknown; missing required evidence cannot qualify a joint target. Requested caps and actual native token counts remain separate.
-- Receipts bind canonical workload and original file SHA256 without prompts, completions or provider error bodies, reject output/input aliases, and preserve observed serving metadata and cleanup outcomes. Existing installed CPU acceptance runs varied real traces on the pinned endpoint without a machine-speed or GPU qualification gate; hosted proof remains pending publication.
+- Receipts bind canonical workload and original file SHA256 without prompts, completions or provider error bodies, reject output/input aliases, and preserve observed serving metadata and cleanup outcomes. Existing installed CPU acceptance runs varied real traces on the pinned endpoint without a machine-speed or GPU qualification gate; The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955012604); release publication repeats qualification on the versioned artifacts.
 
-### Frozen-context workload and cost sensitivity
-
-- `study PLAN_OR_BUNDLE --cases cases.json` and typed `PlanScenario`/`study_plan` APIs compare bounded explicit workload, context, SLO, budget, duty and cost assumptions through the ordinary planner.
-- Every case consumes the same verified coefficients/quality and bound model/GPU/platform, with current engine-support, cloud, grid, unsigned quarantine and time observations captured once. Policy/registry changes abort rather than mix contexts.
-- Reports retain infeasible cases and native gate reasons, recommendation/configuration changes, provenance and native-unit estimated deltas, with original versus current fact scope explicit. Operator hourly GPU cost is separate from physical geometry and cannot replace cloud instance pricing.
-- Input/output collision guards preserve producer files; legacy unbound plans and unsupported changes refuse clearly. Existing installed wheel/sdist acceptance exercises actual CLI and Python studies without new models or jobs; hosted qualification remains pending.
-
-### Portable saved-plan handoff
-
-- `bundle create/verify/check` and typed Python APIs preserve original plan bytes/fingerprint/producer paths while carrying exactly bound corpus and quality files, including implicitly consumed measured corpora.
-- Strict role membership, SHA256/byte sizes, bounded reads and input-semantic checks reject substituted, missing, extra, linked or malformed inputs. Creation validates dependencies before atomically publishing a staged directory.
-- Offline shared-planner replay consumes held verified bytes after relocation and producer removal, exposes producer/local source receipts separately, and retains current tool/policy/hardware/price/cloud checks. Verification remains content integrity, not source authentication, served-weight proof or performance qualification.
-- Legacy missing byte bindings and nonempty contribution file dependencies are actionable refusals. Sharing harness inputs may disclose private data. Existing installed wheel/sdist consumers now accept a Linux-produced handoff on every supported OS; hosted qualification is pending publication.
-
-### Added
-- Immutable Hugging Face checkpoint metadata through resolution, saved plans, deployment export and recheck. Online resolution establishes one commit before reading config; receipts bind consumed config bytes and declared weight metadata without downloading weights.
-- `plan --revision REF` for one model, repeated `--revision MODEL=REF` for multiple models, and Python `PlanRequest.model_revisions` / `resolve_spec(hf_revision=...)`. Explicit revisions refuse unavailable offline targets rather than substitute another cache or registry approximation.
-- vLLM, TGI and SGLang deployment/launch commands retain the resolved commit. Ollama cannot represent an HF revision and refuses that conversion.
-- Offline checkpoint rechecks distinguish producing metadata, unknown current moving refs and unverified served weights; `check --network` explicitly refreshes Hub metadata and requested-ref state. Existing v1/v2 snapshots remain loadable without inventing missing identity.
+### Validation
+- Released independently from PR #114; the publishing workflow validates and attests the exact versioned distributions before publication.
 
 ## [0.59.0] - 2026-10-12
 
