@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**24 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**25 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-12).** The published version is [Chimeraforge 0.61.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.61.0). This branch prepares **0.65.0** signed contributions and private replay, following the unpublished **0.62.0** native streaming trace, **0.63.0** trace regression gate and **0.64.0** serial campaign candidates. These features require candidate source or wheels until release. Unsigned v1 contribution workflows remain available in 0.61.0.
+**Release scope (2026-10-12).** The published version is [Chimeraforge 0.61.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.61.0). This branch prepares **0.66.0** frozen prediction scorecards, following unpublished **0.62.0** native streaming traces, **0.63.0** trace regression gates, **0.64.0** serial campaigns and **0.65.0** signed contributions. These features require candidate source or wheels until release. Unsigned v1 contribution workflows remain available in 0.61.0.
 
 ```bash
 pip install "chimeraforge[mcp]==0.61.0"
@@ -715,6 +715,26 @@ cancellation propagates after owned-task cleanup. Exit `0` means every declared
 replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
+
+### `score` -- frozen prediction scorecards (0.66.0 candidate)
+
+Use the unpublished candidate source or wheel. Declare a plan-bound population and
+relative error band in `score-policy.json`, then score saved evidence offline:
+
+```bash
+chimeraforge score --plan plan.json --policy score-policy.json --benchmark plan-benchmark.json --out scorecard.json --json
+```
+
+The scorer reads the saved candidate prediction without replanning or replacing
+its coefficients. It recalculates native populations, rates and serving bindings;
+producer audit claims are not trusted. Only eligible single-stream Ollama server
+decode rates are scored, with `(prediction - measured) / measured` error. Missing,
+extra, mismatched, unavailable and duplicate evidence stays visible. A complete
+population within the inclusive band exits 0; a comparable breach exits 1 even
+with other incomplete rows; malformed inputs exit 2 and incomplete evidence exits 3.
+Actual CPU or partial hardware metadata cannot qualify a modeled GPU prediction.
+This is conditional arithmetic, without physical authentication or calibration GO.
+See [policy setup, API and eligibility limits](docs/prediction-scorecards.md).
 
 ### `eval` -- quality evaluation
 
