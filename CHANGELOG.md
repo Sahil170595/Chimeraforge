@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.64.0] - Unreleased candidate
+
+### Serial trace campaigns
+
+- Async `replay_trace_campaign` / defensive `TraceCampaign` and `trace-campaign` freeze one held workload and its client-recorded manifest before endpoint contact. Serial replicas retain unmodified native receipts; the original file hash remains separate from truthful typed-child raw hashes.
+- Declared 1–16 replicas and up to 4096 total requests stop after the first incomplete execution. Native failed/partial/cancelled populations remain intact; replay-boundary failures are categorical, and every successor stays declared not-started without fabricated measurements. SLO outcomes remain distinct from execution completion.
+- A whole campaign budget covers admission, preflight, metadata and replay. Owned task/event races signal cooperative native stop and drain full receipts without cancelling away evidence. External task cancellation propagates after cleanup; simultaneous final completion and stop retain completed outcome plus the control observation.
+- Shared adapter cleanup diagnostics log backend/stage and closed categories without private exception text or tracebacks, preserving original failure/cancellation precedence. Atomic campaign output protects original input and hardlink aliases.
+- The existing pinned hosted CPU consumer adds two short serial replicas on its existing model and a no-inference missing-model campaign. No new model, server or hosted job is introduced; source mocks and future installed/native qualification remain separate.
+
+### Validation
+
+- Version 0.64.0 requires unpublished candidate source or wheel. External preregistration/time authentication, independent cold/cache runs, GPU geometry, served weights and physical provider termination remain unverified. Cooperative drain is not a guaranteed wall-time return; population bounds are not a serialization-byte ceiling.
+
 ## [0.63.0] - Unreleased candidate
 
 ### Queue-inclusive trace regression gates

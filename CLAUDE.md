@@ -57,7 +57,15 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.63.0 (unpublished release candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.64.0 (unpublished release candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Candidate serial campaigns: `chimeraforge trace-campaign workload.json --model served
+--replicates 3 --campaign-timeout 1800 --out campaign.json --json` and async
+`api.replay_trace_campaign` freeze one workload, retain full native replicas,
+and stop admission after the first incomplete replica. See
+[the campaign contract](docs/trace-campaign.md). Outcomes are 0 all declared
+executions completed, 1 incomplete/stopped population, 2 malformed/output failure.
+Budget-triggered native drain is cooperative and may be unbounded.
 
 Candidate trace decisions: `chimeraforge gate --kind trace --baseline baseline.json
 --candidate candidate.json --policy policy.json --out gate.json --json` compares

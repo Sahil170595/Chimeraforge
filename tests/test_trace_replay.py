@@ -566,6 +566,11 @@ def test_installed_trace_consumer_commands_source_protocol(tmp_path, backend, mo
         return result.output
 
     monkeypatch.setitem(sys.modules, "ci_installed_acceptance", SimpleNamespace(run_cli=run_cli))
+
+    async def available_model(model):
+        return model != "ci-missing-trace-campaign-model", "PRIVATE MODEL LIST"
+
+    monkeypatch.setattr(backend, "check_model", available_model)
     receipt = script.accept(tmp_path, {}, "served", "http://localhost:11434", "fixture")
     assert receipt["source_bytes_unchanged"] and receipt["output_alias_refused"]
 

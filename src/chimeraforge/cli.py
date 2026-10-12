@@ -33,6 +33,7 @@ from chimeraforge.commands.serve import serve
 from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.study import study
 from chimeraforge.commands.trace import trace
+from chimeraforge.commands.trace_campaign import trace_campaign
 from chimeraforge.commands.validate import validate
 
 console = Console()
@@ -79,6 +80,7 @@ app.command()(catalog)
 app.command()(safety)
 app.command()(bench)
 app.command()(trace)
+app.command()(trace_campaign)
 app.command()(gate)
 app.command()(refit)
 app.command()(compare)

@@ -3,7 +3,9 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-The published CLI is 0.61.0. The unpublished 0.63.0 candidate adds
+The published CLI is 0.61.0. The unpublished 0.64.0 candidate adds
+[`trace-campaign`](trace-campaign.md) for serial frozen-workload executions.
+The preceding unpublished 0.63.0 candidate adds
 [`gate --kind trace`](trace-regression-gate.md); use its candidate source or wheel
 for that command. The preceding 0.62.0 native streaming trace candidate is also
 unpublished. Benchmark gating remains the default.
