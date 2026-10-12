@@ -79,7 +79,7 @@ def _artifact(raw: bytes):
     return artifact_from_dict(json.loads(raw, object_pairs_hook=_unique_object))
 
 
-def _required(artifact) -> dict:
+def _required(artifact, *, allow_contributions: bool = False) -> dict:
     context = artifact.to_dict()["result"].get("replay_context")
     if context is None:
         _fail("legacy plan lacks required consumed-input byte bindings; save a new plan")
@@ -89,12 +89,35 @@ def _required(artifact) -> dict:
     quality = (context["quality"] or {}).get("input")
     if context["quality"] is not None and (quality is None or quality["kind"] != "file"):
         _fail("quality lacks an original file-byte binding; save a new plan")
-    if context["contributions"]["records"]:
+    if context["contributions"]["records"] and not allow_contributions:
         _fail(
             "contributions bind semantic records, not original file bytes; "
             "this plan cannot be bundled"
         )
     return {"corpus": corpus, **({"quality": quality} if quality is not None else {})}
+
+
+def _capture_inputs(artifact, *, allow_contributions: bool = False) -> dict:
+    """Hold each original input once; callers retain the actual consumed location."""
+    from chimeraforge.plan_check import _local_file
+
+    held = {}
+    for role, binding in _required(artifact, allow_contributions=allow_contributions).items():
+        if binding["kind"] == "bundled":
+            resource = resources.files("chimeraforge.planner").joinpath(
+                "data", "fitted_models.json"
+            )
+            with resources.as_file(resource) as source:
+                held[role] = (
+                    _read(source, MAX_INPUT_BYTES, package_resource=True),
+                    source.resolve(),
+                )
+        else:
+            source = _local_file(binding)
+            if source is None:
+                _fail(f"original {role} path is foreign/unavailable; use a verified bundle")
+            held[role] = (_read(source, MAX_INPUT_BYTES), source)
+    return held
 
 
 def _quality_equivalent(before: dict, after: dict) -> bool:
@@ -299,7 +322,6 @@ def verify(directory: str | Path) -> PlanBundle:
 @_boundary
 def create(plan_path: str | Path, output_directory: str | Path) -> PlanBundle:
     from chimeraforge.api import MAX_PLAN_BYTES
-    from chimeraforge.plan_check import _local_file
 
     root = Path(os.path.abspath(output_directory))
     _plain_path(root)
@@ -311,19 +333,7 @@ def create(plan_path: str | Path, output_directory: str | Path) -> PlanBundle:
     raw_plan = _read(Path(os.path.abspath(plan_path)), MAX_PLAN_BYTES)
     artifact = _artifact(raw_plan)
     held = {"plan": raw_plan}
-    for role, binding in _required(artifact).items():
-        if binding["kind"] == "bundled":
-            resource = resources.files("chimeraforge.planner").joinpath(
-                "data", "fitted_models.json"
-            )
-            with resources.as_file(resource) as source:
-                # SDK-managed package installations may share a hardlinked cache file.
-                held[role] = _read(source, MAX_INPUT_BYTES, package_resource=True)
-        else:
-            source = _local_file(binding)
-            if source is None:
-                _fail(f"original {role} path is foreign/unavailable; create on producer host")
-            held[role] = _read(source, MAX_INPUT_BYTES)
+    held.update({role: raw for role, (raw, _) in _capture_inputs(artifact).items()})
     manifest = {
         "schema_version": BUNDLE_VERSION,
         "plan_fingerprint": artifact.to_dict()["fingerprint"],

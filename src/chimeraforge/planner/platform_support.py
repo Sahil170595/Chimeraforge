@@ -255,8 +255,10 @@ def platform_support(platform: str) -> list[EngineSupport]:
     return [engine_support(e, platform) for e in load_engine_support()["engines"]]
 
 
-def staleness_warning(today: dt.date | None = None) -> str | None:
-    captured = dt.date.fromisoformat(load_engine_support()["captured_at"])
+def staleness_warning(today: dt.date | None = None, *, data: dict | None = None) -> str | None:
+    captured = dt.date.fromisoformat(
+        (load_engine_support() if data is None else data)["captured_at"]
+    )
     age = ((today or dt.date.today()) - captured).days
     if age > MAX_AGE_DAYS:
         return (

@@ -1,0 +1,10 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_context_and_selected_batch_settings_are_visible_configuration_changes __
+tests\test_plan_study.py:72: in test_context_and_selected_batch_settings_are_visible_configuration_changes
+    assert report["base"]["recommended_configuration"]["context_length"] == 2048
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'recommended_configuration'
+=========================== short test summary info ===========================
+FAILED tests/test_plan_study.py::test_context_and_selected_batch_settings_are_visible_configuration_changes
+1 failed, 53 deselected in 1.19s

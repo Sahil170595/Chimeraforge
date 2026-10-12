@@ -168,6 +168,10 @@ def main(argv: list[str] | None = None) -> int:
             "current_installed_corpus": "unchanged",
             "source_authentication": "unverified",
         }
+        from ci_plan_study import accept as accept_study
+
+        study_bundle = cwd / ("foreign-bundle" if args.plan_handoff is not None else "local-bundle")
+        study_receipt = accept_study(cwd, env, args.checkout, snapshot_path, study_bundle)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -190,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
                     "resources": list(installed["resources"]),
                     "checkpoint_identity": checkpoint_receipt,
                     "portable_plan_bundle": bundle_receipt,
+                    "plan_sensitivity": study_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

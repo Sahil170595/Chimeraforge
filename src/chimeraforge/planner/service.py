@@ -24,9 +24,10 @@ from chimeraforge.planner.constants import (
     PLAN_MODE_BATCH,
     PLAN_MODES,
 )
-from chimeraforge.planner.carbon import grid_intensity
+from chimeraforge.planner.carbon import GridIntensity, grid_intensity
 from chimeraforge.planner.engine import (
     Candidate,
+    FrozenEngineInputs,
     enumerate_candidates,
     find_models_for_size,
     pareto_frontier,
@@ -45,6 +46,14 @@ class ConsumedPlanInputs:
 
     models: PlannerModels
     quality: IngestedQuality | None = None
+
+
+@dataclass(frozen=True)
+class FrozenPlanFacts:
+    """Private source injection; no extra user-facing planner option."""
+
+    engine: FrozenEngineInputs
+    grid: GridIntensity | None
 
 
 @dataclass
@@ -238,6 +247,7 @@ def _run_plan(
     model_revisions: dict[str, str] | None = None,
     _replay: dict | None = None,
     _consumed_inputs: ConsumedPlanInputs | None = None,
+    _frozen_facts: FrozenPlanFacts | None = None,
 ) -> PlanResult:
     """Resolve targets and run the gate search; return a structured result.
 
@@ -265,7 +275,11 @@ def _run_plan(
     if isinstance(kv_quant, str):
         kv_quant = kv_quant.lower()
     # Resolved before any work so a bad region fails fast (CarbonError is a ValueError).
-    grid = grid_intensity(grid_region, carbon_intensity)
+    grid = (
+        _frozen_facts.grid
+        if _frozen_facts is not None
+        else grid_intensity(grid_region, carbon_intensity)
+    )
 
     planner_models = (
         _consumed_inputs.models
@@ -379,6 +393,7 @@ def _run_plan(
         _hardware_spec=GPUSpec.from_dict(_replay["hardware"]["raw"])
         if _replay is not None
         else None,
+        _frozen_inputs=_frozen_facts.engine if _frozen_facts is not None else None,
     )
     consumed.update(
         version=REPLAY_VERSION,
@@ -401,7 +416,13 @@ def _run_plan(
 
 
 def replay_plan(
-    inputs: dict, context: dict, *, consumed_inputs: ConsumedPlanInputs | None = None
+    inputs: dict,
+    context: dict,
+    *,
+    consumed_inputs: ConsumedPlanInputs | None = None,
+    frozen_facts: FrozenPlanFacts | None = None,
 ) -> PlanResult:
     """Rerun shared gates against full bound geometry and current consumed inputs."""
-    return _run_plan(**inputs, _replay=context, _consumed_inputs=consumed_inputs)
+    return _run_plan(
+        **inputs, _replay=context, _consumed_inputs=consumed_inputs, _frozen_facts=frozen_facts
+    )

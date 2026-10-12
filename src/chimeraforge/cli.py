@@ -30,6 +30,7 @@ from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
 from chimeraforge.commands.serve import serve
 from chimeraforge.commands.suggest import suggest
+from chimeraforge.commands.study import study
 from chimeraforge.commands.validate import validate
 
 console = Console()
@@ -67,6 +68,7 @@ def main(
 app.command()(plan)
 app.command()(check)
 app.add_typer(bundle_app, name="bundle")
+app.command()(study)
 app.command()(deploy)
 app.command()(suggest)
 app.command()(measure)

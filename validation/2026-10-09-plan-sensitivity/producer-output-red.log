@@ -1,0 +1,28 @@
+FFFF.                                                                    [100%]
+================================== FAILURES ===================================
+___ test_bundle_study_cannot_overwrite_native_producer_input[False-corpus] ____
+tests\test_plan_study.py:572: in test_bundle_study_cannot_overwrite_native_producer_input
+    with pytest.raises(api.PlanError, match="cannot replace"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+___ test_bundle_study_cannot_overwrite_native_producer_input[False-quality] ___
+tests\test_plan_study.py:572: in test_bundle_study_cannot_overwrite_native_producer_input
+    with pytest.raises(api.PlanError, match="cannot replace"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+____ test_bundle_study_cannot_overwrite_native_producer_input[True-corpus] ____
+tests\test_plan_study.py:572: in test_bundle_study_cannot_overwrite_native_producer_input
+    with pytest.raises(api.PlanError, match="cannot replace"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+___ test_bundle_study_cannot_overwrite_native_producer_input[True-quality] ____
+tests\test_plan_study.py:572: in test_bundle_study_cannot_overwrite_native_producer_input
+    with pytest.raises(api.PlanError, match="cannot replace"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+=========================== short test summary info ===========================
+FAILED tests/test_plan_study.py::test_bundle_study_cannot_overwrite_native_producer_input[False-corpus]
+FAILED tests/test_plan_study.py::test_bundle_study_cannot_overwrite_native_producer_input[False-quality]
+FAILED tests/test_plan_study.py::test_bundle_study_cannot_overwrite_native_producer_input[True-corpus]
+FAILED tests/test_plan_study.py::test_bundle_study_cannot_overwrite_native_producer_input[True-quality]
+4 failed, 1 passed, 54 deselected in 4.01s
