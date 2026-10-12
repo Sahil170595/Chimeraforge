@@ -34,6 +34,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - vLLM, TGI and SGLang deployment/launch commands retain the resolved commit. Ollama cannot represent an HF revision and refuses that conversion.
 - Offline checkpoint rechecks distinguish producing metadata, unknown current moving refs and unverified served weights; `check --network` explicitly refreshes Hub metadata and requested-ref state. Existing v1/v2 snapshots remain loadable without inventing missing identity.
 
+## [0.59.0] - 2026-10-12
+
+### Frozen-context workload and cost sensitivity
+
+- `study PLAN_OR_BUNDLE --cases cases.json` and typed `PlanScenario`/`study_plan` APIs compare bounded explicit workload, context, SLO, budget, duty and cost assumptions through the ordinary planner.
+- Every case consumes the same verified coefficients/quality and bound model/GPU/platform, with current engine-support, cloud, grid, unsigned quarantine and time observations captured once. Policy/registry changes abort rather than mix contexts.
+- Reports retain infeasible cases and native gate reasons, recommendation/configuration changes, provenance and native-unit estimated deltas, with original versus current fact scope explicit. Operator hourly GPU cost is separate from physical geometry and cannot replace cloud instance pricing.
+- Input/output collision guards preserve producer files; legacy unbound plans and unsupported changes refuse clearly. Existing installed wheel/sdist acceptance exercises actual CLI and Python studies without new models or jobs; the introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955013473); release publication repeats qualification on the versioned artifacts.
+
+### Validation
+- Released independently from PR #113; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.58.0] - 2026-10-12
+
+### Portable saved-plan handoff
+
+- `bundle create/verify/check` and typed Python APIs preserve original plan bytes/fingerprint/producer paths while carrying exactly bound corpus and quality files, including implicitly consumed measured corpora.
+- Strict role membership, SHA256/byte sizes, bounded reads and input-semantic checks reject substituted, missing, extra, linked or malformed inputs. Creation validates dependencies before atomically publishing a staged directory.
+- Offline shared-planner replay consumes held verified bytes after relocation and producer removal, exposes producer/local source receipts separately, and retains current tool/policy/hardware/price/cloud checks. Verification remains content integrity, not source authentication, served-weight proof or performance qualification.
+- Legacy missing byte bindings and nonempty contribution file dependencies are actionable refusals. Sharing harness inputs may disclose private data. Existing installed wheel/sdist consumers now accept a Linux-produced handoff on every supported OS; Release publication repeats hosted qualification on the exact versioned artifacts.
+
+### Validation
+- Released independently from PR #112; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.57.0] - 2026-10-12
+
+### Added
+- Immutable Hugging Face checkpoint metadata through resolution, saved plans, deployment export and recheck. Online resolution establishes one commit before reading config; receipts bind consumed config bytes and declared weight metadata without downloading weights.
+- `plan --revision REF` for one model, repeated `--revision MODEL=REF` for multiple models, and Python `PlanRequest.model_revisions` / `resolve_spec(hf_revision=...)`. Explicit revisions refuse unavailable offline targets rather than substitute another cache or registry approximation.
+- vLLM, TGI and SGLang deployment/launch commands retain the resolved commit. Ollama cannot represent an HF revision and refuses that conversion.
+- Offline checkpoint rechecks distinguish producing metadata, unknown current moving refs and unverified served weights; `check --network` explicitly refreshes Hub metadata and requested-ref state. Existing v1/v2 snapshots remain loadable without inventing missing identity.
+
+### Validation
+- Released independently from PR #111; the publishing workflow validates and attests the exact versioned distributions before publication.
+- Registry readiness also requires the pinned uv resolver's supported dry-run with the MCP SDK child environment, under the existing deadline. Only an unavailable exact release is polled; other resolver failures stop publication. The same resolver path qualifies the built candidate before one MCP probe. Public file visibility alone did not qualify uv in the v0.56.1 first attempt; its registry-only retry passed at the unchanged tag, and the historical CDN cause remains unconfirmed.
+
+## [0.56.1] - 2026-10-12
+
+### Changed
+- The CLI README documents the individually released saved-plan check/benchmark/monitor, Streamable HTTP MCP and contribution review/replay workflows.
+- Deployment examples select a matching saved vLLM/FP16/single-replica candidate before using a versioned engine image and carry explicit SLOs into subsequent commands. No runtime implementation changes.
+
+### Validation
+- Released independently from PR #110; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.56.0] - 2026-10-12
+
+### Added
+- `contribute review` and `contribute replay` plus typed APIs produce fingerprinted receipts for explicit dispositions and bounded new executions of unsigned legacy contributions.
+- Receipts preserve missing original bindings, actual counts, unknown timing and hardware/backend mismatches without changing quarantine or promoting unsigned declarations into trusted measurements.
+- Registry publication waits for exact version filenames and SHA256 visibility in both PyPI JSON and the installer's Simple API before the public runtime probe. CPU acceptance logs only aggregate hardware states and before/after device/size/context fields, retaining strict mismatch and qualification assertions.
+
+### Validation
+- Released independently from PR #109; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.55.0] - 2026-10-12
+
+### Added
+- `mcp --transport streamable-http` exposes the native MCP transport on loopback with server-owned network policy, bounded sessions/body sizes and fixed synchronous-tool admission.
+- Timeout or client cancellation does not release an occupied worker until its underlying work finishes. Protocol controls remain responsive and shutdown drains owned workers. Stdio remains available.
+- Registry runtime arguments use the supported `--with` extra pinned to the advertised package version and omit the incompatible PyPI root index URL. The actual metadata-generated command is exercised against the built candidate before publishing and against public PyPI before registry publication.
+- The real five-tool HTTP integration client now waits for the server's existing response deadline plus transport margin; production deadlines, admission limits and adversarial test budgets are unchanged.
+
+### Validation
+- Released independently from PR #108; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.54.0] - 2026-10-12
+
+### Added
+- Plan-bound `monitor` and typed `api.monitor_plan` carry saved TTFT/TPOT targets into bounded passive monitoring and bracket completed windows with serving metadata.
+- Native SLO outcomes remain separate from model/backend binding; missing geometry, workload, replica topology or immutable weights stays unverified. Cancellation retains bounded cooperative adapter cleanup.
+
+### Validation
+- Released independently from PR #107; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.53.0] - 2026-10-12
+
+### Added
+- Plan-bound `bench` and typed `api.benchmark_plan` compare one saved candidate with observed serving configuration and native request measurements.
+- Receipts retain actual prompt/output counts, cache observations, request failures and model/hardware/backend contradictions. Single-stream, fleet, queueing and immutable-weight claims remain distinct.
+
+### Validation
+- Released independently from PR #106; the publishing workflow validates and attests the exact versioned distributions before publication.
+
+## [0.52.0] - 2026-10-12
+
+### Added
+- `check` and typed `api.check_plan` recheck saved deployment plans against current offline facts, retaining changed inputs, native gate reasons, candidate transitions and modeled deltas.
+- Newly saved plans bind resolved model/hardware/platform facts, consumed corpus and quality bytes, cloud context and contribution membership for offline replay without reprobe or input mutation.
+- Released schema-v1 plans retain partial checks with unavailable bindings explicit. Unchanged recommendations do not establish serving performance or immutable weights.
+
+### Validation
+- Released independently from PR #105. The exact versioned candidate is validated by the publishing workflow, including installed distributions, actual CPU serving and MCP container calls.
+
 ## [0.51.0] - 2026-10-08
 
 ### Added
