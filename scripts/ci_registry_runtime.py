@@ -5,8 +5,72 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import time
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 PACKAGE = "chimeraforge"
+MAX_INDEX_WAIT_SECONDS = 300
+INDEX_POLL_SECONDS = 10
+INDEX_REQUEST_TIMEOUT_SECONDS = 15
+
+
+def public_files_ready(release: dict, simple: dict, version: str) -> bool:
+    """JSON visibility alone does not prove the installer's exact files are indexed."""
+    if release.get("info", {}).get("version") != version:
+        return False
+    files = release.get("urls", [])
+    if len(files) != 2 or {row["packagetype"] for row in files} != {"bdist_wheel", "sdist"}:
+        return False
+    if any(row["yanked"] is not False for row in files):
+        return False
+    expected = {row["filename"]: row["digests"]["sha256"] for row in files}
+    indexed = {row["filename"]: row for row in simple.get("files", [])}
+    return len(expected) == 2 and all(
+        name in indexed
+        and indexed[name]["hashes"].get("sha256") == digest
+        and indexed[name].get("yanked") is False
+        for name, digest in expected.items()
+    )
+
+
+def wait_for_public_files(version: str) -> None:
+    """Poll exact version/file/hash readiness; the application probe runs only once."""
+    deadline = time.monotonic() + MAX_INDEX_WAIT_SECONDS
+    attempt = 0
+    while time.monotonic() < deadline:
+        attempt += 1
+        payloads = []
+        for url in (
+            f"https://pypi.org/pypi/{PACKAGE}/{version}/json",
+            f"https://pypi.org/simple/{PACKAGE}/",
+        ):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError(
+                    "PyPI exact files did not become installable within the deadline"
+                )
+            request = Request(url, headers={"Accept": "application/vnd.pypi.simple.v1+json"})
+            try:
+                with urlopen(
+                    request, timeout=min(INDEX_REQUEST_TIMEOUT_SECONDS, remaining)
+                ) as response:
+                    payloads.append(json.loads(response.read()))
+            except HTTPError as error:
+                if error.code != 404:
+                    raise
+                payloads.append({})
+        ready = public_files_ready(*payloads, version)
+        print(
+            json.dumps(
+                {"pypi_index_readiness": {"version": version, "attempt": attempt, "ready": ready}}
+            ),
+            flush=True,
+        )
+        if ready:
+            return
+        time.sleep(min(INDEX_POLL_SECONDS, max(0, deadline - time.monotonic())))
+    raise TimeoutError("PyPI exact files did not become installable within the deadline")
 
 
 def registry_command(
@@ -40,6 +104,7 @@ def main() -> int:
     parser.add_argument("--metadata", type=Path, default=Path("server.json"))
     parser.add_argument("--expect-version")
     parser.add_argument("--candidate-dist", type=Path)
+    parser.add_argument("--wait-pypi", action="store_true")
     args = parser.parse_args()
     expected = args.expect_version
     if expected is None:
@@ -48,6 +113,9 @@ def main() -> int:
         expected = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
     command = registry_command(metadata, expected, args.candidate_dist)
+    if args.wait_pypi:
+        assert args.candidate_dist is None, "index readiness is for the public invocation only"
+        wait_for_public_files(expected)
     from probe_mcp_stdio import probe
 
     info, tools = probe(command)

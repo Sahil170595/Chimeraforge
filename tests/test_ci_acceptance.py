@@ -56,7 +56,7 @@ def test_cpu_probe_refuses_corrupt_download_before_installing(tmp_path):
         script.verify_sha256(artifact, "0" * 64)
 
 
-def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification():
+def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification(capsys):
     script = load_script("ci_cpu_serving")
     report = {
         "kind": "chimeraforge.plan-benchmark",
@@ -65,7 +65,7 @@ def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification():
             "requested_count": 3,
             "successful_count": 3,
             "failed_count": 0,
-            "serving_after": {"loaded_gpu_bytes": 0},
+            "serving_after": {"loaded_gpu_bytes": 0, "private_response": "ci-private-sentinel"},
         },
         "binding": {
             "hardware": {"state": "mismatch", "observed": {"device": "cpu"}},
@@ -94,9 +94,53 @@ def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification():
     }
     saved = {"fingerprint": "a" * 64}
     script.validate_plan_benchmark(report, saved, 3)
+    import json
+
+    output = capsys.readouterr().out
+    diagnostic = json.loads(output)["plan_benchmark_hardware_observation"]
+    assert diagnostic["hardware_state"] == "mismatch"
+    assert diagnostic["after"]["loaded_gpu_bytes"] == 0
+    assert "ci-private-sentinel" not in output
     report["audit"]["slo"]["state"] = "pass"
     with pytest.raises(AssertionError):
         script.validate_plan_benchmark(report, saved, 3)
+
+
+@pytest.mark.parametrize("index_state", ["missing", "partial", "wrong_hash", "yanked", "ready"])
+def test_registry_wait_requires_exact_simple_api_files_and_hashes(index_state):
+    script = load_script("ci_registry_runtime")
+    release = {
+        "info": {"version": "0.55.0"},
+        "urls": [
+            {
+                "filename": "chimeraforge-0.55.0-py3-none-any.whl",
+                "packagetype": "bdist_wheel",
+                "digests": {"sha256": "a" * 64},
+                "yanked": False,
+            },
+            {
+                "filename": "chimeraforge-0.55.0.tar.gz",
+                "packagetype": "sdist",
+                "digests": {"sha256": "b" * 64},
+                "yanked": False,
+            },
+        ],
+    }
+    files = [
+        {"filename": row["filename"], "hashes": row["digests"], "yanked": False}
+        for row in release["urls"]
+    ]
+    if index_state == "missing":
+        files = []
+    elif index_state == "partial":
+        files = files[:1]
+    elif index_state == "wrong_hash":
+        files[0] = {**files[0], "hashes": {"sha256": "c" * 64}}
+    elif index_state == "yanked":
+        files[0] = {**files[0], "yanked": True}
+    assert script.public_files_ready(release, {"files": files}, "0.55.0") == (
+        index_state == "ready"
+    )
 
 
 @pytest.mark.parametrize("invalid", ["zero tokens", "lost run", "wrong backend", "nonfinite"])
