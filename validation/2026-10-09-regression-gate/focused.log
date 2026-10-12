@@ -1,0 +1,19 @@
+........................................................................ [ 63%]
+..........................................                               [100%]
+============================== warnings summary ===============================
+tests/test_regression_gate.py::test_actual_public_saved_benchmark_runner_supplies_gate_clock_and_coverage
+  C:\tmp\cf-release-051-20261008\src\chimeraforge\bench\metrics.py:160: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+    import pynvml  # type: ignore[import-untyped]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                                    Stmts   Miss Branch BrPart  Cover   Missing
+-----------------------------------------------------------------------------------
+src\chimeraforge\bench\gate.py            247      9    110      9    95%   86, 90, 105, 218, 224, 331, 406, 497, 506
+src\chimeraforge\bench\gate_inputs.py     145     16     86     14    87%   55-56, 93, 95, 133, 139, 154, 159, 172, 197, 199, 203, 216, 218, 233, 240
+-----------------------------------------------------------------------------------
+TOTAL                                     392     25    196     23    92%
+Coverage JSON written to file C:\tmp\cf-next-pr-receipts-20261008\regression-gate-final-coverage.json
+114 passed, 1 warning in 14.37s

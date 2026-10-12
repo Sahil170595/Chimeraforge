@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.61.0] - 2026-10-12
+
+### Scope-aware measured regression gates
+
+- `gate` and typed `gate_benchmarks` apply nonempty native metric rules to exactly declared ordered baseline/candidate populations; every pair is retained, so a favorable average cannot hide a failed pair.
+- Strict bounded held receipt reads verify fingerprints, native sample counts and recalculated aggregates; complete workload/actual lengths, before/after observed controls and paired intentional treatments govern eligibility. Persisted planner audits and client GPU labels are not evidence.
+- Complete output-token/client-wall rates remain distinct from Ollama server and SSE client decode/prefill/request timing bases. Default missing-cache refusal and an explicit absence-only opt-out preserve unknown scope and known drift; malformed, regression and inconclusive results have separate API/CLI outcomes.
+- Defensive atomic receipts protect all consumed inputs/policies and retain byte identities without private options or arbitrary provider payloads. Existing installed wheel/sdist protocol acceptance and two actual hosted CPU benchmark executions are wired without shared-machine performance thresholds; The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37959314609); release publication repeats qualification on the versioned artifacts.
+
+### Validation
+- Released independently from PR #115; the publishing workflow validates and attests the exact versioned distributions before publication.
+- Public resolver failures retain bounded categorical hints and only package names already present in the canonical public-PyPI lock, without raw clauses, URLs, paths or response bodies. Retry and application-probe policy remains unchanged. The original v0.60.0 resolver cause is unconfirmed; its registry-only retry passed at the unchanged tag.
+
 ## [0.60.0] - 2026-10-12
 
 ### Real request-trace replay

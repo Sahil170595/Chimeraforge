@@ -1,0 +1,11 @@
+{
+  "basis": "SHA256 of canonical committed Git bytes",
+  "implementation_commit": "c4f03125378e539775cc804f753ffedb98b074ce",
+  "files": {
+    "README.md": "4d882445b70d00e9c29809b799dae0b8d2175a17b2c48be0575d625e5b1434c5",
+    "collection.log": "e48e4aef78a3532185aeba5240589726d721b311bde1af4f59e57fbc69c42151",
+    "focused.log": "da8c9e29f4eb75d2f07d2c637a9c71c465eaab7633c46ad6803f0501508f79c9",
+    "lint.log": "063f31333e09cef94ba0ad9f35aee715f1e92e293387ba70029e637639533384",
+    "red-summary.json": "5f9ec3adc83ec546219cc4d0551319022faa08de48fea98c9d30db452736f06f"
+  }
+}

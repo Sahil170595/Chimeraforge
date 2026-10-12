@@ -1,0 +1,10 @@
+Ruff exact CI paths: exit0
+All checks passed!
+
+Ruff format exact CI paths: exit0
+121 files already formatted
+
+mypy configured paths: exit0
+Success: no issues found in 2 source files
+
+actionlint: exit0

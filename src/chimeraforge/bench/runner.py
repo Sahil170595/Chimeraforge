@@ -19,6 +19,7 @@ from typing import Callable
 from chimeraforge.bench.backends import get_backend
 from chimeraforge.bench.backends.base import Backend, backend_lifecycle
 from chimeraforge.bench.metrics import (
+    BENCHMARK_WALL_BASIS,
     BenchmarkResult,
     RunMetrics,
     aggregate_runs,
@@ -295,6 +296,7 @@ async def run_benchmark(
                 successful_count=len(run_results),
                 failed_count=profile.total_requests - len(run_results),
                 elapsed_seconds=elapsed_seconds,
+                elapsed_seconds_basis=BENCHMARK_WALL_BASIS,
                 queue_basis="request timing begins after client semaphore; client queue excluded",
             )
 

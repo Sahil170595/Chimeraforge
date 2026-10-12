@@ -243,3 +243,84 @@ def test_native_failure_diagnostic_identifies_loader_without_raw_body(monkeypatc
     assert diagnostic["library"] == "libpython3.12.so.1.0"
     assert diagnostic["version"] == "0.57.0" and diagnostic["exit_code"] == 2
     assert "private-response-sentinel" not in output
+
+
+@pytest.mark.parametrize(
+    "clause,shape,names",
+    [
+        ("there is no version of chimeraforge==0.61.0", "singleton", ["chimeraforge"]),
+        ("there are no versions of chimeraforge", "plural", ["chimeraforge"]),
+        ("there is no version of chimeraforge[mcp]==0.61.0", "extra", ["chimeraforge"]),
+        ("there are no versions of mcp", "none", ["mcp"]),
+        ("there are no versions of private-package-sentinel", "none", []),
+    ],
+)
+def test_resolution_context_logs_only_public_aggregate_facts(clause, shape, names):
+    module = script()
+    error = (
+        f"No solution found. Because {clause}; requires Python >=3.13. "
+        "https://owner:secret@private.test/path?token=secret private-response-sentinel"
+    )
+    context = module.resolution_context(error, "0.61.0", {"chimeraforge", "mcp"})
+    assert context["no_solution"] is True and context["root_absence_shape"] == shape
+    assert context["missing_public_packages"] == names
+    assert context["cause_hints"] == ["requires_python"]
+    encoded = json.dumps(context)
+    assert "secret" not in encoded and "private" not in encoded and "https" not in encoded
+
+
+@pytest.mark.parametrize(
+    "error,hint",
+    [
+        ("No compatible wheel tags", "wheel_tag"),
+        ("Invalid metadata from upstream", "invalid_metadata"),
+        ("HTTP status code 503 for private-response-sentinel", "http_status"),
+        (
+            "An index URL (https://private.test) could not be queried (401 Unauthorized)",
+            "http_status",
+        ),
+        ("An index (https://private.test) returned a 403 Forbidden error", "http_status"),
+        ("requires-python >=3.13", "requires_python"),
+        (
+            "The Python interpreter uses a Python version "
+            "that is not supported by your dependencies",
+            "requires_python",
+        ),
+        ("we only found wheels with the following Python ABI tags", "wheel_tag"),
+        ("we only found wheels with the following Python implementation tags", "wheel_tag"),
+        (
+            "Metadata for mcp (v1.30) could not be parsed: private-response-sentinel",
+            "invalid_metadata",
+        ),
+        (
+            "Metadata for mcp (v1.30) could not be fetched; "
+            "the server returned: 503 private-response-sentinel",
+            "http_status",
+        ),
+        ("private-response-sentinel", "unknown"),
+    ],
+)
+def test_resolution_hint_categories_are_bounded(error, hint):
+    module = script()
+    context = module.resolution_context(error, "0.61.0", {"chimeraforge"})
+    assert context["cause_hints"] == [hint]
+    assert "private-response-sentinel" not in json.dumps(context)
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        "Because there are no versions of chimeraforge and you require chimeraforge==0.61.0",
+        "Because there is no version of chimeraforge[mcp]==0.61.0 "
+        "and you require chimeraforge[mcp]==0.61.0",
+    ],
+)
+def test_diagnostic_absence_variants_do_not_broaden_retries(monkeypatch, error):
+    module = script()
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, "", error),
+    )
+    with pytest.raises(RuntimeError, match="resolution failed"):
+        module.public_resolution_ready("0.61.0", 7)

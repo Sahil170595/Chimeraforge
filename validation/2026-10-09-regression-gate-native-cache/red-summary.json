@@ -1,0 +1,23 @@
+{
+  "scope": "hashes of original retained failure-log bytes; no inference or final hosted success claim",
+  "outputs": [
+    {
+      "file": "cpu-gate-oracle-red.log",
+      "cause": "Missing native-derived validator",
+      "result": "16 failed,19 deselected in1.06s",
+      "sha256": "876091b5b7ef0edd76ca2acad7bdebb97e05b1c98c9390b75509fc9023e91425"
+    },
+    {
+      "file": "cpu-gate-cli-outcomes-red.log",
+      "cause": "Explicit native CLI outcome set unsupported; operational2 already refused",
+      "result": "3 failed,1 passed,35 deselected in1.11s",
+      "sha256": "d8c9b9c69885d36acd4da0eb62a2daabf0c91cbbbc0f1803d539de6d8765f34f"
+    },
+    {
+      "file": "hosted-115-cpu-first-failure.log",
+      "cause": "CPU consumer asserted both cache states unknown after native gate exit3 check",
+      "result": "Hosted failure; no retained complete native aggregate",
+      "sha256": "79d65b5a3a2403934755c44cc49d65285e0e93c2932a0e675fe734a9752b9cbd"
+    }
+  ]
+}

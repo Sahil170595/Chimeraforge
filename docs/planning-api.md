@@ -92,7 +92,9 @@ snapshot or turn unsigned quarantine data into trusted measurements.
 ## Frozen-context sensitivity
 
 For real endpoint requests with scheduled arrivals and queue-inclusive timing,
-use the separate [typed request-trace API](trace-replay.md). A modeled study
+use the separate [typed request-trace API](trace-replay.md). Apply explicit
+engineering policies to complete saved benchmark populations with the
+[measured regression gate](regression-gate.md). A modeled study
 does not substitute for a measured trace.
 
 This feature is available in Chimeraforge 0.59.0. Install `pip install "chimeraforge==0.59.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955013473); each release separately qualifies its versioned artifacts.

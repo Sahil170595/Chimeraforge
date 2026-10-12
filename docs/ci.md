@@ -68,5 +68,7 @@ resolver's supported dry-run under one deadline, using the MCP SDK child environ
 Only an unavailable exact release is polled; other resolution failures stop publication.
 The existing installed-distribution job exercises the same resolver against the candidate
 wheel. Each path runs its MCP application probe once after resolution qualifies.
+Resolver failures expose bounded public-package names and categorical diagnostic hints,
+without raw clauses, URLs, paths or response bodies. Hints never widen the retry policy.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.
