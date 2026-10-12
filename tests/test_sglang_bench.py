@@ -27,13 +27,45 @@ from chimeraforge.planner.provenance import PROV_MEASURED, prov_class
 
 
 def _sse(chunks: list[dict]) -> bytes:
+    choices = [row["choices"][0] for row in chunks if row.get("choices")]
+    if choices:
+        choices[-1]["finish_reason"] = "stop"
     lines = [f"data: {json.dumps(c)}\n\n" for c in chunks]
     lines.append("data: [DONE]\n\n")
     return "".join(lines).encode("utf-8")
 
 
-def _text_chunk(text: str) -> dict:
-    return {"id": "x", "object": "text_completion", "choices": [{"index": 0, "text": text}]}
+class _Packets(httpx.AsyncByteStream):
+    """Explicit native arrival packets; final metadata shares the last packet."""
+
+    def __init__(self, body):
+        self.packets = []
+        for frame in body.split(b"\n\n"):
+            if not frame:
+                continue
+            if self.packets and (frame == b"data: [DONE]" or b'"choices": []' in frame):
+                self.packets[-1] += frame + b"\n\n"
+            else:
+                self.packets.append(frame + b"\n\n")
+
+    async def __aiter__(self):
+        for packet in self.packets:
+            yield packet
+
+
+def _text_chunk(text: str, ids=None) -> dict:
+    return {
+        "id": "x",
+        "object": "text_completion",
+        "choices": [
+            {
+                "index": 0,
+                "text": text,
+                "token_ids": [1] if ids is None else ids,
+                "finish_reason": None,
+            }
+        ],
+    }
 
 
 def _usage_chunk(prompt: int, completion: int) -> dict:
@@ -128,7 +160,7 @@ class TestGenerate:
         """
         body = _sse([_text_chunk(t) for t in "abcde"] + [_usage_chunk(12, 5)])
         clock = _Clock([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
-        m = await _backend(lambda req: httpx.Response(200, content=body), clock).generate(
+        m = await _backend(lambda req: httpx.Response(200, stream=_Packets(body)), clock).generate(
             "m", "hello"
         )
         assert m.tokens_generated == 5
@@ -141,9 +173,13 @@ class TestGenerate:
     @pytest.mark.asyncio
     async def test_token_count_comes_from_usage_not_chunk_count(self):
         """A chunk can carry several tokens; counting chunks would under-report."""
-        body = _sse([_text_chunk("ab"), _text_chunk("cd"), _usage_chunk(3, 9)])
+        body = _sse(
+            [_text_chunk("ab", [10]), _text_chunk("cd", list(range(11, 19))), _usage_chunk(3, 9)]
+        )
         clock = _Clock([0.0, 0.1, 0.5, 0.6])
-        m = await _backend(lambda req: httpx.Response(200, content=body), clock).generate("m", "p")
+        m = await _backend(lambda req: httpx.Response(200, stream=_Packets(body)), clock).generate(
+            "m", "p"
+        )
         assert m.tokens_generated == 9
         assert m.throughput_tps == pytest.approx(8 / 0.4)
 
@@ -155,7 +191,7 @@ class TestGenerate:
             seen.update(json.loads(req.content))
             seen["path"] = req.url.path
             return httpx.Response(
-                200, content=_sse([_text_chunk("a"), _text_chunk("b"), _usage_chunk(1, 2)])
+                200, stream=_Packets(_sse([_text_chunk("a"), _text_chunk("b"), _usage_chunk(1, 2)]))
             )
 
         await _backend(handler, _Clock([0, 1, 2, 3])).generate(
@@ -174,7 +210,7 @@ class TestGenerate:
         body = _sse([_text_chunk("a"), _text_chunk("b")])
         with pytest.raises(RuntimeError, match="usage"):
             await _backend(
-                lambda req: httpx.Response(200, content=body), _Clock([0, 1, 2, 3])
+                lambda req: httpx.Response(200, stream=_Packets(body)), _Clock([0, 1, 2, 3])
             ).generate("m", "p")
 
     @pytest.mark.asyncio
@@ -182,7 +218,7 @@ class TestGenerate:
         body = _sse([_text_chunk("a"), _usage_chunk(1, 1)])
         with pytest.raises(RuntimeError, match="decode"):
             await _backend(
-                lambda req: httpx.Response(200, content=body), _Clock([0, 1, 2])
+                lambda req: httpx.Response(200, stream=_Packets(body)), _Clock([0, 1, 2])
             ).generate("m", "p")
 
     @pytest.mark.asyncio

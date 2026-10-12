@@ -14,11 +14,19 @@ from collections.abc import Callable
 
 import httpx
 
-from chimeraforge.bench.backends._streaming import stream_openai_completion
-from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
+from chimeraforge.bench.backends._native_stream import legacy_metrics, observe_openai
+from chimeraforge.bench.backends.base import (
+    Backend,
+    GenerationObservation,
+    fetch_json_field,
+    identity_message,
+)
 from chimeraforge.bench.metrics import RunMetrics
 
 logger = logging.getLogger(__name__)
+REQUEST_TIMEOUT_S = 300
+DEFAULT_MAX_TOKENS = 256
+DEFAULT_TEMPERATURE = 0.7
 
 
 class VLLMBackend(Backend):
@@ -40,7 +48,7 @@ class VLLMBackend(Backend):
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=300, transport=self._transport)
+            self._client = httpx.AsyncClient(timeout=REQUEST_TIMEOUT_S, transport=self._transport)
         return self._client
 
     async def close(self) -> None:
@@ -110,25 +118,34 @@ class VLLMBackend(Backend):
         prompt: str,
         options: dict | None = None,
     ) -> RunMetrics:
-        """Stream POST /v1/completions; decode = (tokens - 1) / first-to-last token.
+        """Legacy bench requires qualified native client timing and visible TTFT."""
+        return legacy_metrics(
+            await self.generate_observed(model, prompt, options or {}, lambda: None)
+        )
 
-        This reported completion tokens over wall clock -- prefill included -- as
-        the decode rate that `measure` files into the corpus.
-
-        Raises:
-            httpx.HTTPStatusError: The server rejected the request.
-            RuntimeError: No usage block, or too few tokens to time a decode.
-        """
-        opts = options or {}
+    async def generate_observed(
+        self,
+        model: str,
+        prompt: str,
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        """Retain completed requests even when native decode timing is unavailable."""
+        opts = options
         payload = {
             "model": model,
             "prompt": prompt,
-            "max_tokens": opts.get("max_tokens", 256),
-            "temperature": opts.get("temperature", 0.7),
+            "max_tokens": opts.get("max_tokens", DEFAULT_MAX_TOKENS),
+            "temperature": opts.get("temperature", DEFAULT_TEMPERATURE),
         }
         client = await self._get_client()
-        return await stream_openai_completion(
-            client, f"{self.base_url}/v1/completions", payload, self._clock, "vLLM", 300
+        return await observe_openai(
+            client,
+            f"{self.base_url}/v1/completions",
+            payload,
+            self._clock,
+            REQUEST_TIMEOUT_S,
+            on_first_output,
         )
 
     async def get_version(self) -> str | None:

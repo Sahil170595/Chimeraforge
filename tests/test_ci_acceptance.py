@@ -22,6 +22,27 @@ def load_script(name):
     return module
 
 
+def test_native_stream_consumer_protocol_through_public_trace_cli(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    script = load_script("ci_native_stream")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: None)
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == expected_code, result.output
+        return result.output
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    receipt = script.accept(tmp_path, {}, tmp_path / "checkout")
+    assert receipt["backends"] == ["vllm", "sglang", "tgi"]
+    assert receipt["outcomes"] == ["single", "overcap", "abort", "incomplete"]
+    assert receipt["gpu_engine_execution"] == "unverified"
+    assert receipt["server_cleanup"] == "completed"
+
+
 def test_regression_gate_installed_consumer_protocol_through_real_cli(tmp_path, monkeypatch):
     """Source-only harness proof; hosted installed consumers retain their origin guard."""
     import json

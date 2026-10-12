@@ -15,8 +15,13 @@ from collections.abc import Callable
 
 import httpx
 
-from chimeraforge.bench.backends._streaming import stream_openai_completion
-from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
+from chimeraforge.bench.backends._native_stream import legacy_metrics, observe_openai
+from chimeraforge.bench.backends.base import (
+    Backend,
+    GenerationObservation,
+    fetch_json_field,
+    identity_message,
+)
 from chimeraforge.bench.metrics import RunMetrics
 
 logger = logging.getLogger(__name__)
@@ -123,13 +128,20 @@ class SGLangBackend(Backend):
         prompt: str,
         options: dict | None = None,
     ) -> RunMetrics:
-        """Stream POST /v1/completions; time first and last token client-side.
+        """Legacy bench requires qualified native client timing and visible TTFT."""
+        return legacy_metrics(
+            await self.generate_observed(model, prompt, options or {}, lambda: None)
+        )
 
-        Raises:
-            httpx.HTTPStatusError: The server rejected the request.
-            RuntimeError: No usage block, or too few tokens to time a decode.
-        """
-        opts = options or {}
+    async def generate_observed(
+        self,
+        model: str,
+        prompt: str,
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        """Retain completed requests even when native decode timing is unavailable."""
+        opts = options
         payload = {
             "model": model,
             "prompt": prompt,
@@ -137,13 +149,13 @@ class SGLangBackend(Backend):
             "temperature": opts.get("temperature", DEFAULT_TEMPERATURE),
         }
         client = await self._get_client()
-        return await stream_openai_completion(
+        return await observe_openai(
             client,
             f"{self.base_url}/v1/completions",
             payload,
             self._clock,
-            "SGLang",
             REQUEST_TIMEOUT_S,
+            on_first_output,
         )
 
     async def get_version(self) -> str | None:

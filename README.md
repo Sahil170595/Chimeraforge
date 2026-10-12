@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-12).** This README documents [Chimeraforge 0.61.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.61.0). The workflows below are available in this version.
+**Release scope (2026-10-12).** The published version is [Chimeraforge 0.61.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.61.0). This branch prepares **0.62.0**, adding native streaming trace observations for vLLM, SGLang and TGI. Those changes require the candidate source or wheel until release; the other workflows below are available in 0.61.0.
 
 ```bash
 pip install "chimeraforge[mcp]==0.61.0"
@@ -625,6 +625,15 @@ Ollama streaming observes first output directly, while its native prefill time
 stays separate. Mean decode time is labeled by its basis and does not prove an
 every-token target. Other adapters without a first-output capability report it
 unknown. Output caps are requests, with actual token counts recorded separately.
+
+**0.62.0 candidate:** `--backend vllm`, `sglang` or `tgi` now observes visible
+first output through native streaming. Native token IDs include EOS/control steps
+and must reconcile with final server counts; exceeding the requested cap refuses
+completion. Client mean decode timing requires complete IDs, one token at the
+first arrival and distinct first/last arrivals. A valid one-token or buffered
+completion retains counts and first output with decode timing unavailable.
+Missing IDs/cache counts remain unknown. These client timings are separate from
+server prefill and Ollama's server decode basis.
 
 Receipts contain prompt hashes rather than prompts or completions. Exit 0 means
 completed execution, including an SLO breach; 1 means incomplete/failed execution,

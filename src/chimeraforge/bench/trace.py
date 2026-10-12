@@ -34,6 +34,7 @@ T = TypeVar("T")
 BUILTIN_TPOT_BASES = {
     "server-decode-duration/output-token-count",
     "client-first-to-last-content/(server-output-count-1)",
+    "client-first-to-last-native-output/(server-output-count-1)",
 }
 NATIVE_FIELDS = {
     "tokens_generated",

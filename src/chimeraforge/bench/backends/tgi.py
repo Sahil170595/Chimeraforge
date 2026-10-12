@@ -15,11 +15,19 @@ from collections.abc import Callable
 
 import httpx
 
-from chimeraforge.bench.backends._streaming import StreamTiming, decode_metrics, parse_sse
-from chimeraforge.bench.backends.base import Backend, fetch_json_field, identity_message
+from chimeraforge.bench.backends._native_stream import legacy_metrics, observe_tgi
+from chimeraforge.bench.backends.base import (
+    Backend,
+    GenerationObservation,
+    fetch_json_field,
+    identity_message,
+)
 from chimeraforge.bench.metrics import RunMetrics
 
 logger = logging.getLogger(__name__)
+REQUEST_TIMEOUT_S = 300
+DEFAULT_MAX_TOKENS = 256
+DEFAULT_TEMPERATURE = 0.7
 
 
 class TGIBackend(Backend):
@@ -41,7 +49,7 @@ class TGIBackend(Backend):
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=300, transport=self._transport)
+            self._client = httpx.AsyncClient(timeout=REQUEST_TIMEOUT_S, transport=self._transport)
         return self._client
 
     async def close(self) -> None:
@@ -115,46 +123,39 @@ class TGIBackend(Backend):
         prompt: str,
         options: dict | None = None,
     ) -> RunMetrics:
-        """Stream POST /generate_stream; decode = (tokens - 1) / first-to-last token.
+        """Legacy bench requires qualified native client timing and visible TTFT."""
+        return legacy_metrics(
+            await self.generate_observed(model, prompt, options or {}, lambda: None)
+        )
 
-        This read ``details.decode_time`` from a non-streamed /generate when TGI
-        sent it, and otherwise divided tokens by wall clock -- prefill included --
-        while filing the result as a decode rate. Special tokens do not count as
-        content arrivals; the token count is the server-reported generated_tokens.
-
-        Raises:
-            httpx.HTTPStatusError: The server rejected the request.
-            RuntimeError: No final details, or too few tokens to time a decode.
-        """
-        opts = options or {}
+    async def generate_observed(
+        self,
+        model: str,
+        prompt: str,
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        """Observe native token events, including control tokens, through normal EOF."""
+        opts = options
         payload = {
             "inputs": prompt,
             "parameters": {
-                "max_new_tokens": opts.get("max_new_tokens", opts.get("max_tokens", 256)),
-                "temperature": opts.get("temperature", 0.7),
+                "max_new_tokens": opts.get(
+                    "max_new_tokens", opts.get("max_tokens", DEFAULT_MAX_TOKENS)
+                ),
+                "temperature": opts.get("temperature", DEFAULT_TEMPERATURE),
                 "details": True,
             },
         }
         client = await self._get_client()
-        timing = StreamTiming(t0=self._clock())
-        async with client.stream(
-            "POST", f"{self.base_url}/generate_stream", json=payload, timeout=300
-        ) as resp:
-            if resp.status_code >= 400:
-                await resp.aread()
-                resp.raise_for_status()
-            async for line in resp.aiter_lines():
-                event = parse_sse(line, "TGI")
-                if event is None:
-                    continue
-                token = event.get("token") or {}
-                if token.get("text") and not token.get("special"):
-                    timing.mark_token(self._clock())
-                details = event.get("details") or {}
-                if details.get("generated_tokens") is not None:
-                    timing.tokens = details["generated_tokens"]
-        timing.t_end = self._clock()
-        return decode_metrics(timing, "TGI", "final details (generated_tokens)")
+        return await observe_tgi(
+            client,
+            f"{self.base_url}/generate_stream",
+            payload,
+            self._clock,
+            REQUEST_TIMEOUT_S,
+            on_first_output,
+        )
 
     async def get_version(self) -> str | None:
         """GET /info -> the server ``Info``'s ``version`` (TGI v3.3.7 source), else None."""

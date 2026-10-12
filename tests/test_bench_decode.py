@@ -32,8 +32,30 @@ class _Clock:
 
 
 def _sse(events, done=True) -> bytes:
+    choices = [row["choices"][0] for row in events if row.get("choices")]
+    if choices:
+        choices[-1]["finish_reason"] = "stop"
     body = "".join(f"data: {json.dumps(e)}\n\n" for e in events)
     return (body + ("data: [DONE]\n\n" if done else "")).encode("utf-8")
+
+
+class _Packets(httpx.AsyncByteStream):
+    """One native event per arrival; final metadata shares the last packet."""
+
+    def __init__(self, body):
+        self.packets = []
+        for frame in body.split(b"\n\n"):
+            if not frame:
+                continue
+            metadata = frame == b"data: [DONE]" or b'"choices": []' in frame
+            if metadata and self.packets:
+                self.packets[-1] += frame + b"\n\n"
+            else:
+                self.packets.append(frame + b"\n\n")
+
+    async def __aiter__(self):
+        for packet in self.packets:
+            yield packet
 
 
 def _vllm(handler, clock=None):
@@ -45,7 +67,7 @@ def _tgi(handler, clock=None):
 
 
 def _text(t):
-    return {"choices": [{"index": 0, "text": t}]}
+    return {"choices": [{"index": 0, "text": t, "token_ids": [1], "finish_reason": None}]}
 
 
 def _usage(n):
@@ -76,7 +98,8 @@ class TestVLLM:
         The old wall-clock rate was 5 / 0.6 = 8.3."""
         body = _sse([_text(c) for c in "abcde"] + [_usage(5)])
         m = await _vllm(
-            lambda r: httpx.Response(200, content=body), _Clock([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+            lambda r: httpx.Response(200, stream=_Packets(body)),
+            _Clock([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
         ).generate("m", "p")
         assert m.throughput_tps == pytest.approx(10.0)
         assert m.ttft_ms == pytest.approx(100.0)
@@ -88,7 +111,7 @@ class TestVLLM:
 
         def handler(req):
             seen.update(json.loads(req.content))
-            return httpx.Response(200, content=_sse([_text("a"), _text("b"), _usage(2)]))
+            return httpx.Response(200, stream=_Packets(_sse([_text("a"), _text("b"), _usage(2)])))
 
         await _vllm(handler, _Clock([0, 1, 2, 3])).generate("m", "p", {"max_tokens": 32})
         assert seen["stream"] is True
@@ -99,9 +122,9 @@ class TestVLLM:
     async def test_no_usage_is_a_failed_run(self):
         body = _sse([_text("a"), _text("b")])
         with pytest.raises(RuntimeError, match="usage"):
-            await _vllm(lambda r: httpx.Response(200, content=body), _Clock([0, 1, 2, 3])).generate(
-                "m", "p"
-            )
+            await _vllm(
+                lambda r: httpx.Response(200, stream=_Packets(body)), _Clock([0, 1, 2, 3])
+            ).generate("m", "p")
 
 
 class TestTGI:
@@ -113,7 +136,7 @@ class TestTGI:
             )
         ]
         m = await _tgi(
-            lambda r: httpx.Response(200, content=_sse(events, done=False)),
+            lambda r: httpx.Response(200, stream=_Packets(_sse(events, done=False))),
             _Clock([0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
         ).generate("m", "p")
         assert m.tokens_generated == 5
@@ -122,19 +145,19 @@ class TestTGI:
 
     @pytest.mark.asyncio
     async def test_special_tokens_are_not_content_arrivals(self):
-        """A leading special token (e.g. BOS) must not start the decode clock."""
+        """Visible TTFT excludes control text; native timing includes its token."""
         events = [
             _tgi_token("<s>", special=True),
             _tgi_token("a"),
-            _tgi_token("b", details={"finish_reason": "eos_token", "generated_tokens": 2}),
+            _tgi_token("b", details={"finish_reason": "eos_token", "generated_tokens": 3}),
         ]
-        # ticks: t0, "a", "b", end  (the special token takes no tick)
         m = await _tgi(
-            lambda r: httpx.Response(200, content=_sse(events, done=False)),
-            _Clock([0, 0.2, 0.4, 0.5]),
+            lambda r: httpx.Response(200, stream=_Packets(_sse(events, done=False))),
+            _Clock([0, 0.1, 0.2, 0.4, 0.5]),
         ).generate("m", "p")
         assert m.ttft_ms == pytest.approx(200.0)
-        assert m.throughput_tps == pytest.approx(1 / 0.2)
+        assert m.tokens_generated == 3
+        assert m.throughput_tps == pytest.approx(2 / 0.3)
 
     @pytest.mark.asyncio
     async def test_request_asks_for_details_on_the_stream_route(self):
@@ -143,8 +166,11 @@ class TestTGI:
         def handler(req):
             seen["path"] = req.url.path
             seen.update(json.loads(req.content))
-            events = [_tgi_token("a"), _tgi_token("b", details={"generated_tokens": 2})]
-            return httpx.Response(200, content=_sse(events, done=False))
+            events = [
+                _tgi_token("a"),
+                _tgi_token("b", details={"generated_tokens": 2, "finish_reason": "length"}),
+            ]
+            return httpx.Response(200, stream=_Packets(_sse(events, done=False)))
 
         await _tgi(handler, _Clock([0, 1, 2, 3])).generate("m", "p")
         assert seen["path"] == "/generate_stream"
@@ -153,9 +179,9 @@ class TestTGI:
     @pytest.mark.asyncio
     async def test_no_final_details_is_a_failed_run(self):
         events = [_tgi_token("a"), _tgi_token("b")]
-        with pytest.raises(RuntimeError, match="generated_tokens"):
+        with pytest.raises(RuntimeError, match="final details"):
             await _tgi(
-                lambda r: httpx.Response(200, content=_sse(events, done=False)),
+                lambda r: httpx.Response(200, stream=_Packets(_sse(events, done=False))),
                 _Clock([0, 1, 2, 3]),
             ).generate("m", "p")
 
