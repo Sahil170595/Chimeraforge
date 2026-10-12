@@ -109,9 +109,6 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
             self.end_headers()
             self.wfile.write(raw)
 
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    worker = threading.Thread(target=server.serve_forever, daemon=True)
-    worker.start()
     backends = ["vllm", "sglang", "tgi"]
     outcomes = ["single", "overcap", "abort", "incomplete"]
     workload = [
@@ -125,6 +122,9 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
     source = cwd / "native-protocol-workload.json"
     raw = json.dumps(workload).encode()
     source.write_bytes(raw)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    worker = threading.Thread(target=server.serve_forever, daemon=True)
+    worker.start()
     try:
         for backend in backends:
             for mode in outcomes:

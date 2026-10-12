@@ -109,6 +109,7 @@ def public_resolution_ready(
 
     command = [
         "uv",
+        "--quiet",
         "pip",
         "install",
         "--dry-run",

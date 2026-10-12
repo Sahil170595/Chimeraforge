@@ -83,6 +83,7 @@ def test_native_readiness_uses_sdk_environment_and_dry_run(monkeypatch, status):
     command, options = calls[0]
     assert command == [
         "uv",
+        "--quiet",
         "pip",
         "install",
         "--dry-run",
