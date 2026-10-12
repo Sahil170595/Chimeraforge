@@ -24,6 +24,81 @@ UV_SIMPLE_ACCEPT = (
     "application/vnd.pypi.simple.v1+html;q=0.2, text/html;q=0.01"
 )
 PYTHON_LIBRARY_RE = re.compile(r"\blibpython\d+\.\d+\.so(?:\.\d+)*\b")
+ABSENT_PACKAGE_RE = re.compile(r"\bno versions? of ([A-Za-z0-9][A-Za-z0-9._-]*)")
+MAX_DIAGNOSTIC_PACKAGES = 32
+RESOLVER_HINTS = (
+    (
+        "requires_python",
+        re.compile(
+            r"requires? Python|Python requirement|requires-python|"
+            r"Python interpreter uses a Python version that is not supported by your dependencies",
+            re.I,
+        ),
+    ),
+    (
+        "wheel_tag",
+        re.compile(
+            r"compatible wheels?|wheel tags?|"
+            r"only found wheels.{0,256}Python (?:implementation|ABI) tags?",
+            re.I,
+        ),
+    ),
+    (
+        "invalid_metadata",
+        re.compile(
+            r"invalid metadata|failed to parse metadata|Metadata for .{0,256}could not be parsed",
+            re.I,
+        ),
+    ),
+    (
+        "http_status",
+        re.compile(
+            r"HTTP.*?status(?: code)?\s+[45]\d\d|"
+            r"An index(?: URL)?.{0,256}(?:401 Unauthorized|403 Forbidden)|"
+            r"the server returned:\s*`?[45]\d\d",
+            re.I,
+        ),
+    ),
+)
+
+
+def public_package_names() -> set[str]:
+    """Only names already declared in the checkout's canonical public-PyPI lock."""
+    if sys.version_info >= (3, 11):
+        import tomllib
+    else:
+        import tomli as tomllib
+
+    lock = Path(__file__).resolve().parents[1] / "uv.lock"
+    with lock.open("rb") as stream:
+        packages = tomllib.load(stream)["package"]
+    return {PACKAGE} | {
+        row["name"]
+        for row in packages
+        if row.get("source", {}).get("registry") == "https://pypi.org/simple"
+    }
+
+
+def resolution_context(error: str, version: str, public_names: set[str]) -> dict:
+    """Observed diagnostic hints, never raw clauses or a reason to widen retries."""
+    boundary = r"(?=\s|[,;]|$)"
+    shape = "none"
+    for label, pattern in (
+        ("singleton", rf"\bno version of {PACKAGE}=={re.escape(version)}{boundary}"),
+        ("plural", rf"\bno versions of {PACKAGE}{boundary}"),
+        ("extra", rf"\bno version of {PACKAGE}\[[^\]\s]+\]=={re.escape(version)}{boundary}"),
+    ):
+        if re.search(pattern, error):
+            shape = label
+            break
+    missing = sorted(set(ABSENT_PACKAGE_RE.findall(error)) & public_names)
+    hints = [name for name, pattern in RESOLVER_HINTS if pattern.search(error)]
+    return {
+        "no_solution": "no solution found" in error.lower(),
+        "root_absence_shape": shape,
+        "missing_public_packages": missing[:MAX_DIAGNOSTIC_PACKAGES],
+        "cause_hints": hints or ["unknown"],
+    }
 
 
 def public_resolution_ready(
@@ -62,6 +137,7 @@ def public_resolution_ready(
     if result.returncode == 1 and missing in error and f"you require {PACKAGE}" in error:
         return False
     diagnostic = {"version": version, "exit_code": result.returncode, "reason": "resolver_error"}
+    diagnostic.update(resolution_context(error, version, public_package_names()))
     library = PYTHON_LIBRARY_RE.search(error)
     if "error while loading shared libraries" in error and library is not None:
         diagnostic.update(reason="python_shared_library", library=library.group())

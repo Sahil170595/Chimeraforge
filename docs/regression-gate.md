@@ -1,8 +1,7 @@
-# Measured regression gates (unreleased source)
+# Measured regression gates
 
 `gate` applies a predeclared engineering policy to saved `bench --plan` receipts.
-It executes no requests. Published 0.51.0 does not contain this command: install
-the reviewed source checkout containing this feature.
+It executes no requests. This feature is available in Chimeraforge 0.61.0. Install `pip install "chimeraforge==0.61.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37959314609); each release separately qualifies its versioned artifacts.
 
 Save this policy as `policy.json`, then supply the actual receipt from every
 execution in its declared order. Never duplicate files to manufacture replicates.
