@@ -180,6 +180,22 @@ def validate_plan_benchmark(report: dict, saved: dict, runs: int) -> None:
     assert report["execution"]["requested_count"] == runs
     assert report["execution"]["successful_count"] == runs
     assert report["execution"]["failed_count"] == 0
+    observations = {}
+    for phase in ("before", "after"):
+        metadata = report["execution"].get(f"serving_{phase}", {})
+        device = metadata.get("device")
+        observations[phase] = {"device": device if device in ("cpu", "gpu") else None}
+        for name in ("loaded_bytes", "loaded_gpu_bytes", "context_length"):
+            value = metadata.get(name)
+            observations[phase][name] = value if type(value) is int and value >= 0 else None
+    state = report["binding"]["hardware"]["state"]
+    diagnostic = {
+        "hardware_state": state if state in ("mismatch", "matched", "unavailable") else "invalid",
+        **observations,
+    }
+    print(
+        json.dumps({"plan_benchmark_hardware_observation": diagnostic}, sort_keys=True), flush=True
+    )
     assert report["binding"]["hardware"]["state"] == "mismatch"
     assert report["binding"]["hardware"]["observed"] == {"device": "cpu"}
     assert report["binding"]["quant"]["observed"] == "Q4_K_M"

@@ -97,8 +97,7 @@ engineering policies to complete saved benchmark populations with the
 [measured regression gate](regression-gate.md). A modeled study
 does not substitute for a measured trace.
 
-This is an unreleased feature of this checkout. Install this checkout with
-`pip install .`; the earlier pinned source and PyPI 0.51.0 do not contain it.
+This feature is available in Chimeraforge 0.59.0. Install `pip install "chimeraforge==0.59.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955013473); each release separately qualifies its versioned artifacts.
 
 ```python
 from chimeraforge.api import PlanScenario, study_plan
@@ -170,9 +169,7 @@ confidence intervals, immutable served-weight proof or a performance guarantee.
 
 ## Portable plan bundles
 
-This is an unreleased source feature. Install the current feature checkout with
-`pip install .`; neither PyPI 0.51.0 nor the README's older review-stack pin
-contains it. **Quality harness files may contain private prompts/configuration:
+This feature is available in Chimeraforge 0.58.0. Install `pip install "chimeraforge==0.58.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955012611); each release separately qualifies its versioned artifacts. **Quality harness files may contain private prompts/configuration:
 review their contents before creating or sharing a handoff.**
 
 ```python
@@ -236,8 +233,7 @@ weights, or establish measured prediction accuracy.
 
 ## Checkpoint identity
 
-This is an unreleased source feature, beyond PyPI 0.51.0 and the README's older
-review-stack install pin. Install this feature's checkout with `pip install .`.
+This feature is available in Chimeraforge 0.57.0. Install `pip install "chimeraforge==0.57.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37953617963); each release separately qualifies its versioned artifacts.
 
 ```python
 from chimeraforge.api import PlanRequest, plan, check_plan
