@@ -1,0 +1,21 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_malformed_quality_timestamp_preserves_domain_errors_for_held_disk_cli __
+tests\test_plan_bundle.py:609: in test_malformed_quality_timestamp_preserves_domain_errors_for_held_disk_cli
+    operation()
+src\chimeraforge\plan_bundle.py:252: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:124: in call
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:232: in _prepare
+    else _quality_from_bytes(local_path, raw, captured_source=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\chimeraforge\planner\qualityfile.py:193: in _quality_from_bytes
+    date = _dt.datetime.fromtimestamp(date, _dt.timezone.utc).date().isoformat()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   OverflowError: timestamp out of range for platform time_t
+=========================== short test summary info ===========================
+FAILED tests/test_plan_bundle.py::test_malformed_quality_timestamp_preserves_domain_errors_for_held_disk_cli
+1 failed, 61 deselected in 1.55s

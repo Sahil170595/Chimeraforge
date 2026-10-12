@@ -57,9 +57,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expect-version", required=True)
     parser.add_argument("--checkout", required=True, type=Path)
+    parser.add_argument("--plan-handoff", type=Path)
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="chimeraforge-installed-") as work:
-        cwd = Path(work)
+        cwd = Path(work).resolve()
         env = dict(os.environ)
         env.pop("PYTHONPATH", None)
         env.update({"CHIMERAFORGE_CACHE": str(cwd / "cache"), "NO_COLOR": "1"})
@@ -124,6 +125,49 @@ def main(argv: list[str] | None = None) -> int:
         from ci_checkpoint_identity import accept as accept_checkpoint
 
         checkpoint_receipt = accept_checkpoint(cwd, env, args.checkout)
+        from ci_plan_bundle import accept as accept_bundle
+
+        bundle_receipt = accept_bundle(cwd, env, args.checkout, handoff=args.plan_handoff)
+        default_bundle = cwd / "bundled-coefficient-handoff"
+        original_default = snapshot_path.read_bytes()
+        run_cli(
+            [
+                "bundle",
+                "create",
+                str(snapshot_path),
+                "--out",
+                str(default_bundle),
+                "--json",
+            ],
+            cwd,
+            env,
+        )
+        default_check = json.loads(
+            run_cli(
+                [
+                    "bundle",
+                    "check",
+                    str(default_bundle),
+                    "--json",
+                ],
+                cwd,
+                env,
+            )
+        )
+        assert default_check["components"]["installed_bundled_corpus"]["state"] == "unchanged"
+        assert default_check["bundle"]["relocations"]["corpus"]["producer"]["kind"] == "bundled"
+        assert (
+            original_default
+            == snapshot_path.read_bytes()
+            == (default_bundle / "plan.json").read_bytes()
+        )
+        bundle_receipt["bundled_coefficients"] = {
+            "fingerprint": saved.to_dict()["fingerprint"],
+            "installed_cli_create_check": "passed",
+            "original_bytes_unchanged": True,
+            "current_installed_corpus": "unchanged",
+            "source_authentication": "unverified",
+        }
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -145,6 +189,7 @@ def main(argv: list[str] | None = None) -> int:
                     "origin": installed["origin"],
                     "resources": list(installed["resources"]),
                     "checkpoint_identity": checkpoint_receipt,
+                    "portable_plan_bundle": bundle_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

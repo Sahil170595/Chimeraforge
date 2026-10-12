@@ -1,0 +1,61 @@
+FFFF.FF..                                                                [100%]
+================================== FAILURES ===================================
+_ test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_payload] _
+tests\test_plan_bundle.py:362: in test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes
+    with pytest.raises(api.PlanError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+_ test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_oversize] _
+tests\test_plan_bundle.py:363: in test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes
+    operation()
+tests\test_plan_bundle.py:361: in <lambda>
+    for operation in (lambda: saved.to_dict(), lambda: api.check_plan_bundle(saved)):
+                              ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:151: in to_dict
+    "manifest": json.loads(self._manifest_bytes),
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\json\__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\json\decoder.py:338: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\sahil\AppData\Roaming\uv\python\cpython-3.12-windows-x86_64-none\Lib\json\decoder.py:356: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 65538 (char 65537)
+_ test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_duplicate] _
+tests\test_plan_bundle.py:362: in test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes
+    with pytest.raises(api.PlanError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+_ test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_hash] _
+tests\test_plan_bundle.py:362: in test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes
+    with pytest.raises(api.PlanError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+_ test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[input_duplicate] _
+tests\test_plan_bundle.py:362: in test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes
+    with pytest.raises(api.PlanError):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE PlanError
+_ test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[input_extra] _
+tests\test_plan_bundle.py:363: in test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes
+    operation()
+tests\test_plan_bundle.py:361: in <lambda>
+    for operation in (lambda: saved.to_dict(), lambda: api.check_plan_bundle(saved)):
+                              ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:146: in to_dict
+    artifact, _, relocations = self._prepare()
+                               ^^^^^^^^^^^^^^^
+src\chimeraforge\plan_bundle.py:119: in _prepare
+    binding = bindings[role]
+              ^^^^^^^^^^^^^^
+E   KeyError: 'other'
+=========================== short test summary info ===========================
+FAILED tests/test_plan_bundle.py::test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_payload]
+FAILED tests/test_plan_bundle.py::test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_oversize]
+FAILED tests/test_plan_bundle.py::test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_duplicate]
+FAILED tests/test_plan_bundle.py::test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[manifest_hash]
+FAILED tests/test_plan_bundle.py::test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[input_duplicate]
+FAILED tests/test_plan_bundle.py::test_constructed_bundle_objects_revalidate_all_held_manifest_and_bytes[input_extra]
+6 failed, 3 passed, 38 deselected in 6.99s

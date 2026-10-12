@@ -526,7 +526,15 @@ def _legacy_components(data: dict) -> dict:
     return rows
 
 
-def check(artifact, *, allow_network: bool = False, hf_token: str | None = None) -> PlanCheck:
+def check(
+    artifact,
+    *,
+    allow_network: bool = False,
+    hf_token: str | None = None,
+    _bundle_inputs=None,
+    _relocations=None,
+    _bundle_metadata=None,
+) -> PlanCheck:
     from chimeraforge import api
     from chimeraforge.planner import hardware, service
     from chimeraforge.planner.cloudprice import snapshot_age_days, STALE_AFTER_DAYS
@@ -557,6 +565,8 @@ def check(artifact, *, allow_network: bool = False, hf_token: str | None = None)
             "detail": "A modeled recommendation is not a measured performance guarantee.",
         },
     }
+    if _bundle_metadata is not None:
+        report["bundle"] = _bundle_metadata
     if context is None:
         components.update(_legacy_components(data))
         known_change = any(row["state"] in ("changed", "expired") for row in components.values())
@@ -570,6 +580,8 @@ def check(artifact, *, allow_network: bool = False, hf_token: str | None = None)
         ("corpus", context["corpus"]["input"], "models_path"),
         ("quality", (context["quality"] or {}).get("input"), "quality_from"),
     ):
+        if _relocations is not None and name in _relocations:
+            continue
         if binding is not None and binding["kind"] == "file":
             source = _local_file(binding)
             if source is None or not source.is_file():
@@ -632,7 +644,11 @@ def check(artifact, *, allow_network: bool = False, hf_token: str | None = None)
     )
     if not unavailable:
         try:
-            result = service.replay_plan(inputs, replay)
+            result = (
+                service.replay_plan(inputs, replay)
+                if _bundle_inputs is None
+                else service.replay_plan(inputs, replay, consumed_inputs=_bundle_inputs)
+            )
         except (OSError, ValueError, TypeError) as exc:
             components["inputs"] = component(
                 None, None, state="unverified", detail=f"Current inputs cannot be consumed: {exc}"
@@ -647,6 +663,16 @@ def check(artifact, *, allow_network: bool = False, hf_token: str | None = None)
                 "contributions",
                 "grid",
             ):
+                relocated = _relocations is not None and name in _relocations
+                equivalent = _receipt_facts(context[name]) == _receipt_facts(now[name])
+                if relocated:
+                    from chimeraforge.plan_bundle import _quality_equivalent
+
+                    equivalent = (
+                        context[name]["sha256"] == now[name]["sha256"]
+                        if name == "corpus"
+                        else _quality_equivalent(context[name], now[name])
+                    )
                 components[name] = component(
                     context[name],
                     now[name],
@@ -654,8 +680,23 @@ def check(artifact, *, allow_network: bool = False, hf_token: str | None = None)
                         "not_used"
                         if context[name] is None and now[name] is None
                         else "unchanged"
-                        if _receipt_facts(context[name]) == _receipt_facts(now[name])
+                        if equivalent
                         else "changed"
+                    ),
+                    detail="Verified content relocated; producer and local sources remain visible."
+                    if relocated
+                    else None,
+                )
+            if _bundle_inputs is not None and context["corpus"]["input"]["kind"] == "bundled":
+                from chimeraforge.planner.models import load_bundled_models
+
+                current_models = load_bundled_models()
+                components["installed_bundled_corpus"] = component(
+                    context["corpus"],
+                    {"sha256": digest(current_models), "input": current_models._input_receipt},
+                    detail=(
+                        "Frozen producing coefficients replayed; current installed "
+                        "bundled corpus observed separately."
                     ),
                 )
             components["cloud"] = component(

@@ -1,0 +1,16 @@
+............................s........................................... [ 40%]
+........................................................................ [ 80%]
+..................................                                       [100%]
+============================== warnings summary ===============================
+tests/test_quality_intervals.py::TestTheCorpusCannotSupportItsOwnDeltas::test_no_quant_delta_is_distinguishable_from_zero[Q2_K]
+tests/test_quality_intervals.py::TestLlamaCppFalsifiesTheOrdering::test_the_published_table_is_monotone_across_the_k_quant_ladder
+tests/test_quality_intervals.py::TestLmEvalReader::test_it_reads_the_real_file
+  C:\tmp\cf-release-051-env-20261008\Lib\site-packages\_pytest\fixtures.py:1313: PytestRemovedIn10Warning: Class-scoped fixture defined as instance method is deprecated.
+  Instance attributes set in this fixture will NOT be visible to test methods,
+  as each test gets a new instance while the fixture runs only once per class.
+  Use @classmethod decorator and set attributes on cls instead.
+  See https://docs.pytest.org/en/stable/deprecations.html#class-scoped-fixture-as-instance-method
+    fixturefunc = resolve_fixture_function(fixturedef, request)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+177 passed, 1 skipped, 3 warnings in 74.38s (0:01:14)

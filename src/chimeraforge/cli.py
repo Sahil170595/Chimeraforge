@@ -12,6 +12,7 @@ from rich.console import Console
 
 import chimeraforge
 from chimeraforge.commands.bench import bench
+from chimeraforge.commands.bundle import bundle_app
 from chimeraforge.commands.catalog import catalog
 from chimeraforge.commands.check import check
 from chimeraforge.commands.compare import compare
@@ -65,6 +66,7 @@ def main(
 # Order here is the order shown in `chimeraforge --help`.
 app.command()(plan)
 app.command()(check)
+app.add_typer(bundle_app, name="bundle")
 app.command()(deploy)
 app.command()(suggest)
 app.command()(measure)

@@ -1,0 +1,18 @@
+[
+  {
+    "origin": "published PyPI0.51.0 schema1",
+    "sha256": "32e8823f3d9e54c2cafc12653cb32e531aa14fc6ff97accdf109f30d4934281c",
+    "schema_version": 1,
+    "check_exit": 1,
+    "status": "unverified",
+    "bytes_unchanged": true
+  },
+  {
+    "origin": "frozen62de schema2",
+    "sha256": "78606d3b89f7c0b41e60680c096d85a9fca06656332b757c7220a959d30ac34c",
+    "schema_version": 2,
+    "check_exit": 0,
+    "status": "unchanged",
+    "bytes_unchanged": true
+  }
+]

@@ -129,8 +129,17 @@ def load_quality_file(path: str | Path) -> IngestedQuality:
     p = Path(path).resolve()
     if not p.exists():
         raise QualityFileError(f"quality file not found: {p}")
+    return _quality_from_bytes(p, p.read_bytes())
+
+
+def _quality_from_bytes(
+    path: str | Path, raw: bytes, *, captured_source: bool = False
+) -> IngestedQuality:
+    """Parse already consumed harness bytes, retaining their actual local source."""
+    p = Path(path) if captured_source else Path(path).resolve()
+    if captured_source and not p.is_absolute():
+        raise QualityFileError("captured source must be an absolute path")
     try:
-        raw = p.read_bytes()
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
         raise QualityFileError(f"quality file is not valid JSON: {exc}") from exc
@@ -181,7 +190,10 @@ def load_quality_file(path: str | Path) -> IngestedQuality:
 
     date = payload.get("date")
     if isinstance(date, (int, float)):
-        date = _dt.datetime.fromtimestamp(date, _dt.timezone.utc).date().isoformat()
+        try:
+            date = _dt.datetime.fromtimestamp(date, _dt.timezone.utc).date().isoformat()
+        except (OverflowError, ValueError, OSError) as exc:
+            raise QualityFileError("harness date is outside the supported timestamp range") from exc
     elif not isinstance(date, str):
         date = None
 
@@ -201,7 +213,7 @@ def load_quality_file(path: str | Path) -> IngestedQuality:
     )
     from chimeraforge.planner.replay import file_receipt
 
-    ingested._input_receipt = file_receipt(p, raw)
+    ingested._input_receipt = file_receipt(p, raw, captured_source=captured_source)
     return ingested
 
 

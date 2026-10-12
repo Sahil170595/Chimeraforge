@@ -1,0 +1,101 @@
+..........................                                               [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                                            Stmts   Miss Branch BrPart  Cover   Missing
+-------------------------------------------------------------------------------------------
+src\chimeraforge\__main__.py                        3      3      2      0     0%   7-10
+src\chimeraforge\api.py                           340    239    142      0    21%   97-139, 143-154, 158-181, 185-192, 196-202, 206-207, 217, 221-224, 227-228, 232-248, 253-279, 284-288, 292-297, 302-309, 314-411, 415-421, 428-435, 440-442, 447-449, 454-456, 473-475, 498-500, 512-514, 531-533
+src\chimeraforge\bench\backends\__init__.py        23     14      6      0    31%   32-43, 48-55
+src\chimeraforge\bench\backends\_streaming.py      63     41     20      0    27%   32-42, 57-59, 69-83, 108-125
+src\chimeraforge\bench\backends\base.py            69     42     14      0    33%   23, 32-45, 108, 118, 126-152
+src\chimeraforge\bench\backends\ollama.py          75     59     14      0    18%   25-26, 29-31, 35-36, 45-58, 62-77, 86-115, 134-145, 149-150, 153-155
+src\chimeraforge\bench\backends\plugin.py          65     65     22      0     0%   3-118
+src\chimeraforge\bench\backends\sglang.py          83     57     18      0    26%   51-54, 57-59, 63-64, 69-83, 87-118, 132-140, 151-156, 159-161
+src\chimeraforge\bench\backends\tgi.py             90     71     26      0    16%   37-40, 43-45, 49-50, 58-72, 82-110, 129-157, 161-162, 165-167
+src\chimeraforge\bench\backends\vllm.py            72     53     14      0    22%   36-39, 42-44, 48-49, 58-72, 76-105, 122-130, 136-137, 140-142
+src\chimeraforge\bench\metrics.py                 108     40     10      0    58%   101-108, 113-125, 138, 152-179, 195, 200, 205
+src\chimeraforge\bench\plan.py                    102     83     30      0    14%   26, 29-31, 35-93, 106-109, 124-206, 234-315
+src\chimeraforge\bench\profiles.py                 14      4      2      0    62%   47-50
+src\chimeraforge\bench\runner.py                  166    143     56      0    10%   45-57, 70-88, 102-140, 182-326, 348-367, 377-395, 408-416
+src\chimeraforge\bench\serving.py                 228    195     72      0    11%   33-44, 49-132, 136-152, 161-173, 179-185, 189, 212, 216, 220, 224-231, 235-236, 241-285, 290-340, 345-359, 364-392
+src\chimeraforge\bench\serving_binding.py         108     95     36      0     9%   46-53, 57-59, 66-92, 103, 116-121, 125-185, 201-326
+src\chimeraforge\cli.py                            52      2      2      1    94%   47-48
+src\chimeraforge\commands\_deps.py                 12     12      2      0     0%   10-36
+src\chimeraforge\commands\bench.py                110    104     34      0     4%   106-335
+src\chimeraforge\commands\bench_plan.py            46     46     10      0     0%   3-102
+src\chimeraforge\commands\bundle.py                30     19      4      0    32%   15-32, 44-46, 55-57, 68-70
+src\chimeraforge\commands\catalog.py               40     33     12      0    13%   40-112
+src\chimeraforge\commands\check.py                 24     19     10      0    15%   25-46
+src\chimeraforge\commands\compare.py               29     24      8      0    14%   37-77
+src\chimeraforge\commands\contribute.py           117     92     30      0    17%   28-29, 42-64, 73-80, 86-95, 101-125, 129-159, 175-185, 216-240
+src\chimeraforge\commands\deploy.py                27     22     12      0    13%   31-66
+src\chimeraforge\commands\doctor.py                66     56     20      0    12%   35-103
+src\chimeraforge\commands\eval.py                  65     58     30      0     7%   69-168
+src\chimeraforge\commands\mcp.py                   21      1      6      1    93%   57
+src\chimeraforge\commands\measure.py               52     45      8      0    12%   43-103, 107-139
+src\chimeraforge\commands\monitor.py               40     35     22      0     8%   34-83
+src\chimeraforge\commands\plan.py                 285    272    160      0     3%   449-1068
+src\chimeraforge\commands\refit.py                 67     61     32      0     6%   56-167
+src\chimeraforge\commands\report.py                48     43     20      0     7%   53-125
+src\chimeraforge\commands\safety.py                95     88     24      0     6%   68-163, 168-203
+src\chimeraforge\commands\serve.py                 15     12      0      0    20%   13-26
+src\chimeraforge\commands\suggest.py               57     52     20      0     6%   52-149
+src\chimeraforge\commands\validate.py             122    111     58      0     6%   83-185, 198-239, 251-314
+src\chimeraforge\commands\workload.py              87     76     48      0     8%   18-19, 80-195
+src\chimeraforge\compare\__init__.py                2      2      0      0     0%   3-14
+src\chimeraforge\compare\comparator.py            126    126     28      0     0%   8-313
+src\chimeraforge\contrib.py                       192    158     80      0    12%   62-64, 68-76, 81-89, 93-103, 107-108, 112-114, 118-120, 127-134, 138-178, 182-200, 210-253, 266-285, 292-299, 304-316, 333-357
+src\chimeraforge\contribution_review.py           210    171     62      0    14%   53-59, 71, 74, 77-90, 93-100, 104-119, 123-134, 164-166, 172-195, 199-211, 223-252, 256-283, 295-308, 338-457
+src\chimeraforge\deploy.py                        247    247    128      0     0%   3-534
+src\chimeraforge\doctor.py                        408    408    128      0     0%   18-728
+src\chimeraforge\eval\__init__.py                   4      4      0      0     0%   14-38
+src\chimeraforge\eval\metrics.py                  120    120     38      0     0%   8-340
+src\chimeraforge\eval\runner.py                    67     67     18      0     0%   7-217
+src\chimeraforge\eval\tasks.py                     16     16      2      0     0%   11-190
+src\chimeraforge\mcp_server.py                    119     28     30      9    71%   180, 190-191, 214-215, 260-268, 276, 305-306, 339-340, 400, 405, 426-427, 470, 478, 553, 571->573, 591-597
+src\chimeraforge\mcp_transport.py                 136      5     38      3    95%   54, 80->86, 117-119, 138
+src\chimeraforge\measure.py                        90     90     14      0     0%   14-225
+src\chimeraforge\monitor.py                       408    313    184      0    16%   49-54, 58-76, 91-107, 135, 150-160, 163-172, 184-198, 202-224, 228-230, 234-275, 279-292, 296-323, 327-357, 369-384, 390-392, 406-443, 449-467, 478-520, 524, 529-582, 587-601
+src\chimeraforge\plan_bundle.py                   246    198    108      0    14%   28-30, 34-35, 41-44, 49-71, 75-79, 83-97, 102-112, 121-128, 134-173, 177-202, 216-249, 252-253, 269-296, 301-360, 365-369
+src\chimeraforge\plan_check.py                    349    321    172      0     5%   79-80, 84-89, 93-107, 112-118, 122-123, 127-134, 139-283, 291, 295, 305, 309-348, 361-465, 470-526, 538-736
+src\chimeraforge\plan_monitor.py                  119    119     38      0     0%   3-235
+src\chimeraforge\planner\advisories.py             11      4      2      1    62%   53-60
+src\chimeraforge\planner\apicost.py                75      6      8      2    90%   120-121, 128-129, 163, 168
+src\chimeraforge\planner\brief.py                 169    169     60      0     0%   20-534
+src\chimeraforge\planner\carbon.py                 52     28     14      1    38%   46-55, 61-73, 91-116
+src\chimeraforge\planner\checkpoint.py            152    116     78      2    17%   36, 48-57, 64-69, 73, 80, 88, 92-95, 99-100, 107-162, 173-174, 179-203, 208-272
+src\chimeraforge\planner\cloudprice.py             53     23      8      0    49%   43, 46, 53, 59-67, 72-75, 97-106, 110-113, 117
+src\chimeraforge\planner\discovery.py              97     55     16      2    42%   43-51, 58-71, 82-87, 101-110, 175-179, 195-205, 209-215, 222, 226-228
+src\chimeraforge\planner\engine.py                596    229    282     75    57%   246-247, 252, 263-264, 274-275, 380-391, 393, 396, 398, 400, 405, 407, 415-416, 418-419, 428-429, 465, 490-502, 526, 535-548, 621, 623, 628-630, 651-662, 671-680, 686, 707-709, 721-722, 727-734, 748-751, 769-770, 782-783, 823-836, 850-852, 859, 879, 891, 919-942, 945-953, 960-979, 984->1020, 1011, 1013, 1021-1047, 1061-1079, 1081-1088, 1091-1098, 1122-1125, 1153-1160, 1171, 1178, 1191, 1197, 1203, 1210, 1222, 1230, 1247-1260, 1273, 1281, 1289-1309, 1316, 1323-1345, 1352, 1363, 1370, 1377, 1382-1393, 1398-1405, 1411, 1418, 1427, 1429, 1431, 1433, 1437, 1447, 1460, 1471-1476, 1494-1503, 1621-1637, 1642-1657, 1667-1669, 1705-1716
+src\chimeraforge\planner\evalstats.py              58     12      6      1    73%   90-94, 113, 146, 150, 158, 167-169
+src\chimeraforge\planner\fleet.py                 183    183     72      0     0%   36-448
+src\chimeraforge\planner\formatter.py             269    269     80      0     0%   3-574
+src\chimeraforge\planner\hardware.py              171     93     64      8    38%   84, 149, 154-157, 170, 185, 189, 204, 241-252, 293-315, 331, 336-357, 372-384, 396-399, 411-498
+src\chimeraforge\planner\hybrid.py                181    145     72      0    14%   104-112, 116-118, 130-138, 152-212, 216-227, 232-235, 246-249, 262-266, 271-283, 288-295, 300-309, 320-328, 332-336, 345-369, 373, 383, 388-390
+src\chimeraforge\planner\identity.py               73     35     26      3    43%   67, 85-90, 98-99, 120-126, 146-173
+src\chimeraforge\planner\launch.py                174    112     92     11    27%   72-77, 84, 86, 92-95, 105, 116-182, 190, 192-193, 201, 206->211, 218-258, 262-295, 321-342, 382, 387, 396-407, 409-410
+src\chimeraforge\planner\models.py                484    135    142     30    67%   154-156, 216, 220, 262-270, 285, 290, 295, 331->334, 353, 374, 401, 437->442, 468-495, 520-547, 550, 589-593, 596, 652, 659->656, 671-680, 761, 764, 805, 829, 848, 865, 871, 920, 929-931, 951-961, 996, 1001, 1012-1020, 1052-1055, 1058-1059, 1062, 1069, 1094, 1143-1147, 1150, 1195, 1198, 1234, 1239-1259
+src\chimeraforge\planner\platform_support.py      128     44     54     14    57%   66-74, 84, 131-143, 154, 158, 163, 165, 167-172, 202, 214, 217-219, 225, 229, 237, 241, 245, 255, 259-266
+src\chimeraforge\planner\provenance.py             48      9     14      3    74%   70, 75-77, 111, 117->120, 139-141, 177
+src\chimeraforge\planner\qualityfile.py           123     97     56      0    15%   57-59, 67-68, 78-82, 87-103, 107-117, 129-132, 139-217, 221-230, 240-243
+src\chimeraforge\planner\replay.py                 39      2     16      2    93%   18, 38
+src\chimeraforge\planner\resolver.py              334    208     90      9    32%   175-187, 207-220, 224, 237, 249, 263, 265, 270-271, 276, 279, 310-316, 326-366, 382-386, 400-404, 420-439, 450-476, 503-504, 539-541, 552-557, 569-593, 597-612, 619-625, 630-641, 648-656, 661-669, 710-712, 719-791
+src\chimeraforge\planner\service.py                87     13     30     11    79%   71, 132, 135, 255, 265->268, 284, 285->295, 289, 291, 300-301, 323-329, 407
+src\chimeraforge\refit\__init__.py                  3      3      0      0     0%   3-24
+src\chimeraforge\refit\fitter.py                  231    231     84      0     0%   8-562
+src\chimeraforge\refit\validator.py                86     86      2      0     0%   8-278
+src\chimeraforge\report\__init__.py                 3      3      0      0     0%   16-37
+src\chimeraforge\report\analysis.py                77     77     30      0     0%   10-250
+src\chimeraforge\report\generator.py              307    307    118      0     0%   8-767
+src\chimeraforge\rest_server.py                   152    112     52      0    20%   27-32, 36, 46-48, 57-59, 63, 66-80, 84-96, 99, 104-111, 114-127, 130-175, 178, 190-198
+src\chimeraforge\safety\__init__.py                 3      3      0      0     0%   10-13
+src\chimeraforge\safety\classifier.py              11     11      2      0     0%   9-64
+src\chimeraforge\safety\runner.py                  68     68     22      0     0%   9-132
+src\chimeraforge\validate.py                      462    462    180      0     0%   44-1062
+src\chimeraforge\workload.py                      397    316    168      0    14%   191-207, 211-222, 226-263, 267-273, 277, 281-284, 289-294, 299-306, 315-441, 449-468, 472-473, 483-510, 514-520, 524-533, 537, 547-562, 566-567, 581-676, 692-746, 758-771, 794-820, 832-839, 853-864, 869-895
+-------------------------------------------------------------------------------------------
+TOTAL                                           11430   8546   4070    189    21%
+
+6 files skipped due to complete coverage.
+26 passed in 23.53s

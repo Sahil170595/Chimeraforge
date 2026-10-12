@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.58.0] - 2026-10-12
+
+### Portable saved-plan handoff
+
+- `bundle create/verify/check` and typed Python APIs preserve original plan bytes/fingerprint/producer paths while carrying exactly bound corpus and quality files, including implicitly consumed measured corpora.
+- Strict role membership, SHA256/byte sizes, bounded reads and input-semantic checks reject substituted, missing, extra, linked or malformed inputs. Creation validates dependencies before atomically publishing a staged directory.
+- Offline shared-planner replay consumes held verified bytes after relocation and producer removal, exposes producer/local source receipts separately, and retains current tool/policy/hardware/price/cloud checks. Verification remains content integrity, not source authentication, served-weight proof or performance qualification.
+- Legacy missing byte bindings and nonempty contribution file dependencies are actionable refusals. Sharing harness inputs may disclose private data. Existing installed wheel/sdist consumers now accept a Linux-produced handoff on every supported OS; Release publication repeats hosted qualification on the exact versioned artifacts.
+
+### Validation
+- Released independently from PR #112; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.57.0] - 2026-10-12
 
 ### Added

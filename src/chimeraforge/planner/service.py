@@ -31,12 +31,20 @@ from chimeraforge.planner.engine import (
     find_models_for_size,
     pareto_frontier,
 )
-from chimeraforge.planner.models import load_effective_models, load_models
+from chimeraforge.planner.models import PlannerModels, load_effective_models, load_models
 from chimeraforge.planner.hardware import AUTO_HARDWARE, GPUSpec, get_gpu
 from chimeraforge.planner.platform_support import DEFAULT_PLAN_PLATFORM, local_plan_platform
-from chimeraforge.planner.qualityfile import aggregate, load_quality_file
+from chimeraforge.planner.qualityfile import IngestedQuality, aggregate, load_quality_file
 from chimeraforge.planner.resolver import ModelSpec, resolve_spec
 from chimeraforge.planner.replay import REPLAY_VERSION
+
+
+@dataclass
+class ConsumedPlanInputs:
+    """Verified, already parsed inputs for the shared replay path."""
+
+    models: PlannerModels
+    quality: IngestedQuality | None = None
 
 
 @dataclass
@@ -229,6 +237,7 @@ def _run_plan(
     overrides: dict | None = None,
     model_revisions: dict[str, str] | None = None,
     _replay: dict | None = None,
+    _consumed_inputs: ConsumedPlanInputs | None = None,
 ) -> PlanResult:
     """Resolve targets and run the gate search; return a structured result.
 
@@ -258,7 +267,13 @@ def _run_plan(
     # Resolved before any work so a bad region fails fast (CarbonError is a ValueError).
     grid = grid_intensity(grid_region, carbon_intensity)
 
-    planner_models = load_models(models_path) if models_path else load_effective_models()
+    planner_models = (
+        _consumed_inputs.models
+        if _consumed_inputs is not None
+        else load_models(models_path)
+        if models_path
+        else load_effective_models()
+    )
     corpus_sha256 = hashlib.sha256(
         json.dumps(asdict(planner_models), sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -305,7 +320,11 @@ def _run_plan(
     quality_override = None
     quality_receipt = None
     if quality_from:
-        ingested = load_quality_file(quality_from)
+        ingested = (
+            _consumed_inputs.quality
+            if _consumed_inputs is not None
+            else load_quality_file(quality_from)
+        )
         quality_override = aggregate(ingested)
         quality_receipt = {
             "input": getattr(ingested, "_input_receipt", None),
@@ -381,6 +400,8 @@ def _run_plan(
     )
 
 
-def replay_plan(inputs: dict, context: dict) -> PlanResult:
+def replay_plan(
+    inputs: dict, context: dict, *, consumed_inputs: ConsumedPlanInputs | None = None
+) -> PlanResult:
     """Rerun shared gates against full bound geometry and current consumed inputs."""
-    return _run_plan(**inputs, _replay=context)
+    return _run_plan(**inputs, _replay=context, _consumed_inputs=consumed_inputs)

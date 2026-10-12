@@ -31,11 +31,14 @@ def digest(value) -> str:
     ).hexdigest()
 
 
-def file_receipt(path: str | Path, raw: bytes) -> dict:
+def file_receipt(path: str | Path, raw: bytes, *, captured_source: bool = False) -> dict:
     """The bytes parsed by a loader, never a second read of the same filename."""
+    source = Path(path)
+    if captured_source and not source.is_absolute():
+        raise ValueError("captured source must be an absolute path")
     return {
         "kind": "file",
-        "path": str(Path(path).resolve()),
+        "path": str(source if captured_source else source.resolve()),
         "path_flavor": "windows" if isinstance(Path(path), PureWindowsPath) else "posix",
         "sha256": hashlib.sha256(raw).hexdigest(),
     }
