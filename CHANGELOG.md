@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.54.0] - 2026-10-12
+
+### Added
+- Plan-bound `monitor` and typed `api.monitor_plan` carry saved TTFT/TPOT targets into bounded passive monitoring and bracket completed windows with serving metadata.
+- Native SLO outcomes remain separate from model/backend binding; missing geometry, workload, replica topology or immutable weights stays unverified. Cancellation retains bounded cooperative adapter cleanup.
+
+### Validation
+- Released independently from PR #107; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.53.0] - 2026-10-12
 
 ### Added
