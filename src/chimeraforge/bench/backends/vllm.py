@@ -120,3 +120,8 @@ class VLLMBackend(Backend):
         """GET /version -> ``{"version": ...}`` (vLLM v0.30.0 source), else None."""
         client = await self._get_client()
         return await fetch_json_field(client, f"{self.base_url}/version", "version")
+
+    async def observe_serving(self, model: str) -> dict:
+        from chimeraforge.bench.serving import observe_vllm
+
+        return await observe_vllm(await self._get_client(), self.base_url, model)

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.53.0] - 2026-10-12
+
+### Added
+- Plan-bound `bench` and typed `api.benchmark_plan` compare one saved candidate with observed serving configuration and native request measurements.
+- Receipts retain actual prompt/output counts, cache observations, request failures and model/hardware/backend contradictions. Single-stream, fleet, queueing and immutable-weight claims remain distinct.
+
+### Validation
+- Released independently from PR #106; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.52.0] - 2026-10-12
 
 ### Added

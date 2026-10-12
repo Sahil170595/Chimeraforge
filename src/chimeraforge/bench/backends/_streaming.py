@@ -51,6 +51,7 @@ class StreamTiming:
     t_last: float | None = None
     t_end: float = 0.0
     tokens: int | None = None  # as the server reported it
+    prompt_tokens: int | None = None
 
     def mark_token(self, now: float) -> None:
         if self.t_first is None:
@@ -88,6 +89,8 @@ def decode_metrics(timing: StreamTiming, engine: str, count_source: str) -> RunM
         total_duration_ms=(timing.t_end - timing.t0) * 1000,
         prompt_eval_duration_ms=ttft_ms,
         eval_duration_ms=decode_s * 1000,
+        prompt_tokens=timing.prompt_tokens,
+        ttft_basis="client-stream-first-content",
     )
 
 
@@ -115,6 +118,7 @@ async def stream_openai_completion(
             usage = chunk.get("usage")
             if usage and usage.get("completion_tokens") is not None:
                 timing.tokens = usage["completion_tokens"]
+                timing.prompt_tokens = usage.get("prompt_tokens")
             if any(c.get("text") for c in chunk.get("choices") or []):
                 timing.mark_token(clock())
     timing.t_end = clock()

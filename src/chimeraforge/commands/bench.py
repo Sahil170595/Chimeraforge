@@ -11,6 +11,7 @@ console = Console()
 
 
 def bench(
+    ctx: typer.Context,
     model: str = typer.Option(
         None,
         "--model",
@@ -88,6 +89,18 @@ def bench(
         "--list-backends",
         help="List built-in and installed plugin metadata without loading plugin code.",
     ),
+    plan_path: str = typer.Option(
+        None, "--plan", help="Benchmark a saved plan's selected candidate."
+    ),
+    candidate_index: int = typer.Option(
+        0, "--candidate-index", help="Saved candidate index (zero based)."
+    ),
+    prompt: str = typer.Option(
+        None, "--prompt", help="Actual prompt sent to the serving endpoint."
+    ),
+    concurrency: int = typer.Option(
+        None, "--concurrency", help="Applied batch/server concurrency."
+    ),
 ) -> None:
     """Run LLM inference benchmarks against a live backend."""
     import asyncio
@@ -101,6 +114,35 @@ def bench(
     from chimeraforge.commands._deps import require_extra
 
     require_extra("bench", "httpx")  # backends import httpx at module load
+
+    if plan_path:
+        from chimeraforge.commands.bench_plan import run_saved
+
+        run_saved(
+            ctx,
+            plan_path,
+            candidate_index=candidate_index,
+            model=model,
+            backend=backend,
+            prompt=prompt,
+            runs=runs,
+            workload=workload,
+            rate=rate,
+            concurrency=concurrency,
+            base_url=base_url,
+            output_dir=output_dir,
+            output_json=output_json,
+            quant=quant,
+            all_quants=all_quants,
+            context=context,
+            list_backends=list_backends,
+        )
+        return
+    if candidate_index or prompt is not None or concurrency is not None:
+        console.print(
+            "[red]Error:[/] --candidate-index, --prompt and --concurrency require --plan."
+        )
+        raise typer.Exit(2)
 
     if list_backends:
         from chimeraforge.bench.backends import list_backends as backend_listing

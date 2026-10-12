@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import get_args, get_origin, get_type_hints
 
+from chimeraforge.bench.plan import PlanBenchmark
+
 from chimeraforge import __version__
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.planner.engine import Candidate
@@ -408,3 +410,33 @@ def check_plan(saved: PlanArtifact | str | Path) -> PlanCheck:
         artifact_from_dict(saved.to_dict()) if isinstance(saved, PlanArtifact) else load_plan(saved)
     )
     return check(artifact)
+
+
+async def benchmark_plan(
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+    model: str | None = None,
+    backend: str | None = None,
+    prompt: str | None = None,
+    runs: int = 5,
+    workload: str = "single",
+    rate: float | None = None,
+    concurrency: int | None = None,
+    base_url: str | None = None,
+) -> PlanBenchmark:
+    """Measure a selected saved scenario against an explicitly contacted live endpoint."""
+    from chimeraforge.bench.plan import benchmark
+
+    return await benchmark(
+        saved,
+        candidate_index=candidate_index,
+        model=model,
+        backend=backend,
+        prompt=prompt,
+        runs=runs,
+        workload=workload,
+        rate=rate,
+        concurrency=concurrency,
+        base_url=base_url,
+    )

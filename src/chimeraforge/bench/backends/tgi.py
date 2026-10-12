@@ -151,3 +151,8 @@ class TGIBackend(Backend):
         """GET /info -> the server ``Info``'s ``version`` (TGI v3.3.7 source), else None."""
         client = await self._get_client()
         return await fetch_json_field(client, f"{self.base_url}/info", "version")
+
+    async def observe_serving(self, model: str) -> dict:
+        from chimeraforge.bench.serving import observe_tgi
+
+        return await observe_tgi(await self._get_client(), self.base_url, model)

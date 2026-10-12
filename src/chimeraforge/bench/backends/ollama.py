@@ -119,6 +119,9 @@ class OllamaBackend(Backend):
             total_duration_ms=total_duration_ms,
             prompt_eval_duration_ms=prompt_eval_duration_ms,
             eval_duration_ms=eval_duration_ms,
+            prompt_tokens=data.get("prompt_eval_count"),
+            cached_prompt_tokens=data.get("prompt_eval_cached_count"),
+            ttft_basis="server-prefill-duration",
         )
 
     async def generate_text(
@@ -145,3 +148,8 @@ class OllamaBackend(Backend):
         """GET /api/version -> ``{"version": ...}``, else None."""
         client = await self._get_client()
         return await fetch_json_field(client, f"{self.base_url}/api/version", "version")
+
+    async def observe_serving(self, model: str) -> dict:
+        from chimeraforge.bench.serving import observe_ollama
+
+        return await observe_ollama(await self._get_client(), self.base_url, model)

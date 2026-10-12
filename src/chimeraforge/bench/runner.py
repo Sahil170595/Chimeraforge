@@ -12,6 +12,7 @@ import json
 import logging
 import random
 import statistics
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -27,6 +28,7 @@ from chimeraforge.bench.metrics import (
 )
 from chimeraforge.bench.profiles import get_profile
 from chimeraforge.bench.prompts import DEFAULT_PROMPT
+from chimeraforge.bench.serving import observe_backend, sanitize_message
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +49,9 @@ async def _run_single(
             metrics = await backend.generate(model, prompt, options)
             results.append(metrics)
         except Exception as exc:
-            warnings.append(f"Run {i + 1}/{total} failed: {exc}")
-            logger.warning("Run %d/%d failed: %s", i + 1, total, exc)
+            message = sanitize_message(str(exc))
+            warnings.append(f"Run {i + 1}/{total} failed: {message}")
+            logger.warning("Run %d/%d failed: %s", i + 1, total, message)
         if on_progress:
             on_progress(i + 1, total)
     return results, warnings
@@ -74,8 +77,9 @@ async def _run_batch(
         for j, r in enumerate(batch_results):
             idx = batch_start + j + 1
             if isinstance(r, Exception):
-                warnings.append(f"Run {idx}/{total} failed: {r}")
-                logger.warning("Run %d/%d failed: %s", idx, total, r)
+                message = sanitize_message(str(r))
+                warnings.append(f"Run {idx}/{total} failed: {message}")
+                logger.warning("Run %d/%d failed: %s", idx, total, message)
             else:
                 results.append(r)
         completed += batch_size
@@ -110,8 +114,9 @@ async def _run_server(
                 results.append(metrics)
         except Exception as exc:
             async with lock:
-                warnings.append(f"Run {idx}/{total} failed: {exc}")
-                logger.warning("Run %d/%d failed: %s", idx, total, exc)
+                message = sanitize_message(str(exc))
+                warnings.append(f"Run {idx}/{total} failed: {message}")
+                logger.warning("Run %d/%d failed: %s", idx, total, message)
         finally:
             async with lock:
                 completed += 1
@@ -148,6 +153,7 @@ async def run_benchmark(
     options: dict | None = None,
     on_progress: Callable[[int, int], None] | None = None,
     concurrency: int | None = None,
+    _evidence: dict | None = None,
 ) -> BenchmarkResult:
     """Run a complete benchmark for one configuration.
 
@@ -209,6 +215,29 @@ async def run_benchmark(
 
         # Collect environment
         env = collect_environment(backend_name, backend_version)
+        if _evidence is not None:
+            import hashlib
+            from dataclasses import asdict
+
+            before = await observe_backend(backend, model)
+            _evidence.update(
+                request={
+                    "prompt_sha256": hashlib.sha256(effective_prompt.encode()).hexdigest(),
+                    "prompt_characters": len(effective_prompt),
+                    "options": effective_options,
+                    "workload": profile.name,
+                    "concurrency": 1 if profile.name == "single" else profile.concurrency,
+                    "arrival_rate": profile.arrival_rate if profile.name == "server" else None,
+                    "requested_count": profile.total_requests,
+                    "options_scope": "adapter options; output cap differs from observed length",
+                    "arrival_rate_basis": "configured Poisson parameter, not observed arrival rate"
+                    if profile.name == "server"
+                    else "not applied",
+                },
+                serving_before=before,
+                client_environment=asdict(env),
+                environment_scope="benchmark client host; not proof of remote server hardware",
+            )
 
         # Execute workload
         warnings: list[str] = []
@@ -220,6 +249,7 @@ async def run_benchmark(
             profile.total_requests,
         )
 
+        execution_started = time.perf_counter()
         if profile.name == "single":
             run_results, run_warnings = await _run_single(
                 backend,
@@ -257,6 +287,16 @@ async def run_benchmark(
             raise ValueError(f"Unknown workload profile: {profile.name}")
 
         warnings.extend(run_warnings)
+        if _evidence is not None:
+            elapsed_seconds = time.perf_counter() - execution_started
+            _evidence.update(
+                serving_after=await observe_backend(backend, model),
+                requested_count=profile.total_requests,
+                successful_count=len(run_results),
+                failed_count=profile.total_requests - len(run_results),
+                elapsed_seconds=elapsed_seconds,
+                queue_basis="request timing begins after client semaphore; client queue excluded",
+            )
 
         if not run_results:
             raise RuntimeError(

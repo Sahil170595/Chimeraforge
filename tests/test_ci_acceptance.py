@@ -43,6 +43,49 @@ def test_cpu_probe_refuses_corrupt_download_before_installing(tmp_path):
         script.verify_sha256(artifact, "0" * 64)
 
 
+def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification():
+    script = load_script("ci_cpu_serving")
+    report = {
+        "kind": "chimeraforge.plan-benchmark",
+        "plan": {"fingerprint": "a" * 64},
+        "execution": {
+            "requested_count": 3,
+            "successful_count": 3,
+            "failed_count": 0,
+            "serving_after": {"loaded_gpu_bytes": 0},
+        },
+        "binding": {
+            "hardware": {"state": "mismatch", "observed": {"device": "cpu"}},
+            "quant": {"observed": "Q4_K_M"},
+        },
+        "configuration_status": "mismatch",
+        "exit_code": 1,
+        "audit": {
+            "slo": {"state": "unverified"},
+            "metrics": {
+                "base_decode_tps": {
+                    "modeled": 50,
+                    "measured": 40,
+                    "raw_delta": -10,
+                    "delta": None,
+                    "state": "unverified",
+                }
+            },
+        },
+        "measurement": {
+            "individual_runs": [
+                {"tokens_generated": 4, "prompt_tokens": 8, "ttft_basis": "server-prefill-duration"}
+                for _ in range(3)
+            ]
+        },
+    }
+    saved = {"fingerprint": "a" * 64}
+    script.validate_plan_benchmark(report, saved, 3)
+    report["audit"]["slo"]["state"] = "pass"
+    with pytest.raises(AssertionError):
+        script.validate_plan_benchmark(report, saved, 3)
+
+
 @pytest.mark.parametrize("invalid", ["zero tokens", "lost run", "wrong backend", "nonfinite"])
 def test_cpu_probe_refuses_invalid_benchmark_evidence(invalid):
     from chimeraforge.bench.metrics import (
