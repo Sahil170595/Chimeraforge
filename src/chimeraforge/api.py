@@ -36,6 +36,7 @@ from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
+from chimeraforge.prediction_score import PredictionScorePolicy, PredictionScorecard
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
@@ -54,6 +55,18 @@ MODEL_OVERRIDE_TYPES = {
 
 class PlanError(ValueError):
     """Invalid request, unavailable planning input, or invalid saved plan."""
+
+
+def score_predictions(
+    saved_plan: PlanArtifact | PlanBundle | str | Path,
+    benchmark_receipts: list[PlanBenchmark | dict | str | Path],
+    *,
+    policy: PredictionScorePolicy | dict | str | Path,
+) -> PredictionScorecard:
+    """Score frozen base decode declarations against complete declared native evidence."""
+    from chimeraforge.prediction_score import score_predictions as apply_score
+
+    return apply_score(saved_plan, benchmark_receipts, policy=policy)
 
 
 def gate_benchmarks(

@@ -29,6 +29,7 @@ from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
 from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
+from chimeraforge.commands.score import score
 from chimeraforge.commands.serve import serve
 from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.study import study
@@ -82,6 +83,7 @@ app.command()(bench)
 app.command()(trace)
 app.command("trace-campaign")(trace_campaign)
 app.command()(gate)
+app.command()(score)
 app.command()(refit)
 app.command()(compare)
 app.command(name="eval")(eval_cmd)

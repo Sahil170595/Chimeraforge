@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-The published CLI is 0.61.0; this checkout prepares the unpublished 0.65.0 candidate.
+The published CLI is 0.61.0; this checkout prepares the unpublished 0.66.0 candidate.
 For CLI usage, see the [README](../README.md).
 The unpublished 0.63.0 candidate's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
@@ -14,6 +14,10 @@ async `replay_signed_contribution`, with defensive `SignedContribution` and
 `SignedContributionReceipt` results. Install the optional `sign` extra and see
 [signed contributions and private replay](signed-contribution-v2.md) for exact
 interfaces, receiver trust, private-input bindings and unavailable outcomes.
+The 0.66.0 candidate adds `PredictionScorePolicy`, `PredictionScorecard` and
+`score_predictions` for offline scoring of frozen candidate throughput against
+eligible saved native evidence. See [prediction scorecards](prediction-scorecards.md)
+for the explicit population, binding, error-band and unavailable-evidence contract.
 
 Install: `pip install chimeraforge[all]`
 

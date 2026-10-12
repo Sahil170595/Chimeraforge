@@ -3,7 +3,10 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-The published CLI is 0.61.0. The unpublished 0.65.0 candidate adds
+The published CLI is 0.61.0. The unpublished 0.66.0 candidate adds
+[frozen prediction scorecards](prediction-scorecards.md) for offline scoring of
+eligible saved native evidence against an explicit population and error band.
+The preceding unpublished 0.65.0 candidate adds
 [signed contributions and private replay](signed-contribution-v2.md) with the
 optional `sign` extra, explicit trusted keys and matching private input files.
 The preceding unpublished 0.64.0 candidate adds

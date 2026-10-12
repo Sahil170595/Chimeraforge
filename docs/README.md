@@ -16,6 +16,7 @@ planner's data came from; those guides are archived below.
 - **[Trace regression gates](trace-regression-gate.md)** - unpublished 0.63.0 candidate, queue-inclusive saved evidence
 - **[Serial trace campaigns](trace-campaign.md)** - unpublished 0.64.0 candidate, frozen ordered replica populations
 - **[Signed contributions and private replay](signed-contribution-v2.md)** - unpublished 0.65.0 candidate, exact-byte signatures and explicit receiver trust
+- **[Frozen prediction scorecards](prediction-scorecards.md)** - unpublished 0.66.0 candidate, explicit population and conditional native-rate error bands
 
 ```bash
 pip install chimeraforge
@@ -24,9 +25,9 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-24 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
+25 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `gate`, `refit`, `compare`,
-`eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
+`score`, `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. The candidate adds
 `gate --kind trace`; benchmark remains the default.
 
@@ -74,6 +75,6 @@ The canonical technical-report archive lives in `outputs/publish_ready/reports/`
 - Commands assume execution from the repository root unless noted
 - Links are relative to this `docs/` directory
 
-Published CLI: **0.61.0**. This checkout prepares **0.65.0**; the linked 0.62.0-0.65.0
+Published CLI: **0.61.0**. This checkout prepares **0.66.0**; the linked 0.62.0-0.66.0
 candidate features require their source or wheels until release. See the
 [Changelog](../CHANGELOG.md) for version history.

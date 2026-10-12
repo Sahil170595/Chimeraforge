@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.66.0] - Unreleased candidate
+
+### Frozen prediction scorecards
+
+- Typed `PredictionScorePolicy` / `PredictionScorecard`, `score_predictions` and `score` compare frozen saved candidate decode predictions with validated native benchmark receipts offline, without replanning or loading replacement current coefficients. Portable bundles additionally verify held producing bytes.
+- A required plan fingerprint, candidate population, expected receipt counts and inclusive relative error band govern coverage. Native samples, counts, aggregates and supported server decode arithmetic are recalculated; producer audit/binding claims cannot qualify a row.
+- Eligible single-stream Ollama evidence must match full typed serving geometry/hardware, actual token lengths, stable controls and compatible cache evidence. Modeled TP/PP, LoRA and offload restrictions remain separate from unverified live modifier/weight attestation. CPU/client GPU labels, incomplete or partial facts stay ineligible.
+- Every missing, extra, mismatched, unavailable and duplicate row is retained. Duplicate groups cannot manufacture scored populations with relabeled metadata or equivalent numeric spellings. A unique comparable breach remains exit 1 even when other rows are incomplete; incomplete evidence cannot yield a within-band result.
+- Narrow scorecards omit raw options, provider diagnostics, endpoints and paths. Atomic output protects every consumed plan/bundle, policy and native receipt. Existing installed consumers use explicit synthetic outcome oracles; existing CPU acceptance checks ineligibility using its already-produced native receipt.
+
+### Validation
+
+- Version 0.66.0 is an unpublished candidate; exact-head local, independent and hosted results are recorded on its PR. Scoring does not authenticate measurements, served hardware/weights, independent execution, preregistration or calibration and never automatically refits coefficients.
+
 ## [0.65.0] - Unreleased candidate
 
 ### Signed contributions and private replay
