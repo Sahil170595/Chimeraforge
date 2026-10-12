@@ -211,7 +211,7 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
         "assert result.exit_code==3; print(json.dumps({'v1':'PASS','v2_exit':result.exit_code}))"
     )
     probe = subprocess.run(
-        [sys.executable, "-I", "-c", core_code, str(artifact), str(legacy), str(trusted_key)],
+        [sys.executable, "-I", "-B", "-c", core_code, str(artifact), str(legacy), str(trusted_key)],
         cwd=cwd,
         env=env,
         capture_output=True,

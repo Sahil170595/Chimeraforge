@@ -255,7 +255,7 @@ async def test_server_cancellation_stops_requests_before_closing_plugin(installe
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("operation", ["bench", "safety"])
-async def test_failed_generation_closes_plugin(installed, operation):
+async def test_failed_generation_closes_plugin(installed, operation, caplog):
     async def fail(*args, **kwargs):
         raise RuntimeError("generation unavailable")
 
@@ -263,12 +263,20 @@ async def test_failed_generation_closes_plugin(installed, operation):
         patch.object(CPUBackend, "generate", fail),
         patch.object(CPUBackend, "generate_text", fail),
     ):
-        with pytest.raises(RuntimeError, match="generation unavailable"):
+        expected = (
+            "All 1 benchmark runs failed.*RuntimeError"
+            if operation == "bench"
+            else "generation unavailable"
+        )
+        with pytest.raises(RuntimeError, match=expected) as raised:
             if operation == "bench":
                 await run_benchmark("fixture", "cpu-fixture", runs=1)
             else:
                 await run_safety_screen("fixture", ["probe"], "cpu-fixture")
     assert CPUBackend.instances[-1].closed
+    if operation == "bench":
+        assert "RuntimeError" in caplog.text
+        assert "generation unavailable" not in caplog.text + str(raised.value)
 
 
 @pytest.mark.asyncio
