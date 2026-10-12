@@ -32,10 +32,11 @@ from chimeraforge.planner.engine import (
     pareto_frontier,
 )
 from chimeraforge.planner.models import load_effective_models, load_models
-from chimeraforge.planner.hardware import AUTO_HARDWARE, get_gpu
+from chimeraforge.planner.hardware import AUTO_HARDWARE, GPUSpec, get_gpu
 from chimeraforge.planner.platform_support import DEFAULT_PLAN_PLATFORM, local_plan_platform
 from chimeraforge.planner.qualityfile import aggregate, load_quality_file
 from chimeraforge.planner.resolver import ModelSpec, resolve_spec
+from chimeraforge.planner.replay import REPLAY_VERSION
 
 
 @dataclass
@@ -51,6 +52,7 @@ class PlanResult:
     platform: str = DEFAULT_PLAN_PLATFORM
     # Captured from the actual coefficients consumed, before remote resolution.
     corpus_sha256: str = ""
+    replay_context: dict | None = None
 
 
 def _check_mode_targets(
@@ -173,6 +175,59 @@ def run_plan(
     allow_network: bool = True,
     overrides: dict | None = None,
 ) -> PlanResult:
+    """Resolve inputs once and run the shared candidate search."""
+    return _run_plan(**locals())
+
+
+def _run_plan(
+    *,
+    models: list[str] | None = None,
+    model_size: str = "3b",
+    hardware: str = "RTX 4080 12GB",
+    request_rate: float = 1.0,
+    latency_slo: float | None = None,
+    quality_target: float = 0.5,
+    budget: float = 100.0,
+    avg_tokens: int = 128,
+    reasoning_tokens: int = 0,
+    prefix_cache_hit_rate: float = 0.0,
+    duty_cycle: float = 1.0,
+    gpu_price_multiplier: float = 1.0,
+    allow_offload: bool = False,
+    host_bandwidth_gbps: float | None = None,
+    ttft_slo: float | None = None,
+    tpot_slo: float | None = None,
+    context_length: int = 2048,
+    prompt_tokens: int = 512,
+    gpu_overrides: dict | None = None,
+    platform: str | None = None,
+    unified_memory_fraction: float | None = None,
+    quality_from: str | None = None,
+    max_num_batched_tokens: int | None = None,
+    safety_target: float | None = None,
+    workload_cv2: float = 0.0,
+    electricity_rate: float = DEFAULT_ELECTRICITY_RATE,
+    kv_quant: str = DEFAULT_KV_QUANT,
+    tensor_parallel: int | None = 1,
+    pipeline_parallel: int | None = 1,
+    lora_adapters: int = 0,
+    lora_rank: int = 16,
+    lora_target: str = DEFAULT_LORA_TARGET,
+    pareto: bool = False,
+    grid_region: str | None = None,
+    carbon_intensity: float | None = None,
+    mode: str = DEFAULT_PLAN_MODE,
+    use_contributions: bool = False,
+    cloud: str | None = None,
+    think_time_s: float | None = None,
+    session_turns: int | None = None,
+    models_path: str | None = None,
+    ollama_url: str | None = None,
+    hf_token: str | None = None,
+    allow_network: bool = True,
+    overrides: dict | None = None,
+    _replay: dict | None = None,
+) -> PlanResult:
     """Resolve targets and run the gate search; return a structured result.
 
     When ``models`` is given, each id is resolved to a :class:`ModelSpec`
@@ -208,6 +263,8 @@ def run_plan(
 
     # The deployment OS. Unset means Linux -- the OS the matrix's GPU rows
     # describe -- unless the plan is for THIS machine (`auto`), whose OS is known.
+    if _replay is not None:
+        platform = _replay["platform"]
     if platform is None:
         is_auto = (hardware or "").strip().lower() == AUTO_HARDWARE
         named = None if is_auto else get_gpu(hardware)
@@ -219,7 +276,10 @@ def run_plan(
             platform = DEFAULT_PLAN_PLATFORM
 
     specs: dict[str, ModelSpec] = {}
-    if models:
+    if _replay is not None:
+        specs = {key: ModelSpec(**row) for key, row in _replay["model_specs"].items()}
+        target_models = list(specs)
+    elif models:
         overrides = overrides or {}
         for ident in models:
             specs[ident] = resolve_spec(
@@ -237,10 +297,18 @@ def run_plan(
     # bad path or an unrecognised file is an error here rather than a silent
     # fallback: the user would otherwise believe their eval was in force.
     quality_override = None
+    quality_receipt = None
     if quality_from:
-        quality_override = aggregate(load_quality_file(quality_from))
+        ingested = load_quality_file(quality_from)
+        quality_override = aggregate(ingested)
+        quality_receipt = {
+            "input": getattr(ingested, "_input_receipt", None),
+            "scores": asdict(ingested),
+            "aggregate": asdict(quality_override),
+        }
 
     trace: list = []
+    consumed: dict = {}
     candidates = enumerate_candidates(
         models=planner_models,
         target_models=target_models,
@@ -282,6 +350,17 @@ def run_plan(
         cloud=cloud,
         think_time_s=think_time_s,
         session_turns=session_turns,
+        _consumed=consumed,
+        _hardware_spec=GPUSpec.from_dict(_replay["hardware"]["raw"])
+        if _replay is not None
+        else None,
+    )
+    consumed.update(
+        version=REPLAY_VERSION,
+        platform=platform,
+        corpus={"sha256": corpus_sha256, "input": getattr(planner_models, "_input_receipt", None)},
+        quality=quality_receipt,
+        grid=asdict(grid) if grid is not None else None,
     )
     frontier = pareto_frontier(candidates) if pareto else None
     return PlanResult(
@@ -292,4 +371,10 @@ def run_plan(
         frontier=frontier,
         platform=platform,
         corpus_sha256=corpus_sha256,
+        replay_context=consumed,
     )
+
+
+def replay_plan(inputs: dict, context: dict) -> PlanResult:
+    """Rerun shared gates against full bound geometry and current consumed inputs."""
+    return _run_plan(**inputs, _replay=context)

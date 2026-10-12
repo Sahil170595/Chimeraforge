@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.52.0] - 2026-10-12
+
+### Added
+- `check` and typed `api.check_plan` recheck saved deployment plans against current offline facts, retaining changed inputs, native gate reasons, candidate transitions and modeled deltas.
+- Newly saved plans bind resolved model/hardware/platform facts, consumed corpus and quality bytes, cloud context and contribution membership for offline replay without reprobe or input mutation.
+- Released schema-v1 plans retain partial checks with unavailable bindings explicit. Unchanged recommendations do not establish serving performance or immutable weights.
+
+### Validation
+- Released independently from PR #105. The exact versioned candidate is validated by the publishing workflow, including installed distributions, actual CPU serving and MCP container calls.
+
 ## [0.51.0] - 2026-10-08
 
 ### Added

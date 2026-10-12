@@ -358,6 +358,7 @@ def contributed_decode(
         "decode_tps": statistics.median(means),
         "contributions": len(hits),
         "ids": [c["id"][:12] for c in hits],
+        "full_ids": [c["id"] for c in hits],
         "clusters": clusters,
         "flagged": sum(bool(c.get("flags")) for c in hits),
     }

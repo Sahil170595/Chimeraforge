@@ -13,12 +13,13 @@ from pathlib import Path
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge import __version__
+from chimeraforge.plan_check import PlanCheck
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
 from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inputs
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 MAX_PLAN_BYTES = 8 * 1024 * 1024
 MODEL_OVERRIDE_TYPES = {
     "params_b": float,
@@ -246,14 +247,18 @@ def snapshot(request: PlanRequest, result: PlanResult) -> PlanArtifact:
         inputs["ollama_url"] = urlunsplit((url.scheme, url.netloc.split("@")[-1], url.path, "", ""))
     if not result.corpus_sha256:
         raise PlanError("planning result did not record its consumed corpus")
+    result_data = asdict(result)
+    schema_version = SCHEMA_VERSION if result.replay_context is not None else 1
+    if schema_version == 1:
+        result_data.pop("replay_context")
     body = _json_value(
         {
-            "schema_version": SCHEMA_VERSION,
+            "schema_version": schema_version,
             "tool": {"name": "chimeraforge", "version": __version__},
             "created_at": datetime.now(timezone.utc).isoformat(),
             "inputs": inputs,
             "corpus_sha256": result.corpus_sha256,
-            "result": asdict(result),
+            "result": result_data,
         }
     )
     body["fingerprint"] = _digest(body)
@@ -305,7 +310,7 @@ def artifact_from_dict(data: dict) -> PlanArtifact:
         not isinstance(data, dict)
         or set(data) != required
         or type(data["schema_version"]) is not int
-        or data["schema_version"] != SCHEMA_VERSION
+        or data["schema_version"] not in (1, SCHEMA_VERSION)
     ):
         raise PlanError("unsupported saved-plan schema or fields")
     body = {k: v for k, v in data.items() if k != "fingerprint"}
@@ -343,7 +348,10 @@ def artifact_from_dict(data: dict) -> PlanArtifact:
             if url.username is not None or url.password is not None or url.query or url.fragment:
                 raise PlanError("saved endpoint must omit userinfo, query and fragment")
         result = data["result"]
-        if set(result) != {f.name for f in fields(PlanResult)}:
+        result_fields = {f.name for f in fields(PlanResult)}
+        if data["schema_version"] == 1:
+            result_fields.remove("replay_context")
+        if set(result) != result_fields:
             raise PlanError("invalid saved-plan result fields")
         if result["corpus_sha256"] != corpus_hash:
             raise PlanError("result and artifact corpus fingerprints must agree")
@@ -372,6 +380,10 @@ def artifact_from_dict(data: dict) -> PlanArtifact:
             raise PlanError("trace rows must contain four strings")
         if result["platform"] not in ("linux", "windows", "wsl2", "macos"):
             raise PlanError("invalid saved-plan platform")
+        if data["schema_version"] == SCHEMA_VERSION:
+            from chimeraforge.plan_check import validate_context
+
+            validate_context(result["replay_context"], result, request)
         _finite_input(data)
     except (TypeError, KeyError, ValueError, OverflowError) as exc:
         raise PlanError(f"invalid saved-plan structure: {exc}") from exc
@@ -386,3 +398,13 @@ def _validate_candidate(row: dict) -> None:
             continue  # non-finite predictions are serialized as unknown
         _check_type(row[name], annotation, name)
     Candidate(**row)
+
+
+def check_plan(saved: PlanArtifact | str | Path) -> PlanCheck:
+    """Compare a saved plan offline without changing its artifact or bound target."""
+    from chimeraforge.plan_check import check
+
+    artifact = (
+        artifact_from_dict(saved.to_dict()) if isinstance(saved, PlanArtifact) else load_plan(saved)
+    )
+    return check(artifact)

@@ -78,6 +78,11 @@ class GPUSpec:
     # Every configuration a unified-memory device is sold in (vram_gb is the largest).
     memory_options_gb: tuple = ()
 
+    @classmethod
+    def from_dict(cls, values: dict) -> GPUSpec:
+        """Hydrate JSON facts without changing tuple-based hardware identity."""
+        return cls(**{**values, "memory_options_gb": tuple(values.get("memory_options_gb", ()))})
+
 
 def known_or_none(value: float) -> float | None:
     """A spec figure for output: the value, or None where 0.0 means unknown."""

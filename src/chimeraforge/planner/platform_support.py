@@ -74,10 +74,10 @@ def platform_key(system: str, vendor: str | None, wsl: bool = False) -> str:
     return PLATFORM_CPU
 
 
-def engine_support(engine: str, platform: str) -> EngineSupport:
+def engine_support(engine: str, platform: str, *, data: dict | None = None) -> EngineSupport:
     """One cell. An engine or platform the matrix does not carry is reported as
     not documented rather than raising, so a new backend degrades to silence."""
-    data = load_engine_support()
+    data = load_engine_support() if data is None else data
     row = data["engines"].get(engine)
     cell = (row or {}).get("platforms", {}).get(platform)
     if not row or not cell:
@@ -183,7 +183,13 @@ class EngineVerdict:
 
 
 def check_engine(
-    engine: str, platform: str | None, vendor: str, product_line: str, quant: str
+    engine: str,
+    platform: str | None,
+    vendor: str,
+    product_line: str,
+    quant: str,
+    *,
+    data: dict | None = None,
 ) -> EngineVerdict:
     """Apply the engine's own documentation to one (engine, platform, GPU, quant).
 
@@ -200,8 +206,9 @@ def check_engine(
                 "platform was not checked against the engines' docs",
             ),
         )
-    s = engine_support(engine, platform)
-    cell = load_engine_support()["engines"].get(engine, {}).get("platforms", {}).get(platform, {})
+    data = load_engine_support() if data is None else data
+    s = engine_support(engine, platform, data=data)
+    cell = data["engines"].get(engine, {}).get("platforms", {}).get(platform, {})
     tag = f"{engine} {s.engine_version}".strip()
     if s.status == STATUS_UNSUPPORTED:
         return EngineVerdict(False, f'{tag} does not support {platform}: "{s.quote}" ({s.url})')

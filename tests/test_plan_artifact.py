@@ -12,7 +12,7 @@ def test_public_plan_and_snapshot_roundtrip(tmp_path):
 
     artifact = plan(PlanRequest(allow_network=False))
     payload = artifact.to_dict()
-    assert payload["schema_version"] == 1
+    assert payload["schema_version"] == 2
     assert payload["inputs"]["request_rate"] == 1.0
     assert payload["result"]["candidates"][0]["provenance"]
     assert payload["result"]["platform"] == "linux"
