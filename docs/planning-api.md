@@ -215,3 +215,31 @@ model/backend match plus native SLO pass. Exit 0 retains explicit unavailable GP
 fleet, workload and immutable-weight limits; it does not certify deployment or
 planner accuracy. CLI operational/input/output errors exit 1. Target override
 attribution and separate Prometheus binding gauges are included in the guide.
+
+## MCP transport configuration
+
+The same five planner tools are available through default stdio or the SDK-native
+Streamable HTTP endpoint (`chimeraforge mcp --transport streamable-http`). For
+Python embedding, pass the frozen operator settings explicitly:
+
+```python
+from chimeraforge.mcp_server import build_server
+from chimeraforge.mcp_transport import MCPHTTPSettings
+
+build_server(http_settings=MCPHTTPSettings(port=8766)).run("streamable-http")
+```
+
+HTTP is loopback-only and offline by default. Its raw-argument guard rejects
+caller-controlled local paths, URLs/Ollama endpoints, and `allow_network` before
+the SDK injects defaults. Operator `allow_network=True` permits Hugging Face model
+resolution and discovery; catalog data remains server-owned. Initialization
+instructions expose the effective policy. Stdio retains its existing tool knobs.
+HTTP discovery accepts an integer `hf_limit` from 1 to 16, bounding resolver fanout
+before worker/network admission even when the operator enables network access.
+
+`MCPHTTPSettings` owns native body/session/idle limits and fixed worker admission.
+Timed-out/cancelled calls retain capacity until their synchronous job completes;
+there is no unbounded executor submission queue. Protocol controls remain on the
+event loop. Lifespan shutdown stops admission and drains owned workers, rather
+than claiming Python can preempt a hung synchronous operation. Ordinary clients
+should use the supported SDK `streamable_http_client` and `ClientSession`.

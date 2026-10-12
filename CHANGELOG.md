@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.0] - 2026-10-12
+
+### Added
+- `mcp --transport streamable-http` exposes the native MCP transport on loopback with server-owned network policy, bounded sessions/body sizes and fixed synchronous-tool admission.
+- Timeout or client cancellation does not release an occupied worker until its underlying work finishes. Protocol controls remain responsive and shutdown drains owned workers. Stdio remains available.
+- Registry runtime arguments use the supported `--with` extra pinned to the advertised package version and omit the incompatible PyPI root index URL. The actual metadata-generated command is exercised against the built candidate before publishing and against public PyPI before registry publication.
+- The real five-tool HTTP integration client now waits for the server's existing response deadline plus transport margin; production deadlines, admission limits and adversarial test budgets are unchanged.
+
+### Validation
+- Released independently from PR #108; the publishing workflow validates and attests the exact versioned distributions before publication.
+
 ## [0.54.0] - 2026-10-12
 
 ### Added

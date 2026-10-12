@@ -11,6 +11,7 @@ import tempfile
 from pathlib import Path
 
 from probe_mcp_stdio import probe
+from ci_mcp_http import probe as probe_http
 
 CLI_TIMEOUT_SECONDS = 90
 RESOURCE_FILES = (
@@ -124,6 +125,10 @@ def main(argv: list[str] | None = None) -> int:
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe([sys.executable, "-I", "-m", "chimeraforge", "mcp"], cwd=cwd, env=env)
         assert info["version"] == args.expect_version
+        http_receipt = probe_http(
+            [sys.executable, "-I", "-m", "chimeraforge", "mcp"], cwd=cwd, env=env
+        )
+        assert http_receipt["serverInfo"]["version"] == args.expect_version
         print(
             json.dumps(
                 {
@@ -131,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
                     "origin": installed["origin"],
                     "resources": list(installed["resources"]),
                     "mcp_tools": tools,
+                    "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",
                 },
                 indent=2,

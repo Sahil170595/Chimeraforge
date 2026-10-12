@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from chimeraforge import __version__
+from chimeraforge.mcp_transport import MCPHTTPSettings
 from chimeraforge.planner.engine import summarize_trace
 from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE, WORKLOAD_CV2
 from chimeraforge.planner.hardware import AUTO_HARDWARE, GPU_DB, get_gpu, known_or_none
@@ -524,7 +525,7 @@ def suggest_models(
     }
 
 
-def build_server():
+def build_server(*, http_settings: MCPHTTPSettings | None = None):
     """Construct the FastMCP server (requires the ``mcp`` extra)."""
     try:
         from mcp.server.fastmcp import FastMCP
@@ -533,7 +534,19 @@ def build_server():
             "the MCP server needs the 'mcp' package; install with pip install \"chimeraforge[mcp]\""
         ) from exc
 
-    server = FastMCP("chimeraforge", instructions=SERVER_INSTRUCTIONS)
+    executor = None
+    if http_settings is None:
+        server = FastMCP("chimeraforge", instructions=SERVER_INSTRUCTIONS)
+    else:
+        from chimeraforge.mcp_transport import build_http_server
+
+        server, executor = build_http_server(
+            instructions=SERVER_INSTRUCTIONS, settings=http_settings
+        )
+
+    def tool(function):
+        return function if executor is None else executor.wrap(function)
+
     # FastMCP (mcp 1.x) takes no `version`, but the low-level Server it wraps does,
     # and leaving it unset makes every client display the SDK's version as ours --
     # a tool that labels each number measured/estimated/unknown should not misreport
@@ -543,22 +556,28 @@ def build_server():
     low_level = getattr(server, "_mcp_server", None)
     if low_level is not None and hasattr(low_level, "version"):
         low_level.version = __version__
-    server.tool(name="chimeraforge_plan", description=_PLAN_DESC)(plan_deployment)
+    server.tool(name="chimeraforge_plan", description=_PLAN_DESC)(tool(plan_deployment))
     server.tool(
         name="chimeraforge_resolve_model",
         description="Resolve a model id to real params/architecture (grounds hallucinated specs).",
-    )(resolve_model)
+    )(tool(resolve_model))
     server.tool(
         name="chimeraforge_list_hardware",
         description="List known GPUs with VRAM/bandwidth/TDP/interconnect.",
-    )(list_hardware)
+    )(tool(list_hardware))
     server.tool(name="chimeraforge_compare_api", description=_COMPARE_DESC)(
-        compare_self_host_vs_api
+        tool(compare_self_host_vs_api)
     )
-    server.tool(name="chimeraforge_suggest", description=_SUGGEST_DESC)(suggest_models)
+    server.tool(name="chimeraforge_suggest", description=_SUGGEST_DESC)(tool(suggest_models))
     return server
 
 
-def main() -> None:
-    """Entry point: run the stdio MCP server."""
-    build_server().run("stdio")
+def main(*, transport: str = "stdio", http_settings: MCPHTTPSettings | None = None) -> None:
+    """Run stdio by default, or the explicitly configured native HTTP transport."""
+    if transport not in {"stdio", "streamable-http"}:
+        raise ValueError("transport must be stdio or streamable-http")
+    if transport == "stdio" and http_settings is not None:
+        raise ValueError("HTTP settings require streamable-http transport")
+    if transport == "streamable-http" and http_settings is None:
+        http_settings = MCPHTTPSettings()
+    build_server(http_settings=http_settings).run(transport)
