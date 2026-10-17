@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.62.0] - 2026-10-17
+
+### Native streaming trace observations
+
+- vLLM, SGLang and TGI expose `generate_observed` to the existing async `replay_trace` API and `trace` CLI, retaining visible first output, native counts and valid rate-unavailable completions.
+- OpenAI adapters request delta token IDs and final usage; TGI includes final/control tokens. Complete native coverage must reconcile with final counts and respect the outgoing output cap. Mean decode timing uses native output arrivals, including EOS, without assigning different times to frames buffered in one transport packet.
+- Bounded SSE parsing requires successful finish and final usage plus DONE for OpenAI, or final details plus normal EOF for TGI. In-band errors, malformed metadata, partial transport and exceeded output caps refuse completion. Cleanup and cancellation preserve the full trace population without private response bodies.
+- Existing installed wheel/sdist consumers exercise all three adapters through the public trace CLI using explicitly synthetic HTTP protocol fixtures. Existing real hosted CPU inference remains separate; no native GPU engine or hardware qualification is claimed.
+- Release readiness recognizes only complete exact-version absence proofs for the bare package or its requested MCP extra. Extra dependency, compatibility, HTTP or metadata clauses remain fatal; the single application probe and shared deadline are preserved.
+
+### Validation
+
+- Released independently from PR #116. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38280237153); the publishing workflow separately validates and attests the exact versioned distributions before publication. Synthetic streaming protocol checks do not establish GPU execution or physical serving performance.
+
 ## [0.61.0] - 2026-10-12
 
 ### Scope-aware measured regression gates

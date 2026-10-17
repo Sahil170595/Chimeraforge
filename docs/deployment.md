@@ -31,7 +31,7 @@ size class, `--model org/concrete-model` can supply an unquantized HF identity. 
 override retains the size-class prediction and an explicit note; resolving and
 replanning the actual checkpoint provides its actual geometry.
 
-The unreleased [checkpoint identity](planning-api.md#checkpoint-identity) feature
+The [checkpoint identity](planning-api.md#checkpoint-identity) feature, available since 0.57.0,
 adds the resolved HF commit to vLLM/TGI/SGLang commands through their native
 `--revision` option, including their default same-repository tokenizer. Branches
 and tags are resolved before planning; exports use the saved commit, with no Hub

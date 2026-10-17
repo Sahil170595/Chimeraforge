@@ -14,6 +14,16 @@ import types
 import pytest
 
 
+def absence(version="0.57.0", extra=""):
+    # uv 0.12.23 pip_install_scenarios.rs, requires_exact_version_does_not_exist.
+    return (
+        "error: No solution found when resolving dependencies\n"
+        f"  cause: Because there is no version of chimeraforge{extra}=={version} and\n"
+        f"  you require chimeraforge[mcp]=={version}, we can conclude that\n"
+        "  your requirements are unsatisfiable."
+    )
+
+
 def script():
     path = Path(__file__).parents[1] / "scripts" / "ci_registry_runtime.py"
     spec = importlib.util.spec_from_file_location("registry_readiness_test", path)
@@ -64,10 +74,7 @@ def test_native_readiness_uses_sdk_environment_and_dry_run(monkeypatch, status):
 
     def run(command, **kwargs):
         calls.append((command, kwargs))
-        error = (
-            "Because there is no version of chimeraforge==0.57.0 "
-            "and you require chimeraforge[mcp]==0.57.0"
-        )
+        error = absence()
         return subprocess.CompletedProcess(command, status, "", error if status else "")
 
     monkeypatch.setattr(subprocess, "run", run)
@@ -76,6 +83,7 @@ def test_native_readiness_uses_sdk_environment_and_dry_run(monkeypatch, status):
     command, options = calls[0]
     assert command == [
         "uv",
+        "--quiet",
         "pip",
         "install",
         "--dry-run",
@@ -210,10 +218,7 @@ def test_successful_late_resolution_cannot_escape_deadline(monkeypatch):
 
 def test_line_wrapped_exact_release_absence_is_recognized(monkeypatch):
     module = script()
-    error = (
-        "Because there is no version of chimeraforge==0.57.0 and\n"
-        "  you require\n  chimeraforge[mcp]==0.57.0, resolution is unavailable"
-    )
+    error = absence()
     monkeypatch.setattr(
         subprocess,
         "run",
@@ -324,3 +329,40 @@ def test_diagnostic_absence_variants_do_not_broaden_retries(monkeypatch, error):
     )
     with pytest.raises(RuntimeError, match="resolution failed"):
         module.public_resolution_ready("0.61.0", 7)
+
+
+@pytest.mark.parametrize("extra", ["", "[mcp]"])
+def test_only_complete_exact_requested_root_absence_is_retryable(monkeypatch, extra):
+    module = script()
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, "", absence(extra=extra)),
+    )
+    assert module.public_resolution_ready("0.57.0", 7) is False
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        absence().split("cause: ")[1],
+        absence().replace("your requirements are unsatisfiable.", "resolution is unavailable"),
+        absence() + " hint: requires Python >=3.13",
+        "HTTP status code 503\n" + absence(),
+        absence().replace(" and\n", " and mcp depends on unavailable-package and\n"),
+        absence().replace(
+            "you require chimeraforge[mcp]==0.57.0", "you require chimeraforge==0.56.0"
+        ),
+        absence(extra="[other]"),
+        absence().replace("==0.57.0 and", "==0.57.01 and"),
+    ],
+)
+def test_root_absence_substring_cannot_hide_other_resolver_failures(monkeypatch, error):
+    module = script()
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 1, "", error),
+    )
+    with pytest.raises(RuntimeError, match="resolution failed"):
+        module.public_resolution_ready("0.57.0", 7)

@@ -109,6 +109,7 @@ def public_resolution_ready(
 
     command = [
         "uv",
+        "--quiet",
         "pip",
         "install",
         "--dry-run",
@@ -133,8 +134,16 @@ def public_resolution_ready(
     if result.returncode == 0:
         return True
     error = " ".join(result.stderr.split())
-    missing = f"Because there is no version of {PACKAGE}=={version} and "
-    if result.returncode == 1 and missing in error and f"you require {PACKAGE}" in error:
+    # Exact simple proofs from the pinned resolver; extra nodes are native uv packages.
+    # Matching the whole diagnostic prevents a missing-root clause hiding another cause.
+    missing = {
+        "error: No solution found when resolving dependencies cause: "
+        f"Because there is no version of {PACKAGE}{extra}=={version} and "
+        f"you require {PACKAGE}[mcp]=={version}, we can conclude that "
+        "your requirements are unsatisfiable."
+        for extra in ("", "[mcp]")
+    }
+    if result.returncode == 1 and error in missing:
         return False
     diagnostic = {"version": version, "exit_code": result.returncode, "reason": "resolver_error"}
     diagnostic.update(resolution_context(error, version, public_package_names()))

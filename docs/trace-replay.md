@@ -93,12 +93,30 @@ Independent checkpoints every 32 native chunks or 64 KiB also cover fragmented
 frames with no newline yet. It keeps
 native chunk delivery rather than coalescing first output until a fixed buffer fills.
 
-Existing vLLM/TGI/SGLang fallback adapters retain their standardized final
-metrics. When their decode basis is client first-to-last content, the mean
-interval uses that duration divided by server output count minus one. This
-does not expose a queue-inclusive absolute first-output timestamp, so that
-trace field stays unknown. Different mean bases must not be pooled. Arbitrary
-plugin bases remain unavailable. None of these means proves every-token latency.
+Chimeraforge **0.62.0** adds native observations for vLLM, SGLang and TGI to
+the same CLI and typed API. vLLM/SGLang request `return_token_ids=true`, one
+choice, `echo=false` and final stream usage. TGI exposes one native token per
+event, including final/control tokens. Native ID coverage must equal the final
+server output count and respect the actual outgoing output cap. Visible first
+output remains separate from native control/EOS arrivals.
+
+`client-first-to-last-native-output/(server-output-count-1)` qualifies only
+with complete IDs, one token at the first wire arrival, at least two output
+tokens, and distinct first/last arrivals. All frames completing in one transport
+packet share its arrival time; parser calls cannot invent elapsed decode time.
+Missing IDs, an initial multi-token batch, a one-token completion, or entirely
+buffered output leaves mean decode timing/rate unavailable while preserving
+valid completion, counts and observed visible first output. Missing cache counts
+remain unknown. Server prefill duration is unavailable for these observations.
+The legacy `bench` rate interface refuses unavailable timing explicitly.
+
+SSE parsing bounds each frame to 64 KiB, the stream to 8 MiB and 16,384 frames,
+including keep-alives, and yields for cancellation. Successful OpenAI completion
+requires a stop/length finish, exactly one final usage event and DONE. TGI requires
+successful final details and normal EOF. Errors, invalid counters/IDs, cap
+violations and incomplete frames refuse completion and close the response.
+Different mean bases must not be pooled. Arbitrary plugin bases remain
+unavailable. None of these means proves every-token latency.
 
 `execution` records planned, attempted, completed, failed, partial, cancelled
 and not-started counts. Partial means first output was observed before failure;
@@ -142,7 +160,14 @@ planned GPU geometry, actual served weight/tokenizer bytes or an independently
 cold deployment. Hosted acceptance runs the installed CLI against the existing
 pinned CPU Ollama/Smol endpoint, verifies timing arithmetic and actual native
 counts, and preserves SLO outcomes without imposing shared-runner speed limits.
-That hosted proof remains pending until the exact feature head is published.
+Candidate installed consumers additionally exercise explicitly synthetic native
+SSE fixtures through the public CLI on Linux, Windows and macOS. This qualifies
+artifact/protocol behavior, not execution of the native GPU engines.
+
+Native contracts were checked on 2026-10-12 against pinned
+[vLLM 0.30.0](https://github.com/vllm-project/vllm/blob/ced6857afa0ea7b2e3f0846a62e1394e90f15607/vllm/entrypoints/openai/completion/serving.py),
+[SGLang 0.5.20](https://github.com/sgl-project/sglang/blob/94602c9c2b7cbdb8efd5c52802dac6a1c180089e/python/sglang/srt/entrypoints/openai/serving_completions.py),
+and [TGI 3.3.7](https://github.com/huggingface/text-generation-inference/blob/dfb3fbe78e0d1d69251bd33065591c61bafdfaa8/router/src/server.rs).
 
 The timing contract follows Python's [performance-counter API](https://docs.python.org/3.12/library/time.html#time.perf_counter)
 and Ollama's [generate API](https://docs.ollama.com/api/generate), checked on
