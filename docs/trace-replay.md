@@ -96,7 +96,7 @@ Independent checkpoints every 32 native chunks or 64 KiB also cover fragmented
 frames with no newline yet. It keeps
 native chunk delivery rather than coalescing first output until a fixed buffer fills.
 
-The **0.62.0 candidate** adds native observations for vLLM, SGLang and TGI to
+Chimeraforge **0.62.0** adds native observations for vLLM, SGLang and TGI to
 the same CLI and typed API. vLLM/SGLang request `return_token_ids=true`, one
 choice, `echo=false` and final stream usage. TGI exposes one native token per
 event, including final/control tokens. Native ID coverage must equal the final
