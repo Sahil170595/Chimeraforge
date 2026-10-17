@@ -1,8 +1,8 @@
 # Real request-trace replay
 
-The unpublished 0.63.0 candidate adds [saved trace regression gates](trace-regression-gate.md)
-through `gate --kind trace`, requiring candidate source or wheel.
-The unpublished 0.64.0 candidate adds [serial campaigns](trace-campaign.md) over
+Chimeraforge 0.63.0 adds [saved trace regression gates](trace-regression-gate.md)
+through `gate --kind trace`.
+Chimeraforge 0.64.0 adds [serial campaigns](trace-campaign.md) over
 the same native replay route, with one held workload and complete replica populations.
 
 Chimeraforge 0.60.0 executes actual requests against an existing endpoint. Install `pip install "chimeraforge[bench]==0.60.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955012604); each release separately qualifies its versioned artifacts. It does not launch a server or download a model.
@@ -98,7 +98,7 @@ Independent checkpoints every 32 native chunks or 64 KiB also cover fragmented
 frames with no newline yet. It keeps
 native chunk delivery rather than coalescing first output until a fixed buffer fills.
 
-The **0.62.0 candidate** adds native observations for vLLM, SGLang and TGI to
+Chimeraforge **0.62.0** adds native observations for vLLM, SGLang and TGI to
 the same CLI and typed API. vLLM/SGLang request `return_token_ids=true`, one
 choice, `echo=false` and final stream usage. TGI exposes one native token per
 event, including final/control tokens. Native ID coverage must equal the final

@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-12).** The published version is [Chimeraforge 0.61.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.61.0). This branch prepares **0.64.0** serial trace campaigns, following the **0.62.0** native streaming trace and **0.63.0** trace regression gate candidates. These features require their candidate source or wheel until release; the other workflows below are available in 0.61.0.
+**Release scope (2026-10-17).** [Chimeraforge 0.64.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.64.0) adds serial trace campaigns. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.61.0"
+pip install "chimeraforge[mcp]==0.64.0"
 ```
 
 ## Quickstart
@@ -281,8 +281,8 @@ performance or identify immutable model weights. See [the API contract](docs/pla
 
 ### `bundle` -- portable saved-plan handoff
 
-This is an unreleased feature of this checkout, beyond PyPI 0.51.0 and the older
-review-stack install pin above. Install this checkout with `pip install .`.
+Portable handoffs are available since Chimeraforge 0.58.0 and are included in
+the version pinned above.
 
 **Harness files may contain private prompts or other data. Review the exact
 inputs before sharing a bundle.** Creation copies only the original plan and its
@@ -307,7 +307,7 @@ See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
 ### `study` -- frozen-context workload and cost sensitivity
 
-An unreleased feature of this checkout. Use `pip install .` from this source.
+Available since Chimeraforge 0.59.0 and included in the version pinned above.
 Compare explicit assumptions against one saved plan or portable bundle offline:
 
 ```json
@@ -626,7 +626,7 @@ stays separate. Mean decode time is labeled by its basis and does not prove an
 every-token target. Other adapters without a first-output capability report it
 unknown. Output caps are requests, with actual token counts recorded separately.
 
-**0.62.0 candidate:** `--backend vllm`, `sglang` or `tgi` now observes visible
+**Since 0.62.0:** `--backend vllm`, `sglang` or `tgi` observes visible
 first output through native streaming. Native token IDs include EOS/control steps
 and must reconcile with final server counts; exceeding the requested cap refuses
 completion. Client mean decode timing requires complete IDs, one token at the
@@ -642,9 +642,9 @@ contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
 
-### `gate --kind trace` -- queue-inclusive regression decisions (0.63.0 candidate)
+### `gate --kind trace` -- queue-inclusive regression decisions (since 0.63.0)
 
-With the unpublished 0.63.0 candidate source or wheel, save a predeclared trace
+With Chimeraforge 0.63.0 or later, save a predeclared trace
 policy as `trace-policy.json`:
 
 ```json
@@ -672,9 +672,9 @@ remains the default `--kind benchmark`. See the [trace policy/API contract](docs
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
 
-### `trace-campaign` -- frozen serial replay populations (0.64.0 candidate)
+### `trace-campaign` -- frozen serial replay populations (since 0.64.0)
 
-Use the unpublished 0.64.0 candidate source or wheel and an existing served model:
+Use Chimeraforge 0.64.0 or later and an existing served model:
 
 ```bash
 chimeraforge trace-campaign workload.json --model llama3.2-3b --backend ollama --replicates 3 --campaign-timeout 1800 --concurrency 1 --request-timeout 300 --trace-timeout 600 --latency-slo 2000 --first-output-slo 500 --tpot-slo 50 --out campaign.json --json

@@ -13,8 +13,8 @@ planner's data came from; those guides are archived below.
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
 - **[API Reference](API.md)** - the public Python API (`chimeraforge.planner`, resolver, discovery, measure)
-- **[Trace regression gates](trace-regression-gate.md)** - unpublished 0.63.0 candidate, queue-inclusive saved evidence
-- **[Serial trace campaigns](trace-campaign.md)** - unpublished 0.64.0 candidate, frozen ordered replica populations
+- **[Trace regression gates](trace-regression-gate.md)** - since 0.63.0, queue-inclusive saved evidence
+- **[Serial trace campaigns](trace-campaign.md)** - since 0.64.0, frozen ordered replica populations
 
 ```bash
 pip install chimeraforge
