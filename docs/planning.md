@@ -42,7 +42,7 @@ Key inputs (all have explicit units and defaults; see `plan --help`):
 | `--hardware` | GPU name (`plan --list-hardware`) | RTX 4080 12GB |
 | `--revision` | HF ref for one model, or repeated `MODEL=REF` | `main` when fetching HF metadata |
 
-`--revision` is an unreleased source option (see the README install scope).
+`--revision` is available since Chimeraforge 0.57.0 (see the README install scope).
 Online HF resolution first binds a commit, then reads its config and declared
 weight metadata. `--no-network` can reuse a cached receipt for that revision;
 an unavailable explicit pin is refused. Manual geometry cannot attest an HF

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.62.0] - Unreleased candidate
+## [0.62.0] - 2026-10-17
 
 ### Native streaming trace observations
 
@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Candidate validation is recorded on its PR; version 0.62.0 is not yet published.
+- Released independently from PR #116. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38280237153); the publishing workflow separately validates and attests the exact versioned distributions before publication. Synthetic streaming protocol checks do not establish GPU execution or physical serving performance.
 
 ## [0.61.0] - 2026-10-12
 
