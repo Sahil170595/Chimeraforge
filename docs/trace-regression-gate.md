@@ -2,9 +2,8 @@
 
 `gate --kind trace` and `api.gate_traces` apply a predeclared conditional
 engineering policy to saved `trace` receipts. They execute no model requests.
-This is an **unpublished 0.63.0 candidate**, requiring candidate source or wheel.
-The public installation remains `chimeraforge==0.61.0`; 0.62.0 is the preceding
-native streaming trace candidate. `gate` without `--kind` selects the existing
+Available since **Chimeraforge 0.63.0**, following the 0.62.0 native streaming trace observations.
+`gate` without `--kind` selects the existing
 [benchmark gate](regression-gate.md).
 
 Save `trace-policy.json` before collecting the compared executions:
