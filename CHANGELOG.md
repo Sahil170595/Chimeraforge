@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.63.0] - 2026-10-17
+
+### Queue-inclusive trace regression gates
+
+- Typed `TraceGatePolicy` / `gate_traces` and `gate --kind trace` compare every ordered saved trace population; benchmark gating remains the default. Goodput and full-population p95 latency, first output and per-request mean TPOT have explicit fractional rules and distinct timing bases.
+- Strict bounded held receipts verify fingerprints and reconstruct native arithmetic, request timing, SLO states, execution counts and goodput. Valid incomplete, stopped, missing-origin or cleanup-failed executions remain retained inconclusive evidence.
+- Matched schedules, caps, observed token lengths, before/after controls and request-position cache observations govern eligibility. Copied executions cannot manufacture replicates by changing labels, clock origins or request IDs. Zero metric baselines remain inconclusive.
+- Atomic decisions protect every consumed receipt and policy, retain all paired and unpaired inputs and omit arbitrary provider payloads. Existing installed consumers exercise all four CLI outcomes with explicit synthetic protocol fixtures; the existing CPU trace slot checks copied-execution refusal without another model run.
+
+### Validation
+
+- Released independently from PR #117. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38289257404); the publishing workflow separately validates and attests the exact versioned distributions before publication. no physical authentication, independent cold execution or GPU qualification is claimed.
+
 ## [0.62.0] - 2026-10-17
 
 ### Native streaming trace observations

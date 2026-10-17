@@ -3,6 +3,9 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
+Chimeraforge 0.63.0 includes native streaming trace observations and [queue-inclusive trace gates](trace-regression-gate.md).
+Benchmark gating remains the default.
+
 ## 5-Minute Setup
 
 ### 1. Install Prerequisites

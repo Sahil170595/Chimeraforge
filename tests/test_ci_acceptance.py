@@ -101,6 +101,30 @@ def test_regression_gate_installed_consumer_protocol_through_real_cli(tmp_path, 
         script.validate(report, 0, (2, 2))
 
 
+def test_trace_gate_consumer_protocol_through_public_cli(tmp_path, monkeypatch):
+    """Source protocol proof; actual installed qualification retains the origin guard."""
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    script = load_script("ci_trace_gate")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: None)
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == expected_code, result.output
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        return result.output
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    result = script.accept(tmp_path, {}, tmp_path / "checkout")
+    assert [
+        result[name]["exit_code"] for name in ("conditional_pass", "regression", "inconclusive")
+    ] == [0, 1, 3]
+    assert result["malformed_exit"] == 2
+    assert "synthetic" in result["scope"]
+
+
 def cpu_gate_fixture(
     tmp_path,
     *,

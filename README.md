@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-17).** [Chimeraforge 0.62.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.62.0) adds native streaming trace observations for vLLM, SGLang and TGI. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-17).** [Chimeraforge 0.63.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.63.0) adds queue-inclusive trace regression gates. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.62.0"
+pip install "chimeraforge[mcp]==0.63.0"
 ```
 
 ## Quickstart
@@ -599,7 +599,7 @@ Explicitly predeclaring `require_cache_evidence:false`
 waives absence only, retains uncontrolled-cache scope and preserves known-drift
 refusals. No decision authenticates weights or proves independent cold runs,
 confidence, GPU accuracy or queue-inclusive SLO attainment. See the complete
-[policy/API contract](docs/regression-gate.md). Benchmark gating is available since 0.61.0.
+[policy/API contract](docs/regression-gate.md). Benchmark gating is available in 0.61.0.
 
 ### `trace` -- real scheduled requests and joint-target goodput
 
@@ -641,6 +641,36 @@ and 2 malformed input. No targets means no SLO qualification. This measures the
 contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
+
+### `gate --kind trace` -- queue-inclusive regression decisions (since 0.63.0)
+
+With Chimeraforge 0.63.0 or later, save a predeclared trace
+policy as `trace-policy.json`:
+
+```json
+{
+  "rules": {"goodput_rps": 0.05, "latency_p95_ms": 0.10},
+  "expected_replicates": 1,
+  "fixed_controls": {"device": "cpu"},
+  "require_cache_evidence": true
+}
+```
+
+```bash
+chimeraforge gate --kind trace --baseline baseline-trace.json --candidate candidate-trace.json --policy trace-policy.json --out trace-gate.json --json
+```
+
+Repeat `--baseline` and `--candidate` for each ordered replicate (1–16 per arm).
+The gate validates held receipts and reconstructs request timing, SLO states,
+native arithmetic and goodput. Full-population p95 includes queue delays;
+`tpot_p95_ms` summarizes per-request **mean** TPOT, not individual tokens.
+Unknown required rows, failed execution, mismatched controls/lengths, known cache
+drift and copied executions yield inconclusive decisions. Every declared input,
+including unpaired receipts, is retained. Exit `0` is a conditional policy pass,
+`1` regression, `2` malformed input/output, and `3` inconclusive. Benchmark gating
+remains the default `--kind benchmark`. See the [trace policy/API contract](docs/trace-regression-gate.md)
+for zero baselines, evidence limits and output protections. Physical source
+authentication, independent cold executions and GPU qualification remain unverified.
 
 ### `eval` -- quality evaluation
 

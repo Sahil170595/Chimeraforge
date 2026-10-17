@@ -17,6 +17,7 @@ from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
+from chimeraforge.bench.trace_gate import TraceGatePolicy
 from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
 from chimeraforge.bench.trace_workload import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
@@ -57,6 +58,18 @@ def gate_benchmarks(
 ) -> RegressionGate:
     """Apply explicit multi-metric rules to all ordered observed benchmark pairs."""
     from chimeraforge.bench.gate import gate_benchmarks as apply_gate
+
+    return apply_gate(baseline_receipts, candidate_receipts, policy=policy)
+
+
+def gate_traces(
+    baseline_receipts: list[TraceReplay | dict | str | Path],
+    candidate_receipts: list[TraceReplay | dict | str | Path],
+    *,
+    policy: TraceGatePolicy | dict | str | Path = TraceGatePolicy(),
+) -> RegressionGate:
+    """Apply predeclared queue-inclusive rules to retained ordered trace populations."""
+    from chimeraforge.bench.trace_gate import gate_traces as apply_gate
 
     return apply_gate(baseline_receipts, candidate_receipts, policy=policy)
 

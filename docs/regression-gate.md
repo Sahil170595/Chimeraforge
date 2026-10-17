@@ -1,6 +1,8 @@
 # Measured regression gates
 
 `gate` applies a predeclared engineering policy to saved `bench --plan` receipts.
+Benchmark remains the default `--kind benchmark`. Chimeraforge 0.63.0 adds [queue-inclusive trace gates](trace-regression-gate.md) through
+`--kind trace`, with a separate request-population and metric contract.
 It executes no requests. This feature is available in Chimeraforge 0.61.0. Install `pip install "chimeraforge==0.61.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37959314609); each release separately qualifies its versioned artifacts.
 
 Save this policy as `policy.json`, then supply the actual receipt from every
