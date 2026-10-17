@@ -4,7 +4,7 @@
 
 This document covers the public Python API for the `chimeraforge` package (v0.6.0).
 For CLI usage, see the [README](../README.md).
-The unpublished 0.63.0 candidate's `TraceGatePolicy` / `gate_traces` API is
+Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
 The unpublished 0.64.0 candidate adds async `replay_trace_campaign` / `TraceCampaign`;
 see [the serial campaign contract](trace-campaign.md).
