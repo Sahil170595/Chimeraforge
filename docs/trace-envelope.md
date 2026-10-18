@@ -92,7 +92,8 @@ eligibility blockers and every original replica. Every request in every replica
 must satisfy every active target. Averaging successful replicas cannot qualify a
 failed population. A cell also needs an observed native clock origin and positive
 actual prompt/output token counts; completed requests with unavailable timing or
-zero-length output cannot qualify a point. Known supported control/cache contradictions, changed actual
+zero-length output cannot qualify a point. Known supported control/cache
+contradictions, changed actual
 token lengths, differing active TPOT bases or duplicate execution payloads prevent
 a ranked point across the envelope. Both before/after phases and all replicas are
 compared: an unknown observation cannot hide a known conflict elsewhere.

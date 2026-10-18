@@ -163,7 +163,9 @@ def test_complete_native_execution_needs_observed_clock_and_positive_actual_leng
     assert result["exit_code"] == 3 and result["highest_observed_passing"] is None
     assert all(cell["observed_outcome"] == "observed_pass" for cell in result["cells"])
     blocker = (
-        "clock_origin_unavailable" if unavailable == "clock" else "observed_token_lengths_unavailable"
+        "clock_origin_unavailable"
+        if unavailable == "clock"
+        else "observed_token_lengths_unavailable"
     )
     assert all(blocker in cell["blockers"] for cell in result["cells"])
 
