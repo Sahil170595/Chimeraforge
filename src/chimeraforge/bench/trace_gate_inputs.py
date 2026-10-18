@@ -215,22 +215,8 @@ def _native(row: dict, backend: str) -> None:
         fail("trace decode rate disagrees with native count/interval")
 
 
-def _row(row: object, backend: str, targets: dict, seen: set[str]) -> None:
-    names = {
-        "descriptor",
-        "state",
-        "times",
-        "native",
-        "error",
-        "mean_tpot_ms",
-        "mean_tpot_basis",
-        "timing",
-        "slo",
-        "output_cap_state",
-    }
-    if type(row) is not dict or set(row) != names or row["state"] not in STATES:
-        fail("unsupported trace request row")
-    descriptor = row["descriptor"]
+def validate_descriptor(descriptor: object, seen: set[str]) -> None:
+    """Validate declared descriptors even when a campaign has no native receipt."""
     if type(descriptor) is not dict or set(descriptor) != {
         "request_id",
         "prompt_sha256",
@@ -253,6 +239,25 @@ def _row(row: object, backend: str, targets: dict, seen: set[str]) -> None:
         or descriptor["arrival_offset_s"] > MAX_TIMEOUT_SECONDS
     ):
         fail("trace descriptor counts/hash/schedule are invalid")
+
+
+def _row(row: object, backend: str, targets: dict, seen: set[str]) -> None:
+    names = {
+        "descriptor",
+        "state",
+        "times",
+        "native",
+        "error",
+        "mean_tpot_ms",
+        "mean_tpot_basis",
+        "timing",
+        "slo",
+        "output_cap_state",
+    }
+    if type(row) is not dict or set(row) != names or row["state"] not in STATES:
+        fail("unsupported trace request row")
+    descriptor = row["descriptor"]
+    validate_descriptor(descriptor, seen)
     times = row["times"]
     if (
         type(times) is not dict
