@@ -528,6 +528,9 @@ def accept_cpu(
     )
     assert "duplicate_execution_payload" in copied["blockers"]
     assert original == [baseline_path.read_bytes(), candidate_path.read_bytes()]
+    from ci_signed_contribution import accept_cpu_gate
+
+    signed_gate = accept_cpu_gate(cwd, env, baseline_path, candidate_path, version, runs)
     return {
         "evidence_class": "two actual installed CPU/Ollama benchmark executions",
         "successful_requests_per_execution": runs,
@@ -538,4 +541,5 @@ def accept_cpu(
         "copied_receipt_refused": True,
         "performance_threshold_qualification": "not asserted",
         "gpu_accuracy": "unverified",
+        "signed_native_gate": signed_gate,
     }
