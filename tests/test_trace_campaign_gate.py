@@ -2,6 +2,7 @@
 
 import copy
 import json
+import math
 
 import pytest
 
@@ -27,25 +28,28 @@ def campaign(*, durations=(0.12, 0.14, 0.16), final_stop=None, count=2):
         stop_event=None,
     )
     replicas = []
+    cursor = 0.0
     for i, duration in enumerate(durations):
-        native = receipt(duration=duration, origin=5000 + i, count=count)
+        native = receipt(duration=duration, origin=100.0 + cursor + 0.1, count=count)
         native["workload"] = {**manifest["workload"], "raw_sha256": None}
         for row, descriptor in zip(native["requests"], manifest["ordered_descriptors"]):
             row["descriptor"] = copy.deepcopy(descriptor)
         finish(native)
+        end = cursor + max(0.8, native["execution"]["elapsed_seconds"] + 0.2)
         replicas.append(
             {
                 "index": i,
                 "manifest_fingerprint": manifest["fingerprint"],
                 "workload_ref": manifest["workload"]["canonical_sha256"],
-                "start_s": float(i),
-                "end_s": i + 0.8,
+                "start_s": cursor,
+                "end_s": end,
                 "state": "completed",
                 "receipt": native,
                 "error": None,
                 "reason": None,
             }
         )
+        cursor = max(cursor + 1.0, end + 0.1)
     return seal(
         {
             "schema_version": 1,
@@ -63,7 +67,7 @@ def campaign(*, durations=(0.12, 0.14, 0.16), final_stop=None, count=2):
             "clock": {
                 "basis": "client time.perf_counter monotonic offsets in seconds",
                 "origin": 100.0,
-                "elapsed_seconds": float(len(replicas)),
+                "elapsed_seconds": cursor,
             },
             "stop_reason": final_stop,
             "state": "completed",
@@ -106,7 +110,9 @@ def incomplete(data, index=1, *, failed=False):
                 reason="replay_failed",
             )
             if not failed:
-                native = receipt(duration=0.13)
+                native = receipt(
+                    duration=0.13, origin=data["clock"]["origin"] + slot["start_s"] + 0.1
+                )
                 native["workload"] = {**data["manifest"]["workload"], "raw_sha256": None}
                 for row, descriptor in zip(
                     native["requests"], data["manifest"]["ordered_descriptors"]
@@ -289,7 +295,9 @@ def test_policy_population_and_semantic_copies_cannot_pass():
     data = campaign(durations=(0.10, 0.11, 0.09))
     data["replicas"][1]["receipt"] = copy.deepcopy(data["replicas"][0]["receipt"])
     data["replicas"][1]["receipt"]["created_at"] = "renamed time"
-    data["replicas"][1]["receipt"]["clock"]["origin"] = 9000
+    data["replicas"][1]["receipt"]["clock"]["origin"] = (
+        data["clock"]["origin"] + data["replicas"][1]["start_s"] + 0.1
+    )
     data["replicas"][1]["receipt"]["execution"]["request_timeout_seconds"] = 300.0
     reseal(data)
     result = gate(right=data).to_dict()
@@ -465,6 +473,71 @@ def test_relabelled_ids_do_not_create_semantic_execution_evidence():
         slot["workload_ref"] = "e" * 64
         for row, descriptor in zip(native["requests"], data["manifest"]["ordered_descriptors"]):
             row["descriptor"] = copy.deepcopy(descriptor)
+    reseal(data)
+    result = gate(right=data).to_dict()
+    assert result["exit_code"] == 3 and "duplicate_execution_payload" in result["blockers"]
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["origin_before", "origin_after", "overlapping_native", "end_overshoot", "zero_slot"],
+)
+def test_native_clock_interval_must_fit_its_enclosing_serial_slot(mutation):
+    data = campaign(durations=(0.10, 0.11, 0.09))
+    slot = data["replicas"][1 if mutation == "overlapping_native" else 0]
+    native = slot["receipt"]
+    origin = data["clock"]["origin"]
+    if mutation == "origin_before":
+        native["clock"]["origin"] = origin + slot["start_s"] - 0.1
+        native["clock"]["resolution_seconds"] = 1000000.0
+    elif mutation == "origin_after":
+        native["clock"]["origin"] = origin + slot["end_s"] + 0.1
+    elif mutation == "overlapping_native":
+        native["clock"]["origin"] = origin + 0.2
+    elif mutation == "end_overshoot":
+        native["clock"]["origin"] = origin + slot["end_s"] - 0.05
+    else:
+        slot["end_s"] = slot["start_s"]
+        native["clock"]["origin"] = origin + slot["start_s"]
+    reseal(data)
+    with pytest.raises(api.PlanError):
+        gate(right=data)
+
+
+def test_native_clock_binding_allows_float_roundoff_at_large_epoch():
+    data = campaign(durations=(0.10, 0.11, 0.09))
+    data["clock"]["origin"] = float(2**30)
+    for slot in data["replicas"]:
+        slot["receipt"]["clock"]["origin"] = data["clock"]["origin"] + slot["start_s"] + 0.1
+    slot = data["replicas"][0]
+    native = slot["receipt"]
+    observed_end = (
+        native["clock"]["origin"] - data["clock"]["origin"] + native["execution"]["elapsed_seconds"]
+    )
+    slot["end_s"] = math.nextafter(observed_end, -math.inf)
+    reseal(data)
+    assert gate(right=data).to_dict()["exit_code"] == 0
+
+
+def test_absent_native_origin_remains_unavailable_not_invented():
+    data = incomplete(campaign())
+    native = data["replicas"][1]["receipt"]
+    native["clock"]["origin"] = None
+    native["execution"]["elapsed_seconds"] = None
+    finish(native)
+    reseal(data)
+    result = gate(right=data).to_dict()
+    assert result["exit_code"] == 3
+    assert result["inputs"]["candidate"]["replicas"][1]["receipt"]["clock_origin_observed"] is False
+
+
+def test_campaign_signed_zero_copy_is_duplicate_execution_payload():
+    data = campaign(durations=(0.10, 0.11, 0.09))
+    copied = copy.deepcopy(data["replicas"][0]["receipt"])
+    copied["clock"]["origin"] = data["clock"]["origin"] + data["replicas"][1]["start_s"] + 0.1
+    for row in copied["requests"]:
+        row["times"]["arrival_s"] = -0.0
+    data["replicas"][1]["receipt"] = copied
     reseal(data)
     result = gate(right=data).to_dict()
     assert result["exit_code"] == 3 and "duplicate_execution_payload" in result["blockers"]

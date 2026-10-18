@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from pathlib import Path
 from typing import Any, cast
 
@@ -28,6 +29,8 @@ from chimeraforge.bench.trace_workload import (
 from chimeraforge.planner.replay import digest
 
 MAX_CAMPAIGN_BYTES = 16 * 1024 * 1024
+# Bound origin subtraction and interval addition, never a producer resolution declaration.
+CLOCK_ROUNDOFF_ULPS = 4
 STATES = ("completed", "incomplete", "failed", "not_started")
 STOP_REASONS = ("caller_stop", "campaign_deadline", "first_incomplete_replicate")
 ASSURANCES = {
@@ -220,6 +223,32 @@ def _bind_native(native: dict, manifest: dict) -> None:
         fail("native campaign child disagrees with frozen manifest")
 
 
+def _bind_clock(native: dict, campaign: dict, slot: dict) -> None:
+    """The native scheduled interval must fit inside its enclosing same-clock serial slot."""
+    origin = native["data"]["clock"]["origin"]
+    if origin is None:
+        return
+    outer_origin = campaign["clock"]["origin"]
+    elapsed = native["data"]["execution"]["elapsed_seconds"]
+    offset = origin - outer_origin
+    terminal = offset + elapsed
+    if not finite(offset) or not finite(terminal):
+        fail("native campaign clock arithmetic is unavailable")
+    tolerance = CLOCK_ROUNDOFF_ULPS * max(
+        math.ulp(float(value)) for value in (origin, outer_origin, offset, terminal)
+    )
+    start, end = slot["start_s"], slot["end_s"]
+    if (
+        start == end
+        and elapsed > 0
+        or offset < start
+        and start - offset > tolerance
+        or terminal > end
+        and terminal - end > tolerance
+    ):
+        fail("native campaign clock interval exceeds its enclosing serial slot")
+
+
 def _replicas(data: dict) -> list[dict | None]:
     manifest, replicas = data["manifest"], data["replicas"]
     if type(replicas) is not list or len(replicas) != manifest["population"]["replicates"]:
@@ -279,6 +308,7 @@ def _replicas(data: dict) -> list[dict | None]:
                     fail("native campaign replica receipt is missing")
                 native = load_trace(replica["receipt"], limit=MAX_RECEIPT_BYTES)
                 _bind_native(native, manifest)
+                _bind_clock(native, data, replica)
                 expected_complete = _completed(native)
                 if (state == "completed") is not expected_complete or replica["reason"] != (
                     None if expected_complete else "native_incomplete"
