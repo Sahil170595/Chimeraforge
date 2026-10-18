@@ -113,8 +113,12 @@ inherited ACLs. These mode bits do not establish universal access control. On
 failure, cleanup removes only unchanged owned entries under the original root
 identity. Unknown members, replacements or uncertain writes leave an incomplete
 destination for inspection. Portable identity checks do not eliminate hostile
-concurrent rename races. Source roots/members, creator originals and output
-aliases remain protected; no existing unrelated directory is recursively removed.
+concurrent rename races. Every received bundle protects its receiving root and
+members, including output aliases. The held object returned by creation also
+remembers and protects the original paths it consumed. Directory verification or
+directory-based scoring cannot reconstruct unavailable producer paths; that
+private protection list is not part of the transport. No existing unrelated
+directory is recursively removed.
 
 | Operation | Exit |
 | --- | --- |
