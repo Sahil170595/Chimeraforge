@@ -496,7 +496,7 @@ def test_sdk_cancellation_reaps_native_child_and_descendant(tmp_path, monkeypatc
             with pytest.raises(asyncio.CancelledError):
                 await task
         else:
-            with pytest.raises(TimeoutError):
+            with pytest.raises(asyncio.TimeoutError):
                 await asyncio.wait_for(task, 0.1)
 
     asyncio.run(exercise())
