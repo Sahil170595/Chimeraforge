@@ -221,6 +221,9 @@ def main(argv: list[str] | None = None) -> int:
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
+        from ci_signed_contribution import accept_gate as accept_signed_gate
+
+        signed_gate_receipt = accept_signed_gate(cwd, env, args.checkout)
         from ci_prediction_score import accept as accept_score
 
         score_receipt = accept_score(cwd, env, args.checkout, snapshot_path)
@@ -256,6 +259,7 @@ def main(argv: list[str] | None = None) -> int:
                     "trace_envelope_protocol": envelope_receipt,
                     "native_stream_protocol": native_stream_receipt,
                     "signed_contribution_protocol": signed_receipt,
+                    "signed_native_gate_protocol": signed_gate_receipt,
                     "prediction_score_protocol": score_receipt,
                     "prediction_bundle_protocol": prediction_bundle_receipt,
                     "mcp_tools": tools,
