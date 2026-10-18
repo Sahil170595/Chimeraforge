@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chimeraforge"
-version = "0.64.0"
+version = "0.65.0"
 description = "LLM deployment optimizer (performance, cost, and safety) — backed by ~204,000 real measurements on consumer GPUs"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -49,6 +49,7 @@ Issues = "https://github.com/Sahil170595/Chimeraforge/issues"
 bench = ["platformdirs>=4.0,<5.0", "pynvml>=11.0"]
 eval = ["evaluate>=0.4"]
 refit = ["numpy>=1.24,<3.0", "scipy>=1.11,<2.0", "platformdirs>=4.0,<5.0"]
+sign = ["cryptography>=50.0.2,<51"]
 # httpx is a core dependency now, so these are kept only for back-compat
 # (existing `pip install "chimeraforge[resolve|safety]"` stays a valid no-op).
 safety = []
@@ -57,7 +58,7 @@ resolve = []
 # restructured/moved. Bump deliberately after porting to the 2.0 API, not implicitly.
 mcp = ["mcp>=1.30,<2.0"]
 dev = ["pytest>=7.4,<10.0", "pytest-cov>=4.1,<8.0", "pytest-asyncio>=0.21,<2.0", "ruff>=0.3,<1.0", "psutil>=5.9", "structlog>=23.0", "mcp>=1.30,<2.0", "pyyaml>=6.0", "setuptools>=77", "wheel>=0.45,<1", "hypothesis>=6.140,<7", "build>=1.3,<2", "twine>=6.2,<8", "mypy>=1.18,<3", "pip-audit>=2.9,<3", "types-PyYAML>=6.0"]
-all = ["chimeraforge[bench,eval,refit,safety,resolve,mcp]"]
+all = ["chimeraforge[bench,eval,refit,safety,resolve,mcp,sign]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

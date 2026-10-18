@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-17).** [Chimeraforge 0.64.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.64.0) adds serial trace campaigns. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-17).** [Chimeraforge 0.65.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.65.0) adds signed contributions and private replay. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.64.0"
+pip install "chimeraforge[mcp]==0.65.0"
 ```
 
 ## Quickstart
@@ -281,8 +281,7 @@ performance or identify immutable model weights. See [the API contract](docs/pla
 
 ### `bundle` -- portable saved-plan handoff
 
-Portable handoffs are available since Chimeraforge 0.58.0 and are included in
-the version pinned above.
+Available in the published 0.61.0 CLI.
 
 **Harness files may contain private prompts or other data. Review the exact
 inputs before sharing a bundle.** Creation copies only the original plan and its
@@ -307,7 +306,7 @@ See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
 ### `study` -- frozen-context workload and cost sensitivity
 
-Available since Chimeraforge 0.59.0 and included in the version pinned above.
+Available in the published 0.61.0 CLI.
 Compare explicit assumptions against one saved plan or portable bundle offline:
 
 ```json
@@ -508,11 +507,11 @@ chimeraforge contribute replay theirs.contribution.json --prompt "Explain KV cac
 chimeraforge plan --model-size 3b --hardware "RTX 4090 24GB" --contributions
 ```
 
-The first step toward a shared measured corpus.
+The unsigned v1 workflow is the first step toward a shared measured corpus.
 
 - **What a contribution holds:** one `bench` result with its full environment fingerprint (GPU, memory, driver, CUDA, OS, engine and version, chimeraforge version), the per-run decode and TTFT figures, and a SHA-256 content id.
 - **What export refuses:** a result with no GPU name, fewer than 3 runs, unknown backend-default precision, or a quant sweep label that was not applied. `--quant` declares the served checkpoint's precision; it does not change the server's loaded model. Invalid fingerprints, timestamps, samples, and inconsistent derived statistics are also refused. A decode CV above 5% is flagged as unstable but kept.
-- **What the id proves:** contributions are **unsigned**. The id shows the file is unaltered since export, not who ran it or that the numbers are real. That is why imports go into a local quarantine, and nothing there ever reaches the bundled corpus or the `measure` corpus.
+- **What the id proves:** these v1 files are **unsigned**. The id shows the file is unaltered since export, not who ran it or that the numbers are real. That is why imports go into a local quarantine, and nothing there ever reaches the bundled corpus or the `measure` corpus.
 - **How `plan --contributions` uses them:** only for an exact model, engine, quant and GPU match, at the median of the matching contributions. The number is labelled `contributed` (`*`), a class below `extrapolated`, along with the contribution ids and the engine/driver clusters it came from. This project's own measured row still wins on the reference rig.
 
 `review` records an unsigned `pending` / `retain` / `reject` disposition and reason,
@@ -534,6 +533,26 @@ review or replay operation without a known mismatch, **not a passed reproduction
 Replay exits 1 for known mismatch, failed/partial execution, and 2 for malformed
 input/options or receipt output errors. New receipts cannot overwrite contribution
 inputs or be written into quarantine; their endpoint URLs omit credentials/query.
+
+#### Signed v2 contributions and private replay (since 0.65.0)
+
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.65.0"`.
+Use a current saved PlanBenchmark receipt and your Ed25519 key files:
+
+```bash
+chimeraforge contribute sign plan-benchmark.json --private-key producer.key --out signed.json --json
+chimeraforge contribute verify signed.json --format v2 --trusted-key producer.pub --out verified.json --json
+chimeraforge contribute replay signed.json --format v2 --trusted-key producer.pub --private-workload private-workload.json --base-url http://localhost:11434 --out replay-v2.json --json
+```
+
+The private file supplies exactly the original prompt and recorded adapter options;
+their hashes must match before endpoint contact. The public signed artifact carries
+native populations, declared controls and commitments, without prompts, completions
+or raw options. Valid signatures and receiver trust are separate. Replay reports
+current recorded-profile comparisons, known mismatches and unavailable facts;
+original wire defaults and realized Poisson schedules remain unverified. V2 files
+stay outside v1 quarantine and planner aggregation. See the
+[key setup, API, protocol and exit contract](docs/signed-contribution-v2.md).
 
 ### `catalog` -- local model catalog
 

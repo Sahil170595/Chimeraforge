@@ -29,6 +29,7 @@ from chimeraforge.bench.trace_workload import (
     DEFAULT_TRACE_TIMEOUT_SECONDS,
 )
 from chimeraforge.contribution_review import ContributionReceipt
+from chimeraforge.signed_contribution import SignedContribution, SignedContributionReceipt
 
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
@@ -607,6 +608,39 @@ def monitor_plan(
     return monitor_saved(
         saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
     )
+
+
+def sign_contribution(
+    source: PlanBenchmark | dict | str | Path, private_key: bytes | str | Path
+) -> SignedContribution:
+    """Sign a validated current public native projection; never sign private payloads."""
+    from chimeraforge.signed_contribution import sign
+
+    return sign(source, private_key)
+
+
+def verify_signed_contribution(
+    source: SignedContribution | dict | str | Path,
+    *,
+    trusted_keys: tuple[bytes | str | Path, ...] = (),
+) -> SignedContributionReceipt:
+    """Verify exact signed bytes and independently evaluate explicitly supplied key trust."""
+    from chimeraforge.signed_contribution import verify
+
+    return verify(source, trusted_keys=trusted_keys)
+
+
+async def replay_signed_contribution(
+    source: SignedContribution | dict | str | Path,
+    private_workload: dict | str | Path,
+    *,
+    trusted_keys: tuple[bytes | str | Path, ...] = (),
+    base_url: str | None = None,
+) -> SignedContributionReceipt:
+    """Match private bindings before contact and replay the current recorded adapter profile."""
+    from chimeraforge.signed_replay import replay
+
+    return await replay(source, private_workload, trusted_keys=trusted_keys, base_url=base_url)
 
 
 def review_contribution(

@@ -22,6 +22,28 @@ def load_script(name):
     return module
 
 
+def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkeypatch):
+    import os
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    script = load_script("ci_signed_contribution")
+    load_script("ci_regression_gate")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: None)
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == expected_code, result.output
+        return result.output
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    result = script.accept(tmp_path, dict(os.environ), tmp_path / "checkout")
+    assert result["fixture_server_closed"] is True
+    assert result["core_without_optional_crypto"] == {"v1": "PASS", "v2_exit": 3}
+    assert result["replay"]["exit_code"] == 0
+
+
 def test_native_stream_consumer_protocol_through_public_trace_cli(tmp_path, monkeypatch):
     from typer.testing import CliRunner
     from chimeraforge.cli import app

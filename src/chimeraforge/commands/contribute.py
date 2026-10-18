@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import json as json_mod
 from pathlib import Path
+from typing import NoReturn, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from chimeraforge.signed_contribution import SignedContribution
 
 import typer
 from rich.console import Console
@@ -68,16 +72,92 @@ def export(
 
 
 @contribute_app.command("verify")
-def verify(files: list[Path] = typer.Argument(..., help="Contribution files.")) -> None:
+def verify(
+    files: list[Path] = typer.Argument(..., help="Contribution files."),
+    format: str = typer.Option(
+        "auto", "--format", help="auto, v1 or v2; explicit v2 gives strict errors."
+    ),
+    trusted_key: list[Path] | None = typer.Option(
+        None, "--trusted-key", help="Explicit trusted Ed25519 public PEM/raw32; repeat."
+    ),
+    out: Path | None = typer.Option(
+        None, "--out", help="Atomic verification receipt; protects all inputs."
+    ),
+    output_json: bool = typer.Option(False, "--json"),
+) -> None:
     """Check each file's schema and content hash."""
-    from chimeraforge.contrib import ContribError, read_json_file, verify_contribution
+    from chimeraforge.contrib import ContribError, verify_contribution
 
+    reports, codes = [], []
+    keys = tuple(trusted_key or ())
+    if format not in ("auto", "v1", "v2"):
+        _signed_fail("format must be auto, v1 or v2", output_json, 2)
+    if out is not None:
+        _preprotect(out, (*files, *keys), output_json)
     for path in files:
         try:
-            verify_contribution(read_json_file(path))
+            data, paths = _exchange(path, format)
         except ContribError as exc:
-            _fail(f"{escape(str(path))}: {escape(str(exc))}")
-        console.print(f"[green]ok[/] {escape(str(path))}")
+            if format != "v2" and not output_json and not keys:
+                _fail(f"{escape(str(path))}: {escape(str(exc))}")
+            _signed_fail("malformed contribution input", output_json, 2)
+        version = 2 if format == "v2" or format == "auto" and data.get("schema_version") == 2 else 1
+        if version == 1:
+            try:
+                verify_contribution(data)
+            except ContribError as exc:
+                if output_json or keys:
+                    _signed_fail("malformed v1 contribution input", output_json, 2)
+                _fail(f"{escape(str(path))}: {escape(str(exc))}")
+            reports.append(
+                {
+                    "schema_version": 1,
+                    "status": "verified_unsigned_v1",
+                    "exit_code": 0,
+                    "id": data["id"],
+                    "producer_authentication": "unverified",
+                }
+            )
+            codes.append(0)
+            if not output_json:
+                console.print(f"[green]ok[/] {escape(str(path))}")
+        else:
+            from chimeraforge.api import verify_signed_contribution
+            from chimeraforge.signed_contribution import SignedContribution
+
+            try:
+                receipt = verify_signed_contribution(
+                    SignedContribution(data, paths), trusted_keys=keys
+                )
+            except ContribError:
+                _signed_fail("malformed signed contribution or trusted key", output_json, 2)
+            reports.append(receipt.to_dict())
+            codes.append(receipt.exit_code)
+            if not output_json:
+                typer.echo(receipt.to_dict()["status"] + ": " + receipt.to_dict()["trust"]["state"])
+    code = next((value for value in (2, 1, 3) if value in codes), 0)
+    if output_json or out is not None:
+        from chimeraforge.signed_contribution import SignedContributionReceipt
+        from chimeraforge.signed_payload import hash_json
+
+        report = (
+            reports[0]
+            if len(reports) == 1
+            else {
+                "kind": "chimeraforge.contribution-verification-batch",
+                "results": reports,
+                "exit_code": code,
+                "status": "completed" if code == 0 else "unqualified",
+            }
+        )
+        if len(reports) != 1:
+            report["fingerprint"] = hash_json(report)
+        receipt = SignedContributionReceipt(report, (*files, *keys))
+        if out is not None:
+            _save_signed(receipt, out, output_json)
+        if output_json:
+            typer.echo(json_mod.dumps(report, allow_nan=False))
+    raise typer.Exit(code)
 
 
 @contribute_app.command("import")
@@ -188,13 +268,22 @@ def review_cmd(
 @contribute_app.command("replay")
 def replay_cmd(
     source: str = typer.Argument(..., help="Contribution file or full quarantined id."),
-    prompt: str = typer.Option(
-        ..., help="Explicit prompt sent to the endpoint; receipt stores its hash."
+    prompt: str | None = typer.Option(
+        None, help="v1 explicit prompt sent to the endpoint; receipt stores its hash."
     ),
-    output_tokens: int = typer.Option(
-        ..., help="Applied output-token cap, not guaranteed returned length."
+    output_tokens: int | None = typer.Option(
+        None, help="v1 applied output-token cap, not guaranteed returned length."
     ),
-    runs: int = typer.Option(5, help="Replay request count (1-1000)."),
+    runs: int | None = typer.Option(
+        None, help="v1 replay count, defaults5; v2 uses recorded count."
+    ),
+    format: str = typer.Option("auto", "--format", help="auto, v1 or v2."),
+    private_workload: Path | None = typer.Option(
+        None, "--private-workload", help="v2 private JSON with exact prompt/options bindings."
+    ),
+    trusted_key: list[Path] | None = typer.Option(
+        None, "--trusted-key", help="Explicit trusted Ed25519 public PEM/raw32; repeat."
+    ),
     model: str | None = typer.Option(
         None, help="Explicit served model override; differences stay visible."
     ),
@@ -218,14 +307,56 @@ def replay_cmd(
     from chimeraforge.contrib import ContribError
 
     try:
+        if format not in ("auto", "v1", "v2"):
+            raise ContribError("format must be auto, v1 or v2")
+        data, paths = _exchange(source, format)
+        keys = tuple(trusted_key or ())
         if out is not None:
-            review_contribution(source).check_output(out)
+            _preprotect(
+                out, paths + keys + ((private_workload,) if private_workload else ()), output_json
+            )
+        if format == "v2" or format == "auto" and data.get("schema_version") == 2:
+            from chimeraforge.api import replay_signed_contribution
+            from chimeraforge.signed_contribution import SignedContribution
+
+            if private_workload is None or any(
+                value is not None
+                for value in (
+                    prompt,
+                    output_tokens,
+                    runs,
+                    model,
+                    backend,
+                    workload,
+                    rate,
+                    concurrency,
+                )
+            ):
+                raise ContribError(
+                    "v2 replay uses private-workload and recorded controls; no v1 overrides"
+                )
+            report = asyncio.run(
+                replay_signed_contribution(
+                    SignedContribution(data, paths),
+                    private_workload,
+                    trusted_keys=keys,
+                    base_url=base_url,
+                )
+            )
+            _print_signed(report, output_json, out)
+            return
+        if prompt is None or output_tokens is None or private_workload is not None or keys:
+            raise ContribError(
+                "v1 replay requires prompt/output-tokens and cannot accept v2 bindings"
+            )
+        if out is not None:
+            review_contribution(data).check_output(out)
         report = asyncio.run(
             replay_contribution(
-                source,
+                data,
                 prompt=prompt,
                 output_tokens=output_tokens,
-                runs=runs,
+                runs=runs if runs is not None else 5,
                 model=model,
                 backend=backend,
                 base_url=base_url,
@@ -235,6 +366,92 @@ def replay_cmd(
             )
         )
     except ContribError as exc:
+        if output_json or format == "v2" or private_workload is not None or trusted_key:
+            _signed_fail("malformed contribution replay input or private bindings", output_json, 2)
         err_console.print(f"[red]Error:[/] {escape(str(exc))}")
         raise typer.Exit(code=2)
-    _print_receipt(report, output_json, out)
+    from chimeraforge.signed_contribution import SignedContributionReceipt
+
+    _print_receipt(SignedContributionReceipt(report.to_dict(), paths), output_json, out)
+
+
+def _signed_fail(message: str, output_json: bool, code: int) -> NoReturn:
+    typer.echo(json_mod.dumps({"error": message}) if output_json else message)
+    raise typer.Exit(code)
+
+
+def _exchange(source: str | Path, format: str) -> tuple[dict, tuple[Path, ...]]:
+    from chimeraforge.contrib import quarantine_dir
+    from chimeraforge.signed_payload import MAX_ENVELOPE_BYTES, held_json
+
+    if (
+        format != "v2"
+        and isinstance(source, str)
+        and len(source) == 64
+        and all(char in "0123456789abcdef" for char in source)
+    ):
+        source = quarantine_dir() / f"{source}.json"
+    data, _, paths = held_json(source, MAX_ENVELOPE_BYTES)
+    return data, paths
+
+
+def _preprotect(out: Path, paths: tuple[Path, ...], output_json: bool) -> None:
+    from chimeraforge.contrib import ContribError
+    from chimeraforge.signed_contribution import check_output
+
+    try:
+        check_output(out, paths)
+    except ContribError:
+        _signed_fail(
+            "output cannot replace a consumed input/key/artifact or quarantine", output_json, 2
+        )
+
+
+def _save_signed(receipt: SignedContribution, out: Path, output_json: bool) -> None:
+    from chimeraforge.contrib import ContribError
+
+    try:
+        receipt.save(out)
+    except ContribError:
+        _signed_fail("signed contribution output failed", output_json, 2)
+
+
+def _print_signed(receipt: SignedContribution, output_json: bool, out: Path | None) -> None:
+    if out is not None:
+        _save_signed(receipt, out, output_json)
+    data = receipt.to_dict()
+    typer.echo(
+        json_mod.dumps(data, allow_nan=False)
+        if output_json
+        else (
+            data.get("status", "signed")
+            + ": signed contribution operation; measurement truth unverified"
+        )
+    )
+    raise typer.Exit(receipt.exit_code)
+
+
+@contribute_app.command("sign")
+def sign_cmd(
+    receipt: Path = typer.Argument(..., help="Current validated PlanBenchmark receipt."),
+    private_key: Path = typer.Option(
+        ..., "--private-key", help="Ed25519 unencrypted PKCS8 PEM/raw32 seed."
+    ),
+    out: Path = typer.Option(
+        ..., "--out", help="Atomic signed artifact, outside planner quarantine."
+    ),
+    output_json: bool = typer.Option(False, "--json"),
+) -> None:
+    """Sign public native facts/private commitments without proving measurement truth."""
+    from chimeraforge.api import sign_contribution
+    from chimeraforge.contrib import ContribError
+    from chimeraforge.signed_contribution import SigningUnavailable
+
+    _preprotect(out, (receipt, private_key), output_json)
+    try:
+        signed = sign_contribution(receipt, private_key)
+    except SigningUnavailable as exc:
+        _signed_fail(str(exc), output_json, 3)
+    except ContribError:
+        _signed_fail("invalid current benchmark receipt or Ed25519 private key", output_json, 2)
+    _print_signed(signed, output_json, out)
