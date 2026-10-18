@@ -57,7 +57,18 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.65.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.66.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Candidate frozen prediction scoring: `score --plan PLAN --policy POLICY
+--benchmark RECEIPT --out scorecard.json --json` and `api.score_predictions` retain
+the saved prediction and full declared receipt population. Required
+`PredictionScorePolicy` binds plan fingerprint, candidate indices, expected counts
+and relative error band. Only conditionally eligible single-stream Ollama server
+decode rate is scored; CPU/client GPU labels, partial facts and copied evidence
+remain ineligible. See [the scorecard contract](docs/prediction-scorecards.md).
+Outcomes: 0 complete within band, 1 comparable breach even with incomplete rows,
+2 malformed/output failure, 3 incomplete. No automatic coefficient refit, live
+modifier attestation, physical authentication or calibration GO is implied.
 
 Candidate signed contributions: `contribute sign` signs a bounded current native
 PlanBenchmark projection with optional `sign` dependencies. `verify --trusted-key`

@@ -281,12 +281,16 @@ def accept_saved_plan(client: httpx.Client, cwd: Path, env: dict) -> dict:
         OLLAMA_VERSION,
         BENCH_RUNS,
     )
+    from ci_prediction_score import accept_cpu as accept_cpu_score
+
+    score_receipt = accept_cpu_score(cwd, env, source, chosen, receipt)
     return {
         "saved_fingerprint": saved["fingerprint"],
         "receipt_fingerprint": report["fingerprint"],
         "observed_config": "Ollama quant/context/CPU device; TP/PP and GPU identity unavailable",
         "comparison": "native values and arithmetic delta; accuracy and SLO unverified",
         "regression_gate": gate_receipt,
+        "prediction_score": score_receipt,
     }
 
 
