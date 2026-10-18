@@ -638,7 +638,9 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     saved_plan_benchmark = accept_saved_plan(client, cwd, env)
     from ci_cpu_trace import accept as accept_trace
 
-    trace_replay = accept_trace(cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION)
+    trace_replay = accept_trace(
+        cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION, plan_replay=True
+    )
     error = run_cli(
         ["bench", "--model", "ci-definitely-missing-model", "--base-url", str(client.base_url)],
         cwd,

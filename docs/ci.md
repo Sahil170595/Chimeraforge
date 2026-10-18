@@ -7,8 +7,9 @@ credential, paid model API or production service is required.
 unexpectedly skipped jobs. It runs on pull requests, main pushes and merge groups.
 The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
 the shipped package and CI helpers; mypy enforces metrics, planner constants,
-signed contributions/replay, prediction scoring, campaign receipt validation/gates
-and the native registry bootstrap boundary. The independent validation corpus/error-band
+signed contributions/replay, prediction scoring, campaign receipt validation/gates,
+plan-bound trace replay/CLI and the native registry bootstrap boundary. The
+independent validation corpus/error-band
 tests remain part of the full suite.
 
 `uv.lock` contains the universal dependency resolution and distribution hashes.
@@ -81,5 +82,10 @@ Synthetic protocol fixtures check decision arithmetic and invalid populations;
 the existing CPU consumer gates its already-produced native campaigns without
 loading another model. Categorical CPU replay diagnostics are emitted before
 assertions, retaining safe counts, binding states and missing/invalid numeric fields.
+Plan-bound trace consumers reuse that installed SSE protocol fixture with an
+explicit modeled-Linux candidate on each host OS. They qualify package/protocol
+portability, not a GPU engine or deployment platform. The actual CPU consumer
+adds one short request on its already-loaded model and retains known CPU/GPU
+binding mismatch separately from successful native execution and SLO outcomes.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.
