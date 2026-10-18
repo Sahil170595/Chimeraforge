@@ -63,6 +63,8 @@ def _cell(cell: dict, held: HeldEnvelope) -> tuple[dict, list[dict], list[dict]]
             if held.policy["require_cache_evidence"]:
                 row["blockers"].append("cache_evidence_unavailable")
         else:
+            if native["data"]["clock"]["origin"] is None:
+                row["blockers"].append("clock_origin_unavailable")
             evidence = _evidence(native)
             projected["evidence_sha256"] = evidence
             entries.append(
@@ -89,7 +91,8 @@ def _cell(cell: dict, held: HeldEnvelope) -> tuple[dict, list[dict], list[dict]]
                             }
                         )
                 if any(
-                    request["native"][key] is None for key in ("prompt_tokens", "tokens_generated")
+                    request["native"][key] is None or request["native"][key] <= 0
+                    for key in ("prompt_tokens", "tokens_generated")
                 ):
                     row["blockers"].append("observed_token_lengths_unavailable")
                 if request["output_cap_state"] == "exceeded":

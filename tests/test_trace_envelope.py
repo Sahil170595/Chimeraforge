@@ -140,6 +140,52 @@ def test_missing_higher_cell_retains_lower_point_and_named_missing_population():
     )
 
 
+@pytest.mark.parametrize("unavailable", ["clock", "prompt_tokens", "tokens_generated"])
+def test_complete_native_execution_needs_observed_clock_and_positive_actual_lengths(unavailable):
+    campaigns = {"slow": uniform(), "fast": uniform(0.05)}
+    for campaign_ in campaigns.values():
+        for slot in campaign_["replicas"]:
+            native = slot["receipt"]
+            if unavailable == "clock":
+                native["clock"]["origin"] = None
+                native["execution"]["elapsed_seconds"] = None
+            else:
+                for row in native["requests"]:
+                    row["native"][unavailable] = 0
+                    if unavailable == "tokens_generated":
+                        row["native"]["throughput_tps"] = 0.0
+                        row["mean_tpot_ms"] = None
+                        row["mean_tpot_basis"] = "unavailable"
+            finish(native)
+        reseal(campaign_)
+        assert load_campaign(campaign_)["data"]["exit_code"] == 0
+    result = assess(campaigns).to_dict()
+    assert result["exit_code"] == 3 and result["highest_observed_passing"] is None
+    assert all(cell["observed_outcome"] == "observed_pass" for cell in result["cells"])
+    blocker = (
+        "clock_origin_unavailable" if unavailable == "clock" else "observed_token_lengths_unavailable"
+    )
+    assert all(blocker in cell["blockers"] for cell in result["cells"])
+
+
+def test_missing_native_clock_only_blocks_its_cell_and_retains_known_breaches():
+    high = uniform(0.05)
+    row = high["replicas"][1]["receipt"]["requests"][0]
+    row["times"]["terminal_s"] = row["times"]["scheduled_s"] + 3.0
+    pack(high)
+    for slot in high["replicas"]:
+        native = slot["receipt"]
+        native["clock"]["origin"] = None
+        native["execution"]["elapsed_seconds"] = None
+        finish(native)
+    reseal(high)
+    assert load_campaign(high)["data"]["exit_code"] == 0
+    result = assess({"slow": uniform(), "fast": high}).to_dict()
+    assert result["exit_code"] == 3 and result["highest_observed_passing"]["cell"] == "slow"
+    assert result["cells"][1]["observed_outcome"] == "breach"
+    assert result["known_breaches"][0]["target"] == "latency_ms"
+
+
 def test_every_request_and_replica_must_pass_not_average_or_survivor_selection():
     high = uniform(0.05)
     row = high["replicas"][2]["receipt"]["requests"][1]
