@@ -3,18 +3,18 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-The published CLI is 0.61.0; this checkout prepares the unpublished 0.66.0 candidate.
+This document covers Chimeraforge 0.66.0.
 For CLI usage, see the [README](../README.md).
-The unpublished 0.63.0 candidate's `TraceGatePolicy` / `gate_traces` API is
+Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
-The unpublished 0.64.0 candidate adds async `replay_trace_campaign` / `TraceCampaign`;
+Chimeraforge 0.64.0 adds async `replay_trace_campaign` / `TraceCampaign`;
 see [the serial campaign contract](trace-campaign.md).
-The 0.65.0 candidate adds `sign_contribution`, `verify_signed_contribution` and
+Chimeraforge 0.65.0 adds `sign_contribution`, `verify_signed_contribution` and
 async `replay_signed_contribution`, with defensive `SignedContribution` and
 `SignedContributionReceipt` results. Install the optional `sign` extra and see
 [signed contributions and private replay](signed-contribution-v2.md) for exact
 interfaces, receiver trust, private-input bindings and unavailable outcomes.
-The 0.66.0 candidate adds `PredictionScorePolicy`, `PredictionScorecard` and
+Chimeraforge 0.66.0 adds `PredictionScorePolicy`, `PredictionScorecard` and
 `score_predictions` for offline scoring of frozen candidate throughput against
 eligible saved native evidence. See [prediction scorecards](prediction-scorecards.md)
 for the explicit population, binding, error-band and unavailable-evidence contract.

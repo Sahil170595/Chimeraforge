@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-12).** The published version is [Chimeraforge 0.61.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.61.0). This branch prepares **0.66.0** frozen prediction scorecards, following unpublished **0.62.0** native streaming traces, **0.63.0** trace regression gates, **0.64.0** serial campaigns and **0.65.0** signed contributions. These features require candidate source or wheels until release. Unsigned v1 contribution workflows remain available in 0.61.0.
+**Release scope (2026-10-17).** [Chimeraforge 0.66.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.66.0) adds frozen prediction scorecards. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.61.0"
+pip install "chimeraforge[mcp]==0.66.0"
 ```
 
 ## Quickstart
@@ -534,9 +534,9 @@ Replay exits 1 for known mismatch, failed/partial execution, and 2 for malformed
 input/options or receipt output errors. New receipts cannot overwrite contribution
 inputs or be written into quarantine; their endpoint URLs omit credentials/query.
 
-#### Signed v2 contributions and private replay (0.65.0 candidate)
+#### Signed v2 contributions and private replay (since 0.65.0)
 
-From the unpublished candidate checkout, install `pip install ".[sign]"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.66.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -645,7 +645,7 @@ stays separate. Mean decode time is labeled by its basis and does not prove an
 every-token target. Other adapters without a first-output capability report it
 unknown. Output caps are requests, with actual token counts recorded separately.
 
-**0.62.0 candidate:** `--backend vllm`, `sglang` or `tgi` now observes visible
+**Since 0.62.0:** `--backend vllm`, `sglang` or `tgi` observes visible
 first output through native streaming. Native token IDs include EOS/control steps
 and must reconcile with final server counts; exceeding the requested cap refuses
 completion. Client mean decode timing requires complete IDs, one token at the
@@ -661,9 +661,9 @@ contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
 
-### `gate --kind trace` -- queue-inclusive regression decisions (0.63.0 candidate)
+### `gate --kind trace` -- queue-inclusive regression decisions (since 0.63.0)
 
-With the unpublished 0.63.0 candidate source or wheel, save a predeclared trace
+With Chimeraforge 0.63.0 or later, save a predeclared trace
 policy as `trace-policy.json`:
 
 ```json
@@ -691,9 +691,9 @@ remains the default `--kind benchmark`. See the [trace policy/API contract](docs
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
 
-### `trace-campaign` -- frozen serial replay populations (0.64.0 candidate)
+### `trace-campaign` -- frozen serial replay populations (since 0.64.0)
 
-Use the unpublished 0.64.0 candidate source or wheel and an existing served model:
+Use Chimeraforge 0.64.0 or later and an existing served model:
 
 ```bash
 chimeraforge trace-campaign workload.json --model llama3.2-3b --backend ollama --replicates 3 --campaign-timeout 1800 --concurrency 1 --request-timeout 300 --trace-timeout 600 --latency-slo 2000 --first-output-slo 500 --tpot-slo 50 --out campaign.json --json
@@ -716,9 +716,9 @@ replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
-### `score` -- frozen prediction scorecards (0.66.0 candidate)
+### `score` -- frozen prediction scorecards (since 0.66.0)
 
-Use the unpublished candidate source or wheel. Declare a plan-bound population and
+Use Chimeraforge 0.66.0 or later. Declare a plan-bound population and
 relative error band in `score-policy.json`, then score saved evidence offline:
 
 ```bash

@@ -1,7 +1,6 @@
 # Frozen prediction scorecards
 
-This is an unpublished **0.66.0 candidate** feature; the published CLI is 0.61.0.
-Use candidate source or wheels. `score` consumes saved plans and native benchmark
+Available since **Chimeraforge 0.66.0**. `score` consumes saved plans and native benchmark
 receipts offline, without generating traffic, replanning, refitting or replacing
 the saved prediction with current coefficients.
 

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.66.0] - Unreleased candidate
+## [0.66.0] - 2026-10-17
 
 ### Frozen prediction scorecards
 
@@ -19,9 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Version 0.66.0 is an unpublished candidate; exact-head local, independent and hosted results are recorded on its PR. Scoring does not authenticate measurements, served hardware/weights, independent execution, preregistration or calibration and never automatically refits coefficients.
+- Released independently from PR #120. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38308065689); the publishing workflow separately validates and attests the exact versioned distributions before publication. Scoring does not authenticate measurements, served hardware/weights, independent execution, preregistration or calibration and never automatically refits coefficients.
 
-## [0.65.0] - Unreleased candidate
+## [0.65.0] - 2026-10-17
 
 ### Signed contributions and private replay
 
@@ -33,9 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Version 0.65.0 requires unpublished candidate source or wheels. The exact-head local, independent and hosted results are recorded on its PR. Signatures do not prove measurement truth, served weights, original hardware, independent execution or planner calibration.
+- Released independently from PR #119. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38304618141); the publishing workflow separately validates and attests the exact versioned distributions before publication. Signatures do not prove measurement truth, served weights, original hardware, independent execution or planner calibration.
 
-## [0.64.0] - Unreleased candidate
+## [0.64.0] - 2026-10-17
 
 ### Serial trace campaigns
 
@@ -47,9 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Version 0.64.0 requires unpublished candidate source or wheel. External preregistration/time authentication, independent cold/cache runs, GPU geometry, served weights and physical provider termination remain unverified. Cooperative drain is not a guaranteed wall-time return; population bounds are not a serialization-byte ceiling.
+- Released independently from PR #118. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38294066603); the publishing workflow separately validates and attests the exact versioned distributions before publication. External preregistration/time authentication, independent cold/cache runs, GPU geometry, served weights and physical provider termination remain unverified. Cooperative drain is not a guaranteed wall-time return; population bounds are not a serialization-byte ceiling.
 
-## [0.63.0] - Unreleased candidate
+## [0.63.0] - 2026-10-17
 
 ### Queue-inclusive trace regression gates
 
@@ -60,9 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Version 0.63.0 is an unpublished candidate requiring its source or wheel. Local source validation and future hosted installed qualification are separate; no physical authentication, independent cold execution or GPU qualification is claimed.
+- Released independently from PR #117. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38289257404); the publishing workflow separately validates and attests the exact versioned distributions before publication. no physical authentication, independent cold execution or GPU qualification is claimed.
 
-## [0.62.0] - Unreleased candidate
+## [0.62.0] - 2026-10-17
 
 ### Native streaming trace observations
 
@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Validation
 
-- Candidate validation is recorded on its PR; version 0.62.0 is not yet published.
+- Released independently from PR #116. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/38280237153); the publishing workflow separately validates and attests the exact versioned distributions before publication. Synthetic streaming protocol checks do not establish GPU execution or physical serving performance.
 
 ## [0.61.0] - 2026-10-12
 
