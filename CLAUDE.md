@@ -57,7 +57,19 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.69.0 (unreleased candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.70.0 (unreleased candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Candidate private prediction bundles: `bundle prediction-create PLAN --policy POLICY
+--benchmark RECEIPT --out DIR --json`, `bundle prediction-verify DIR --json`, and
+`bundle prediction-score DIR --out SCORE --json`. Public `PredictionBundle` and
+create/verify/score APIs hold original plan/input/policy/receipt bytes and reuse
+the existing scorer. Preserve every ordered receipt including negative/duplicate
+and zero-received populations. Both manifests count toward the 32 MiB transport
+budget; score accounting remains explicit. Directory originals may contain private
+prompts/options/harness data; metadata is digest-only and no upload occurs.
+Exclusive creation publishes the outer manifest last; partial directories remain
+visible without an atomic-directory/crash-durability claim. See
+[private prediction bundles](docs/prediction-bundles.md), unreleased 0.70.0.
 
 Candidate finite load points: `trace-envelope --cases CASES --policy POLICY
 --campaign CELL=CAMPAIGN --out decision.json --json` and sync

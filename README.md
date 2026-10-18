@@ -304,6 +304,28 @@ bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
+### `bundle prediction-*` -- private prediction evidence (0.70.0 candidate)
+
+Preserve a plan with its bound inputs, explicit score policy and every original
+benchmark receipt for offline handoff:
+
+```bash
+chimeraforge bundle prediction-create plan.json --policy score-policy.json --benchmark first.json --benchmark second.json --out private-evidence --json
+chimeraforge bundle prediction-verify private-evidence --json
+chimeraforge bundle prediction-score private-evidence --out scorecard.json --json
+```
+
+**Private handoff:** original benchmark and harness files can contain prompts,
+options, provider diagnostics or paths. Review those files before sharing. Metadata
+and scorecards expose digest receipts and bounded outcomes; the directory preserves
+the raw originals. No upload occurs. The [closed bundle contract](docs/prediction-bundles.md)
+retains exact receipt order, bytes, hashes and negative/duplicate evidence under a
+32 MiB transport budget including both manifests. An empty received population is
+valid missing evidence. Create/verify exit 0 for valid content, 2 for invalid input;
+scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
+3 incomplete. Integrity does not qualify GPU evidence or authenticate measurements.
+These subcommands are absent from published 0.66.0.
+
 ### `study` -- frozen-context workload and cost sensitivity
 
 Available in the published 0.61.0 CLI.
