@@ -97,10 +97,11 @@ def _required(artifact, *, allow_contributions: bool = False) -> dict:
     return {"corpus": corpus, **({"quality": quality} if quality is not None else {})}
 
 
-def _capture_inputs(artifact, *, allow_contributions: bool = False) -> dict:
+def _capture_inputs(artifact, *, allow_contributions: bool = False, _reader=None) -> dict:
     """Hold each original input once; callers retain the actual consumed location."""
     from chimeraforge.plan_check import _local_file
 
+    read = _read if _reader is None else _reader
     held = {}
     for role, binding in _required(artifact, allow_contributions=allow_contributions).items():
         if binding["kind"] == "bundled":
@@ -109,14 +110,14 @@ def _capture_inputs(artifact, *, allow_contributions: bool = False) -> dict:
             )
             with resources.as_file(resource) as source:
                 held[role] = (
-                    _read(source, MAX_INPUT_BYTES, package_resource=True),
+                    read(source, MAX_INPUT_BYTES, package_resource=True),
                     source.resolve(),
                 )
         else:
             source = _local_file(binding)
             if source is None:
                 _fail(f"original {role} path is foreign/unavailable; use a verified bundle")
-            held[role] = (_read(source, MAX_INPUT_BYTES), source)
+            held[role] = (read(source, MAX_INPUT_BYTES), source)
     return held
 
 
