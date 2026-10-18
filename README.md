@@ -716,6 +716,26 @@ replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
+### `gate --kind trace-campaign` -- whole-population decisions (0.67.0 candidate)
+
+The unreleased candidate compares two complete saved campaigns offline. Use the
+candidate checkout; the published 0.66.0 package does not include this interface.
+Declare the expected replica count in a `TraceGatePolicy` JSON file, then supply
+one whole campaign per arm:
+
+```bash
+chimeraforge gate --kind trace-campaign --baseline baseline-campaign.json --candidate candidate-campaign.json --policy campaign-policy.json --out campaign-gate.json --json
+```
+
+The gate validates the manifest, every declared slot and unmodified native child.
+Failed, incomplete and not-started replicas remain visible. Changed controls,
+missing observations or copied executions cannot produce a conditional pass;
+known breaches remain visible even when the whole result is inconclusive.
+Execution completion remains separate from SLO success. Exits: `0` conditional
+pass, `1` regression, `2` malformed input/output, `3` inconclusive. See the
+[policy and Python API contract](docs/trace-campaign-gates.md) for population,
+byte limits, output protection and the unverified independence/hardware boundary.
+
 ### `score` -- frozen prediction scorecards (since 0.66.0)
 
 Use Chimeraforge 0.66.0 or later. Declare a plan-bound population and

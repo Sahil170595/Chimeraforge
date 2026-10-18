@@ -10,7 +10,7 @@ import typer
 
 def gate(
     kind: str = typer.Option(
-        "benchmark", "--kind", help="Receipt kind: benchmark (default) or trace."
+        "benchmark", "--kind", help="Receipt kind: benchmark (default), trace, or trace-campaign."
     ),
     baseline: list[Path] = typer.Option(
         ..., "--baseline", help="Ordered baseline receipt; repeat for every replicate."
@@ -31,13 +31,18 @@ def gate(
     from chimeraforge.plan_study import protect_output
 
     try:
-        if kind not in ("benchmark", "trace"):
-            raise api.PlanError("gate --kind must be benchmark or trace")
+        if kind not in ("benchmark", "trace", "trace-campaign"):
+            raise api.PlanError("gate --kind must be benchmark, trace or trace-campaign")
+        if kind == "trace-campaign" and (len(baseline) != 1 or len(candidate) != 1):
+            raise api.PlanError("trace-campaign gate needs exactly one whole campaign per arm")
         if out is not None:
             protect_output(out, [*baseline, *candidate, policy])
-        result = (api.gate_traces if kind == "trace" else api.gate_benchmarks)(
-            baseline, candidate, policy=policy
-        )
+        if kind == "trace-campaign":
+            result = api.gate_trace_campaigns(baseline[0], candidate[0], policy=policy)
+        else:
+            result = (api.gate_traces if kind == "trace" else api.gate_benchmarks)(
+                baseline, candidate, policy=policy
+            )
         if out is not None:
             result.save(out)
         report = result.to_dict()

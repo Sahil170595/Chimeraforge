@@ -193,12 +193,26 @@ def accept_campaign(cwd: Path, env: dict, model: str, base_url: str, version: st
     missing_model = "ci-missing-trace-campaign-model"
     missing = json.loads(run_cli([*args, "--model", missing_model], cwd, env, 1))
     validate_campaign(missing, workload, raw, missing_model, version, complete=False)
+    from chimeraforge import api
+
+    policy = api.TraceGatePolicy(rules={"latency_p95_ms": 0.1}, expected_replicates=2)
+    copied_gate = api.gate_trace_campaigns(report, report, policy=policy).to_dict()
+    assert copied_gate["exit_code"] == 3
+    assert "duplicate_execution_payload" in copied_gate["blockers"]
+    incomplete_gate = api.gate_trace_campaigns(report, missing, policy=policy).to_dict()
+    assert incomplete_gate["exit_code"] == 3 and len(incomplete_gate["pairs"]) == 2
+    assert [slot["state"] for slot in incomplete_gate["inputs"]["candidate"]["replicas"]] == [
+        "incomplete",
+        "not_started",
+    ]
     return {
         "scope": (
             "actual installed serial CPU campaign; no cold/independence or speed qualification"
         ),
         "trace_campaign": report,
         "missing_model_campaign": missing,
+        "campaign_gate_copied_actual_evidence": copied_gate,
+        "campaign_gate_incomplete_actual_evidence": incomplete_gate,
         "source_bytes_unchanged": True,
     }
 

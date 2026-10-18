@@ -93,6 +93,18 @@ def gate_traces(
     return apply_gate(baseline_receipts, candidate_receipts, policy=policy)
 
 
+def gate_trace_campaigns(
+    baseline_campaign: TraceCampaign | dict | str | Path,
+    candidate_campaign: TraceCampaign | dict | str | Path,
+    *,
+    policy: TraceGatePolicy | dict | str | Path,
+) -> RegressionGate:
+    """Gate every declared campaign slot without selecting successful native replicas."""
+    from chimeraforge.bench.trace_campaign_gate import gate_trace_campaigns as apply_gate
+
+    return apply_gate(baseline_campaign, candidate_campaign, policy=policy)
+
+
 @dataclass(frozen=True)
 class PlanRequest:
     """Typed options for the shared planner; network use is explicit in callers."""

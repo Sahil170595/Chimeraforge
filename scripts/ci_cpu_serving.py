@@ -61,6 +61,14 @@ DIAGNOSTIC_ERROR_TYPES = (
     "RemoteProtocolError",
     "TimeoutError",
 )
+DIAGNOSTIC_COUNT_FIELDS = (
+    "requested_count",
+    "attempted_count",
+    "successful_count",
+    "failed_count",
+    "not_started_count",
+)
+DIAGNOSTIC_OBSERVATION_FIELDS = ("loaded_bytes", "loaded_gpu_bytes", "context_length")
 
 
 def _diagnostic_integer(value: object) -> int | None:
@@ -91,15 +99,16 @@ def contribution_replay_observation(report: dict, runs: int) -> dict:
         "exit_code": _diagnostic_integer(report.get("exit_code")),
         "expected_runs": _diagnostic_integer(runs),
         "counts": {
-            name: _diagnostic_integer(execution.get(name))
-            for name in (
-                "requested_count",
-                "attempted_count",
-                "successful_count",
-                "failed_count",
-                "not_started_count",
-            )
+            name: _diagnostic_integer(execution.get(name)) for name in DIAGNOSTIC_COUNT_FIELDS
         },
+        "missing_count_fields": [name for name in DIAGNOSTIC_COUNT_FIELDS if name not in execution],
+        "invalid_count_fields": [
+            name
+            for name in DIAGNOSTIC_COUNT_FIELDS
+            if name in execution
+            and execution[name] is not None
+            and _diagnostic_integer(execution[name]) is None
+        ],
         "error_present": error is not None,
         "error_category": error_type
         if type(error_type) is str and error_type in DIAGNOSTIC_ERROR_TYPES
@@ -133,10 +142,27 @@ def contribution_replay_observation(report: dict, runs: int) -> dict:
             "present": key in execution,
             "valid_shape": type(raw) is dict,
             "device": device if type(device) is str and device in ("cpu", "gpu") else None,
+            "device_state": "missing"
+            if "device" not in observation
+            else "unknown"
+            if device is None
+            else "known"
+            if type(device) is str and device in ("cpu", "gpu")
+            else "invalid",
             **{
                 name: _diagnostic_integer(observation.get(name))
-                for name in ("loaded_bytes", "loaded_gpu_bytes", "context_length")
+                for name in DIAGNOSTIC_OBSERVATION_FIELDS
             },
+            "missing_numeric_fields": [
+                name for name in DIAGNOSTIC_OBSERVATION_FIELDS if name not in observation
+            ],
+            "invalid_numeric_fields": [
+                name
+                for name in DIAGNOSTIC_OBSERVATION_FIELDS
+                if name in observation
+                and observation[name] is not None
+                and _diagnostic_integer(observation[name]) is None
+            ],
             "limitations_present": "limitations" in observation,
         }
     return result

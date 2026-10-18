@@ -147,6 +147,32 @@ def test_trace_gate_consumer_protocol_through_public_cli(tmp_path, monkeypatch):
     assert "synthetic" in result["scope"]
 
 
+def test_trace_campaign_gate_installed_protocol_through_public_cli(tmp_path, monkeypatch):
+    """Source protocol proof; installed consumers retain their package-origin assertion."""
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    script = load_script("ci_trace_campaign_gate")
+    load_script("ci_trace_gate")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: None)
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == expected_code, result.output
+        assert result.exception is None or isinstance(result.exception, SystemExit)
+        return result.output
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    result = script.accept(tmp_path, {}, tmp_path / "checkout")
+    assert [
+        result[name]["exit_code"]
+        for name in ("conditional_pass", "regression", "copied_evidence", "incomplete_population")
+    ] == [0, 1, 3, 3]
+    assert result["malformed_and_aliases"] == "refused"
+    assert "synthetic" in result["scope"]
+
+
 def cpu_gate_fixture(
     tmp_path,
     *,
@@ -531,13 +557,20 @@ def test_cpu_replay_failure_retains_only_bounded_categorical_diagnostics(capsys,
     assert diagnostic["gpu_state"] == "unverified" and diagnostic["status"] == "failed"
     assert diagnostic["exit_code"] == 1 and diagnostic["expected_runs"] == 3
     assert diagnostic["counts"]["successful_count"] is None
+    assert diagnostic["invalid_count_fields"] == ["successful_count"]
+    assert diagnostic["missing_count_fields"] == ["attempted_count"]
     assert diagnostic["counts"]["failed_count"] == 0
     assert diagnostic["error_present"] is True and diagnostic["error_category"] == "other"
     assert diagnostic["before"]["device"] is None
+    assert diagnostic["before"]["device_state"] == "invalid"
+    assert diagnostic["before"]["invalid_numeric_fields"] == ["loaded_bytes", "loaded_gpu_bytes"]
+    assert diagnostic["before"]["missing_numeric_fields"] == ["context_length"]
     assert diagnostic["before"]["loaded_gpu_bytes"] is None
     assert diagnostic["before"]["loaded_bytes"] is None
     assert diagnostic["after"]["device"] == "cpu"
     assert diagnostic["after"]["loaded_gpu_bytes"] == 0
+    assert diagnostic["after"]["device_state"] == "known"
+    assert diagnostic["after"]["invalid_numeric_fields"] == []
     assert diagnostic["bindings"]["backend"] == "invalid"
     assert diagnostic["bindings"]["model"] == "matched"
     assert private not in output and "secret" not in output and "example.invalid" not in output

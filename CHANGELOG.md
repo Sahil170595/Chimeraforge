@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.67.0] - Unreleased
+
+### Whole-campaign regression gates
+
+- `api.gate_trace_campaigns` and `gate --kind trace-campaign` compare two frozen serial campaigns offline under an explicit `TraceGatePolicy`. The receiver validates bounded held bytes, the complete manifest/population, every native child binding and every failed or unstarted slot.
+- Known metric breaches remain visible when incomplete, incompatible or copied evidence prevents a decision. Semantic duplicate detection spans both arms and all replicas; execution completion remains separate from SLO outcomes. No survivor averaging, retry replacement or independence claim is introduced.
+- Recorded native replay intervals must fit the enclosing serial slots in their shared monotonic clock domain. Shared trace evidence canonicalization now treats signed zero as the same measurement, preventing a copied execution from acquiring a new identity through equivalent real-number spellings.
+- Existing installed wheel/sdist consumers exercise synthetic decision oracles; the existing CPU consumer gates its already-produced native campaigns without another model or job.
+
+### Release qualification
+
+- Registry readiness now observes the actual pinned native uv command through the supported MCP SDK transport. Only the exact pre-application root-version absence diagnostic, zero raw stdout and a complete argv-bound process cleanup receipt allow a fresh attempt under one shared deadline. A separate pip dry-run no longer qualifies uv readiness; application, cancellation and other resolver failures remain terminal.
+- CPU replay assertions emit a bounded categorical observation first, preserving counts, binding states and missing/invalid numeric fields without endpoints, hardware/model names or provider exception text. This improves diagnosis of the observed release assertion failure without asserting its unconfirmed cause.
+- New campaign receiver/gate and native bootstrap modules are included in hosted static analysis. Source, installed artifacts, real CPU execution and public publication remain separate evidence.
+
 ## [0.66.0] - 2026-10-17
 
 ### Frozen prediction scorecards
