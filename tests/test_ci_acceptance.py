@@ -475,6 +475,101 @@ def test_cpu_probe_refuses_corrupt_download_before_installing(tmp_path):
         script.verify_sha256(artifact, "0" * 64)
 
 
+@pytest.mark.parametrize("bad_count", [True, -1, float("inf"), 2**80, "ci-private-sentinel"])
+def test_cpu_replay_failure_retains_only_bounded_categorical_diagnostics(capsys, bad_count):
+    import copy
+    import json
+
+    script = load_script("ci_cpu_serving")
+    private = "ci-private-sentinel"
+    report = {
+        "kind": "chimeraforge.contribution-replay",
+        "contribution": {"id": "source", "attestation": {"signed": False}},
+        "trust": {
+            "state": "unsigned_unverified",
+            "changes_quarantine": False,
+            "changes_corpus": False,
+            "authenticates_producer": False,
+        },
+        "replay_equivalence": {"state": "unverified"},
+        "gpu_eligibility": {"state": "unverified", "reason": private},
+        "status": "failed",
+        "exit_code": 1,
+        "error": {"type": private, "reason": private},
+        "execution": {
+            "requested_count": 3,
+            "successful_count": bad_count,
+            "failed_count": 0,
+            "not_started_count": 3,
+            "endpoint": "https://owner:secret@example.invalid/private?token=secret",
+            "serving_before": {
+                "device": private,
+                "source": private,
+                "limitations": [private],
+                "loaded_gpu_bytes": False,
+                "loaded_bytes": float("inf"),
+            },
+            "serving_after": {
+                "device": "cpu",
+                "loaded_gpu_bytes": 0,
+                "loaded_bytes": 128,
+                "context_length": 1024,
+                "version": private,
+                "hardware": {"name": private},
+            },
+        },
+        "binding": {"backend": {"state": private}, "model": {"state": "matched"}, private: private},
+        "measurement": {"individual_runs": [{"response": private}]},
+        private: private,
+    }
+    original = copy.deepcopy(report)
+    with pytest.raises(AssertionError):
+        script.validate_contribution_replay(report, {"id": "source"}, 3)
+    output = capsys.readouterr().out
+    assert len(output.splitlines()) == 1 and len(output.encode()) < 4096
+    diagnostic = json.loads(output)["contribution_replay_observation"]
+    assert diagnostic["gpu_state"] == "unverified" and diagnostic["status"] == "failed"
+    assert diagnostic["exit_code"] == 1 and diagnostic["expected_runs"] == 3
+    assert diagnostic["counts"]["successful_count"] is None
+    assert diagnostic["counts"]["failed_count"] == 0
+    assert diagnostic["error_present"] is True and diagnostic["error_category"] == "other"
+    assert diagnostic["before"]["device"] is None
+    assert diagnostic["before"]["loaded_gpu_bytes"] is None
+    assert diagnostic["before"]["loaded_bytes"] is None
+    assert diagnostic["after"]["device"] == "cpu"
+    assert diagnostic["after"]["loaded_gpu_bytes"] == 0
+    assert diagnostic["bindings"]["backend"] == "invalid"
+    assert diagnostic["bindings"]["model"] == "matched"
+    assert private not in output and "secret" not in output and "example.invalid" not in output
+    assert report == original
+
+
+def test_cpu_replay_diagnostic_rejects_malformed_states_and_boolean_exit():
+    import json
+
+    script = load_script("ci_cpu_serving")
+    private = "ci-private-sentinel"
+    diagnostic = script.contribution_replay_observation(
+        {
+            "gpu_eligibility": {"state": {private: private}},
+            "status": [private],
+            "exit_code": True,
+            "execution": {"serving_before": [private]},
+            "error": [private],
+            "binding": {"quant": [private]},
+        },
+        False,
+    )
+    assert diagnostic["gpu_state"] == diagnostic["status"] == "invalid"
+    assert diagnostic["exit_code"] is diagnostic["expected_runs"] is None
+    assert diagnostic["before"]["present"] is True
+    assert diagnostic["before"]["valid_shape"] is False
+    assert diagnostic["after"]["present"] is False
+    assert diagnostic["bindings"]["quant"] == "invalid"
+    assert diagnostic["error_category"] == "other"
+    assert private not in json.dumps(diagnostic)
+
+
 def test_cpu_probe_refuses_plan_benchmark_presented_as_gpu_qualification(capsys):
     script = load_script("ci_cpu_serving")
     report = {
