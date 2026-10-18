@@ -151,7 +151,7 @@ def runtime_observation(data: bytes, *, truncated: bool = False) -> dict:
         decode_errors = False
     except UnicodeDecodeError:
         decode_errors = True
-    report = {
+    report: dict = {
         "schema_version": 1,
         "stage": "cpu_runtime_startup",
         "record_basis": "ordered_launch_log_segments",

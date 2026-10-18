@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Output caps are applied by the adapter. Context, TP/PP, batching, replicas, modifier/cache settings and modeled rate are not injected or represented as applied. Independent before/after serving bindings preserve contradictions and missing phases; actual token lengths are checked separately from caps.
 - Complete native execution without a known binding mismatch exits 0, incomplete execution or a known mismatch exits 1, and invalid input/output exits 2. Native completion and SLO results remain independently visible. Output protects every held private input and bundle member before CLI contact and on save.
 - The receiver validates and retains one held native snapshot. Existing native readers require an explicitly selected child; the wrapper does not authenticate measurements, immutable weights, physical hardware, independent runs, deployment or planner calibration.
+- The isolated CPU daemon excludes GPU discovery and emits bounded categorical startup/offload/buffer observations on success and failure, retaining unknown/truncated facts and all existing placement assertions. This diagnoses a pinned-runtime placement failure without treating an unconfirmed accounting explanation as fact.
 
 ## [0.67.0] - Unreleased
 
