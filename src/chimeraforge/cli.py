@@ -35,6 +35,7 @@ from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.study import study
 from chimeraforge.commands.trace import trace
 from chimeraforge.commands.trace_campaign import trace_campaign
+from chimeraforge.commands.trace_envelope import trace_envelope
 from chimeraforge.commands.validate import validate
 
 console = Console()
@@ -82,6 +83,7 @@ app.command()(safety)
 app.command()(bench)
 app.command()(trace)
 app.command("trace-campaign")(trace_campaign)
+app.command("trace-envelope")(trace_envelope)
 app.command()(gate)
 app.command()(score)
 app.command()(refit)

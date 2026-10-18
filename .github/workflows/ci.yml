@@ -31,6 +31,7 @@ jobs:
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/prediction_score.py src/chimeraforge/commands/score.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_campaign_inputs.py src/chimeraforge/bench/trace_campaign_gate.py scripts/ci_registry_runtime.py scripts/ci_registry_native_runner.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py
+      - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_envelope_inputs.py src/chimeraforge/bench/trace_envelope.py src/chimeraforge/commands/trace_envelope.py
 
   workflows:
     runs-on: ubuntu-latest

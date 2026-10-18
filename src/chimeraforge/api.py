@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import types
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from pathlib import Path
@@ -104,6 +105,18 @@ def gate_trace_campaigns(
     from chimeraforge.bench.trace_campaign_gate import gate_trace_campaigns as apply_gate
 
     return apply_gate(baseline_campaign, candidate_campaign, policy=policy)
+
+
+def assess_trace_envelope(
+    cases: dict | str | Path,
+    campaigns: Mapping[str, TraceCampaign | dict | str | Path],
+    *,
+    policy: dict | str | Path,
+) -> RegressionGate:
+    """Assess complete finite declared load points without executing replacement traffic."""
+    from chimeraforge.bench.trace_envelope import assess_trace_envelope as assess
+
+    return assess(cases, campaigns, policy=policy)
 
 
 @dataclass(frozen=True)

@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers the 0.68.0 candidate; unreleased additions are marked below.
+This document covers the 0.69.0 candidate; unreleased additions are marked below.
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
@@ -25,6 +25,12 @@ The unreleased 0.68.0 candidate adds async `replay_plan_trace` and defensive
 `PlanTraceReplay`, retaining a selected frozen candidate beside its unchanged
 native trace. See [plan-bound traces](plan-bound-trace.md) for exact cap admission,
 before/after bindings, modeled settings and independent SLO outcomes.
+The unreleased 0.69.0 candidate adds sync `assess_trace_envelope(cases, campaigns,
+*, policy)` returning a defensive `RegressionGate`. Cases and policy accept held
+JSON objects or paths; campaigns maps declared cell names to `TraceCampaign`,
+JSON objects or paths. Missing cells remain declared, and every supplied campaign
+must match its cell. See [finite load points](trace-envelope.md) for the closed
+schemas, comparability conditions, byte limits and exits.
 
 Install: `pip install chimeraforge[all]`
 
