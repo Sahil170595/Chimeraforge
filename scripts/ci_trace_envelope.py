@@ -22,7 +22,7 @@ def uniform_campaign(interval: float, *, durations: tuple[float, ...] = (0.12, 0
     from chimeraforge.bench.trace_workload import TraceRequest, descriptor
     from chimeraforge.planner.replay import digest
 
-    report = protocol_campaign(durations)
+    report: dict = protocol_campaign(durations)
     workload = [
         TraceRequest(f"envelope-{i}", PRIVATE_INPUT, 8, float(i) * interval) for i in range(2)
     ]
@@ -72,7 +72,8 @@ def uniform_campaign(interval: float, *, durations: tuple[float, ...] = (0.12, 0
         )
         cursor = slot["end_s"] + 0.1
     report["clock"]["elapsed_seconds"] = cursor
-    return seal(report)
+    seal(report)
+    return report
 
 
 def fixtures() -> tuple[dict, dict, dict[str, dict]]:
@@ -270,14 +271,24 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
     os.link(paths["lower"], alias)
     refuse([*arguments(supplied), "--out", str(alias)])
     assert all(path.read_bytes() == raw for path, raw in original.items())
+
+    def summary(result: dict) -> dict:
+        report = result["assessment"]
+        return {
+            "exit_code": report["exit_code"],
+            "outcome": report["outcome"],
+            "highest_observed_passing": report["highest_observed_passing"],
+            "counts": result["counts"],
+        }
+
     return {
         "scope": (
             "Installed synthetic offline finite-envelope oracles; "
             "no inference, capacity or independent-execution claim"
         ),
-        "full_population": full,
-        "missing_higher": missing,
-        "known_breach": breached,
+        "full_population": summary(full),
+        "missing_higher": summary(missing),
+        "known_breach": summary(breached),
         "refusal_count": len(refusals),
         "source_inputs_checked": len(original),
         "source_bytes_unchanged": True,
