@@ -9,7 +9,7 @@ from pathlib import Path
 import stat
 
 from chimeraforge.plan_bundle import _plain_path, _read
-from chimeraforge.prediction_bundle_inputs import fail
+from chimeraforge.prediction_bundle_inputs import check_inventory, fail
 
 logger = logging.getLogger(__name__)
 PRIVATE_DIRECTORY_MODE = 0o700
@@ -71,13 +71,13 @@ def _write_member(owner: _Owner, logical: str, raw: bytes) -> None:
 def _verify_owned(owner: _Owner) -> None:
     owner.check()
     expected = {*owner.directories, *(path for path in owner.files if "/" not in path)}
-    if {entry.name for entry in owner.root.iterdir()} != expected:
-        fail(retained=True)
+    check_inventory(owner.root, expected, retained=True)
     for logical in owner.directories:
-        if {entry.name for entry in (owner.root / logical).iterdir()} != {
-            path.split("/")[1] for path in owner.files if path.startswith(logical + "/")
-        }:
-            fail(retained=True)
+        check_inventory(
+            owner.root / logical,
+            {path.split("/")[1] for path in owner.files if path.startswith(logical + "/")},
+            retained=True,
+        )
     for logical, record in owner.files.items():
         path = owner.root / logical
         if (

@@ -62,6 +62,21 @@ def receipt_path(index: int) -> str:
     return f"receipts/{index:04d}.json"
 
 
+def check_inventory(directory: Path, expected: set[str], *, retained: bool = False) -> None:
+    """Stream only bounded expected names plus EOF or the first unexpected/duplicate entry."""
+    seen: set[str] = set()
+    try:
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if entry.name not in expected or entry.name in seen:
+                    fail(retained=retained)
+                seen.add(entry.name)
+    except OSError:
+        fail(retained=retained)
+    if seen != expected:
+        fail(retained=retained)
+
+
 def limit_for(logical: str) -> int:
     from chimeraforge.api import MAX_PLAN_BYTES
 
@@ -129,11 +144,7 @@ def plan_source(saved: PlanBundle | str | Path, held: Transport) -> PlanBundle:
             row["role"]: held.read(root / row["path"], limit_for("plan/" + row["path"]))
             for row in manifest["files"]
         }
-        if {entry.name for entry in root.iterdir()} != {
-            "manifest.json",
-            *(ROLE_PATHS[role] for role in members),
-        }:
-            fail()
+        check_inventory(root, {"manifest.json", *(ROLE_PATHS[role] for role in members)})
         result = PlanBundle(root, members.pop("plan"), tuple(members.items()), manifest_raw)
         held.paths.append(root)
     else:
@@ -285,13 +296,13 @@ def read_directory(directory: str | Path) -> tuple[Path, bytes, tuple[tuple[str,
         for row in outer["files"]
     )
     expected_root = {"manifest.json", "policy.json", "plan", "receipts"}
-    if {entry.name for entry in root.iterdir()} != expected_root:
-        fail()
+    check_inventory(root, expected_root)
     for name in ("plan", "receipts"):
         folder = root / name
         _plain_path(folder)
-        if not folder.is_dir() or {entry.name for entry in folder.iterdir()} != {
-            path.split("/")[1] for path, _ in members if path.startswith(name + "/")
-        }:
+        if not folder.is_dir():
             fail()
+        check_inventory(
+            folder, {path.split("/")[1] for path, _ in members if path.startswith(name + "/")}
+        )
     return root, raw, members
