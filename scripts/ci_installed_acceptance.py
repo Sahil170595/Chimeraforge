@@ -186,7 +186,35 @@ def main(argv: list[str] | None = None) -> int:
         campaign_gate_receipt = accept_campaign_gate(cwd, env, args.checkout)
         from ci_native_stream import accept as accept_native_stream
 
-        native_stream_receipt = accept_native_stream(cwd, env, args.checkout)
+        protocol_plan_path = cwd / "modeled-linux-protocol-plan.json"
+        run_cli(
+            [
+                "plan",
+                "--model-size",
+                "3b",
+                "--hardware",
+                "RTX 4080 12GB",
+                "--platform",
+                "linux",
+                "--request-rate",
+                "0.01",
+                "--budget",
+                "100000",
+                "--avg-tokens",
+                "4",
+                "--prompt-tokens",
+                "8",
+                "--no-network",
+                "--save",
+                str(protocol_plan_path),
+                "--json",
+            ],
+            cwd,
+            env,
+        )
+        native_stream_receipt = accept_native_stream(
+            cwd, env, args.checkout, plan_path=protocol_plan_path
+        )
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
