@@ -16,6 +16,7 @@ from typing import Callable
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
+from chimeraforge.bench.plan_trace import PlanTraceReplay
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
 from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
@@ -532,6 +533,34 @@ async def replay_trace(
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
         slos=slos,
+        stop_event=stop_event,
+    )
+
+
+async def replay_plan_trace(
+    saved: PlanArtifact | PlanBundle | str | Path,
+    requests: list[TraceRequest] | str | Path,
+    *,
+    candidate_index: int = 0,
+    model: str | None = None,
+    base_url: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    stop_event: asyncio.Event | None = None,
+) -> PlanTraceReplay:
+    """Preserve a saved candidate beside an unchanged native scheduled replay."""
+    from chimeraforge.bench.plan_trace import replay_plan_trace as replay
+
+    return await replay(
+        saved,
+        requests,
+        candidate_index=candidate_index,
+        model=model,
+        base_url=base_url,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
         stop_event=stop_event,
     )
 

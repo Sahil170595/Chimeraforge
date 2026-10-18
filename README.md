@@ -661,6 +661,27 @@ contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
 
+### `trace --from-plan` -- preserve a frozen candidate (0.68.0 candidate)
+
+This unreleased interface requires the candidate checkout; the stable PyPI
+installation above remains 0.66.0. Select a candidate whose backend matches your
+existing endpoint, and make every workload output cap equal its saved
+`decode_tokens_per_req`:
+
+```bash
+chimeraforge trace workload.json --from-plan plan.json --candidate-index 0 --model YOUR_SERVED_MODEL --concurrency 1 --out plan-trace.json --json
+```
+
+The wrapper preserves the selected plan, original workload commitments and
+unchanged native trace. It derives only explicit saved SLO inputs, preserves
+arrival offsets and records the actual served alias. Explicit backend/SLO
+overrides are refused. Output caps are applied; saved context, parallelism,
+batching and fleet settings stay modeled/unverified. Before/after binding
+contradictions and actual token-length mismatches remain visible. Exit 0 means
+complete execution without a known binding mismatch, 1 incomplete/mismatched,
+and 2 invalid; native SLO outcomes remain separate. See [plan-bound request
+traces](docs/plan-bound-trace.md) for the API, bundle protection and evidence limits.
+
 ### `gate --kind trace` -- queue-inclusive regression decisions (since 0.63.0)
 
 With Chimeraforge 0.63.0 or later, save a predeclared trace
