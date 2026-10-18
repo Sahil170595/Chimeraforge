@@ -714,6 +714,19 @@ def sign_contribution(
     return sign(source, private_key)
 
 
+def gate_signed_contributions(
+    baseline: list[SignedContribution | dict | str | Path],
+    candidate: list[SignedContribution | dict | str | Path],
+    *,
+    trusted_keys: tuple[bytes | str | Path, ...],
+    policy: RegressionPolicy | dict | str | Path,
+) -> SignedContributionReceipt:
+    """Gate explicitly trusted public native facts without inventing private bindings."""
+    from chimeraforge.signed_gate import gate_signed_contributions as apply_gate
+
+    return apply_gate(baseline, candidate, trusted_keys=trusted_keys, policy=policy)
+
+
 def verify_signed_contribution(
     source: SignedContribution | dict | str | Path,
     *,

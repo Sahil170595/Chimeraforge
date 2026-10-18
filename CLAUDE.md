@@ -57,7 +57,19 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.70.0 (unreleased candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.71.0 (unreleased candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Candidate trusted signed gates: `contribute gate --baseline BEFORE --candidate AFTER
+--trusted-key RECEIVER_KEY --policy POLICY --out DECISION --json` and sync
+`api.gate_signed_contributions` compare public native facts after signature/artifact
+verification and explicit receiver trust. Preserve every declared verification,
+and never compare untrusted payloads. Semantic copies, incomplete populations and
+incompatible controls remain inconclusive. Reuse the existing native regression
+policy without reconstructing private plan/request bindings. Outcomes: 0 complete
+conditional pass, 1 authentication failure or comparable regression, 2 malformed
+or unsafe/failed output, 3 unavailable/untrusted/inconclusive. No measurement truth,
+hardware, weights or independence attestation. See
+[signed native gates](docs/signed-native-gates.md), unreleased 0.71.0.
 
 Candidate private prediction bundles: `bundle prediction-create PLAN --policy POLICY
 --benchmark RECEIPT --out DIR --json`, `bundle prediction-verify DIR --json`, and

@@ -304,6 +304,21 @@ bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
+### `contribute gate` -- trusted signed native comparisons (0.71.0 candidate)
+
+```bash
+chimeraforge contribute gate --baseline before.signed.json --candidate after.signed.json --trusted-key receiver.pub --policy gate-policy.json --out decision.json --json
+```
+
+Compare public native facts only after exact signature/artifact verification and
+explicit receiver trust. Repeated flags retain the declared populations; copied,
+incomplete or incompatible evidence cannot qualify. `api.gate_signed_contributions`
+returns a defensive decision receipt. Exits: 0 conditional pass, 1 authentication
+failure or comparable regression, 2 malformed/output failure, 3 unavailable or
+inconclusive. Signatures do not authenticate measurement truth, hardware, weights
+or execution independence. See [signed native gates](docs/signed-native-gates.md)
+for policy, matching rules, byte limits and the public projection's limits.
+
 ### `bundle prediction-*` -- private prediction evidence (0.70.0 candidate)
 
 Preserve a plan with its bound inputs, explicit score policy and every original
