@@ -27,6 +27,7 @@ jobs:
       - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
       - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
       - run: uv run --no-sync mypy
+      - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/signed_payload.py src/chimeraforge/signed_contribution.py src/chimeraforge/signed_replay.py
 
   workflows:
     runs-on: ubuntu-latest

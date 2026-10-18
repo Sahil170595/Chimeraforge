@@ -227,7 +227,7 @@ def test_invalid_execution_settings_are_rejected_before_contact(monkeypatch, opt
         asyncio.run(benchmark_plan(saved_plan(), **options))
 
 
-def test_endpoint_credentials_in_partial_warning_are_redacted(monkeypatch):
+def test_endpoint_credentials_in_partial_warning_are_redacted(monkeypatch, caplog):
     saved = saved_plan()
     backend = ObservedBackend(saved)
     original = backend.generate
@@ -243,8 +243,14 @@ def test_endpoint_credentials_in_partial_warning_are_redacted(monkeypatch):
     backend.generate = generate
     report = execute(saved, backend, monkeypatch)
     encoded = json.dumps(report)
-    assert report["status"] == "partial" and "https://serving/generate" in encoded
-    assert "password" not in encoded and "private-token" not in encoded and "#secret" not in encoded
+    assert report["status"] == "partial"
+    assert report["execution"]["requested_count"] == 3
+    assert report["execution"]["successful_count"] == 2
+    assert report["execution"]["failed_count"] == 1
+    assert "Run 1/3 failed: RuntimeError" in report["measurement"]["warnings"]
+    assert "RuntimeError" in caplog.text
+    for private in ("serving/generate", "password", "private-token", "#secret"):
+        assert private not in encoded + caplog.text
 
 
 def test_single_profile_receipt_has_no_applied_arrival_rate(monkeypatch):

@@ -195,13 +195,28 @@ def load_receipt(source: object) -> dict:
         measurement, execution = data["measurement"], data["execution"]
         if type(execution) is not dict:
             fail("execution must be an object")
+    rows = validate_population(measurement, execution)
+    return {
+        "measurement": measurement,
+        "execution": execution,
+        "samples": rows,
+        "legacy": legacy,
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "fingerprint": data.get("fingerprint"),
+        "size_bytes": len(raw),
+        "path": path,
+    }
+
+
+def validate_population(measurement: dict, execution: dict | None) -> list[RunMetrics]:
+    """Validate held native measurement/execution views without inventing an envelope."""
     if type(measurement) is not dict:
         fail("measurement must be an object")
     rows = samples(measurement)
     for name in ("backend", "model", "workload"):
         if type(measurement.get(name)) is not str or not measurement[name]:
             fail("measurement identity/workload is missing")
-    if not legacy:
+    if execution is not None:
         for name in ("requested_count", "successful_count", "failed_count"):
             if not count(execution.get(name), minimum=1 if name == "requested_count" else 0):
                 fail("execution counts must be integers")
@@ -263,13 +278,4 @@ def load_receipt(source: object) -> dict:
                     )
                 ):
                     fail("native TTFT disagrees with its supported prefill alias")
-    return {
-        "measurement": measurement,
-        "execution": execution,
-        "samples": rows,
-        "legacy": legacy,
-        "sha256": hashlib.sha256(raw).hexdigest(),
-        "fingerprint": data.get("fingerprint"),
-        "size_bytes": len(raw),
-        "path": path,
-    }
+    return rows

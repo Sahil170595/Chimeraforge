@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Callable
 
 from chimeraforge.bench.backends import get_backend
-from chimeraforge.bench.backends.base import Backend, backend_lifecycle
+from chimeraforge.bench.backends.base import Backend, backend_lifecycle, error_category
 from chimeraforge.bench.metrics import (
     BENCHMARK_WALL_BASIS,
     BenchmarkResult,
@@ -29,9 +29,17 @@ from chimeraforge.bench.metrics import (
 )
 from chimeraforge.bench.profiles import get_profile
 from chimeraforge.bench.prompts import DEFAULT_PROMPT
-from chimeraforge.bench.serving import observe_backend, sanitize_message
+from chimeraforge.bench.serving import observe_backend
 
 logger = logging.getLogger(__name__)
+
+
+def effective_adapter_options(backend_name: str, context_length: int, options: dict | None) -> dict:
+    """Current recorded adapter map; adapters may inject/ignore further wire fields."""
+    effective = dict(options) if options else {}
+    if backend_name == "ollama":
+        effective.setdefault("num_ctx", context_length)
+    return effective
 
 
 async def _run_single(
@@ -50,7 +58,7 @@ async def _run_single(
             metrics = await backend.generate(model, prompt, options)
             results.append(metrics)
         except Exception as exc:
-            message = sanitize_message(str(exc))
+            message = error_category(exc)
             warnings.append(f"Run {i + 1}/{total} failed: {message}")
             logger.warning("Run %d/%d failed: %s", i + 1, total, message)
         if on_progress:
@@ -78,7 +86,7 @@ async def _run_batch(
         for j, r in enumerate(batch_results):
             idx = batch_start + j + 1
             if isinstance(r, Exception):
-                message = sanitize_message(str(r))
+                message = error_category(r)
                 warnings.append(f"Run {idx}/{total} failed: {message}")
                 logger.warning("Run %d/%d failed: %s", idx, total, message)
             else:
@@ -115,7 +123,7 @@ async def _run_server(
                 results.append(metrics)
         except Exception as exc:
             async with lock:
-                message = sanitize_message(str(exc))
+                message = error_category(exc)
                 warnings.append(f"Run {idx}/{total} failed: {message}")
                 logger.warning("Run %d/%d failed: %s", idx, total, message)
         finally:
@@ -203,9 +211,7 @@ async def run_benchmark(
         effective_prompt = prompt or DEFAULT_PROMPT
 
         # Build options with context length
-        effective_options = dict(options) if options else {}
-        if backend_name == "ollama":
-            effective_options.setdefault("num_ctx", context_length)
+        effective_options = effective_adapter_options(backend_name, context_length, options)
 
         # Get workload profile (optionally overriding concurrency)
         profile = get_profile(workload, rate=rate, runs=runs)
