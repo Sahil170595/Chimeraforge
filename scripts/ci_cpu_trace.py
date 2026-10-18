@@ -8,14 +8,18 @@ import math
 from pathlib import Path
 
 
-def validate(report: dict, workload: list[dict], raw: bytes, model: str, version: str) -> None:
+def validate(
+    report: dict, workload: list[dict], raw: bytes | None, model: str, version: str
+) -> None:
     """Check actual byte/timing/count associations; require no machine-speed threshold."""
     from chimeraforge.planner.replay import digest
 
     value = dict(report)
     assert digest({k: v for k, v in value.items() if k != "fingerprint"}) == value["fingerprint"]
     assert report["workload"]["canonical_sha256"] == digest(workload)
-    assert report["workload"]["raw_sha256"] == hashlib.sha256(raw).hexdigest()
+    assert report["workload"]["raw_sha256"] == (
+        hashlib.sha256(raw).hexdigest() if raw is not None else None
+    )
     execution = report["execution"]
     assert execution["planned"] == execution["attempted"] == execution["completed"] == len(workload)
     assert all(execution[key] == 0 for key in ("failed", "partial", "cancelled", "not_started"))
@@ -74,6 +78,129 @@ def validate(report: dict, workload: list[dict], raw: bytes, model: str, version
     assert report["goodput"]["qualified_requests"] == qualified
     assert report["goodput"]["requests_per_second"] == qualified / horizon
     assert not any(request["prompt"] in json.dumps(report) for request in workload)
+
+
+def validate_campaign(
+    report: dict, workload: list[dict], raw: bytes, model: str, version: str, *, complete: bool
+) -> None:
+    """Observe frozen bindings/full populations; never impose shared-host speed thresholds."""
+    from chimeraforge.planner.replay import digest
+
+    assert report["kind"] == "chimeraforge.trace-campaign"
+    assert report["fingerprint"] == digest({k: v for k, v in report.items() if k != "fingerprint"})
+    manifest = report["manifest"]
+    assert manifest["fingerprint"] == digest(
+        {k: v for k, v in manifest.items() if k != "fingerprint"}
+    )
+    assert manifest["workload"] == {
+        "canonical_sha256": digest(workload),
+        "raw_sha256": hashlib.sha256(raw).hexdigest(),
+    }
+    assert manifest["population"] == {
+        "replicates": 2,
+        "requests_per_replicate": len(workload),
+        "total_requests": 2 * len(workload),
+    }
+    assert manifest["controls"]["model"] == model and manifest["controls"]["backend"] == "ollama"
+    assert manifest["policy"] == {
+        "execution": "serial",
+        "retries": 0,
+        "warmup_executions": 0,
+        "stop_after_first_incomplete_replicate": True,
+    }
+    descriptors = [
+        {
+            "request_id": row["request_id"],
+            "prompt_sha256": hashlib.sha256(row["prompt"].encode()).hexdigest(),
+            "prompt_bytes": len(row["prompt"].encode()),
+            "max_output_tokens": row["max_output_tokens"],
+            "arrival_offset_s": row["arrival_offset_s"],
+        }
+        for row in workload
+    ]
+    assert manifest["ordered_descriptors"] == descriptors
+    assert len(report["replicas"]) == 2
+    for index, replica in enumerate(report["replicas"]):
+        assert (
+            replica["index"] == index and replica["manifest_fingerprint"] == manifest["fingerprint"]
+        )
+        assert replica["workload_ref"] == manifest["workload"]["canonical_sha256"]
+        if complete:
+            assert replica["state"] == "completed" and replica["error"] is None
+            assert 0 <= replica["start_s"] <= replica["end_s"]
+            if index:
+                assert report["replicas"][index - 1]["end_s"] <= replica["start_s"]
+            validate(replica["receipt"], workload, None, model, version)
+            assert [row["descriptor"] for row in replica["receipt"]["requests"]] == descriptors
+        elif index == 0:
+            assert replica["state"] == "incomplete"
+            native = replica["receipt"]
+            assert native["fingerprint"] == digest(
+                {k: v for k, v in native.items() if k != "fingerprint"}
+            )
+            assert native["workload"] == {"canonical_sha256": digest(workload), "raw_sha256": None}
+            assert native["exit_code"] == 1 and native["error"]["stage"] == "preflight"
+            assert native["execution"]["not_started"] == len(workload)
+            assert len(native["requests"]) == len(workload)
+            assert native["resource_cleanup"]["state"] == "completed"
+        else:
+            assert replica["state"] == "not_started" and replica["receipt"] is None
+            assert replica["start_s"] is replica["end_s"] is None
+    assert report["exit_code"] == (0 if complete else 1)
+    assert report["execution"]["completed"] == (2 if complete else 0)
+    assert report["execution"]["not_started"] == (0 if complete else 1)
+    assert report["assurance"]["independent_cold_executions"] == "unverified"
+    assert not any(row["prompt"] in json.dumps(report) for row in workload)
+
+
+def accept_campaign(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dict:
+    """Two short replicas on the existing model plus a no-inference missing-model refusal."""
+    from ci_installed_acceptance import run_cli
+
+    workload = [
+        {
+            "request_id": "campaign-colors",
+            "prompt": "List three primary colors.",
+            "max_output_tokens": 8,
+            "arrival_offset_s": 0,
+        }
+    ]
+    raw = json.dumps(workload).encode()
+    source, output = cwd / "private-campaign.json", cwd / "campaign-receipt.json"
+    source.write_bytes(raw)
+    args = [
+        "trace-campaign",
+        str(source),
+        "--backend",
+        "ollama",
+        "--base-url",
+        base_url,
+        "--replicates",
+        "2",
+        "--request-timeout",
+        "60",
+        "--trace-timeout",
+        "90",
+        "--campaign-timeout",
+        "180",
+        "--latency-slo",
+        "1",
+        "--json",
+    ]
+    report = json.loads(run_cli([*args, "--model", model, "--out", str(output)], cwd, env))
+    validate_campaign(report, workload, raw, model, version, complete=True)
+    assert json.loads(output.read_bytes()) == report and source.read_bytes() == raw
+    missing_model = "ci-missing-trace-campaign-model"
+    missing = json.loads(run_cli([*args, "--model", missing_model], cwd, env, 1))
+    validate_campaign(missing, workload, raw, missing_model, version, complete=False)
+    return {
+        "scope": (
+            "actual installed serial CPU campaign; no cold/independence or speed qualification"
+        ),
+        "trace_campaign": report,
+        "missing_model_campaign": missing,
+        "source_bytes_unchanged": True,
+    }
 
 
 def accept(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dict:
@@ -178,4 +305,5 @@ def accept(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dic
         "source_bytes_unchanged": True,
         "output_alias_refused": True,
         "trace_gate_duplicate_execution": duplicate,
+        "serial_campaign": accept_campaign(cwd, env, model, base_url, version),
     }

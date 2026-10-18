@@ -19,6 +19,11 @@ from chimeraforge.bench.plan import PlanBenchmark
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
 from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
+from chimeraforge.bench.trace_campaign import (
+    DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
+    DEFAULT_REPLICATES,
+    TraceCampaign,
+)
 from chimeraforge.bench.trace_workload import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TRACE_TIMEOUT_SECONDS,
@@ -500,6 +505,38 @@ async def replay_trace(
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
+        slos=slos,
+        stop_event=stop_event,
+    )
+
+
+async def replay_trace_campaign(
+    requests: list[TraceRequest] | str | Path,
+    *,
+    model: str,
+    backend: str = "ollama",
+    base_url: str | None = None,
+    replicates: int = DEFAULT_REPLICATES,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    campaign_timeout: float = DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
+    slos: TraceSLO | None = None,
+    stop_event: asyncio.Event | None = None,
+) -> TraceCampaign:
+    """Replay one frozen workload serially, retaining all declared replica outcomes."""
+    from chimeraforge.bench.trace_campaign import replay_campaign
+
+    return await replay_campaign(
+        requests,
+        model=model,
+        backend=backend,
+        base_url=base_url,
+        replicates=replicates,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        campaign_timeout=campaign_timeout,
         slos=slos,
         stop_event=stop_event,
     )

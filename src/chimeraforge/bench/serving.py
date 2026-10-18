@@ -134,6 +134,7 @@ def safe_observation(raw: dict) -> dict:
 
 async def observe_backend(backend: Backend, model: str) -> dict:
     import asyncio
+    from chimeraforge.bench.backends.base import error_category
 
     observer = getattr(backend, "observe_serving", None)
     if observer is None:
@@ -144,14 +145,11 @@ async def observe_backend(backend: Backend, model: str) -> dict:
             raise ValueError("serving observation must be an object")
         return safe_observation(result)
     except Exception as exc:
-        logger.warning(
-            "serving metadata observation unavailable (%s): %s",
-            type(exc).__name__,
-            sanitize_message(str(exc)),
-        )
+        category = error_category(exc)
+        logger.warning("serving metadata observation unavailable (%s)", category)
         return {
             "source": "serving metadata capability unavailable",
-            "limitations": [type(exc).__name__],
+            "limitations": [category],
         }
 
 
@@ -176,13 +174,14 @@ async def metadata(
 async def optional_metadata(
     client: httpx.AsyncClient, method: str, url: str, payload: dict | None = None
 ) -> tuple[dict, str | None]:
+    from chimeraforge.bench.backends.base import error_category
+
     try:
         return await metadata(client, method, url, payload), None
     except (httpx.HTTPError, ValueError) as exc:
-        logger.debug(
-            "serving metadata %s unavailable: %s", sanitize_message(url), sanitize_message(str(exc))
-        )
-        return {}, f"{method} {url.split('?', 1)[0].rsplit('/', 1)[-1]}: {type(exc).__name__}"
+        category = error_category(exc)
+        logger.debug("serving metadata %s unavailable (%s)", method, category)
+        return {}, f"{method} {url.split('?', 1)[0].rsplit('/', 1)[-1]}: {category}"
 
 
 def observation() -> dict:

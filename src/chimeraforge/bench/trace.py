@@ -10,10 +10,13 @@ from pathlib import Path
 import time
 from typing import Awaitable, Callable, TypeVar
 
-import httpx
-
 from chimeraforge.bench.backends import get_backend
-from chimeraforge.bench.backends.base import Backend, GenerationObservation, backend_lifecycle
+from chimeraforge.bench.backends.base import (
+    Backend,
+    GenerationObservation,
+    backend_lifecycle,
+    error_category,
+)
 from chimeraforge.bench.serving import observe_backend, sanitize_message
 from chimeraforge.bench.serving_binding import serving_stability
 from chimeraforge.bench.trace_workload import (
@@ -67,17 +70,7 @@ class TraceReplay:
 
 
 def _error(exc: Exception, stage: str) -> dict:
-    category = (
-        "TimeoutError"
-        if isinstance(exc, asyncio.TimeoutError)
-        else "HTTPError"
-        if isinstance(exc, httpx.HTTPError)
-        else "ValueError"
-        if isinstance(exc, ValueError)
-        else "RuntimeError"
-        if isinstance(exc, RuntimeError)
-        else "BackendError"
-    )
+    category = error_category(exc)
     logger.warning("Trace %s failed (%s)", stage, category)
     return {"stage": stage, "type": category}
 

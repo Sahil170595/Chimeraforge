@@ -20,6 +20,21 @@ logger = logging.getLogger(__name__)
 IDENTITY_TIMEOUT_S = 10
 
 
+def error_category(exc: Exception) -> str:
+    """Closed diagnostic categories never contain provider exception text."""
+    return (
+        "TimeoutError"
+        if isinstance(exc, asyncio.TimeoutError)
+        else "HTTPError"
+        if isinstance(exc, httpx.HTTPError)
+        else "ValueError"
+        if isinstance(exc, ValueError)
+        else "RuntimeError"
+        if isinstance(exc, RuntimeError)
+        else "BackendError"
+    )
+
+
 @dataclass(frozen=True)
 class GenerationObservation:
     """Native final metrics and an explicitly scoped mean decode interval."""
@@ -174,6 +189,7 @@ async def backend_lifecycle(
             if _cleanup is not None:
                 _cleanup["state"] = "incomplete"
             name = getattr(backend, "name", type(backend).__name__)
-            logger.warning("Backend '%s' cleanup failed: %s", name, exc, exc_info=True)
+            category = error_category(exc)
+            logger.warning("Backend '%s' cleanup failed (%s)", name, category)
             if not failed:
-                raise RuntimeError(f"Backend '{name}' cleanup failed: {exc}") from exc
+                raise RuntimeError(f"Backend '{name}' cleanup failed ({category})") from None

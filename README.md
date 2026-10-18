@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**23 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**24 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-17).** [Chimeraforge 0.63.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.63.0) adds queue-inclusive trace regression gates. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-17).** [Chimeraforge 0.64.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.64.0) adds serial trace campaigns. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.63.0"
+pip install "chimeraforge[mcp]==0.64.0"
 ```
 
 ## Quickstart
@@ -671,6 +671,31 @@ including unpaired receipts, is retained. Exit `0` is a conditional policy pass,
 remains the default `--kind benchmark`. See the [trace policy/API contract](docs/trace-regression-gate.md)
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
+
+### `trace-campaign` -- frozen serial replay populations (since 0.64.0)
+
+Use Chimeraforge 0.64.0 or later and an existing served model:
+
+```bash
+chimeraforge trace-campaign workload.json --model llama3.2-3b --backend ollama --replicates 3 --campaign-timeout 1800 --concurrency 1 --request-timeout 300 --trace-timeout 600 --latency-slo 2000 --first-output-slo 500 --tpot-slo 50 --out campaign.json --json
+```
+
+The workload is held once and a manifest of hashes, ordered descriptors, controls
+and population is frozen before endpoint contact. Replicas run serially, without
+retries or warmup. After the first incomplete execution, later replicas remain
+declared `not_started`; failed native receipts retain every planned request.
+Child raw hashes truthfully stay `null` because they consume the frozen typed
+requests. The manifest separately binds the original input bytes. SLO breaches
+and unknown targets remain in native receipts and do not turn full execution
+into incomplete execution.
+
+`--campaign-timeout` covers admission, preflight, metadata and scheduled replay.
+It signals a native stop and prevents successor admission; drain is cooperative
+and may be unbounded. SIGINT produces a stop receipt; external async task
+cancellation propagates after owned-task cleanup. Exit `0` means every declared
+replica completed, `1` an incomplete/stopped population, and `2` malformed input
+or output failure. Serial runs do not prove independence or cold cache behavior.
+See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
 ### `eval` -- quality evaluation
 

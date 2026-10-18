@@ -14,6 +14,7 @@ planner's data came from; those guides are archived below.
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
 - **[API Reference](API.md)** - the public Python API (`chimeraforge.planner`, resolver, discovery, measure)
 - **[Trace regression gates](trace-regression-gate.md)** - since 0.63.0, queue-inclusive saved evidence
+- **[Serial trace campaigns](trace-campaign.md)** - since 0.64.0, frozen ordered replica populations
 
 ```bash
 pip install chimeraforge
@@ -22,8 +23,8 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-Commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
-`validate`, `catalog`, `safety`, `bench`, `trace`, `gate`, `refit`, `compare`,
+24 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
+`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `gate`, `refit`, `compare`,
 `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. The candidate adds
 `gate --kind trace`; benchmark remains the default.

@@ -279,9 +279,12 @@ async def test_cleanup_failure_does_not_hide_preflight_error(installed, caplog):
     with patch.object(CPUBackend, "close", fail_close):
         with pytest.raises(RuntimeError, match="fixture model required"):
             await run_benchmark("missing", "cpu-fixture", runs=1)
-        with pytest.raises(RuntimeError, match="cleanup unavailable"):
+        with pytest.raises(
+            RuntimeError, match="cpu-fixture.*cleanup failed.*RuntimeError"
+        ) as raised:
             await run_benchmark("fixture", "cpu-fixture", runs=1)
-    assert "cpu-fixture" in caplog.text and "cleanup unavailable" in caplog.text
+    assert "cpu-fixture" in caplog.text and "RuntimeError" in caplog.text
+    assert "cleanup unavailable" not in caplog.text + str(raised.value)
 
 
 @pytest.mark.asyncio

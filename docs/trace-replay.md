@@ -2,6 +2,8 @@
 
 Chimeraforge 0.63.0 adds [saved trace regression gates](trace-regression-gate.md)
 through `gate --kind trace`.
+Chimeraforge 0.64.0 adds [serial campaigns](trace-campaign.md) over
+the same native replay route, with one held workload and complete replica populations.
 
 Chimeraforge 0.60.0 executes actual requests against an existing endpoint. Install `pip install "chimeraforge[bench]==0.60.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37955012604); each release separately qualifies its versioned artifacts. It does not launch a server or download a model.
 Prompts are private inputs sent to the selected endpoint.
