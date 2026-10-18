@@ -500,3 +500,35 @@ def test_computable_artifact_identity_failure_precedes_missing_crypto_without_pa
     assert result["baseline"][0]["signature_state"] == "unavailable"
     assert result["candidate"][0]["signature_state"] == "unavailable"
     assert result["comparisons"][0]["metrics"] == {}
+
+
+@pytest.mark.parametrize(
+    "field,default",
+    [("cached_prompt_tokens", None), ("prompt_tokens", None), ("ttft_basis", "unknown")],
+)
+def test_signed_semantic_duplicates_canonicalize_all_accepted_optional_native_defaults(
+    field, default
+):
+    payload = public_payload()
+    for row in payload["measurement"]["individual_runs"]:
+        row[field] = default
+    refresh_payload(payload)
+    omitted = copy.deepcopy(payload)
+    for row in omitted["measurement"]["individual_runs"]:
+        del row[field]
+    refresh_payload(omitted)
+    baseline, candidate = resign(payload), resign(omitted)
+    assert api.verify_signed_contribution(baseline, trusted_keys=(PUBLIC,)).exit_code == 0
+    assert api.verify_signed_contribution(candidate, trusted_keys=(PUBLIC,)).exit_code == 0
+    report = gate([baseline], [candidate]).to_dict()
+    assert report["exit_code"] == 3
+    assert "duplicate_execution_payload" in report["blockers"]
+    assert report["baseline"][0]["evidence_sha256"] == report["candidate"][0]["evidence_sha256"]
+
+
+def test_public_native_sample_extras_are_still_closed_and_rejected():
+    payload = public_payload()
+    payload["measurement"]["individual_runs"][0]["PRIVATE-extra"] = "PRIVATE body"
+    with pytest.raises(ContribError) as caught:
+        gate(right=[resign(payload)])
+    assert "PRIVATE" not in str(caught.value)

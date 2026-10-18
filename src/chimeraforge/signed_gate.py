@@ -36,15 +36,13 @@ def _real(value: Any) -> Any:
     return value
 
 
-def _evidence(payload: dict) -> str:
+def _evidence(payload: dict, view: dict) -> str:
     measurement = {
         key: value
         for key, value in payload["measurement"].items()
         if key not in ("aggregate", "individual_runs")
     }
-    samples = sorted(
-        (_real(row) for row in payload["measurement"]["individual_runs"]), key=json_bytes
-    )
+    samples = sorted((_real(asdict(row)) for row in view["samples"]), key=json_bytes)
     return hash_json(
         {
             "measurement": _real(measurement),
@@ -205,7 +203,7 @@ def gate_signed_contributions(
                 if received["exit_code"] == 0:
                     payload = received["contribution"]["public_payload"]
                     view = validate_payload(payload)
-                    evidence = _evidence(payload)
+                    evidence = _evidence(payload, view)
                     prepared.update(payload=payload, view=view)
                 verified[arm].append(prepared)
                 reports[arm].append(
