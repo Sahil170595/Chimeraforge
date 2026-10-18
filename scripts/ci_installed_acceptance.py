@@ -224,6 +224,9 @@ def main(argv: list[str] | None = None) -> int:
         from ci_prediction_score import accept as accept_score
 
         score_receipt = accept_score(cwd, env, args.checkout, snapshot_path)
+        from ci_prediction_bundle import accept as accept_prediction_bundle
+
+        prediction_bundle_receipt = accept_prediction_bundle(cwd, env, args.checkout, snapshot_path)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -254,6 +257,7 @@ def main(argv: list[str] | None = None) -> int:
                     "native_stream_protocol": native_stream_receipt,
                     "signed_contribution_protocol": signed_receipt,
                     "prediction_score_protocol": score_receipt,
+                    "prediction_bundle_protocol": prediction_bundle_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",
