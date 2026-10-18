@@ -28,12 +28,11 @@ jobs:
       - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
       - run: uv run --no-sync mypy
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/signed_payload.py src/chimeraforge/signed_contribution.py src/chimeraforge/signed_replay.py
-      - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/prediction_score.py src/chimeraforge/commands/score.py
+      - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/prediction_score.py src/chimeraforge/commands/score.py src/chimeraforge/prediction_bundle.py src/chimeraforge/prediction_bundle_inputs.py src/chimeraforge/prediction_bundle_publication.py src/chimeraforge/commands/bundle.py scripts/ci_prediction_bundle.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_campaign_inputs.py src/chimeraforge/bench/trace_campaign_gate.py scripts/ci_registry_runtime.py scripts/ci_registry_native_runner.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py
       - run: uv run --no-sync mypy --follow-imports skip scripts/ci_cpu_runtime_observation.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_envelope_inputs.py src/chimeraforge/bench/trace_envelope.py src/chimeraforge/commands/trace_envelope.py scripts/ci_trace_envelope.py
-      - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/prediction_bundle.py src/chimeraforge/prediction_bundle_inputs.py src/chimeraforge/prediction_bundle_publication.py src/chimeraforge/commands/bundle.py
 
   workflows:
     runs-on: ubuntu-latest
