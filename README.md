@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**25 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**26 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -736,6 +736,25 @@ cancellation propagates after owned-task cleanup. Exit `0` means every declared
 replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
+
+### `trace-envelope` -- observed finite load points (0.69.0 candidate)
+
+Assess whole saved campaigns at declared uniform arrival cadences, without inference:
+
+```bash
+chimeraforge trace-envelope --cases cases.json --policy envelope-policy.json --campaign slow=slow-campaign.json --campaign fast=fast-campaign.json --out envelope.json --json
+```
+
+The closed [cases and policy declarations](docs/trace-envelope.md) fix request
+commitments, replicas, concurrency, timeouts and explicit SLO targets. Every request
+in every replica must pass for a cell to qualify. The report names only the highest
+**observed passing nominal cadence**; it does not interpolate or estimate serving
+capacity. Missing higher cells can retain a lower observed point, with overall exit
+3. Known control, cache, actual token-length or timing-basis contradictions and
+copied native evidence prevent ranking. Exits: 0 complete conditional pass, 1 known
+SLO breach, 2 invalid input/output, 3 incomplete or incompatible evidence. Failed
+and unstarted slots and all known breaches remain visible. This candidate command
+is absent from published 0.66.0.
 
 ### `gate --kind trace-campaign` -- whole-population decisions (0.67.0 candidate)
 

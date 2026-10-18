@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.69.0] - Unreleased
+
+### Observed finite load points
+
+- `api.assess_trace_envelope` and `trace-envelope` assess declared uniform cadences from whole saved campaigns offline. Closed cases and policy bind request commitments, complete replica populations, applied client controls and explicit SLO targets.
+- Every request and replica must pass for an observed point to qualify. Missing, failed and unstarted evidence remains visible; known breaches survive an inconclusive overall result. Missing higher cells may retain a lower passing point, while known cross-cell control, cache, actual token-length and active mean-timing-basis contradictions or duplicate native executions prevent ranking.
+- The highest observed passing nominal cadence is a named cell only. No interpolation, capacity estimate, execution authentication or calibration qualification is implied. Original supported observations and timings remain unchanged; separate bounded declarations and charged campaign occurrences preserve held-input receipts and output alias protection.
+
 ## [0.68.0] - Unreleased
 
 ### Plan-bound native traces
