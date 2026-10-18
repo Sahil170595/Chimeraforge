@@ -73,9 +73,12 @@ def test_actual_cli_consumer_retains_each_outcome_and_protects_original_bytes(
 
     monkeypatch.setattr(installed, "run_cli", source_cli)
     result = consumer.accept(tmp_path, {}, tmp_path / "checkout")
-    assert result["full_population"]["assessment"]["exit_code"] == 0
-    assert result["missing_higher"]["assessment"]["exit_code"] == 3
-    assert result["known_breach"]["assessment"]["exit_code"] == 1
+    assert result["full_population"]["exit_code"] == 0
+    assert result["missing_higher"]["exit_code"] == 3
+    assert result["known_breach"]["exit_code"] == 1
+    for name in ("full_population", "missing_higher", "known_breach"):
+        assert set(result[name]) == {"exit_code", "outcome", "highest_observed_passing", "counts"}
+    assert len(json.dumps(result).encode()) < 8192
     assert result["full_population"]["counts"]["declared_cells"] == 2
     assert result["missing_higher"]["counts"]["missing_replicas"] == 2
     assert result["known_breach"]["counts"]["known_breaches"] == 2
