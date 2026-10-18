@@ -18,6 +18,153 @@ import pytest
 
 SCRIPTS = Path(__file__).parents[1] / "scripts"
 VERSION = json.loads((SCRIPTS.parent / "server.json").read_text())["version"]
+FIXTURE_SHUTDOWN_TIMEOUT_SECONDS = 5.0
+DELAYED_EXIT_SECONDS = 0.05
+SURVIVOR_WAIT_SECONDS = 0.05
+
+
+def _fixture_states(psutil, owned):
+    states = []
+    for role, process, created in owned:
+        try:
+            status = process.status()
+        except psutil.NoSuchProcess:
+            status = "gone"
+        except psutil.AccessDenied:
+            status = "unavailable"
+        states.append(
+            {
+                "role": role,
+                "pid": process.pid,
+                "created": created,
+                "state": status
+                if status
+                in ("running", "sleeping", "stopped", "zombie", "dead", "gone", "unavailable")
+                else "other",
+            }
+        )
+    return states
+
+
+def _assert_fixture_stopped(psutil, owned, *, timeout=FIXTURE_SHUTDOWN_TIMEOUT_SECONDS):
+    # Windows termination is asynchronous; retained Process objects also detect PID reuse.
+    pending = [process for _, process, _ in owned if process.is_running()]
+    if not pending:
+        return
+    _, alive = psutil.wait_procs(pending, timeout=timeout)
+    alive = [process for process in alive if process.is_running()]
+    if alive:
+        raise AssertionError(
+            json.dumps(
+                {
+                    "fixture_shutdown": "surviving_identity",
+                    "timeout_seconds": timeout,
+                    "processes": _fixture_states(psutil, owned),
+                }
+            )
+        )
+
+
+def _cleanup_fixture_processes(psutil, owned):
+    if not any(process.is_running() for _, process, _ in owned):
+        return
+    for _, process, _ in reversed(owned):
+        if process.is_running():
+            try:
+                process.terminate()
+            except psutil.NoSuchProcess:
+                pass
+    _, alive = psutil.wait_procs(
+        [process for _, process, _ in owned if process.is_running()],
+        timeout=FIXTURE_SHUTDOWN_TIMEOUT_SECONDS,
+    )
+    for process in alive:
+        if process.is_running():
+            try:
+                process.kill()
+            except psutil.NoSuchProcess:
+                pass
+    _, alive = psutil.wait_procs(
+        [process for process in alive if process.is_running()],
+        timeout=FIXTURE_SHUTDOWN_TIMEOUT_SECONDS,
+    )
+    assert not alive, json.dumps(
+        {"fixture_cleanup": "failed", "processes": _fixture_states(psutil, owned)}
+    )
+
+
+def test_fixture_shutdown_waits_for_an_owned_delayed_exit(monkeypatch):
+    psutil = pytest.importorskip("psutil")
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-B",
+            "-c",
+            f"import sys,time;sys.stdin.buffer.read(1);time.sleep({DELAYED_EXIT_SECONDS})",
+        ],
+        stdin=subprocess.PIPE,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    identity = psutil.Process(process.pid)
+    owned = [("native", identity, identity.create_time())]
+    wait_procs, released = psutil.wait_procs, False
+
+    def delayed_exit(procs, timeout):
+        nonlocal released
+        if not released:
+            process.stdin.write(b"x")
+            process.stdin.close()
+            released = True
+        return wait_procs(procs, timeout=timeout)
+
+    monkeypatch.setattr(psutil, "wait_procs", delayed_exit)
+    try:
+        assert identity.is_running()
+        _assert_fixture_stopped(psutil, owned)
+        assert process.wait(timeout=FIXTURE_SHUTDOWN_TIMEOUT_SECONDS) == 0
+    finally:
+        monkeypatch.setattr(psutil, "wait_procs", wait_procs)
+        _cleanup_fixture_processes(psutil, owned)
+        process.wait(timeout=FIXTURE_SHUTDOWN_TIMEOUT_SECONDS)
+        if not process.stdin.closed:
+            process.stdin.close()
+
+
+def test_fixture_shutdown_retains_failure_before_owned_cleanup():
+    psutil = pytest.importorskip("psutil")
+    process = subprocess.Popen(
+        [sys.executable, "-B", "-c", "import sys;sys.stdin.buffer.read(1)"],
+        stdin=subprocess.PIPE,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    identity = psutil.Process(process.pid)
+    owned = [("native", identity, identity.create_time())]
+    started = time.monotonic()
+    try:
+        with pytest.raises(AssertionError, match="surviving_identity") as failure:
+            _assert_fixture_stopped(psutil, owned, timeout=SURVIVOR_WAIT_SECONDS)
+        assert identity.is_running(), "assertion must precede fixture cleanup"
+        diagnostic = json.loads(str(failure.value))
+        assert set(diagnostic) == {"fixture_shutdown", "timeout_seconds", "processes"}
+        assert diagnostic["processes"][0]["pid"] == identity.pid
+        assert time.monotonic() - started < FIXTURE_SHUTDOWN_TIMEOUT_SECONDS
+    finally:
+        _cleanup_fixture_processes(psutil, owned)
+        process.wait(timeout=FIXTURE_SHUTDOWN_TIMEOUT_SECONDS)
+        process.stdin.close()
+    assert not identity.is_running()
+
+
+def test_fixture_shutdown_ignores_a_reused_pid_identity():
+    identity = types.SimpleNamespace(pid=12345, is_running=lambda: False, status=lambda: "running")
+    psutil = types.SimpleNamespace(pid_exists=lambda pid: True)
+
+    def unexpected_wait(*args, **kwargs):
+        pytest.fail("must not wait on or terminate a reused PID")
+
+    psutil.wait_procs = unexpected_wait
+    _assert_fixture_stopped(psutil, [("native", identity, 1.0)])
+    _cleanup_fixture_processes(psutil, [("native", identity, 1.0)])
 
 
 def helper():
@@ -484,6 +631,7 @@ def test_sdk_cancellation_reaps_native_child_and_descendant(tmp_path, monkeypatc
     receipt_path = tmp_path / "receipt.json"
     command = [sys.executable, "-B", str(child)]
     wrapped = helper().native_runner_command(command, VERSION, receipt_path)
+    owned = []
 
     async def exercise():
         task = asyncio.create_task(probe_mcp_stdio.exercise(wrapped, 20))
@@ -491,6 +639,9 @@ def test_sdk_cancellation_reaps_native_child_and_descendant(tmp_path, monkeypatc
         while not marker.exists() and not task.done() and time.monotonic() < limit:
             await asyncio.sleep(0.02)
         assert marker.exists(), "native fixture did not reach the expected stage"
+        for role, pid in zip(("native", "descendant"), json.loads(marker.read_text())):
+            identity = psutil.Process(pid)
+            owned.append((role, identity, identity.create_time()))
         if cancel:
             task.cancel()
             with pytest.raises(asyncio.CancelledError):
@@ -499,8 +650,11 @@ def test_sdk_cancellation_reaps_native_child_and_descendant(tmp_path, monkeypatc
             with pytest.raises(asyncio.TimeoutError):
                 await asyncio.wait_for(task, 0.1)
 
-    asyncio.run(exercise())
-    pids = json.loads(marker.read_text())
-    alive = [pid for pid in pids if psutil.pid_exists(pid)]
-    assert alive == [], f"SDK-owned native process tree survived shutdown: {alive}"
-    assert not receipt_path.exists(), "cancelled/unreaped launch must not provide a retry receipt"
+    try:
+        asyncio.run(exercise())
+        _assert_fixture_stopped(psutil, owned)
+        assert not receipt_path.exists(), (
+            "cancelled/unreaped launch must not provide a retry receipt"
+        )
+    finally:
+        _cleanup_fixture_processes(psutil, owned)
