@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+from types import SimpleNamespace
 
 import pytest
 
@@ -710,3 +711,161 @@ def test_maximum_receipt_index_and_count_preserve_full_order(frozen, tmp_path):
     with pytest.raises(api.PlanError):
         create(plan, receipts * 257, policy=chosen, outdir=tmp_path / "excess")
     assert not (tmp_path / "excess").exists()
+
+
+class InventoryScan:
+    def __init__(self, names, *, poison=False, fault=False):
+        self.names = iter(names)
+        self.poison = poison
+        self.fault = fault
+        self.calls = 0
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.closed = True
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.calls += 1
+        try:
+            name = next(self.names)
+        except StopIteration:
+            if self.poison:
+                raise AssertionError("enumeration continued after unexpected entry") from None
+            if self.fault:
+                raise OSError("PRIVATE directory scan failure") from None
+            raise
+        return SimpleNamespace(name=name)
+
+
+@pytest.mark.parametrize(
+    "site",
+    ["source", "verify_root", "verify_plan", "verify_receipts", "cleanup_root", "cleanup_plan"],
+)
+def test_inventory_stops_at_first_unexpected_entry_and_closes_scan(
+    frozen, tmp_path, monkeypatch, site
+):
+    from chimeraforge import prediction_bundle_inputs as module
+    from chimeraforge import prediction_bundle_publication as publication
+
+    create, verify, _ = functions()
+    plan, chosen, receipts = inputs(tmp_path, frozen)
+    root = tmp_path / "bundle"
+    source = tmp_path / "source"
+    api.create_plan_bundle(plan, source)
+    create(plan, receipts, policy=chosen, outdir=root)
+    target = {
+        "source": source,
+        "verify_root": root,
+        "verify_plan": root / "plan",
+        "verify_receipts": root / "receipts",
+        "cleanup_root": root,
+        "cleanup_plan": root / "plan",
+    }[site]
+    probe = InventoryScan(["PRIVATE-unexpected"], poison=True)
+    iterdir, scandir = Path.iterdir, module.os.scandir
+
+    def legacy(path):
+        return probe if path == target else iterdir(path)
+
+    def stream(path):
+        return probe if Path(path) == target else scandir(path)
+
+    monkeypatch.setattr(Path, "iterdir", legacy)
+    monkeypatch.setattr(module.os, "scandir", stream)
+    if site.startswith("cleanup"):
+        owner = publication._Owner(
+            root, created=True, identity=publication._identity(root, directory=True)
+        )
+        owner.directories = {
+            name: publication._identity(root / name, directory=True)
+            for name in ("plan", "receipts")
+        }
+        owner.files = {"manifest.json": None, "policy.json": None}
+        assert publication._cleanup(owner) is False
+        assert root.is_dir()
+    else:
+        with pytest.raises(api.PlanError) as caught:
+            if site == "source":
+                create(source, receipts, policy=chosen, outdir=tmp_path / "out")
+            else:
+                verify(root)
+        assert "PRIVATE" not in str(caught.value)
+    assert probe.calls == 1 and probe.closed is True
+
+
+@pytest.mark.parametrize(
+    "case", ["valid", "empty", "missing", "unknown", "duplicate", "count", "fault"]
+)
+def test_streamed_inventory_has_exact_membership_and_bounded_consumption(case, monkeypatch):
+    from chimeraforge import prediction_bundle_inputs as module
+
+    expected = set() if case == "empty" else {"a", "b"}
+    names = {
+        "valid": ["b", "a"],
+        "empty": [],
+        "missing": ["a"],
+        "unknown": ["PRIVATE"],
+        "duplicate": ["a", "a"],
+        "count": ["a", "b", "PRIVATE"],
+        "fault": ["a"],
+    }[case]
+    probe = InventoryScan(
+        names, poison=case in ("unknown", "duplicate", "count"), fault=case == "fault"
+    )
+    monkeypatch.setattr(module.os, "scandir", lambda path: probe)
+    monkeypatch.setattr(
+        Path, "iterdir", lambda *args: pytest.fail("Path.iterdir materializes directory")
+    )
+    if case in ("valid", "empty"):
+        module.check_inventory(Path("fixed-directory"), expected)
+    else:
+        with pytest.raises(api.PlanError) as caught:
+            module.check_inventory(Path("fixed-directory"), expected)
+        assert "PRIVATE" not in str(caught.value)
+    assert probe.closed is True
+    assert (
+        probe.calls
+        == {
+            "valid": 3,
+            "empty": 1,
+            "missing": 2,
+            "unknown": 1,
+            "duplicate": 2,
+            "count": 3,
+            "fault": 2,
+        }[case]
+    )
+
+
+def test_valid_source_verification_and_publication_never_use_path_iterdir(
+    frozen, tmp_path, monkeypatch
+):
+    create, verify, _ = functions()
+    plan, chosen, receipts = inputs(tmp_path, frozen)
+    source = tmp_path / "source"
+    api.create_plan_bundle(plan, source)
+    monkeypatch.setattr(Path, "iterdir", lambda *a: pytest.fail("unbounded Path.iterdir"))
+    result = create(source, receipts, policy=chosen, outdir=tmp_path / "bundle")
+    assert result.to_dict()["receipt_count"] == 1
+    assert verify(tmp_path / "bundle").to_dict()["status"] == "verified_content"
+
+
+def test_cleanup_scan_failure_closes_iterator_and_retains_owned_root(tmp_path, monkeypatch):
+    from chimeraforge import prediction_bundle_inputs as module
+    from chimeraforge import prediction_bundle_publication as publication
+
+    target = tmp_path / "owned"
+    target.mkdir()
+    owner = publication._Owner(
+        target, created=True, identity=publication._identity(target, directory=True)
+    )
+    probe = InventoryScan([], fault=True)
+    monkeypatch.setattr(module.os, "scandir", lambda *a: probe)
+    assert publication._cleanup(owner) is False
+    assert probe.closed is True and probe.calls == 1 and target.is_dir()
