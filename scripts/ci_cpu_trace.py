@@ -217,7 +217,139 @@ def accept_campaign(cwd: Path, env: dict, model: str, base_url: str, version: st
     }
 
 
-def accept(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dict:
+def validate_plan(
+    report: dict,
+    saved: dict,
+    workload: list[dict],
+    raw: bytes,
+    model: str,
+    version: str,
+    *,
+    plan_raw: bytes | None = None,
+) -> None:
+    """A completed CPU replay must retain the known modeled-GPU mismatch."""
+    from ci_native_stream import validate_plan_trace
+
+    index = next(
+        i
+        for i, candidate in enumerate(saved["result"]["candidates"])
+        if candidate["backend"] == "ollama" and candidate["quant"] == "Q4_K_M"
+    )
+    validate_plan_trace(
+        report,
+        saved,
+        index,
+        workload,
+        raw,
+        expected_code=1,
+        served_model=model,
+        plan_raw=plan_raw,
+    )
+    native = report["native_trace"]
+    assert native["backend"] == "ollama"
+    assert native["serving_after"]["device"] == "cpu"
+    assert native["serving_after"]["version"] == version
+    assert report["binding"]["summary"]["hardware"]["state"] == "mismatch"
+    assert report["binding"]["summary"]["hardware"]["observed"] == {"device": "cpu"}
+    for request in native["requests"]:
+        count = request["native"]["tokens_generated"]
+        assert type(count) is int and 0 <= count <= request["descriptor"]["max_output_tokens"]
+    assert report["slo"]["state"] == "not_requested"
+
+
+def accept_plan(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dict:
+    """One short request on the already-loaded endpoint; no pulls or extra serving job."""
+    from ci_installed_acceptance import run_cli
+
+    plan_path = cwd / "plan-trace-cpu-plan.json"
+    run_cli(
+        [
+            "plan",
+            "--model",
+            f"ollama:{model}",
+            "--ollama-url",
+            base_url,
+            "--hardware",
+            "RTX 4080 12GB",
+            "--quality-target",
+            "0",
+            "--budget",
+            "100000",
+            "--request-rate",
+            "0.01",
+            "--avg-tokens",
+            "4",
+            "--prompt-tokens",
+            "8",
+            "--save",
+            str(plan_path),
+            "--json",
+        ],
+        cwd,
+        env,
+    )
+    original = plan_path.read_bytes()
+    saved = json.loads(original)
+    chosen = next(
+        i
+        for i, candidate in enumerate(saved["result"]["candidates"])
+        if candidate["backend"] == "ollama" and candidate["quant"] == "Q4_K_M"
+    )
+    cap = saved["result"]["candidates"][chosen]["decode_tokens_per_req"]
+    assert cap == 4
+    workload = [
+        {
+            "request_id": "plan-cpu-colors",
+            "prompt": "List three primary colors.",
+            "max_output_tokens": cap,
+            "arrival_offset_s": 0,
+        }
+    ]
+    raw = (json.dumps(workload, indent=2) + "\n").encode()
+    source, output = cwd / "plan-trace-cpu-workload.json", cwd / "plan-trace-cpu-receipt.json"
+    source.write_bytes(raw)
+    report = json.loads(
+        run_cli(
+            [
+                "trace",
+                str(source),
+                "--from-plan",
+                str(plan_path),
+                "--candidate-index",
+                str(chosen),
+                "--model",
+                model,
+                "--base-url",
+                base_url,
+                "--request-timeout",
+                "60",
+                "--trace-timeout",
+                "90",
+                "--out",
+                str(output),
+                "--json",
+            ],
+            cwd,
+            env,
+            1,
+        )
+    )
+    validate_plan(report, saved, workload, raw, model, version, plan_raw=original)
+    assert report == json.loads(output.read_bytes())
+    assert plan_path.read_bytes() == original and source.read_bytes() == raw
+    return {
+        "scope": (
+            "actual installed CPU plan-bound replay; modeled GPU remains mismatched/unqualified"
+        ),
+        "receipt": report,
+        "source_bytes_unchanged": True,
+        "extra_weight_downloads": 0,
+    }
+
+
+def accept(
+    cwd: Path, env: dict, model: str, base_url: str, version: str, *, plan_replay: bool = False
+) -> dict:
     from ci_installed_acceptance import run_cli
 
     workload = [
@@ -320,4 +452,9 @@ def accept(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dic
         "output_alias_refused": True,
         "trace_gate_duplicate_execution": duplicate,
         "serial_campaign": accept_campaign(cwd, env, model, base_url, version),
+        **(
+            {"plan_bound_trace": accept_plan(cwd, env, model, base_url, version)}
+            if plan_replay
+            else {}
+        ),
     }
