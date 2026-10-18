@@ -254,7 +254,6 @@ def validate_plan(
     for request in native["requests"]:
         count = request["native"]["tokens_generated"]
         assert type(count) is int and 0 <= count <= request["descriptor"]["max_output_tokens"]
-    assert report["slo"]["state"] == "not_requested"
 
 
 def accept_plan(cwd: Path, env: dict, model: str, base_url: str, version: str) -> dict:

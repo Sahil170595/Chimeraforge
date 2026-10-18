@@ -16,6 +16,7 @@ from chimeraforge.bench.backends.base import Backend, GenerationObservation
 from chimeraforge.bench.metrics import RunMetrics
 from chimeraforge.cli import app
 from chimeraforge.planner.replay import digest
+from chimeraforge.planner.constants import DEFAULT_LATENCY_SLO_MS
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 
@@ -143,6 +144,7 @@ def test_cpu_plan_consumer_adds_one_short_request_without_new_server_or_weights(
                     allow_network=False,
                     avg_tokens=4,
                     prompt_tokens=8,
+                    latency_slo=DEFAULT_LATENCY_SLO_MS,
                     quality_target=0,
                     budget=100000,
                 )
@@ -168,7 +170,14 @@ def test_cpu_plan_consumer_adds_one_short_request_without_new_server_or_weights(
     workload_path = tmp_path / "plan-trace-cpu-workload.json"
     saved = json.loads(path.read_bytes())
     workload = json.loads(workload_path.read_bytes())
-    for mutation in ("gpu", "fingerprint", "native_raw_hash", "drop_request"):
+    for mutation in (
+        "gpu",
+        "fingerprint",
+        "native_raw_hash",
+        "drop_request",
+        "slo_state",
+        "saved_target",
+    ):
         invalid = copy.deepcopy(report["receipt"])
         if mutation == "gpu":
             invalid["native_trace"]["serving_after"]["device"] = "gpu"
@@ -176,8 +185,12 @@ def test_cpu_plan_consumer_adds_one_short_request_without_new_server_or_weights(
             invalid["plan"]["fingerprint"] = "a" * 64
         elif mutation == "native_raw_hash":
             invalid["native_trace"]["workload"]["raw_sha256"] = "a" * 64
-        else:
+        elif mutation == "drop_request":
             invalid["native_trace"]["requests"] = []
+        elif mutation == "slo_state":
+            invalid["slo"]["state"] = "not_requested"
+        else:
+            invalid["slo"]["targets"]["latency_ms"] = None
         invalid["native_trace"]["fingerprint"] = digest(
             {k: v for k, v in invalid["native_trace"].items() if k != "fingerprint"}
         )

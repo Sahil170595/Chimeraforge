@@ -125,6 +125,17 @@ def validate_plan_trace(
         "tpot_ms": saved["inputs"]["tpot_slo"],
     }
     assert native["targets"] == report["slo"]["targets"] == expected_targets
+    joint_states = [row["slo"]["joint"] for row in native["requests"]]
+    expected_slo = (
+        "not_requested"
+        if all(value is None for value in expected_targets.values())
+        else "breach"
+        if "breach" in joint_states
+        else "unavailable"
+        if any(state in ("unknown", "not_completed") for state in joint_states)
+        else "observed_pass"
+    )
+    assert report["slo"]["state"] == expected_slo
     assert native["performance"]["gpu_qualification"] == "unverified"
     encoded = json.dumps(report)
     assert PRIVATE_OUTPUT not in encoded
