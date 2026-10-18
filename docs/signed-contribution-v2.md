@@ -1,8 +1,7 @@
 # Signed contributions and private replay
 
-This is an unpublished **0.65.0 candidate** feature. The published CLI is 0.61.0.
-Install `pip install ".[sign]"` from the candidate checkout, or install its wheel
-with the `sign` extra. The core package and unsigned v1 workflows remain usable
+Available since **Chimeraforge 0.65.0**.
+Install `pip install "chimeraforge[sign]>=0.65.0"` with the optional `sign` extra. The core package and unsigned v1 workflows remain usable
 without cryptography. The `all` extra includes signing.
 
 ## Create and verify a signed artifact

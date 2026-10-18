@@ -1,10 +1,9 @@
 # Serial trace campaigns
 
 `trace-campaign` and async `api.replay_trace_campaign` execute one frozen workload
-serially against an existing endpoint. This is the **unpublished 0.64.0
-candidate**, requiring candidate source or wheel. The public install remains
-`chimeraforge==0.61.0`; the preceding 0.62.0 streaming and 0.63.0 trace-gate
-candidates retain their separate scopes. Campaigns do not launch servers,
+serially against an existing endpoint. Available since **Chimeraforge 0.64.0**.
+The preceding 0.62.0 streaming and 0.63.0 trace-gate features retain their separate scopes.
+Campaigns do not launch servers,
 download models, retry requests, warm up endpoints or promise cold runs.
 
 Create the private workload using the [trace schema](trace-replay.md), then run:
