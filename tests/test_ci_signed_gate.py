@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -14,7 +15,7 @@ from typer.testing import CliRunner
 from chimeraforge import api
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
-SOURCE = SCRIPTS.parent / "src"
+SOURCE = Path(api.__file__).resolve().parents[1]
 
 
 def script(name):
@@ -44,9 +45,10 @@ def source_adapter(monkeypatch):
 
     def source_process(command, **kwargs):
         assert command[:3] == [sys.executable, "-I", "-B"]
-        command = [*command[:1], *command[2:]]
+        command = list(command)
         index = command.index("-c") + 1
         command[index] = f"import sys;sys.path.insert(0,{str(SOURCE)!r});" + command[index]
+        kwargs["env"] = {**os.environ, **kwargs["env"]}
         return actual(command, **kwargs)
 
     monkeypatch.setattr(subprocess, "run", source_process)
