@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
-import subprocess
 import sys
 import tempfile
 import time
@@ -17,7 +17,9 @@ PACKAGE = "chimeraforge"
 MAX_INDEX_WAIT_SECONDS = 300
 INDEX_POLL_SECONDS = 10
 INDEX_REQUEST_TIMEOUT_SECONDS = 15
-RESOLVER_TIMEOUT_SECONDS = 60
+PROBE_TIMEOUT_SECONDS = 120
+MAX_NATIVE_STDERR_BYTES = 64 * 1024
+MAX_NATIVE_RECEIPT_BYTES = 16 * 1024
 # The pinned uv 0.12.23 client negotiates this representation; PyPI varies on Accept.
 UV_SIMPLE_ACCEPT = (
     "application/vnd.pypi.simple.v1+json, "
@@ -101,51 +103,20 @@ def resolution_context(error: str, version: str, public_names: set[str]) -> dict
     }
 
 
-def public_resolution_ready(
-    version: str, timeout: float, *, candidate_dist: Path | None = None
-) -> bool:
-    """Resolve without installing, using the SDK's actual child environment boundary."""
-    from mcp.client.stdio import get_default_environment
-
-    command = [
-        "uv",
-        "--quiet",
-        "pip",
-        "install",
-        "--dry-run",
-        "--reinstall",
-        "--no-cache",
-        "--python",
-        sys.executable,
-    ]
-    if candidate_dist is not None:
-        command += ["--find-links", str(candidate_dist.resolve(strict=True))]
-    command.append(f"{PACKAGE}[mcp]=={version}")
-    result = subprocess.run(
-        command,
-        cwd=tempfile.gettempdir(),
-        env=get_default_environment(),
-        timeout=timeout,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=False,
-    )
-    if result.returncode == 0:
-        return True
-    error = " ".join(result.stderr.split())
-    # Exact simple proofs from the pinned resolver; extra nodes are native uv packages.
-    # Matching the whole diagnostic prevents a missing-root clause hiding another cause.
-    missing = {
-        "error: No solution found when resolving dependencies cause: "
-        f"Because there is no version of {PACKAGE}{extra}=={version} and "
-        f"you require {PACKAGE}[mcp]=={version}, we can conclude that "
+def native_root_absence(error: str, version: str) -> bool:
+    """Only the complete observed uv 0.12.23 pre-application proof permits retry."""
+    expected = (
+        "error: No solution found when resolving tool dependencies cause: "
+        f"Because there is no version of {PACKAGE}=={version} and "
+        f"you require {PACKAGE}=={version}, we can conclude that "
         "your requirements are unsatisfiable."
-        for extra in ("", "[mcp]")
-    }
-    if result.returncode == 1 and error in missing:
-        return False
-    diagnostic = {"version": version, "exit_code": result.returncode, "reason": "resolver_error"}
+    )
+    return " ".join(error.split()) == expected
+
+
+def native_diagnostic(error: str, version: str) -> dict:
+    """Project a closed categorical diagnostic; never disclose raw native stderr."""
+    diagnostic = {"reason": "resolver_error"}
     diagnostic.update(resolution_context(error, version, public_package_names()))
     library = PYTHON_LIBRARY_RE.search(error)
     if "error while loading shared libraries" in error and library is not None:
@@ -154,8 +125,200 @@ def public_resolution_ready(
         diagnostic["reason"] = "cli_unknown_argument"
     elif "Failed to inspect Python interpreter" in error:
         diagnostic["reason"] = "python_discovery"
-    print(json.dumps({"uv_resolution_failure": diagnostic}), flush=True)
-    raise RuntimeError(f"Public exact-version resolution failed (uv exit {result.returncode})")
+    return diagnostic
+
+
+def command_digest(command: list[str]) -> str:
+    """Bind a private receipt to the exact native argv."""
+    return hashlib.sha256(json.dumps(command, ensure_ascii=True).encode("utf-8")).hexdigest()
+
+
+def native_runner_command(command: list[str], version: str, receipt: Path) -> list[str]:
+    """Wrap the unchanged registry argv using the observed SDK interpreter."""
+    return [
+        sys.executable,
+        "-B",
+        str(Path(__file__).with_name("ci_registry_native_runner.py")),
+        "--receipt",
+        str(receipt),
+        "--version",
+        version,
+        "--",
+        *command,
+    ]
+
+
+def read_native_receipt(path: Path, command: list[str]) -> dict:
+    """Missing, oversized, incomplete, or mismatched control evidence is terminal."""
+    fields = {
+        "schema",
+        "command_sha256",
+        "native_exit",
+        "stdout_bytes",
+        "stderr_bytes",
+        "stream_error",
+        "stderr_overflow",
+        "reaped",
+        "drained",
+        "root_absent",
+        "diagnostic",
+    }
+    try:
+        if path.is_symlink() or not path.is_file():
+            raise ValueError
+        with path.open("rb") as stream:
+            raw = stream.read(MAX_NATIVE_RECEIPT_BYTES + 1)
+        if len(raw) > MAX_NATIVE_RECEIPT_BYTES:
+            raise ValueError
+        result = json.loads(raw)
+        if not isinstance(result, dict) or set(result) != fields:
+            raise ValueError
+        if type(result["schema"]) is not int or result["schema"] != 1:
+            raise ValueError
+        if result["command_sha256"] != command_digest(command):
+            raise ValueError
+        for key in ("native_exit", "stdout_bytes", "stderr_bytes"):
+            if type(result[key]) is not int:
+                raise ValueError
+        if result["stdout_bytes"] < 0 or result["stderr_bytes"] < 0:
+            raise ValueError
+        for key in ("stream_error", "stderr_overflow", "reaped", "drained", "root_absent"):
+            if type(result[key]) is not bool:
+                raise ValueError
+        if result["stderr_overflow"] != (result["stderr_bytes"] > MAX_NATIVE_STDERR_BYTES):
+            raise ValueError
+        diagnostic = result["diagnostic"]
+        if not isinstance(diagnostic, dict) or set(diagnostic) not in (
+            {
+                "reason",
+                "no_solution",
+                "root_absence_shape",
+                "missing_public_packages",
+                "cause_hints",
+            },
+            {
+                "reason",
+                "no_solution",
+                "root_absence_shape",
+                "missing_public_packages",
+                "cause_hints",
+                "library",
+            },
+        ):
+            raise ValueError
+        # Re-validate all values before publishing even this private control channel.
+        if (
+            diagnostic["reason"]
+            not in {
+                "resolver_error",
+                "python_shared_library",
+                "cli_unknown_argument",
+                "python_discovery",
+            }
+            or type(diagnostic["no_solution"]) is not bool
+        ):
+            raise ValueError
+        if diagnostic["root_absence_shape"] not in {"none", "singleton", "plural", "extra"}:
+            raise ValueError
+        names = diagnostic["missing_public_packages"]
+        if not isinstance(names, list) or len(names) > MAX_DIAGNOSTIC_PACKAGES:
+            raise ValueError
+        if any(not isinstance(name, str) or name not in public_package_names() for name in names):
+            raise ValueError
+        hints = diagnostic["cause_hints"]
+        if not isinstance(hints, list) or not hints or len(hints) > len(RESOLVER_HINTS):
+            raise ValueError
+        if any(hint not in {"unknown", *(name for name, _ in RESOLVER_HINTS)} for hint in hints):
+            raise ValueError
+        if "library" in diagnostic and (
+            not isinstance(diagnostic["library"], str)
+            or PYTHON_LIBRARY_RE.fullmatch(diagnostic["library"]) is None
+        ):
+            raise ValueError
+        if result["root_absent"] and (
+            result["stderr_bytes"] == 0
+            or result["stderr_overflow"]
+            or diagnostic
+            != {
+                "reason": "resolver_error",
+                "no_solution": True,
+                "root_absence_shape": "singleton",
+                "missing_public_packages": [PACKAGE],
+                "cause_hints": ["unknown"],
+            }
+        ):
+            raise ValueError
+        return result
+    except (OSError, ValueError, TypeError, KeyError):
+        raise RuntimeError("Native registry control receipt is missing or malformed") from None
+
+
+def retryable_native_absence(receipt: dict) -> bool:
+    """Never turn a generic SDK/application failure into a resolution retry."""
+    return (
+        receipt["native_exit"] == 1
+        and receipt["stdout_bytes"] == 0
+        and receipt["root_absent"]
+        and receipt["reaped"]
+        and receipt["drained"]
+        and not receipt["stream_error"]
+        and not receipt["stderr_overflow"]
+    )
+
+
+def probe_registry(
+    command: list[str], version: str, deadline: float, *, retry_absence: bool
+) -> tuple[dict, list[str]]:
+    """Close each SDK attempt before retrying only proven native pre-app absence."""
+    from probe_mcp_stdio import probe
+
+    attempt = 0
+    with tempfile.TemporaryDirectory(prefix="cf-registry-control-") as directory:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Native registry qualification exceeded its deadline")
+            attempt += 1
+            receipt_path = Path(directory) / f"attempt-{attempt}.json"
+            wrapped = native_runner_command(command, version, receipt_path)
+            try:
+                info, tools = probe(wrapped, timeout=remaining)
+            except Exception:
+                # probe returns/raises only after the public SDK context has closed.
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        "Native registry qualification exceeded its deadline"
+                    ) from None
+                receipt = read_native_receipt(receipt_path, command)
+                print(
+                    json.dumps(
+                        {
+                            "native_registry_failure": {
+                                "version": version,
+                                "attempt": attempt,
+                                "sdk_python": sys.executable,
+                                "exit_code": receipt["native_exit"],
+                                "stdout_bytes": receipt["stdout_bytes"],
+                                "stderr_overflow": receipt["stderr_overflow"],
+                                **receipt["diagnostic"],
+                            }
+                        }
+                    ),
+                    flush=True,
+                )
+                if not retry_absence or not retryable_native_absence(receipt):
+                    raise RuntimeError("Native registry application qualification failed") from None
+                time.sleep(min(INDEX_POLL_SECONDS, max(0, deadline - time.monotonic())))
+                continue
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Native registry qualification exceeded its deadline")
+            # Success is also bound to a completed native launch and the same argv.
+            receipt = read_native_receipt(receipt_path, command)
+            if receipt["native_exit"] != 0 or not receipt["reaped"] or not receipt["drained"]:
+                raise RuntimeError("Native registry application did not exit cleanly")
+            if receipt["stream_error"] or receipt["stderr_overflow"]:
+                raise RuntimeError("Native registry application transport did not complete")
+            return info, tools
 
 
 def public_files_ready(release: dict, simple: dict, version: str) -> bool:
@@ -177,9 +340,8 @@ def public_files_ready(release: dict, simple: dict, version: str) -> bool:
     )
 
 
-def wait_for_public_files(version: str) -> None:
-    """Poll exact version/file/hash readiness; the application probe runs only once."""
-    deadline = time.monotonic() + MAX_INDEX_WAIT_SECONDS
+def wait_for_public_files(version: str, deadline: float) -> None:
+    """Poll exact public version/file/hash visibility within the shared deadline."""
     attempt = 0
     while time.monotonic() < deadline:
         attempt += 1
@@ -190,9 +352,7 @@ def wait_for_public_files(version: str) -> None:
         ):
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise TimeoutError(
-                    "PyPI exact files did not become installable within the deadline"
-                )
+                raise TimeoutError("PyPI exact files did not become visible within the deadline")
             accept = UV_SIMPLE_ACCEPT if "/simple/" in url else "application/json"
             request = Request(url, headers={"Accept": accept})
             try:
@@ -204,27 +364,16 @@ def wait_for_public_files(version: str) -> None:
                 if error.code != 404:
                     raise
                 payloads.append({})
-        files_ready = public_files_ready(*payloads, version)
-        resolver_ready = None
-        if files_ready:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise TimeoutError("PyPI resolution did not qualify within the deadline")
-            resolver_ready = public_resolution_ready(
-                version, min(RESOLVER_TIMEOUT_SECONDS, remaining)
-            )
+        ready = public_files_ready(payloads[0], payloads[1], version)
         if time.monotonic() >= deadline:
-            raise TimeoutError("PyPI resolution did not qualify within the deadline")
-        ready = files_ready and resolver_ready is True
+            raise TimeoutError("PyPI exact files did not become visible within the deadline")
         print(
             json.dumps(
                 {
                     "pypi_index_readiness": {
                         "version": version,
                         "attempt": attempt,
-                        "ready": ready,
-                        "files_ready": files_ready,
-                        "resolver_ready": resolver_ready,
+                        "files_ready": ready,
                     }
                 }
             ),
@@ -233,7 +382,7 @@ def wait_for_public_files(version: str) -> None:
         if ready:
             return
         time.sleep(min(INDEX_POLL_SECONDS, max(0, deadline - time.monotonic())))
-    raise TimeoutError("PyPI exact files did not become installable within the deadline")
+    raise TimeoutError("PyPI exact files did not become visible within the deadline")
 
 
 def registry_command(
@@ -271,21 +420,21 @@ def main() -> int:
     args = parser.parse_args()
     expected = args.expect_version
     if expected is None:
-        import tomllib
+        if sys.version_info >= (3, 11):
+            import tomllib
+        else:
+            import tomli as tomllib
 
         expected = tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
     metadata = json.loads(args.metadata.read_text(encoding="utf-8"))
     command = registry_command(metadata, expected, args.candidate_dist)
+    deadline = time.monotonic() + (
+        MAX_INDEX_WAIT_SECONDS if args.wait_pypi else PROBE_TIMEOUT_SECONDS
+    )
     if args.wait_pypi:
         assert args.candidate_dist is None, "index readiness is for the public invocation only"
-        wait_for_public_files(expected)
-    elif args.candidate_dist is not None:
-        assert public_resolution_ready(
-            expected, RESOLVER_TIMEOUT_SECONDS, candidate_dist=args.candidate_dist
-        ), "native resolution refused the existing candidate wheel"
-    from probe_mcp_stdio import probe
-
-    info, tools = probe(command)
+        wait_for_public_files(expected, deadline)
+    info, tools = probe_registry(command, expected, deadline, retry_absence=args.wait_pypi)
     assert info.get("version") == expected, (info, expected)
     print(json.dumps({"serverInfo": info, "tools": tools, "tool_calls": "passed"}, indent=2))
     return 0

@@ -40,6 +40,132 @@ STARTUP_TIMEOUT_SECONDS = 90
 DOWNLOAD_TIMEOUT_SECONDS = 600
 OPERATION_TIMEOUT_SECONDS = 180
 STREAM_REQUESTS = 3
+MAX_DIAGNOSTIC_INTEGER = 2**63 - 1
+REPLAY_BINDING_NAMES = (
+    "backend",
+    "backend_version",
+    "model",
+    "quant",
+    "context_length",
+    "serving_stability",
+    "workload",
+)
+DIAGNOSTIC_ERROR_TYPES = (
+    "RuntimeError",
+    "RequestError",
+    "HTTPStatusError",
+    "ConnectError",
+    "ConnectTimeout",
+    "ReadError",
+    "ReadTimeout",
+    "RemoteProtocolError",
+    "TimeoutError",
+)
+DIAGNOSTIC_COUNT_FIELDS = (
+    "requested_count",
+    "attempted_count",
+    "successful_count",
+    "failed_count",
+    "not_started_count",
+)
+DIAGNOSTIC_OBSERVATION_FIELDS = ("loaded_bytes", "loaded_gpu_bytes", "context_length")
+
+
+def _diagnostic_integer(value: object) -> int | None:
+    return value if type(value) is int and 0 <= value <= MAX_DIAGNOSTIC_INTEGER else None
+
+
+def _diagnostic_mapping(value: object) -> dict:
+    return value if type(value) is dict else {}
+
+
+def _diagnostic_state(value: object, allowed: tuple[str, ...]) -> str:
+    return value if type(value) is str and value in allowed else "invalid"
+
+
+def contribution_replay_observation(report: dict, runs: int) -> dict:
+    """Project failure facts without free-text observations, options or provider messages."""
+    execution = _diagnostic_mapping(report.get("execution"))
+    error = report.get("error")
+    error_type = _diagnostic_mapping(error).get("type")
+    bindings = _diagnostic_mapping(report.get("binding"))
+    result = {
+        "stage": "contribution_replay_validation",
+        "gpu_state": _diagnostic_state(
+            _diagnostic_mapping(report.get("gpu_eligibility")).get("state"),
+            ("ineligible", "unverified"),
+        ),
+        "status": _diagnostic_state(report.get("status"), ("completed", "partial", "failed")),
+        "exit_code": _diagnostic_integer(report.get("exit_code")),
+        "expected_runs": _diagnostic_integer(runs),
+        "counts": {
+            name: _diagnostic_integer(execution.get(name)) for name in DIAGNOSTIC_COUNT_FIELDS
+        },
+        "missing_count_fields": [name for name in DIAGNOSTIC_COUNT_FIELDS if name not in execution],
+        "invalid_count_fields": [
+            name
+            for name in DIAGNOSTIC_COUNT_FIELDS
+            if name in execution
+            and execution[name] is not None
+            and _diagnostic_integer(execution[name]) is None
+        ],
+        "error_present": error is not None,
+        "error_category": error_type
+        if type(error_type) is str and error_type in DIAGNOSTIC_ERROR_TYPES
+        else "none"
+        if error is None
+        else "other",
+        "bindings": {
+            name: _diagnostic_state(
+                _diagnostic_mapping(bindings[name]).get("state"),
+                (
+                    "matched",
+                    "mismatch",
+                    "unavailable",
+                    "unverified",
+                    "applied",
+                    "stable",
+                    "changed",
+                ),
+            )
+            if name in bindings
+            else "missing"
+            for name in REPLAY_BINDING_NAMES
+        },
+    }
+    for phase in ("before", "after"):
+        key = f"serving_{phase}"
+        raw = execution.get(key)
+        observation = _diagnostic_mapping(raw)
+        device = observation.get("device")
+        result[phase] = {
+            "present": key in execution,
+            "valid_shape": type(raw) is dict,
+            "device": device if type(device) is str and device in ("cpu", "gpu") else None,
+            "device_state": "missing"
+            if "device" not in observation
+            else "unknown"
+            if device is None
+            else "known"
+            if type(device) is str and device in ("cpu", "gpu")
+            else "invalid",
+            **{
+                name: _diagnostic_integer(observation.get(name))
+                for name in DIAGNOSTIC_OBSERVATION_FIELDS
+            },
+            "missing_numeric_fields": [
+                name for name in DIAGNOSTIC_OBSERVATION_FIELDS if name not in observation
+            ],
+            "invalid_numeric_fields": [
+                name
+                for name in DIAGNOSTIC_OBSERVATION_FIELDS
+                if name in observation
+                and observation[name] is not None
+                and _diagnostic_integer(observation[name]) is None
+            ],
+            "limitations_present": "limitations" in observation,
+        }
+    return result
 
 
 def verify_sha256(path: Path, expected: str) -> None:
@@ -296,6 +422,13 @@ def accept_saved_plan(client: httpx.Client, cwd: Path, env: dict) -> dict:
 
 def validate_contribution_replay(report: dict, source: dict, runs: int) -> None:
     """Refuse trust/accuracy claims from replaying an unsigned GPU claim on CPU."""
+    print(
+        json.dumps(
+            {"contribution_replay_observation": contribution_replay_observation(report, runs)},
+            sort_keys=True,
+        ),
+        flush=True,
+    )
     assert report["kind"] == "chimeraforge.contribution-replay"
     assert report["contribution"]["id"] == source["id"]
     assert report["contribution"]["attestation"]["signed"] is False

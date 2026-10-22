@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-17).** [Chimeraforge 0.66.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.66.0) adds frozen prediction scorecards. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.67.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.67.0) adds whole-campaign regression gates. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.66.0"
+pip install "chimeraforge[mcp]==0.67.0"
 ```
 
 ## Quickstart
@@ -536,7 +536,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.66.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.67.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -715,6 +715,25 @@ cancellation propagates after owned-task cleanup. Exit `0` means every declared
 replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
+
+### `gate --kind trace-campaign` -- whole-population decisions (since 0.67.0)
+
+Available since Chimeraforge 0.67.0. Compare two complete saved campaigns offline.
+Declare the expected replica count in a `TraceGatePolicy` JSON file, then supply
+one whole campaign per arm:
+
+```bash
+chimeraforge gate --kind trace-campaign --baseline baseline-campaign.json --candidate candidate-campaign.json --policy campaign-policy.json --out campaign-gate.json --json
+```
+
+The gate validates the manifest, every declared slot and unmodified native child.
+Failed, incomplete and not-started replicas remain visible. Changed controls,
+missing observations or copied executions cannot produce a conditional pass;
+known breaches remain visible even when the whole result is inconclusive.
+Execution completion remains separate from SLO success. Exits: `0` conditional
+pass, `1` regression, `2` malformed input/output, `3` inconclusive. See the
+[policy and Python API contract](docs/trace-campaign-gates.md) for population,
+byte limits, output protection and the unverified independence/hardware boundary.
 
 ### `score` -- frozen prediction scorecards (since 0.66.0)
 

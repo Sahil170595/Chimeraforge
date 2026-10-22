@@ -652,7 +652,17 @@ def test_cooperative_drained_elapsed_may_exceed_requested_timeout():
 
 
 @pytest.mark.parametrize(
-    "field", ["request_timeout", "trace_timeout", "target", "arrival", "hardware", "model_size"]
+    "field",
+    [
+        "request_timeout",
+        "trace_timeout",
+        "target",
+        "arrival",
+        "hardware",
+        "model_size",
+        "signed_zero_start",
+        "signed_zero_arrival",
+    ],
 )
 def test_numeric_representation_cannot_manufacture_execution_identity(field):
     left, right = receipt(), receipt(duration=0.1)
@@ -676,6 +686,13 @@ def test_numeric_representation_cannot_manufacture_execution_identity(field):
             for row in value["requests"]:
                 row["descriptor"]["arrival_offset_s"] = 0
                 row["times"]["scheduled_s"] = 0
+        elif field == "signed_zero_start":
+            for row in value["requests"]:
+                row["times"]["start_s"] = -0.0
+        elif field == "signed_zero_arrival":
+            for row in value["requests"]:
+                row["descriptor"]["arrival_offset_s"] = -0.0
+                row["times"]["scheduled_s"] = -0.0
         else:
             for phase in ("serving_before", "serving_after"):
                 if field == "hardware":

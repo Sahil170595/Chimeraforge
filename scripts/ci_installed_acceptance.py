@@ -181,6 +181,9 @@ def main(argv: list[str] | None = None) -> int:
         from ci_trace_gate import accept as accept_trace_gate
 
         trace_gate_receipt = accept_trace_gate(cwd, env, args.checkout)
+        from ci_trace_campaign_gate import accept as accept_campaign_gate
+
+        campaign_gate_receipt = accept_campaign_gate(cwd, env, args.checkout)
         from ci_native_stream import accept as accept_native_stream
 
         native_stream_receipt = accept_native_stream(cwd, env, args.checkout)
@@ -215,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
                     "plan_sensitivity": study_receipt,
                     "regression_gate": gate_receipt,
                     "trace_regression_gate": trace_gate_receipt,
+                    "trace_campaign_regression_gate": campaign_gate_receipt,
                     "native_stream_protocol": native_stream_receipt,
                     "signed_contribution_protocol": signed_receipt,
                     "prediction_score_protocol": score_receipt,

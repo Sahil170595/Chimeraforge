@@ -6,8 +6,9 @@ credential, paid model API or production service is required.
 `CI required` fails unless every prerequisite succeeded, including cancelled or
 unexpectedly skipped jobs. It runs on pull requests, main pushes and merge groups.
 The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
-the shipped package and new CI helpers; mypy currently enforces the metrics and
-planner-constant modules. The existing independent validation corpus/error-band
+the shipped package and CI helpers; mypy enforces metrics, planner constants,
+signed contributions/replay, prediction scoring, campaign receipt validation/gates
+and the native registry bootstrap boundary. The independent validation corpus/error-band
 tests remain part of the full suite.
 
 `uv.lock` contains the universal dependency resolution and distribution hashes.
@@ -63,12 +64,22 @@ metadata, and the complete reusable CI validation at that tag. The publish job
 downloads the validated distributions instead of rebuilding them, creates build
 provenance, and uses PyPI OIDC publishing. MCP metadata is validated before the
 PyPI upload and its publisher binary is digest-pinned. Ordinary CI never publishes.
-Public registry readiness checks exact non-yanked file hashes and the pinned uv
-resolver's supported dry-run under one deadline, using the MCP SDK child environment.
-Only an unavailable exact release is polled; other resolution failures stop publication.
-The existing installed-distribution job exercises the same resolver against the candidate
-wheel. Each path runs its MCP application probe once after resolution qualifies.
-Resolver failures expose bounded public-package names and categorical diagnostic hints,
-without raw clauses, URLs, paths or response bodies. Hints never widen the retry policy.
+Public registry readiness checks exact non-yanked file hashes and launches the
+actual pinned uv registry command through the supported MCP SDK stdio transport.
+One original deadline covers visibility, launch attempts, waits and conversation.
+A fresh launch is permitted only after the native process has exited with the
+exact pinned root-package absence diagnostic, emitted no raw stdout, and supplied
+a complete argv-bound cleanup receipt. Unknown or combined resolver failures,
+timeouts, cancellation, malformed receipts and application failures are terminal.
+The installed-distribution job exercises this native path against the candidate
+wheel. It does not use a separate pip resolver as evidence of uv readiness.
+Private native stderr is bounded and reduced to categorical diagnostics; raw
+clauses, URLs, paths and response bodies are omitted. SDK cancellation and process
+cleanup are exercised separately from a successful MCP application conversation.
+Whole-campaign gate consumers also run from the installed wheel and rebuilt sdist.
+Synthetic protocol fixtures check decision arithmetic and invalid populations;
+the existing CPU consumer gates its already-produced native campaigns without
+loading another model. Categorical CPU replay diagnostics are emitted before
+assertions, retaining safe counts, binding states and missing/invalid numeric fields.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.

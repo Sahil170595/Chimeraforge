@@ -144,21 +144,26 @@ def _workload(row: dict) -> tuple[dict, list[str]]:
     }, blockers
 
 
+def _evidence_real(value: int | float) -> float:
+    """Canonicalize equivalent real spellings, including IEEE signed zero."""
+    return 0.0 if value == 0 else float(value)
+
+
 def _evidence(row: dict) -> str:
     data = row["data"]
     view = _view(row)
     workload, _ = _workload(row)
     workload.pop("canonical_workload_sha256")
     for name in ("request_timeout_seconds", "trace_timeout_seconds"):
-        workload[name] = float(workload[name])
+        workload[name] = _evidence_real(workload[name])
     workload["targets"] = {
-        name: float(value) if value is not None else None
+        name: _evidence_real(value) if value is not None else None
         for name, value in workload["targets"].items()
     }
     workload["ordered_descriptors_sha256"] = digest(
         [
             {
-                key: float(value) if key == "arrival_offset_s" else value
+                key: _evidence_real(value) if key == "arrival_offset_s" else value
                 for key, value in request["descriptor"].items()
                 if key != "request_id"
             }
@@ -175,7 +180,7 @@ def _evidence(row: dict) -> str:
             for name in names:
                 value = observation[group][name]
                 if value is not None:
-                    observation[group][name] = float(value)
+                    observation[group][name] = _evidence_real(value)
     measurements = []
     for r in data["requests"]:
         native = dict(r["native"])
@@ -187,13 +192,17 @@ def _evidence(row: dict) -> str:
             "eval_duration_ms",
         ):
             if native[name] is not None:
-                native[name] = float(native[name])
+                native[name] = _evidence_real(native[name])
         measurements.append(
             {
                 "state": r["state"],
-                "times": {k: float(v) if v is not None else None for k, v in r["times"].items()},
+                "times": {
+                    k: _evidence_real(v) if v is not None else None for k, v in r["times"].items()
+                },
                 "native": native,
-                "mean_tpot_ms": float(r["mean_tpot_ms"]) if r["mean_tpot_ms"] is not None else None,
+                "mean_tpot_ms": _evidence_real(r["mean_tpot_ms"])
+                if r["mean_tpot_ms"] is not None
+                else None,
                 "mean_tpot_basis": r["mean_tpot_basis"],
                 "error": r["error"],
             }
@@ -203,7 +212,7 @@ def _evidence(row: dict) -> str:
             "measurements": measurements,
             "workload": workload,
             "observed_controls": view["execution"],
-            "elapsed": float(data["execution"]["elapsed_seconds"])
+            "elapsed": _evidence_real(data["execution"]["elapsed_seconds"])
             if data["execution"]["elapsed_seconds"] is not None
             else None,
             "cleanup": data["resource_cleanup"],

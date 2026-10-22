@@ -57,9 +57,20 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.66.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.67.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
-Candidate frozen prediction scoring: `score --plan PLAN --policy POLICY
+Whole-campaign decisions (since 0.67.0): `gate --kind trace-campaign --baseline LEFT
+--candidate RIGHT --policy POLICY --out decision.json --json` and
+`api.gate_trace_campaigns` consume one complete saved campaign per arm. Frozen
+manifests, every declared replica and native children are validated; failed and
+not-started slots cannot be extracted away. `TraceGatePolicy` fixes expected
+replicates, rules and observed conditions. Exits are 0 conditional pass,
+1 regression, 2 malformed, 3 inconclusive; incomplete evidence takes precedence
+while known breaches remain visible. See [whole-campaign gates](docs/trace-campaign-gates.md).
+This interface does not provide independent-execution, GPU,
+served-weight, preregistration or calibration qualification.
+
+Frozen prediction scoring (since 0.66.0): `score --plan PLAN --policy POLICY
 --benchmark RECEIPT --out scorecard.json --json` and `api.score_predictions` retain
 the saved prediction and full declared receipt population. Required
 `PredictionScorePolicy` binds plan fingerprint, candidate indices, expected counts
@@ -70,7 +81,7 @@ Outcomes: 0 complete within band, 1 comparable breach even with incomplete rows,
 2 malformed/output failure, 3 incomplete. No automatic coefficient refit, live
 modifier attestation, physical authentication or calibration GO is implied.
 
-Candidate signed contributions: `contribute sign` signs a bounded current native
+Signed contributions (since 0.65.0): `contribute sign` signs a bounded current native
 PlanBenchmark projection with optional `sign` dependencies. `verify --trusted-key`
 separates signature validity from receiver trust; async
 `api.replay_signed_contribution` / `replay --private-workload` bind private inputs
@@ -80,7 +91,7 @@ before contact. V2 is standalone outside planner quarantine/aggregation. See
 failure, 3 unavailable or untrusted. Measurement truth, original wire defaults,
 hardware, weights and original Poisson schedule remain unverified.
 
-Candidate serial campaigns: `chimeraforge trace-campaign workload.json --model served
+Serial campaigns (since 0.64.0): `chimeraforge trace-campaign workload.json --model served
 --replicates 3 --campaign-timeout 1800 --out campaign.json --json` and async
 `api.replay_trace_campaign` freeze one workload, retain full native replicas,
 and stop admission after the first incomplete replica. See
@@ -88,7 +99,7 @@ and stop admission after the first incomplete replica. See
 executions completed, 1 incomplete/stopped population, 2 malformed/output failure.
 Budget-triggered native drain is cooperative and may be unbounded.
 
-Candidate trace decisions: `chimeraforge gate --kind trace --baseline baseline.json
+Trace decisions (since 0.63.0): `chimeraforge gate --kind trace --baseline baseline.json
 --candidate candidate.json --policy policy.json --out gate.json --json` compares
 saved queue-inclusive populations without inference. Public typed API:
 `api.TraceGatePolicy` / `api.gate_traces`; see

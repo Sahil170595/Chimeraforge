@@ -3,7 +3,11 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.66.0 includes native streaming trace observations and [queue-inclusive trace gates](trace-regression-gate.md) plus [serial trace campaigns](trace-campaign.md) and [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra and [frozen prediction scorecards](prediction-scorecards.md).
+Chimeraforge 0.67.0 includes native streaming trace observations and
+[queue-inclusive trace gates](trace-regression-gate.md), [serial trace campaigns](trace-campaign.md),
+[signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
+[frozen prediction scorecards](prediction-scorecards.md), and
+[whole-campaign regression gates](trace-campaign-gates.md).
 Benchmark gating remains the default.
 
 ## 5-Minute Setup

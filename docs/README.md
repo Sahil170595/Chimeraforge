@@ -9,6 +9,8 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Current CLI: **0.67.0**. The linked features are included in this version.
+
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
@@ -17,6 +19,7 @@ planner's data came from; those guides are archived below.
 - **[Serial trace campaigns](trace-campaign.md)** - since 0.64.0, frozen ordered replica populations
 - **[Signed contributions and private replay](signed-contribution-v2.md)** - since 0.65.0, exact-byte signatures and explicit receiver trust
 - **[Frozen prediction scorecards](prediction-scorecards.md)** - since 0.66.0, explicit population and conditional native-rate error bands
+- **[Whole-campaign regression gates](trace-campaign-gates.md)** - since 0.67.0, complete declared replica populations and retained incomplete evidence
 
 ```bash
 pip install chimeraforge
@@ -28,8 +31,9 @@ chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 25 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
-Run `chimeraforge --help` or `chimeraforge <cmd> --help`. The candidate adds
-`gate --kind trace`; benchmark remains the default.
+Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
+compares saved traces; `gate --kind trace-campaign` compares whole campaigns.
+Benchmark gating remains the default.
 
 ## Project Information
 
@@ -75,5 +79,4 @@ The canonical technical-report archive lives in `outputs/publish_ready/reports/`
 - Commands assume execution from the repository root unless noted
 - Links are relative to this `docs/` directory
 
-Current CLI: **0.66.0**. The linked features are included in this version. See the
-[Changelog](../CHANGELOG.md) for version history.
+See the [Changelog](../CHANGELOG.md) for version history.
