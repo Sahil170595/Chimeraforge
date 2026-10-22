@@ -1,7 +1,6 @@
 # Plan-bound request traces
 
-This is the unreleased 0.68.0 candidate. Use its checkout until publication;
-the published 0.66.0 package does not include this interface.
+Available since **Chimeraforge 0.68.0**.
 
 `trace --from-plan` replays a private workload while retaining a selected frozen
 candidate. It validates the saved plan or portable bundle before endpoint contact,
