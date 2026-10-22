@@ -1,6 +1,6 @@
 # Private prediction evidence bundles
 
-This is the unreleased 0.70.0 candidate; published 0.66.0 lacks this interface.
+Available since **Chimeraforge 0.70.0**.
 A bundle preserves original plan inputs, policy and benchmark receipts for
 offline receiving and scoring. It does not rerun inference, replan, replace
 coefficients, remove unfavorable rows or refit predictions.

@@ -468,37 +468,64 @@ async def test_manifest_frozen_before_adapter_and_file_deletion_cannot_change_it
 @pytest.mark.asyncio
 async def test_deadline_cooperative_drain_has_no_claimed_wall_bound(monkeypatch, backends):
     import chimeraforge.bench.trace as trace
+    import chimeraforge.bench.trace_campaign as campaign
 
     replay = trace.replay
-    draining, release = asyncio.Event(), asyncio.Event()
+    native_completed, draining, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    campaign_timeout = 0.02
+    watchdog_timeout = 5
+    clock, captured = [0.0], []
+
+    class CampaignAsyncio:
+        def __getattr__(self, name):
+            return getattr(asyncio, name)
+
+        async def wait(self, tasks, *, timeout, return_when):
+            assert timeout == campaign_timeout and return_when is asyncio.FIRST_COMPLETED
+            captured.extend(tasks)
+            # Test drain ordering without requiring native replay to finish in 20 ms.
+            await native_completed.wait()
+            clock[0] = campaign_timeout
+            return set(), set(tasks)
 
     async def cooperative(source, **kwargs):
         result = await replay(source, **kwargs)
+        assert result.to_dict()["execution"]["completed"] == len(source)
+        native_completed.set()
         await kwargs["stop_event"].wait()
         draining.set()
         await release.wait()
         return result
 
+    monkeypatch.setattr(campaign, "asyncio", CampaignAsyncio())
+    monkeypatch.setattr(campaign, "_clock", lambda: clock[0])
     monkeypatch.setattr(trace, "replay", cooperative)
     task = asyncio.create_task(
         api.replay_trace_campaign(
             requests(),
             model="served",
             replicates=1,
-            campaign_timeout=0.02,
+            campaign_timeout=campaign_timeout,
             stop_event=asyncio.Event(),
         )
     )
     try:
-        await asyncio.wait_for(draining.wait(), 2)
-        assert not task.done()
+        await asyncio.wait_for(draining.wait(), watchdog_timeout)
+        assert native_completed.is_set() and not task.done()
+        waiter = next(t for t in captured if t.get_name() == "trace-campaign-stop")
+        await asyncio.wait_for(asyncio.gather(waiter, return_exceptions=True), watchdog_timeout)
+        assert waiter.cancelled()
         assert not [t for t in asyncio.all_tasks() if t.get_name() == "trace-campaign-stop"]
     finally:
         release.set()
-        data = (await task).to_dict()
+        if not draining.is_set():
+            task.cancel()
+        results = await asyncio.gather(task, return_exceptions=True)
+    data = results[0].to_dict()
     assert data["stop_reason"] == "campaign_deadline"
     assert data["execution"]["completed"] == 1 and data["exit_code"] == 0
     assert "may be unbounded" in data["limits"]
+    assert not [t for t in asyncio.all_tasks() if t.get_name().startswith("trace-campaign-")]
 
 
 @pytest.mark.asyncio

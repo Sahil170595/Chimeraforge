@@ -57,9 +57,9 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.70.0 (unreleased candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.70.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
-Candidate private prediction bundles: `bundle prediction-create PLAN --policy POLICY
+Private prediction bundles (since 0.70.0): `bundle prediction-create PLAN --policy POLICY
 --benchmark RECEIPT --out DIR --json`, `bundle prediction-verify DIR --json`, and
 `bundle prediction-score DIR --out SCORE --json`. Public `PredictionBundle` and
 create/verify/score APIs hold original plan/input/policy/receipt bytes and reuse
@@ -69,9 +69,9 @@ budget; score accounting remains explicit. Directory originals may contain priva
 prompts/options/harness data; metadata is digest-only and no upload occurs.
 Exclusive creation publishes the outer manifest last; partial directories remain
 visible without an atomic-directory/crash-durability claim. See
-[private prediction bundles](docs/prediction-bundles.md), unreleased 0.70.0.
+[private prediction bundles](docs/prediction-bundles.md), available since 0.70.0.
 
-Candidate finite load points: `trace-envelope --cases CASES --policy POLICY
+Finite load points (since 0.69.0): `trace-envelope --cases CASES --policy POLICY
 --campaign CELL=CAMPAIGN --out decision.json --json` and sync
 `api.assess_trace_envelope` assess whole saved campaigns offline. Closed cases fix
 uniform cadences and request commitments; every request/replica must pass explicit
@@ -81,7 +81,7 @@ population and may leave a lower point visible; contradictions/copies prevent
 ranking. Exits are 0 complete conditional pass, 1 observed breach, 2 invalid,
 3 incomplete/incompatible. See [finite load points](docs/trace-envelope.md).
 
-Candidate plan-bound traces: `trace WORKLOAD --from-plan PLAN_OR_BUNDLE
+Plan-bound traces (since 0.68.0): `trace WORKLOAD --from-plan PLAN_OR_BUNDLE
 --candidate-index 0 --model SERVED_ALIAS --out RECEIPT --json` and async
 `api.replay_plan_trace` retain a frozen candidate and unchanged native trace.
 Every output cap must equal saved decode length before contact. Only explicit
@@ -89,9 +89,9 @@ saved SLO inputs are used; backend/SLO overrides are refused. Native output caps
 are applied, while context/TP/PP/batch/replicas remain modeled/unverified. Known
 before/after or actual token-length mismatch exits 1; complete/no known mismatch
 exits 0, invalid exits 2, independently of native SLO outcome. See
-[plan-bound traces](docs/plan-bound-trace.md), an unreleased 0.68.0 interface.
+[plan-bound traces](docs/plan-bound-trace.md), available since 0.68.0.
 
-Candidate whole-campaign decisions: `gate --kind trace-campaign --baseline LEFT
+Whole-campaign decisions (since 0.67.0): `gate --kind trace-campaign --baseline LEFT
 --candidate RIGHT --policy POLICY --out decision.json --json` and
 `api.gate_trace_campaigns` consume one complete saved campaign per arm. Frozen
 manifests, every declared replica and native children are validated; failed and
@@ -99,7 +99,7 @@ not-started slots cannot be extracted away. `TraceGatePolicy` fixes expected
 replicates, rules and observed conditions. Exits are 0 conditional pass,
 1 regression, 2 malformed, 3 inconclusive; incomplete evidence takes precedence
 while known breaches remain visible. See [whole-campaign gates](docs/trace-campaign-gates.md).
-This is an unreleased 0.67.0 interface, without independent-execution, GPU,
+This interface does not provide independent-execution, GPU,
 served-weight, preregistration or calibration qualification.
 
 Frozen prediction scoring (since 0.66.0): `score --plan PLAN --policy POLICY
