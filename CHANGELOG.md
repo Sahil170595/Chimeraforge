@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.67.0] - Unreleased
+## [0.67.0] - 2026-10-22
 
 ### Whole-campaign regression gates
 
@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release qualification
 
+- Refresh the locked `aiohttp` and `certifi` distributions to patched versions after the current dependency audit identified vulnerabilities in the previously qualified lock. The audit remains enforced during source and release validation.
+- Released independently from PR #121. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39093088697); the publishing workflow separately validates and attests the exact versioned distributions before publication.
 - Registry readiness now observes the actual pinned native uv command through the supported MCP SDK transport. Only the exact pre-application root-version absence diagnostic, zero raw stdout and a complete argv-bound process cleanup receipt allow a fresh attempt under one shared deadline. A separate pip dry-run no longer qualifies uv readiness; application, cancellation and other resolver failures remain terminal.
 - CPU replay assertions emit a bounded categorical observation first, preserving counts, binding states and missing/invalid numeric fields without endpoints, hardware/model names or provider exception text. This improves diagnosis of the observed release assertion failure without asserting its unconfirmed cause.
 - New campaign receiver/gate and native bootstrap modules are included in hosted static analysis. Source, installed artifacts, real CPU execution and public publication remain separate evidence.

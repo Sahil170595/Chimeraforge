@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers the 0.67.0 candidate; unreleased additions are marked below.
+This document covers Chimeraforge 0.67.0.
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
@@ -18,7 +18,7 @@ Chimeraforge 0.66.0 adds `PredictionScorePolicy`, `PredictionScorecard` and
 `score_predictions` for offline scoring of frozen candidate throughput against
 eligible saved native evidence. See [prediction scorecards](prediction-scorecards.md)
 for the explicit population, binding, error-band and unavailable-evidence contract.
-The unreleased 0.67.0 candidate adds `gate_trace_campaigns` over whole serial
+Chimeraforge 0.67.0 adds `gate_trace_campaigns` over whole serial
 campaigns using `TraceGatePolicy`. Failed and not-started replicas stay in the
 declared population. See [whole-campaign gates](trace-campaign-gates.md).
 

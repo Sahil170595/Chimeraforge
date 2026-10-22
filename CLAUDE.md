@@ -57,9 +57,9 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.67.0 (unreleased candidate) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.67.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
-Candidate whole-campaign decisions: `gate --kind trace-campaign --baseline LEFT
+Whole-campaign decisions (since 0.67.0): `gate --kind trace-campaign --baseline LEFT
 --candidate RIGHT --policy POLICY --out decision.json --json` and
 `api.gate_trace_campaigns` consume one complete saved campaign per arm. Frozen
 manifests, every declared replica and native children are validated; failed and
@@ -67,7 +67,7 @@ not-started slots cannot be extracted away. `TraceGatePolicy` fixes expected
 replicates, rules and observed conditions. Exits are 0 conditional pass,
 1 regression, 2 malformed, 3 inconclusive; incomplete evidence takes precedence
 while known breaches remain visible. See [whole-campaign gates](docs/trace-campaign-gates.md).
-This is an unreleased 0.67.0 interface, without independent-execution, GPU,
+This interface does not provide independent-execution, GPU,
 served-weight, preregistration or calibration qualification.
 
 Frozen prediction scoring (since 0.66.0): `score --plan PLAN --policy POLICY

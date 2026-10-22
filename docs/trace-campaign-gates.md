@@ -1,7 +1,6 @@
 # Whole-campaign regression gates
 
-This is the unreleased 0.67.0 candidate. The published 0.66.0 package does not
-include this interface; use the candidate checkout until its release is cut.
+Available since **Chimeraforge 0.67.0**.
 
 Compare two saved serial campaigns without extracting successful replicas or
 discarding unstarted ones. The operation is offline: it does not contact an
