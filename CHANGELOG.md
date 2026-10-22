@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.70.0] - 2026-10-22
+
+### Private prediction evidence bundles
+
+- `PredictionBundle`, create/verify/score APIs and `bundle prediction-create`, `prediction-verify`, `prediction-score` preserve the original plan, bound inputs, explicit policy and every ordered native receipt for offline handoff. Original byte hashes and sizes survive receiving and scoring; negative, duplicate, extra, unavailable and zero-received populations remain represented by the existing scorer.
+- Closed fixed inventories and a 32 MiB total transport bound include both manifests and all declared member occurrences. Held validation and scoring reuse verified bytes without rereading removed source files. Held creation objects retain consumed source-path protection; receivers protect their bundle root/members and aliases without reconstructing producer paths.
+- Exclusive destination creation writes the outer manifest last without replacing existing directories. Partial publication remains visible; uncertain or foreign substitutions prevent cleanup. Original benchmark/harness content is explicitly private, while public metadata contains logical roles and digests. No automatic upload, sanitization or measurement-authentication claim is introduced.
+
+### Release qualification
+
+- Released independently from PR #124. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39097081229); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.69.0] - 2026-10-22
 
 ### Observed finite load points

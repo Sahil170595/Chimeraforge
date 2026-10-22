@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.69.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.69.0) adds finite observed load-point assessments. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.70.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.70.0) adds private prediction evidence bundles. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.69.0"
+pip install "chimeraforge[mcp]==0.70.0"
 ```
 
 ## Quickstart
@@ -304,6 +304,27 @@ bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
+### `bundle prediction-*` -- private prediction evidence (since 0.70.0)
+
+Preserve a plan with its bound inputs, explicit score policy and every original
+benchmark receipt for offline handoff:
+
+```bash
+chimeraforge bundle prediction-create plan.json --policy score-policy.json --benchmark first.json --benchmark second.json --out private-evidence --json
+chimeraforge bundle prediction-verify private-evidence --json
+chimeraforge bundle prediction-score private-evidence --out scorecard.json --json
+```
+
+**Private handoff:** original benchmark and harness files can contain prompts,
+options, provider diagnostics or paths. Review those files before sharing. Metadata
+and scorecards expose digest receipts and bounded outcomes; the directory preserves
+the raw originals. No upload occurs. The [closed bundle contract](docs/prediction-bundles.md)
+retains exact receipt order, bytes, hashes and negative/duplicate evidence under a
+32 MiB transport budget including both manifests. An empty received population is
+valid missing evidence. Create/verify exit 0 for valid content, 2 for invalid input;
+scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
+3 incomplete. Integrity does not qualify GPU evidence or authenticate measurements.
+
 ### `study` -- frozen-context workload and cost sensitivity
 
 Available in the published 0.61.0 CLI.
@@ -536,7 +557,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.69.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.70.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

@@ -8,7 +8,8 @@ unexpectedly skipped jobs. It runs on pull requests, main pushes and merge group
 The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
 the shipped package and CI helpers; mypy enforces metrics, planner constants,
 signed contributions/replay, prediction scoring, campaign receipt validation/gates,
-plan-bound trace replay/CLI, finite load-envelope assessment and the native
+plan-bound trace replay/CLI, finite load-envelope assessment, private prediction
+bundle receiving/publication and the native
 registry bootstrap boundary. The
 independent validation corpus/error-band
 tests remain part of the full suite.
@@ -103,3 +104,11 @@ populations, unknown assignments and input/output aliases. Source mutation tests
 challenge the consumer oracle. Returned logs contain compact verified counts and
 observed-point projections; these fixtures establish offline protocol behavior,
 without model inference, capacity or independent-execution qualification.
+Private prediction bundle consumers reuse the installed scorer's existing
+synthetic plan/native fixtures. They verify original pretty JSON and policy
+hashes, closed inventories, both-manifest transport accounting, relocation,
+negative/duplicate/empty populations, tampering and source/output aliases. The
+existing CPU scorer consumer bundles its already-produced plan/receipt without
+more inference. That CPU evidence remains ineligible for a modeled GPU
+prediction. Compact summaries omit original private fields; preserved bundle
+files are private handoff content, with no automatic upload.

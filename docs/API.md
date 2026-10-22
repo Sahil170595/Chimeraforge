@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.69.0.
+This document covers Chimeraforge 0.70.0.
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
@@ -31,6 +31,12 @@ JSON objects or paths; campaigns maps declared cell names to `TraceCampaign`,
 JSON objects or paths. Missing cells remain declared, and every supplied campaign
 must match its cell. See [finite load points](trace-envelope.md) for the closed
 schemas, comparability conditions, byte limits and exits.
+Chimeraforge 0.70.0 adds `PredictionBundle`,
+`create_prediction_bundle`, `verify_prediction_bundle` and `score_prediction_bundle`.
+Original policy/receipt bytes remain held alongside the verified original plan
+inputs; scoring uses the existing `PredictionScorecard` algorithm. See
+[private prediction bundles](prediction-bundles.md) for exact signatures,
+inventory, publication behavior and private-content limits.
 
 Install: `pip install chimeraforge[all]`
 

@@ -39,6 +39,7 @@ from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
 from chimeraforge.prediction_score import PredictionScorePolicy, PredictionScorecard
+from chimeraforge.prediction_bundle import PredictionBundle
 from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
@@ -57,6 +58,33 @@ MODEL_OVERRIDE_TYPES = {
 
 class PlanError(ValueError):
     """Invalid request, unavailable planning input, or invalid saved plan."""
+
+
+def create_prediction_bundle(
+    saved_plan: PlanBundle | str | Path,
+    benchmark_paths: list[str | Path],
+    *,
+    policy: PredictionScorePolicy | dict | str | Path,
+    outdir: str | Path,
+) -> PredictionBundle:
+    """Preserve private original plan inputs, policy and every ordered native receipt."""
+    from chimeraforge.prediction_bundle import create_prediction_bundle as create
+
+    return create(saved_plan, benchmark_paths, policy=policy, outdir=outdir)
+
+
+def verify_prediction_bundle(directory: str | Path) -> PredictionBundle:
+    """Hold and verify a closed original-byte prediction handoff without inference."""
+    from chimeraforge.prediction_bundle import verify_prediction_bundle as verify
+
+    return verify(directory)
+
+
+def score_prediction_bundle(saved: PredictionBundle | str | Path) -> PredictionScorecard:
+    """Use verified held originals through the existing prediction scorer."""
+    from chimeraforge.prediction_bundle import score_prediction_bundle as score
+
+    return score(saved)
 
 
 def score_predictions(
