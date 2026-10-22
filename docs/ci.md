@@ -7,7 +7,7 @@ credential, paid model API or production service is required.
 unexpectedly skipped jobs. It runs on pull requests, main pushes and merge groups.
 The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
 the shipped package and CI helpers; mypy enforces metrics, planner constants,
-signed contributions/replay, prediction scoring, campaign receipt validation/gates,
+signed contributions/replay/native gates, prediction scoring, campaign receipt validation/gates,
 plan-bound trace replay/CLI, finite load-envelope assessment, private prediction
 bundle receiving/publication and the native
 registry bootstrap boundary. The
@@ -31,6 +31,11 @@ the default published-image target retains its PyPI installation behavior.
 
 The consumer composite action is exercised with a candidate wheel for a successful
 plan and an expected no-fit failure. It posts no comment during acceptance.
+The 0.71.0 candidate extends signed installed consumers with trusted native gate
+pass/regression/untrusted/invalid/incomplete/copied/malformed and output-alias
+cases. Its CPU lane signs the two existing regression receipts and compares them
+offline, deriving the outcome from native facts without another inference run or
+a performance floor. CPU evidence remains ineligible for GPU prediction claims.
 Focused mutation testing requires a passing unmutated baseline, exact mutation
 anchors, assertion failures and no setup/collection errors. Hypothesis checks use
 independent unit and statistical derivations rather than shared implementation

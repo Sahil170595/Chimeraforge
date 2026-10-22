@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, NoReturn, cast
 
 from chimeraforge.bench.gate import FACTS, _fact, _metric
@@ -18,6 +18,7 @@ from chimeraforge.bench.gate_inputs import (
     load_receipt,
     sha,
     validate_population,
+    validate_native_aliases,
 )
 from chimeraforge.contrib import ContribError
 
@@ -142,6 +143,7 @@ def public_text(value: object) -> bool:
         and 0 < len(value) <= 512
         and "://" not in value
         and not Path(value).is_absolute()
+        and not PurePosixPath(value).is_absolute()
         and not PureWindowsPath(value).is_absolute()
         and ".." not in value.replace("\\", "/").split("/")
     )
@@ -319,7 +321,9 @@ def validate_payload(data: dict[str, Any]) -> dict[str, Any]:
         for row in rows
     ):
         fail()
-    view = {
+    if any(row.tokens_generated > request["output_token_cap"] for row in rows):
+        fail("generated count exceeds explicit signed output cap")
+    view: dict[str, Any] = {
         "measurement": measurement,
         "execution": {
             **execution,
@@ -328,6 +332,9 @@ def validate_payload(data: dict[str, Any]) -> dict[str, Any]:
         "samples": rows,
         "legacy": False,
     }
+    validate_native_aliases(
+        rows, view["execution"]["serving_before"], view["execution"]["serving_after"]
+    )
     for name in METRICS:
         _metric(view, name)
     return view

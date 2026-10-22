@@ -200,10 +200,13 @@ class SignedContributionReceipt(SignedContribution):
 
 def load(
     source: SignedContribution | dict[str, Any] | str | Path,
+    *,
+    limit: int = MAX_ENVELOPE_BYTES,
 ) -> tuple[dict[str, Any], bytes, tuple[Path, ...]]:
     paths = source._protected_paths if isinstance(source, SignedContribution) else ()
     data, raw, received = held_json(
-        source.to_dict() if isinstance(source, SignedContribution) else source, MAX_ENVELOPE_BYTES
+        source.to_dict() if isinstance(source, SignedContribution) else source,
+        min(limit, MAX_ENVELOPE_BYTES),
     )
     return data, raw, paths + received
 
@@ -333,23 +336,54 @@ def verify(
 ) -> SignedContributionReceipt:
     data, _, paths = load(source)
     paths += declared_key_paths(trusted_keys)
-    public, raw, signature = _decode(data)
+    _decode(data)
     try:
-        _, Public, _, InvalidSignature, Unsupported = crypto()
         trusted, key_paths = _trusted(trusted_keys)
         paths += key_paths
+    except SigningUnavailable:
+        trusted = None
+    return _verify_held(data, paths, trusted=trusted)
+
+
+def _verify_held(
+    data: dict[str, Any],
+    paths: tuple[Path, ...],
+    *,
+    trusted: list[bytes] | None,
+) -> SignedContributionReceipt:
+    """Reuse verification over one held envelope and already captured receiver keys."""
+    public, raw, signature = _decode(data)
+    identity_mismatch = artifact_id(public, raw, signature) != data["id"]
+    if trusted is None:
+        return result(
+            data,
+            1 if identity_mismatch else 3,
+            "unavailable",
+            "unavailable",
+            paths,
+            status="artifact_id_mismatch" if identity_mismatch else None,
+        )
+    try:
+        _, Public, _, InvalidSignature, Unsupported = crypto()
         try:
             Public.from_public_bytes(public).verify(signature, message(public, raw))
         except InvalidSignature:
             return result(data, 1, "invalid", "unverified", paths)
         except Unsupported:
             raise SigningUnavailable("Ed25519 is unavailable on this crypto platform") from None
-        if artifact_id(public, raw, signature) != data["id"]:
+        if identity_mismatch:
             return result(data, 1, "invalid", "unverified", paths, status="artifact_id_mismatch")
         payload = parse_json(raw)
         validate_payload(payload)
     except SigningUnavailable:
-        return result(data, 3, "unavailable", "unavailable", paths)
+        return result(
+            data,
+            1 if identity_mismatch else 3,
+            "unavailable",
+            "unavailable",
+            paths,
+            status="artifact_id_mismatch" if identity_mismatch else None,
+        )
     except (ValueError, TypeError, KeyError, RecursionError):
         fail()
     return result(

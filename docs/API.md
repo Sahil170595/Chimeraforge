@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.70.0.
+This document covers Chimeraforge 0.71.0.
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
@@ -37,6 +37,12 @@ Original policy/receipt bytes remain held alongside the verified original plan
 inputs; scoring uses the existing `PredictionScorecard` algorithm. See
 [private prediction bundles](prediction-bundles.md) for exact signatures,
 inventory, publication behavior and private-content limits.
+
+Chimeraforge 0.71.0 adds sync `gate_signed_contributions(baseline,
+candidate, *, trusted_keys, policy)` returning `SignedContributionReceipt`.
+Only explicitly trusted, valid signed v2 public native facts are compared;
+no private saved-plan bindings are reconstructed. See
+[signed native gates](signed-native-gates.md) for exact types, outcomes and limits.
 
 Install: `pip install chimeraforge[all]`
 

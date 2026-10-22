@@ -9,7 +9,7 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
-Current CLI: **0.70.0**. The linked features are included in this version.
+Current CLI: **0.71.0**. The linked features are included in this version.
 
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
@@ -23,6 +23,7 @@ Current CLI: **0.70.0**. The linked features are included in this version.
 - **[Plan-bound request traces](plan-bound-trace.md)** - since 0.68.0, frozen candidate and unchanged native trace bindings
 - **[Observed finite load points](trace-envelope.md)** - since 0.69.0, complete saved campaigns at finite declared cadences
 - **[Private prediction evidence bundles](prediction-bundles.md)** - since 0.70.0, original private inputs and explicit scoring policy
+- **[Signed native regression gates](signed-native-gates.md)** - since 0.71.0, exact signatures and explicit receiver trust before comparison
 
 ```bash
 pip install chimeraforge

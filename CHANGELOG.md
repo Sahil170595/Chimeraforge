@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.71.0] - 2026-10-22
+
+### Trusted signed native comparisons
+
+- `api.gate_signed_contributions` and `contribute gate` verify signed v2 artifact identities and explicit receiver trust before comparing public native measurements under the existing regression policy. Every verification result remains represented; untrusted payloads never supply comparisons.
+- Complete populations, public commitments, observed controls, metric bases and actual token lengths qualify comparisons. Re-signed/reordered semantic copies remain inconclusive. Signed payload validation refuses supported TTFT/prefill alias and explicit output-cap arithmetic contradictions.
+- Held envelope occurrence limits, bounded explicit keys/policy, protected outputs and compact installed/CPU consumers preserve the existing unsigned workflow. Signatures and conditional gates do not authenticate measurement truth, physical execution, saved-plan bindings or deployment readiness.
+
+### Release qualification
+
+- Disable repacked CPU weight buffers only in the isolated acceptance daemon with the pinned runtime's supported `LLAMA_ARG_REPACK=0` control. This addresses Ollama 0.35.1 reporting AMX CPU buffers as GPU memory; all placement/eligibility assertions and runtime/model pins remain enforced.
+- Released independently from PR #125. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39098375155); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.70.0] - 2026-10-22
 
 ### Private prediction evidence bundles

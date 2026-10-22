@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.70.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.70.0) adds private prediction evidence bundles. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.70.0"
+pip install "chimeraforge[mcp]==0.71.0"
 ```
 
 ## Quickstart
@@ -303,6 +303,21 @@ facts, and malformed/unsupported bundles exit 2. Legacy plans without byte
 bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
+
+### `contribute gate` -- trusted signed native comparisons (since 0.71.0)
+
+```bash
+chimeraforge contribute gate --baseline before.signed.json --candidate after.signed.json --trusted-key receiver.pub --policy gate-policy.json --out decision.json --json
+```
+
+Compare public native facts only after exact signature/artifact verification and
+explicit receiver trust. Repeated flags retain the declared populations; copied,
+incomplete or incompatible evidence cannot qualify. `api.gate_signed_contributions`
+returns a defensive decision receipt. Exits: 0 conditional pass, 1 authentication
+failure or comparable regression, 2 malformed/output failure, 3 unavailable or
+inconclusive. Signatures do not authenticate measurement truth, hardware, weights
+or execution independence. See [signed native gates](docs/signed-native-gates.md)
+for policy, matching rules, byte limits and the public projection's limits.
 
 ### `bundle prediction-*` -- private prediction evidence (since 0.70.0)
 
@@ -557,7 +572,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.70.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.71.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
