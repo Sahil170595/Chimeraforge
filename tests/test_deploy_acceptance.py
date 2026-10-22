@@ -29,7 +29,10 @@ def test_docker_compose_config_accepts_export(tmp_path, backend):
     docker = shutil.which("docker")
     if docker is None:
         _missing_tool("Docker CLI unavailable; Linux hosted CI validates Compose exports")
-    version = _run([docker, "compose", "version"])
+    try:
+        version = _run([docker, "compose", "version"])
+    except subprocess.TimeoutExpired:
+        _missing_tool("Docker Compose capability probe timed out; Linux hosted CI requires it")
     if version.returncode:
         _missing_tool("Docker Compose unavailable: " + version.stderr)
     if backend == "ollama":
