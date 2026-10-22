@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.68.0] - 2026-10-22
+
+### Plan-bound native traces
+
+- Async `api.replay_plan_trace`, defensive `PlanTraceReplay` and `trace --from-plan` preserve a validated saved candidate or verified bundle beside an unchanged native trace. Original held plan/workload hashes and ordered descriptors remain separate from the typed child's truthful null raw-file hash.
+- Every requested output cap must equal the selected saved decode length before contact. The selected backend, optional recorded served alias, explicit arrival schedule, concurrency and timeouts are retained. Only nonnull saved SLO inputs are used; explicit CLI backend/SLO overrides are refused.
+- Output caps are applied by the adapter. Context, TP/PP, batching, replicas, modifier/cache settings and modeled rate are not injected or represented as applied. Independent before/after serving bindings preserve contradictions and missing phases; actual token lengths are checked separately from caps.
+- Complete native execution without a known binding mismatch exits 0, incomplete execution or a known mismatch exits 1, and invalid input/output exits 2. Native completion and SLO results remain independently visible. Output protects every held private input and bundle member before CLI contact and on save.
+- The receiver validates and retains one held native snapshot. Existing native readers require an explicitly selected child; the wrapper does not authenticate measurements, immutable weights, physical hardware, independent runs, deployment or planner calibration.
+- The isolated CPU daemon excludes GPU discovery and emits bounded categorical startup/offload/buffer observations on success and failure, retaining unknown/truncated facts and all existing placement assertions. This diagnoses a pinned-runtime placement failure without treating an unconfirmed accounting explanation as fact.
+
+### Release qualification
+
+- Released independently from PR #122. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39095324882); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.67.0] - 2026-10-22
 
 ### Whole-campaign regression gates

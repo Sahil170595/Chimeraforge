@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.67.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.67.0) adds whole-campaign regression gates. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.68.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.68.0) adds plan-bound native request traces. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.67.0"
+pip install "chimeraforge[mcp]==0.68.0"
 ```
 
 ## Quickstart
@@ -536,7 +536,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.67.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.68.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -660,6 +660,26 @@ and 2 malformed input. No targets means no SLO qualification. This measures the
 contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
+
+### `trace --from-plan` -- preserve a frozen candidate (since 0.68.0)
+
+Available since Chimeraforge 0.68.0. Select a candidate whose backend matches your
+existing endpoint, and make every workload output cap equal its saved
+`decode_tokens_per_req`:
+
+```bash
+chimeraforge trace workload.json --from-plan plan.json --candidate-index 0 --model YOUR_SERVED_MODEL --concurrency 1 --out plan-trace.json --json
+```
+
+The wrapper preserves the selected plan, original workload commitments and
+unchanged native trace. It derives only explicit saved SLO inputs, preserves
+arrival offsets and records the actual served alias. Explicit backend/SLO
+overrides are refused. Output caps are applied; saved context, parallelism,
+batching and fleet settings stay modeled/unverified. Before/after binding
+contradictions and actual token-length mismatches remain visible. Exit 0 means
+complete execution without a known binding mismatch, 1 incomplete/mismatched,
+and 2 invalid; native SLO outcomes remain separate. See [plan-bound request
+traces](docs/plan-bound-trace.md) for the API, bundle protection and evidence limits.
 
 ### `gate --kind trace` -- queue-inclusive regression decisions (since 0.63.0)
 

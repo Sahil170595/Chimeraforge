@@ -19,8 +19,18 @@ def trace(
     workload: Path = typer.Argument(
         ..., help="Private JSON request list; prompts go to the endpoint."
     ),
-    model: str = typer.Option(..., "--model", help="Actually served model name."),
-    backend: str = typer.Option("ollama", "--backend"),
+    model: str | None = typer.Option(
+        None, "--model", help="Served model; required without --from-plan."
+    ),
+    backend: str | None = typer.Option(
+        None, "--backend", help="Backend (default ollama); omit with --from-plan."
+    ),
+    from_plan: Path | None = typer.Option(
+        None, "--from-plan", help="Frozen saved plan or verified portable bundle."
+    ),
+    candidate_index: int | None = typer.Option(
+        None, "--candidate-index", help="Saved candidate index; requires --from-plan (default 0)."
+    ),
     base_url: str | None = typer.Option(None, "--base-url"),
     concurrency: int = typer.Option(1, "--concurrency"),
     request_timeout: float = typer.Option(
@@ -47,15 +57,33 @@ def trace(
     from chimeraforge import api
     from chimeraforge.plan_study import protect_output
 
-    async def execute() -> api.TraceReplay:
+    async def execute() -> api.TraceReplay | api.PlanTraceReplay:
         stopped = asyncio.Event()
         previous = signal.getsignal(signal.SIGINT)
         signal.signal(signal.SIGINT, lambda *_: stopped.set())
         try:
+            if from_plan is not None:
+                from chimeraforge.bench.plan_trace import _prepare, _replay_prepared
+
+                prepared = _prepare(
+                    from_plan,
+                    workload,
+                    candidate_index=0 if candidate_index is None else candidate_index,
+                    model=model,
+                    base_url=base_url,
+                    concurrency=concurrency,
+                    request_timeout=request_timeout,
+                    trace_timeout=trace_timeout,
+                    stop_event=stopped,
+                )
+                if out is not None:
+                    protect_output(out, prepared.protected_paths)
+                return await _replay_prepared(prepared)
+            assert model is not None  # Ordinary mode was admitted before creating the event loop.
             return await api.replay_trace(
                 workload,
                 model=model,
-                backend=backend,
+                backend="ollama" if backend is None else backend,
                 base_url=base_url,
                 concurrency=concurrency,
                 request_timeout=request_timeout,
@@ -67,8 +95,18 @@ def trace(
             signal.signal(signal.SIGINT, previous)
 
     try:
+        if from_plan is None:
+            if candidate_index is not None:
+                raise api.PlanError("--candidate-index requires --from-plan")
+            if model is None or not model.strip():
+                raise api.PlanError("--model is required without --from-plan")
+        else:
+            if backend is not None:
+                raise api.PlanError("--backend cannot override a saved --from-plan candidate")
+            if any(value is not None for value in (latency_slo, first_output_slo, tpot_slo)):
+                raise api.PlanError("explicit SLO flags cannot override saved --from-plan inputs")
         if out is not None:
-            protect_output(out, [workload])
+            protect_output(out, [workload, *([from_plan] if from_plan is not None else [])])
         receipt = asyncio.run(execute())
         if out is not None:
             receipt.save(out)
@@ -79,12 +117,13 @@ def trace(
     if json_output:
         typer.echo(json.dumps(report, allow_nan=False))
     else:
+        native = report["native_trace"] if from_plan is not None else report
         typer.echo(
-            f"Completed {report['execution']['completed']}/"
-            f"{report['execution']['planned']} requests"
+            f"Completed {native['execution']['completed']}/"
+            f"{native['execution']['planned']} requests"
         )
         typer.echo(
-            f"Joint-target goodput: {report['goodput']['requests_per_second']} requests/second"
+            f"Joint-target goodput: {native['goodput']['requests_per_second']} requests/second"
         )
         typer.echo(report["limits"])
     raise typer.Exit(report["exit_code"])

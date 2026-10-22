@@ -57,7 +57,17 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.67.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.68.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Plan-bound traces (since 0.68.0): `trace WORKLOAD --from-plan PLAN_OR_BUNDLE
+--candidate-index 0 --model SERVED_ALIAS --out RECEIPT --json` and async
+`api.replay_plan_trace` retain a frozen candidate and unchanged native trace.
+Every output cap must equal saved decode length before contact. Only explicit
+saved SLO inputs are used; backend/SLO overrides are refused. Native output caps
+are applied, while context/TP/PP/batch/replicas remain modeled/unverified. Known
+before/after or actual token-length mismatch exits 1; complete/no known mismatch
+exits 0, invalid exits 2, independently of native SLO outcome. See
+[plan-bound traces](docs/plan-bound-trace.md), available since 0.68.0.
 
 Whole-campaign decisions (since 0.67.0): `gate --kind trace-campaign --baseline LEFT
 --candidate RIGHT --policy POLICY --out decision.json --json` and

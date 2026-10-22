@@ -22,6 +22,11 @@ from pathlib import Path
 
 import httpx
 
+from ci_cpu_runtime_observation import (
+    cpu_server_environment,
+    print_runtime_failure,
+    read_runtime_observation,
+)
 from ci_installed_acceptance import assert_installed_origin, run_cli
 
 OLLAMA_VERSION = "0.35.1"
@@ -638,7 +643,9 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     saved_plan_benchmark = accept_saved_plan(client, cwd, env)
     from ci_cpu_trace import accept as accept_trace
 
-    trace_replay = accept_trace(cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION)
+    trace_replay = accept_trace(
+        cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION, plan_replay=True
+    )
     error = run_cli(
         ["bench", "--model", "ci-definitely-missing-model", "--base-url", str(client.base_url)],
         cwd,
@@ -738,7 +745,7 @@ def main(argv: list[str] | None = None) -> int:
         with (work / "server.log").open("w", encoding="utf-8") as log:
             server = subprocess.Popen(
                 [str(binary), "serve"],
-                env=env,
+                env=cpu_server_environment(env),
                 cwd=work,
                 stdout=log,
                 stderr=subprocess.STDOUT,
@@ -767,23 +774,26 @@ def main(argv: list[str] | None = None) -> int:
                     assert all(row["size_vram"] == 0 for row in running), (
                         f"runtime unexpectedly used GPU memory: {placement.text}"
                     )
+                    log.flush()
+                    receipt["runtime_observation"] = read_runtime_observation(work / "server.log")
                     print(json.dumps(receipt, indent=2))
             finally:
                 # The process group also owns Ollama's spawned model runner.
                 import signal
 
-                if server.poll() is None:
-                    os.killpg(server.pid, signal.SIGTERM)
-                    try:
-                        server.wait(timeout=10)
-                    except subprocess.TimeoutExpired:
-                        os.killpg(server.pid, signal.SIGKILL)
-                        server.wait(timeout=10)
-                if sys.exc_info()[0] is not None:
-                    log.flush()
-                    print(
-                        (work / "server.log").read_text(encoding="utf-8")[-8000:], file=sys.stderr
-                    )
+                failed = sys.exc_info()[0] is not None
+                try:
+                    if server.poll() is None:
+                        os.killpg(server.pid, signal.SIGTERM)
+                        try:
+                            server.wait(timeout=10)
+                        except subprocess.TimeoutExpired:
+                            os.killpg(server.pid, signal.SIGKILL)
+                            server.wait(timeout=10)
+                finally:
+                    if failed or sys.exc_info()[0] is not None:
+                        log.flush()
+                        print_runtime_failure(work / "server.log")
     return 0
 
 
