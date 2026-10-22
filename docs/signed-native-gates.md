@@ -1,6 +1,6 @@
 # Signed native regression gates
 
-The unreleased 0.71.0 candidate adds an offline receiver gate for signed v2
+Chimeraforge 0.71.0 adds an offline receiver gate for signed v2
 contributions. Install `chimeraforge[sign]` for Ed25519 support.
 
 ```bash

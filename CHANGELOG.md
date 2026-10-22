@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.71.0] - Unreleased
+## [0.71.0] - 2026-10-22
 
 ### Trusted signed native comparisons
 
@@ -15,7 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Complete populations, public commitments, observed controls, metric bases and actual token lengths qualify comparisons. Re-signed/reordered semantic copies remain inconclusive. Signed payload validation refuses supported TTFT/prefill alias and explicit output-cap arithmetic contradictions.
 - Held envelope occurrence limits, bounded explicit keys/policy, protected outputs and compact installed/CPU consumers preserve the existing unsigned workflow. Signatures and conditional gates do not authenticate measurement truth, physical execution, saved-plan bindings or deployment readiness.
 
-## [0.70.0] - Unreleased
+### Release qualification
+
+- Released independently from PR #125. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39098375155); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
+## [0.70.0] - 2026-10-22
 
 ### Private prediction evidence bundles
 
@@ -23,7 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Closed fixed inventories and a 32 MiB total transport bound include both manifests and all declared member occurrences. Held validation and scoring reuse verified bytes without rereading removed source files. Held creation objects retain consumed source-path protection; receivers protect their bundle root/members and aliases without reconstructing producer paths.
 - Exclusive destination creation writes the outer manifest last without replacing existing directories. Partial publication remains visible; uncertain or foreign substitutions prevent cleanup. Original benchmark/harness content is explicitly private, while public metadata contains logical roles and digests. No automatic upload, sanitization or measurement-authentication claim is introduced.
 
-## [0.69.0] - Unreleased
+### Release qualification
+
+- Released independently from PR #124. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39097081229); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
+## [0.69.0] - 2026-10-22
 
 ### Observed finite load points
 
@@ -32,7 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing native clock origins and nonpositive actual prompt/output counts block cell eligibility even when native requests completed; descriptive SLO outcomes and known breaches remain visible.
 - The highest observed passing nominal cadence is a named cell only. No interpolation, capacity estimate, execution authentication or calibration qualification is implied. Original supported observations and timings remain unchanged; separate bounded declarations and charged campaign occurrences preserve held-input receipts and output alias protection.
 
-## [0.68.0] - Unreleased
+### Release qualification
+
+- Released independently from PR #123. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39095625926); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
+## [0.68.0] - 2026-10-22
 
 ### Plan-bound native traces
 
@@ -43,7 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The receiver validates and retains one held native snapshot. Existing native readers require an explicitly selected child; the wrapper does not authenticate measurements, immutable weights, physical hardware, independent runs, deployment or planner calibration.
 - The isolated CPU daemon excludes GPU discovery and emits bounded categorical startup/offload/buffer observations on success and failure, retaining unknown/truncated facts and all existing placement assertions. This diagnoses a pinned-runtime placement failure without treating an unconfirmed accounting explanation as fact.
 
-## [0.67.0] - Unreleased
+### Release qualification
+
+- Released independently from PR #122. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39095324882); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
+## [0.67.0] - 2026-10-22
 
 ### Whole-campaign regression gates
 
@@ -54,6 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release qualification
 
+- Refresh the locked `aiohttp` and `certifi` distributions to patched versions after the current dependency audit identified vulnerabilities in the previously qualified lock. The audit remains enforced during source and release validation.
+- Make cooperative-drain acceptance independent of a 20 ms native completion assumption. Optional Compose capability-probe timeouts retain the existing unavailable-tool behavior; required hosted parser acceptance and actual parser failures remain fatal.
+- Released independently from PR #121. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39093088697); the publishing workflow separately validates and attests the exact versioned distributions before publication.
 - Registry readiness now observes the actual pinned native uv command through the supported MCP SDK transport. Only the exact pre-application root-version absence diagnostic, zero raw stdout and a complete argv-bound process cleanup receipt allow a fresh attempt under one shared deadline. A separate pip dry-run no longer qualifies uv readiness; application, cancellation and other resolver failures remain terminal.
 - CPU replay assertions emit a bounded categorical observation first, preserving counts, binding states and missing/invalid numeric fields without endpoints, hardware/model names or provider exception text. This improves diagnosis of the observed release assertion failure without asserting its unconfirmed cause.
 - New campaign receiver/gate and native bootstrap modules are included in hosted static analysis. Source, installed artifacts, real CPU execution and public publication remain separate evidence.

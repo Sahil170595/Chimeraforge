@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-17).** [Chimeraforge 0.66.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.66.0) adds frozen prediction scorecards. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.66.0"
+pip install "chimeraforge[mcp]==0.71.0"
 ```
 
 ## Quickstart
@@ -304,7 +304,7 @@ bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
-### `contribute gate` -- trusted signed native comparisons (0.71.0 candidate)
+### `contribute gate` -- trusted signed native comparisons (since 0.71.0)
 
 ```bash
 chimeraforge contribute gate --baseline before.signed.json --candidate after.signed.json --trusted-key receiver.pub --policy gate-policy.json --out decision.json --json
@@ -319,7 +319,7 @@ inconclusive. Signatures do not authenticate measurement truth, hardware, weight
 or execution independence. See [signed native gates](docs/signed-native-gates.md)
 for policy, matching rules, byte limits and the public projection's limits.
 
-### `bundle prediction-*` -- private prediction evidence (0.70.0 candidate)
+### `bundle prediction-*` -- private prediction evidence (since 0.70.0)
 
 Preserve a plan with its bound inputs, explicit score policy and every original
 benchmark receipt for offline handoff:
@@ -339,7 +339,6 @@ retains exact receipt order, bytes, hashes and negative/duplicate evidence under
 valid missing evidence. Create/verify exit 0 for valid content, 2 for invalid input;
 scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
 3 incomplete. Integrity does not qualify GPU evidence or authenticate measurements.
-These subcommands are absent from published 0.66.0.
 
 ### `study` -- frozen-context workload and cost sensitivity
 
@@ -573,7 +572,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.66.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.71.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -698,10 +697,9 @@ contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
 
-### `trace --from-plan` -- preserve a frozen candidate (0.68.0 candidate)
+### `trace --from-plan` -- preserve a frozen candidate (since 0.68.0)
 
-This unreleased interface requires the candidate checkout; the stable PyPI
-installation above remains 0.66.0. Select a candidate whose backend matches your
+Available since Chimeraforge 0.68.0. Select a candidate whose backend matches your
 existing endpoint, and make every workload output cap equal its saved
 `decode_tokens_per_req`:
 
@@ -774,7 +772,7 @@ replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
-### `trace-envelope` -- observed finite load points (0.69.0 candidate)
+### `trace-envelope` -- observed finite load points (since 0.69.0)
 
 Assess whole saved campaigns at declared uniform arrival cadences, without inference:
 
@@ -790,13 +788,11 @@ capacity. Missing higher cells can retain a lower observed point, with overall e
 3. Known control, cache, actual token-length or timing-basis contradictions and
 copied native evidence prevent ranking. Exits: 0 complete conditional pass, 1 known
 SLO breach, 2 invalid input/output, 3 incomplete or incompatible evidence. Failed
-and unstarted slots and all known breaches remain visible. This candidate command
-is absent from published 0.66.0.
+and unstarted slots and all known breaches remain visible.
 
-### `gate --kind trace-campaign` -- whole-population decisions (0.67.0 candidate)
+### `gate --kind trace-campaign` -- whole-population decisions (since 0.67.0)
 
-The unreleased candidate compares two complete saved campaigns offline. Use the
-candidate checkout; the published 0.66.0 package does not include this interface.
+Available since Chimeraforge 0.67.0. Compare two complete saved campaigns offline.
 Declare the expected replica count in a `TraceGatePolicy` JSON file, then supply
 one whole campaign per arm:
 
