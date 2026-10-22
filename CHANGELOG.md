@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Release qualification
 
+- Disable repacked CPU weight buffers only in the isolated acceptance daemon with the pinned runtime's supported `LLAMA_ARG_REPACK=0` control. This addresses Ollama 0.35.1 reporting AMX CPU buffers as GPU memory; all placement/eligibility assertions and runtime/model pins remain enforced.
 - Released independently from PR #125. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39098375155); the publishing workflow separately validates and attests the exact versioned distributions before publication.
 
 ## [0.70.0] - 2026-10-22
