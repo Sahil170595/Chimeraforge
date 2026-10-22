@@ -8,7 +8,8 @@ unexpectedly skipped jobs. It runs on pull requests, main pushes and merge group
 The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
 the shipped package and CI helpers; mypy enforces metrics, planner constants,
 signed contributions/replay, prediction scoring, campaign receipt validation/gates,
-plan-bound trace replay/CLI and the native registry bootstrap boundary. The
+plan-bound trace replay/CLI, finite load-envelope assessment and the native
+registry bootstrap boundary. The
 independent validation corpus/error-band
 tests remain part of the full suite.
 
@@ -95,3 +96,10 @@ adds one short request on its already-loaded model and retains known CPU/GPU
 binding mismatch separately from successful native execution and SLO outcomes.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.
+Finite load-envelope consumers execute the installed CLI against synthetic whole
+campaigns on every artifact host. They retain every request/replica, qualify
+complete pass, known breach and missing-higher-cell outcomes, and refuse malformed
+populations, unknown assignments and input/output aliases. Source mutation tests
+challenge the consumer oracle. Returned logs contain compact verified counts and
+observed-point projections; these fixtures establish offline protocol behavior,
+without model inference, capacity or independent-execution qualification.
