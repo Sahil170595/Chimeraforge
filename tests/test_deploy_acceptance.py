@@ -10,6 +10,7 @@ import pytest
 
 from test_deploy import artifact, export
 from test_deploy_placement import native_two_gpu  # noqa: F401
+from test_deploy_fleets import native_fleet  # noqa: F401
 from chimeraforge.planner.resolver import SOURCE_OLLAMA
 
 TOOL_TIMEOUT_S = 30
@@ -127,6 +128,43 @@ def test_compose_parser_preserves_real_native_two_gpu_declaration(
     assert device == {"driver": "nvidia", "device_ids": devices, "capabilities": ["gpu"]}
     assert service["command"][service["command"].index("--tensor-parallel-size") + 1] == "2"
     assert "CUDA_VISIBLE_DEVICES" not in service.get("environment", {})
+
+
+@pytest.mark.parametrize("backend", ["vllm", "sglang"])
+def test_compose_parser_preserves_native_three_replica_layout(native_fleet, tmp_path, backend):
+    docker = shutil.which("docker")
+    if docker is None:
+        _missing_tool("Docker CLI unavailable; Linux hosted CI validates Compose exports")
+    try:
+        version = _run([docker, "compose", "version"])
+    except subprocess.TimeoutExpired:
+        _missing_tool("Docker Compose capability probe timed out; Linux hosted CI requires it")
+    if version.returncode:
+        _missing_tool("Docker Compose unavailable: " + version.stderr)
+    saved, indices = native_fleet
+    groups, ports = [["7", "3"], ["9", "2"], ["8", "4"]], [9001, 9002, 9003]
+    result = export(
+        saved,
+        format="compose",
+        candidate_index=indices[backend],
+        model="org/manual-fleet",
+        image="example/engine:1",
+        replica_gpu_devices=groups,
+        replica_host_ports=ports,
+    )
+    path = tmp_path / "native-fleet.json"
+    path.write_text(result.content)
+    parsed = _run([docker, "compose", "--file", str(path), "config", "--format", "json"])
+    assert parsed.returncode == 0, parsed.stderr
+    services = json.loads(parsed.stdout)["services"]
+    assert list(services) == ["inference-1", "inference-2", "inference-3"]
+    for offset, service in enumerate(services.values()):
+        assert service["deploy"]["resources"]["reservations"]["devices"] == [
+            {"driver": "nvidia", "device_ids": groups[offset], "capabilities": ["gpu"]}
+        ]
+        assert service["ports"][0]["published"] == str(ports[offset])
+        assert service["ports"][0]["host_ip"] == "127.0.0.1"
+        assert "CUDA_VISIBLE_DEVICES" not in service.get("environment", {})
 
 
 def test_macos_plutil_accepts_launch_agent(tmp_path):

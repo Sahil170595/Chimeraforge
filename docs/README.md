@@ -18,6 +18,11 @@ The **unreleased 0.73.0 candidate** adds explicit GPU IDs and Compose host ports
 [deployment contract, CLI and direct Python API](deployment.md#explicit-device-selection-and-host-ports).
 Published 0.71.0 retains the default count/port exports.
 
+The **unreleased 0.74.0 candidate** adds bounded homogeneous online vLLM/SGLang
+[Compose replica exports](deployment.md#homogeneous-compose-replicas) with complete
+explicit GPU groups/ports and manual endpoint targeting. No router/scaler or
+physical GPU verification is supplied; published 0.71.0 retains single exports.
+
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
