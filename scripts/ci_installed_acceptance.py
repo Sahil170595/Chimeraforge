@@ -128,6 +128,9 @@ def main(argv: list[str] | None = None) -> int:
         from ci_checkpoint_identity import accept as accept_checkpoint
 
         checkpoint_receipt = accept_checkpoint(cwd, env, args.checkout)
+        from ci_deploy_placement import accept as accept_placement
+
+        placement_receipt = accept_placement(cwd, env, args.checkout, checkpoint_receipt)
         from ci_plan_bundle import accept as accept_bundle
 
         bundle_receipt = accept_bundle(cwd, env, args.checkout, handoff=args.plan_handoff)
@@ -251,6 +254,7 @@ def main(argv: list[str] | None = None) -> int:
                     "origin": installed["origin"],
                     "resources": list(installed["resources"]),
                     "checkpoint_identity": checkpoint_receipt,
+                    "deployment_placement": placement_receipt,
                     "portable_plan_bundle": bundle_receipt,
                     "plan_sensitivity": study_receipt,
                     "regression_gate": gate_receipt,

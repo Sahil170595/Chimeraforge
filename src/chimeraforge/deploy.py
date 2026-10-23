@@ -8,6 +8,7 @@ import re
 import shlex
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any
 
 from chimeraforge.api import PlanArtifact, PlanError, artifact_from_dict
 from chimeraforge.planner.engine import Candidate
@@ -22,6 +23,11 @@ from chimeraforge.planner.launch import (
 from chimeraforge.planner.resolver import ModelSpec, SOURCE_HF, SOURCE_OLLAMA
 
 FORMATS = ("compose", "systemd", "launchd", "modelfile")
+MAX_EXPORT_GPUS_PER_REPLICA = 64
+MAX_GPU_IDENTIFIER_CHARS = 40
+MAX_HOST_PORT = 65535
+_GPU_ORDINAL = re.compile(r"0|[1-9][0-9]*")
+_GPU_UUID = re.compile(r"GPU-[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}", re.IGNORECASE)
 _HF_BACKENDS = ("vllm", "sglang", "tgi")
 _IMAGE_NAME = re.compile(r"[a-z0-9][a-z0-9._/:\-]*")
 _IMAGE_TAG = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.\-]{0,127}")
@@ -124,7 +130,7 @@ def _model_identity(
             "model is not a resolved serving identity; supply --model or replan a concrete model"
         )
     if candidate.backend in _HF_BACKENDS:
-        if resolved and spec.source != SOURCE_HF:
+        if resolved and spec is not None and spec.source != SOURCE_HF:
             raise DeploymentError(
                 "model is an Ollama checkpoint, but this backend needs a Hugging Face "
                 "checkpoint; replan"
@@ -134,7 +140,12 @@ def _model_identity(
                 "model must identify a concrete Hugging Face repository or absolute checkpoint path"
             )
     elif candidate.backend == "ollama":
-        if not resolved or spec.source != SOURCE_OLLAMA or not _OLLAMA_NAME.fullmatch(identifier):
+        if (
+            not resolved
+            or spec is None
+            or spec.source != SOURCE_OLLAMA
+            or not _OLLAMA_NAME.fullmatch(identifier)
+        ):
             raise DeploymentError(
                 "Ollama model needs a resolved tag and native quantization; "
                 "replan with Ollama resolution"
@@ -154,7 +165,7 @@ def _model_identity(
                 f"quantized checkpoint {native!r} cannot serve planned quant {quant!r}"
             )
     elif quant in ("AWQ", "GPTQ", "FP8"):
-        if not resolved or spec.source != SOURCE_HF or native != quant:
+        if not resolved or spec is None or spec.source != SOURCE_HF or native != quant:
             raise DeploymentError(
                 f"planned quant {quant} requires a resolved checkpoint with native quant {quant}"
             )
@@ -182,6 +193,13 @@ def _validate_fidelity(
         raise DeploymentError("candidate batch must be positive")
     if min(candidate.tensor_parallel, candidate.pipeline_parallel) <= 0:
         raise DeploymentError("parallel degrees must be positive")
+    if any(
+        type(value) is not int or not 1 <= value <= MAX_EXPORT_GPUS_PER_REPLICA
+        for value in (candidate.tensor_parallel, candidate.pipeline_parallel, candidate.gpus_total)
+    ):
+        raise DeploymentError(
+            f"deployment export supports at most {MAX_EXPORT_GPUS_PER_REPLICA} GPUs per replica"
+        )
     if candidate.gpus_total != candidate.tensor_parallel * candidate.pipeline_parallel:
         raise DeploymentError("candidate GPU count does not equal its one-replica TP x PP")
     if candidate.backend in _HF_BACKENDS and inputs["kv_quant"] == "q4":
@@ -362,7 +380,7 @@ def _systemd_arg(value: str) -> str:
     return '"' + escaped + '"'
 
 
-def _compose_value(value):
+def _compose_value(value: Any) -> Any:
     if isinstance(value, str):
         return value.replace("$", "$$")
     if isinstance(value, list):
@@ -370,6 +388,34 @@ def _compose_value(value):
     if isinstance(value, dict):
         return {key: _compose_value(item) for key, item in value.items()}
     return value
+
+
+def _device_selection(devices: list[str] | None, count: int) -> list[str] | None:
+    if devices is None:
+        return None
+    if type(devices) is not list or not 1 <= len(devices) <= MAX_EXPORT_GPUS_PER_REPLICA:
+        raise DeploymentError(
+            f"GPU devices must be a nonempty list of at most {MAX_EXPORT_GPUS_PER_REPLICA} IDs"
+        )
+    if len(devices) != count:
+        raise DeploymentError("GPU device cardinality must equal the saved candidate TP x PP")
+    selected, namespaces = [], set()
+    for device in devices:
+        if type(device) is not str or len(device) > MAX_GPU_IDENTIFIER_CHARS:
+            raise DeploymentError("GPU device IDs must be bounded strings")
+        if _GPU_ORDINAL.fullmatch(device):
+            namespaces.add("ordinal")
+            selected.append(device)
+        elif _GPU_UUID.fullmatch(device):
+            namespaces.add("uuid")
+            selected.append("GPU-" + device[4:].lower())
+        else:
+            raise DeploymentError(
+                "GPU devices require canonical decimal ordinals or full GPU UUIDs"
+            )
+    if len(namespaces) != 1 or len(set(selected)) != len(selected):
+        raise DeploymentError("GPU devices must use one namespace without duplicate IDs")
+    return selected
 
 
 def export_deployment(
@@ -381,6 +427,8 @@ def export_deployment(
     candidate_index: int = 0,
     executable: str | None = None,
     output_path: str | Path | None = None,
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
 ) -> DeploymentExport:
     """Render a supported saved candidate; refused assumptions never become placeholders."""
     if format not in FORMATS:
@@ -389,6 +437,13 @@ def export_deployment(
         raise DeploymentError("image override applies only to Compose format")
     if executable is not None and format not in ("systemd", "launchd"):
         raise DeploymentError("executable override applies only to systemd or launchd format")
+    if gpu_devices is not None and format not in ("compose", "systemd"):
+        raise DeploymentError("GPU device selection applies only to Compose or systemd format")
+    if host_port is not None:
+        if format != "compose":
+            raise DeploymentError("host port override applies only to Compose format")
+        if type(host_port) is not int or not 1 <= host_port <= MAX_HOST_PORT:
+            raise DeploymentError("host port must be an integer between 1 and 65535")
     try:
         artifact = artifact_from_dict(artifact.to_dict())
         candidate = artifact.candidate(candidate_index)
@@ -399,9 +454,19 @@ def export_deployment(
     inputs = data["inputs"]
     inputs["kv_quant"] = inputs["kv_quant"].lower()
     _validate_fidelity(candidate, spec, inputs, data["result"]["platform"], format)
+    devices = _device_selection(gpu_devices, candidate.gpus_total)
     identifier, identity_notes = _model_identity(candidate, spec, model)
     fingerprint = data["fingerprint"]
     notes = [_GPU_NOTE, *candidate.warnings, *identity_notes]
+    if devices is not None:
+        notes.append(
+            "Explicit GPU selection is a requested declaration; device availability, hardware "
+            "and topology are not verified. Compose ordering is a declaration, not observed "
+            "CUDA rank mapping; host ordinals are not copied into container CUDA_VISIBLE_DEVICES."
+            if format == "compose"
+            else "CUDA_VISIBLE_DEVICES requests application device ordering; device availability, "
+            "hardware and topology are not verified."
+        )
     provisioning = []
     files = {}
     destination = Path(output_path).resolve() if output_path is not None else None
@@ -409,7 +474,7 @@ def export_deployment(
     if destination is not None:
         compose += " -f " + shlex.quote(_safe_text(str(destination), "output path"))
     host = "0.0.0.0" if format == "compose" else "127.0.0.1"
-    env = {}
+    env: dict[str, str] = {}
     if candidate.backend == "ollama":
         argv = ["ollama", "serve"]
         env = _ollama_env(candidate, inputs, host)
@@ -443,26 +508,21 @@ def export_deployment(
     if format == "compose":
         pinned_image = _image(image)
         entry_length = {"vllm": 2, "sglang": 3, "tgi": 1, "ollama": 2}[candidate.backend]
-        service = {
+        reservation: dict[str, Any] = {"driver": "nvidia"}
+        if devices is None:
+            reservation["count"] = candidate.gpus_total
+        else:
+            reservation["device_ids"] = devices
+        reservation["capabilities"] = ["gpu"]
+        published_port = host_port if host_port is not None else _HOST_PORTS[candidate.backend]
+        service: dict[str, Any] = {
             "image": pinned_image,
             "entrypoint": argv[:entry_length],
-            "ports": [f"127.0.0.1:{_HOST_PORTS[candidate.backend]}:{_PORTS[candidate.backend]}"],
+            "ports": [f"127.0.0.1:{published_port}:{_PORTS[candidate.backend]}"],
             "restart": "unless-stopped",
             "init": True,
             "labels": {"org.chimeraforge.plan-fingerprint": fingerprint},
-            "deploy": {
-                "resources": {
-                    "reservations": {
-                        "devices": [
-                            {
-                                "driver": "nvidia",
-                                "count": candidate.gpus_total,
-                                "capabilities": ["gpu"],
-                            }
-                        ]
-                    }
-                }
-            },
+            "deploy": {"resources": {"reservations": {"devices": [reservation]}}},
         }
         if argv[entry_length:]:
             service["command"] = argv[entry_length:]
@@ -475,7 +535,7 @@ def export_deployment(
             ]
         else:
             service["shm_size"] = "1gb"
-        config = {"services": {"inference": service}}
+        config: dict[str, Any] = {"services": {"inference": service}}
         if candidate.backend == "ollama":
             config["volumes"] = {"ollama-models": {}}
         # JSON is a YAML subset, avoiding an optional runtime PyYAML dependency.
@@ -486,7 +546,11 @@ def export_deployment(
         ]
     elif format == "systemd":
         argv[0] = _executable(executable)
-        env["CUDA_VISIBLE_DEVICES"] = ",".join(str(index) for index in range(candidate.gpus_total))
+        env["CUDA_VISIBLE_DEVICES"] = ",".join(
+            devices
+            if devices is not None
+            else [str(index) for index in range(candidate.gpus_total)]
+        )
         content = (
             f"# Saved plan {fingerprint}\n[Unit]\n"
             f"Description=ChimeraForge {candidate.backend} inference\n"
