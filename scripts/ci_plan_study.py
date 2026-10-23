@@ -4,9 +4,24 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections import Counter
 from pathlib import Path
 
 ALTERNATIVE_HARDWARE = "RTX 4090 24GB"
+QUALITY_FIELDS = (
+    "quality",
+    "quality_tier",
+    "quality_n",
+    "quality_mde",
+    "quality_indistinguishable",
+)
+
+
+def _timing_class(row: dict) -> str:
+    timing = row["provenance"]["throughput"]
+    label = timing.get("class") if isinstance(timing, dict) else timing
+    assert isinstance(label, str)
+    return label
 
 
 def validate(report: dict, original: dict) -> None:
@@ -32,8 +47,8 @@ def validate(report: dict, original: dict) -> None:
     assert refused["comparison"]["feasibility"] == "lost"
 
 
-def validate_hardware(report: dict, original: dict) -> None:
-    """Require full native rebinding, extrapolated timing and retained quality facts."""
+def validate_hardware(report: dict, original: dict) -> dict:
+    """Check native rebinding and preserve each source's actual timing/quality evidence."""
     from chimeraforge.planner.replay import digest
 
     assert report["source_fingerprint"] == original["fingerprint"]
@@ -44,6 +59,7 @@ def validate_hardware(report: dict, original: dict) -> None:
     assert digest(context) == expected
     assert context["model_specs"] == original["result"]["replay_context"]["model_specs"]
     assert context["hardware"] == original["result"]["replay_context"]["hardware"]
+    assert report["base"]["candidates"] == original["result"]["candidates"]
     registry = context["hardware_registry"]
     assert registry["sha256"] == digest(registry["entries"])
     larger, refused = report["scenarios"]
@@ -56,23 +72,49 @@ def validate_hardware(report: dict, original: dict) -> None:
     }
     assert larger["recommended_configuration"]["hardware"] == ALTERNATIVE_HARDWARE
     assert larger["configuration_switch"]
-    observed_classes, measured_quality = set(), False
+    timing_classes: Counter[str] = Counter()
+    quality_classes: Counter[str] = Counter()
+    measured_to_extrapolated = matched_estimated = matched_quality = measured_quality = 0
+    quality_scores = set()
     baseline = {
         (row["model"], row["backend"], row["quant"]): row for row in report["base"]["candidates"]
     }
+    measured_keys = {key for key, row in baseline.items() if _timing_class(row) == "measured"}
+    matched_measured_keys = set()
     for row in larger["candidates"]:
-        timing = row["provenance"]["throughput"]
-        label = timing.get("class") if isinstance(timing, dict) else timing
-        assert label != "measured"
-        observed_classes.add(label)
-        before = baseline.get((row["model"], row["backend"], row["quant"]))
-        if before is not None and before["provenance"]["quality"] == "measured":
-            assert row["provenance"]["quality"] == "measured"
-            assert row["quality"] == before["quality"]
-            measured_quality = True
-    assert "extrapolated" in observed_classes and measured_quality
+        label = _timing_class(row)
+        assert label in {"estimated", "extrapolated", "unknown"}
+        timing_classes[label] += 1
+        quality_classes[row["provenance"]["quality"]] += 1
+        key = (row["model"], row["backend"], row["quant"])
+        before = baseline.get(key)
+        if before is not None:
+            source_timing = _timing_class(before)
+            if source_timing == "measured":
+                assert label == "extrapolated"
+                matched_measured_keys.add(key)
+                measured_to_extrapolated += 1
+            else:
+                assert label == source_timing
+                matched_estimated += label == "estimated"
+            assert row["provenance"]["quality"] == before["provenance"]["quality"]
+            assert all(row[field] == before[field] for field in QUALITY_FIELDS)
+            matched_quality += 1
+            measured_quality += row["provenance"]["quality"] == "measured"
+            quality_scores.add(row["quality"])
+    assert matched_quality > 0 and matched_measured_keys == measured_keys
     assert refused["name"] == "no-budget" and not refused["feasible"]
     assert refused["recommended"] is None and refused["trace"]
+    return {
+        "timing_classes": dict(timing_classes),
+        "quality_classes": dict(quality_classes),
+        "measured_to_extrapolated": measured_to_extrapolated,
+        "matched_estimated_timing": matched_estimated,
+        "matched_quality": matched_quality,
+        "matched_measured_quality": measured_quality,
+        "matched_quality_scores": sorted(quality_scores),
+        "unmatched_candidates": len(larger["candidates"]) - matched_quality,
+    }
 
 
 def accept(cwd: Path, env: dict, checkout: Path, saved: Path, bundle: Path) -> dict:
@@ -145,7 +187,7 @@ def accept(cwd: Path, env: dict, checkout: Path, saved: Path, bundle: Path) -> d
                 env,
             )
         )
-        validate_hardware(hardware_report, json.loads(original_bytes))
+        hardware_evidence = validate_hardware(hardware_report, json.loads(original_bytes))
         assert hardware_report == json.loads(hardware_output.read_text(encoding="utf-8"))
         hardware_public = api.study_plan(
             source, [api.PlanScenario("larger", {"hardware": ALTERNATIVE_HARDWARE})]
@@ -190,9 +232,50 @@ def accept(cwd: Path, env: dict, checkout: Path, saved: Path, bundle: Path) -> d
                         "sha256"
                     ],
                     "infeasible_retained": True,
-                    "native_extrapolation_and_measured_quality": "retained",
+                    "checked_evidence": hardware_evidence,
                 },
                 "performance": "unverified",
             }
         )
-    return {"offline": True, "receipts": receipts}
+    control = cwd / "registered-hardware-control.json"
+    run_cli(
+        [
+            "plan",
+            "--model",
+            "llama3.2-3b",
+            "--hardware",
+            "RTX 4080 12GB",
+            "--request-rate",
+            "0.1",
+            "--latency-slo",
+            "10000",
+            "--quality-target",
+            "0",
+            "--budget",
+            "100000000",
+            "--no-network",
+            "--save",
+            str(control),
+            "--json",
+        ],
+        cwd,
+        env,
+    )
+    control_bytes = control.read_bytes()
+    control_report = json.loads(
+        run_cli(["study", str(control), "--cases", str(hardware_cases), "--json"], cwd, env)
+    )
+    control_evidence = validate_hardware(control_report, json.loads(control_bytes))
+    assert control_evidence["measured_to_extrapolated"] > 0
+    assert control_evidence["matched_measured_quality"] > 0
+    assert control.read_bytes() == control_bytes
+    return {
+        "offline": True,
+        "receipts": receipts,
+        "registered_hardware_control": {
+            "model": "llama3.2-3b",
+            "source_plan_sha256": hashlib.sha256(control_bytes).hexdigest(),
+            "checked_evidence": control_evidence,
+            "performance": "unverified",
+        },
+    }

@@ -100,13 +100,6 @@ def protect_output(path: str | Path, inputs: Iterable[str | Path]) -> None:
         for source in inputs:
             original = Path(source).resolve()
             same_file = target.exists() and original.exists() and target.samefile(original)
-            if target.exists() and original.is_dir():
-                same_file |= any(
-                    member.exists() and target.samefile(member)
-                    for member in (
-                        original / name for name in ("manifest.json", *ROLE_PATHS.values())
-                    )
-                )
             if (
                 target == original
                 or same_file
@@ -424,9 +417,15 @@ def study(
                 if producer is not None:
                     protected.append(producer)
         if isinstance(saved, PlanBundle):
-            protected.append(saved._directory)
+            directory = saved._directory
+            protected.extend(
+                [directory, *(directory / name for name in ("manifest.json", *ROLE_PATHS.values()))]
+            )
         elif not isinstance(saved, api.PlanArtifact):
-            protected.append(Path(saved))
+            path = Path(saved)
+            protected.append(path)
+            if path.is_dir():
+                protected.extend(path / name for name in ("manifest.json", *ROLE_PATHS.values()))
         return PlanStudy(
             {
                 "schema_version": 1,

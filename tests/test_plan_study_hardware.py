@@ -282,7 +282,10 @@ def test_sixteen_hardware_cases_complete_and_seventeenth_refuses_before_search(s
         api.study_plan(source, cases + [case("extra", hardware="RTX 4090 24GB")])
 
 
-def test_absent_producer_bundle_cli_api_preserve_geometry_quality_inputs_and_aliases(tmp_path):
+@pytest.mark.parametrize("source_form", ["object", "directory"])
+def test_absent_producer_bundle_cli_api_preserve_geometry_quality_inputs_and_aliases(
+    tmp_path, source_form
+):
     from test_plan_bundle import source_plan
 
     saved, corpus, quality = source_plan(tmp_path)
@@ -302,7 +305,10 @@ def test_absent_producer_bundle_cli_api_preserve_geometry_quality_inputs_and_ali
     assert report == json.loads(output.read_text())
     assert report["scenarios"][0]["hardware"]["raw"]["name"] == "RTX 4090 24GB"
     assert all(p.read_bytes() == raw for p, raw in before.items())
-    public = api.study_plan(bundle, [case("larger", hardware="RTX 4090 24GB")])
+    public = api.study_plan(
+        bundle if source_form == "object" else bundle._directory,
+        [case("larger", hardware="RTX 4090 24GB")],
+    )
     assert public.to_dict()["scenarios"][0]["candidates"] == report["scenarios"][0]["candidates"]
     original_quality = report["frozen_context"]["quality_sha256"]
     assert original_quality and all(
@@ -350,3 +356,136 @@ def test_installed_consumer_requires_actual_hardware_alternative_semantics(sourc
         report["frozen_context"]["hardware_registry"]["entries"] = {}
     with pytest.raises(AssertionError):
         script.validate_hardware(report, source.to_dict())
+
+
+def consumer():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "ci_plan_study.py"
+    spec = importlib.util.spec_from_file_location("ci_hardware_evidence_test", path)
+    script = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(script)
+    return script
+
+
+def hardware_report(source):
+    return api.study_plan(
+        source,
+        [
+            case("larger", hardware="RTX 4090 24GB"),
+            case("no-budget", hardware="RTX 4090 24GB", budget=0),
+        ],
+    ).to_dict()
+
+
+@pytest.fixture
+def manual_bundle(tmp_path, request):
+    """Match the real foreign producer: no timing lookup, manual geometry, external quality."""
+    corpus, quality = tmp_path / "corpus.json", tmp_path / "quality.json"
+    corpus.write_text(json.dumps({"vram": {"overhead_factor": 1.123}}))
+    quality.write_text(
+        json.dumps({"results": {"mmlu": {"acc,none": 0.83}}, "n-samples": {"mmlu": 5000}})
+    )
+    external_quality = getattr(request, "param", True)
+    saved = api.plan(
+        api.PlanRequest(
+            models=["ci/bundle-fixture"],
+            overrides={"params_b": 3.0, "n_layers": 28, "n_kv_heads": 8, "d_head": 128},
+            hardware="RTX 4080 12GB",
+            platform="linux",
+            request_rate=0.01,
+            latency_slo=5000,
+            budget=100000,
+            quality_target=0.8 if external_quality else 0,
+            models_path=str(corpus),
+            quality_from=str(quality) if external_quality else None,
+            allow_network=False,
+        )
+    )
+    path = tmp_path / "manual-plan.json"
+    saved.save(path)
+    bundle = api.create_plan_bundle(path, tmp_path / "manual-bundle")
+    corpus.unlink()
+    quality.unlink()
+    path.unlink()
+    return bundle, saved.to_dict()
+
+
+def test_consumer_accepts_real_manual_vram_only_bundle_and_reports_checked_evidence(manual_bundle):
+    bundle, original = manual_bundle
+    before = {p: p.read_bytes() for p in bundle._directory.iterdir()}
+    report = hardware_report(bundle)
+    evidence = consumer().validate_hardware(report, original)
+    count = len(report["scenarios"][0]["candidates"])
+    assert count > 0
+    assert evidence["timing_classes"] == {"estimated": count}
+    assert evidence["quality_classes"] == {"measured": count}
+    assert evidence["matched_estimated_timing"] == count
+    assert evidence["matched_quality"] == evidence["matched_measured_quality"] == count
+    assert evidence["matched_quality_scores"] == [0.83]
+    assert evidence["measured_to_extrapolated"] == 0
+    assert all(p.read_bytes() == raw for p, raw in before.items())
+
+
+@pytest.mark.parametrize("manual_bundle", [False], indirect=True)
+def test_consumer_does_not_invent_measured_quality_without_external_evidence(manual_bundle):
+    bundle, original = manual_bundle
+    report = hardware_report(bundle)
+    evidence = consumer().validate_hardware(report, original)
+    assert evidence["matched_quality"] > 0
+    assert evidence["matched_measured_quality"] == evidence["measured_to_extrapolated"] == 0
+    assert "measured" not in evidence["quality_classes"]
+    assert evidence["timing_classes"] == {"estimated": len(report["scenarios"][0]["candidates"])}
+
+
+@pytest.mark.parametrize("invalid", ["measured-timing", "quality-score", "quality-provenance"])
+def test_consumer_rejects_fabricated_evidence_in_manual_bundle(manual_bundle, invalid):
+    bundle, original = manual_bundle
+    report = hardware_report(bundle)
+    consumer().validate_hardware(report, original)
+    row = report["scenarios"][0]["candidates"][0]
+    if invalid == "measured-timing":
+        row["provenance"]["throughput"] = {"class": "measured"}
+    elif invalid == "quality-score":
+        row["quality"] += 0.01
+    else:
+        row["provenance"]["quality"] = "estimated"
+    with pytest.raises(AssertionError):
+        consumer().validate_hardware(report, original)
+
+
+def test_consumer_registered_control_requires_actual_extrapolation_and_measured_quality(source):
+    report = hardware_report(source)
+    evidence = consumer().validate_hardware(report, source.to_dict())
+    assert evidence["measured_to_extrapolated"] > 0
+    assert evidence["matched_measured_quality"] > 0
+    assert evidence["timing_classes"]["extrapolated"] > 0
+
+
+@pytest.mark.parametrize(
+    "invalid", ["lost-measured-key", "estimated-measured-key", "quality-statistics"]
+)
+def test_consumer_rejects_partial_registered_evidence(source, invalid):
+    report = hardware_report(source)
+    rows = report["scenarios"][0]["candidates"]
+    measured = {
+        (row["model"], row["backend"], row["quant"])
+        for row in report["base"]["candidates"]
+        if (
+            row["provenance"]["throughput"].get("class")
+            if isinstance(row["provenance"]["throughput"], dict)
+            else row["provenance"]["throughput"]
+        )
+        == "measured"
+    }
+    assert len(measured) > 1
+    target = next(row for row in rows if (row["model"], row["backend"], row["quant"]) in measured)
+    if invalid == "lost-measured-key":
+        rows.remove(target)
+    elif invalid == "estimated-measured-key":
+        target["provenance"]["throughput"] = "estimated"
+    else:
+        target["quality_n"] += 1
+    with pytest.raises(AssertionError):
+        consumer().validate_hardware(report, source.to_dict())
