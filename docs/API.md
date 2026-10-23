@@ -18,6 +18,12 @@ to the same direct deployment API. They require a complete explicit layout for
 an original online vLLM/SGLang multi-replica Compose candidate. See the
 [full API/CLI contract](deployment.md#homogeneous-compose-replicas).
 
+The **unreleased 0.75.0 candidate** adds the separate typed direct module API
+`chimeraforge.deployment_verify.verify_deployment` and `deploy-verify` CLI. It
+checks generated JSON Compose/required companion bytes against independent saved
+plan and render intent. See [full signatures, examples and outcomes](deployment-verification.md).
+It is not a `chimeraforge.api` re-export or a runtime/source-authentication check.
+
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).

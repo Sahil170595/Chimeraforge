@@ -20,6 +20,7 @@ from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
 from chimeraforge.commands.gate import gate
 from chimeraforge.commands.deploy import deploy
+from chimeraforge.commands.deploy_verify import deploy_verify
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
 from chimeraforge.commands.monitor import monitor
@@ -75,6 +76,7 @@ app.command()(check)
 app.add_typer(bundle_app, name="bundle")
 app.command()(study)
 app.command()(deploy)
+app.command("deploy-verify")(deploy_verify)
 app.command()(suggest)
 app.command()(measure)
 app.command()(validate)

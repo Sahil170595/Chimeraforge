@@ -30,6 +30,11 @@ The **unreleased 0.74.0 candidate** adds `deploy --replica-devices GROUP
 [complete CLI/API examples](deployment.md#homogeneous-compose-replicas); these
 are manually targeted offline declarations, not measured fleet capacity.
 
+The **unreleased 0.75.0 candidate** adds `deploy-verify --plan --config --image
+--json` against independently retained saved-plan and full render intent. See
+[complete CLI/API examples and exit statuses](deployment-verification.md). A match
+means current-renderer consistency, not source authenticity or running GPU proof.
+
 ## 5-Minute Setup
 
 ### 1. Install Prerequisites
