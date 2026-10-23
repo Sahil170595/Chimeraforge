@@ -24,6 +24,7 @@ from chimeraforge.commands.deploy_verify import deploy_verify
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
 from chimeraforge.commands.monitor import monitor
+from chimeraforge.commands.monitor_fleet import monitor_fleet
 from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
@@ -94,6 +95,7 @@ app.command(name="eval")(eval_cmd)
 app.command()(report)
 app.command()(workload)
 app.command()(monitor)
+app.command("monitor-fleet")(monitor_fleet)
 app.command()(doctor)
 app.add_typer(contribute_app, name="contribute")
 app.command()(mcp)

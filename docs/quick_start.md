@@ -1,5 +1,12 @@
 # Quick Start Guide
 
+**Unreleased 0.76.0 candidate:** [passive declared-fleet monitoring](fleet-monitoring.md)
+adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
+declarations for the original saved replica count. Shared budgets, retained
+partial windows/metadata, required identity and cleanup qualify declared coverage
+without GPU or physical-independence claims. Published 0.71.0 retains endpoint-only
+`monitor`; the new command requires candidate source/a built wheel.
+
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 

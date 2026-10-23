@@ -57,7 +57,15 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.75.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.76.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Passive fleet monitoring (unreleased 0.76.0 candidate): typed async
+`api.monitor_fleet` and `monitor-fleet` require one declared direct endpoint per
+original saved replica. Shared cooperative HTTP/time/body/work budgets and owned
+async cleanup retain every slot/window/metadata prefix. Qualification separates
+native SLOs, required identity, unverified configuration, declared coverage and
+closure. URL declarations do not authenticate processes, GPUs, weights or capacity.
+See [the complete fleet monitoring contract](docs/fleet-monitoring.md).
 
 Deployment verification (unreleased 0.75.0 candidate): separate typed
 `deployment_verify.verify_deployment(saved, config_path, *, image, ...)` and

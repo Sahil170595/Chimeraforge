@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**27 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes candidate source; published 0.71.0 has 26 commands.
+**28 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes candidate source; published 0.71.0 has 26 commands.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study, 0.73.0 deployment-placement, 0.74.0 multi-replica Compose and 0.75.0 deployment-verification candidates**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study, 0.73.0 deployment-placement, 0.74.0 multi-replica Compose 0.75.0 deployment-verification and 0.76.0 passive-fleet-monitoring candidates**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
 pip install "chimeraforge[mcp]==0.71.0"
@@ -557,6 +557,33 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 - **GDDR consumer cards:** decode is **under**-predicted by a median of **-36%**.
 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
+
+### `monitor-fleet` -- observe every declared saved replica
+
+**Unreleased 0.76.0 candidate; requires candidate source/a built wheel.** Preserve
+an original native three-replica candidate and target existing endpoints directly:
+
+```bash
+chimeraforge monitor-fleet --from-plan fleet-plan.json --candidate-index "$FLEET_INDEX" \
+  --endpoint replica-1=http://127.0.0.1:9001 \
+  --endpoint replica-2=http://127.0.0.1:9002/metrics \
+  --endpoint replica-3=http://127.0.0.1:9003/metrics \
+  --ttft-slo 500 --interval 30 --windows 1 --observation-seconds 60 \
+  --cleanup-seconds 2 --max-requests 256 --max-body-bytes 8388608 \
+  --concurrency 4 --json --prometheus fleet-monitor.prom
+```
+
+The original candidate supplies model/backend and replica count. Saved TTFT/TPOT
+targets apply unless explicitly overridden. Ordered slots retain complete/error/
+cancelled/unstarted states, native histogram windows and metadata prefixes. All
+declared slots must complete and qualify before pass 0; known binding mismatch 5,
+known native breach 3 and unknown/incomplete 4 remain distinct; invalid inputs 1 and
+native CLI usage 2. Shared request/body/deadline limits cover every metrics and
+metadata route; cleanup is separately bounded and awaited. Existing `monitor`
+stays endpoint-only even when its saved candidate has multiple replicas.
+See [complete API/CLI examples, bounds, cancellation and proof limits](docs/fleet-monitoring.md).
+No load generation, GPU/topology/weights authentication, pooled percentiles or
+capacity/physical-independence claim is supplied.
 
 ### `monitor` -- observe explicit latency SLOs
 
