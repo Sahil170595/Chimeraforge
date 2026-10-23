@@ -66,7 +66,7 @@ These options are an **unreleased 0.73.0 candidate** and require candidate sourc
 or a built candidate wheel. Published 0.71.0 retains default GPU counts and ports;
 0.72.0's candidate hardware studies do not select observed deployment devices.
 
-The current 0.74.0 candidate's keyword-only direct module API is
+The direct module API (replica keywords introduced by the 0.74.0 candidate) is
 `chimeraforge.deploy.export_deployment(artifact, *, format, model=None,
 image=None, candidate_index=0, executable=None, output_path=None,
 gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. It renders configuration; only the CLI writes
@@ -328,3 +328,13 @@ documentation on **2026-10-05**:
 Tests exercise Docker Compose's real parser, Linux `systemd-analyze verify`, and
 macOS `plutil -lint` where those tools are installed. These are config acceptance
 checks; they do not run a GPU engine or qualify prediction accuracy.
+
+
+## Offline declaration drift verification
+
+The **unreleased 0.75.0 candidate** adds a separate read-only `deploy-verify`
+command and typed `deployment_verify.verify_deployment` API. Retain the saved plan,
+selected candidate and full rendering options independently; verify generated JSON
+Compose plus only required fixed sibling bytes. See [the complete contract,
+CLI/API examples and bounds](deployment-verification.md). This checks consistency
+with the current renderer; it does not validate runtime state or authenticate a producer.

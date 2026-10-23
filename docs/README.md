@@ -23,6 +23,10 @@ The **unreleased 0.74.0 candidate** adds bounded homogeneous online vLLM/SGLang
 explicit GPU groups/ports and manual endpoint targeting. No router/scaler or
 physical GPU verification is supplied; published 0.71.0 retains single exports.
 
+The **unreleased 0.75.0 candidate** adds [offline deployment verification](deployment-verification.md)
+with typed direct API and `deploy-verify`. It requires independent saved-plan/render
+intent and checks current-renderer JSON/companion consistency without runtime claims.
+
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
@@ -44,7 +48,7 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-26 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
+27 commands in candidate source (published 0.71.0 has 26): `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
