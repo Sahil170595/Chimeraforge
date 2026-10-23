@@ -20,6 +20,11 @@ The **unreleased 0.72.0 candidate** adds offline hardware alternatives through
 Published 0.71.0 retains workload/cost studies with fixed hardware. Candidate source
 or a candidate wheel is required; no host probe or measured GPU qualification occurs.
 
+The **unreleased 0.73.0 candidate** adds repeatable `deploy --gpu-device` and
+Compose-only `--host-port`, plus direct `export_deployment` keywords. See
+[complete examples and limits](deployment.md#explicit-device-selection-and-host-ports).
+Published 0.71.0 uses the default GPU count and ports; no GPU placement is verified.
+
 ## 5-Minute Setup
 
 ### 1. Install Prerequisites

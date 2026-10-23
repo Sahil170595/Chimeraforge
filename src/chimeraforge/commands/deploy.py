@@ -26,6 +26,16 @@ def deploy(
     executable: str | None = typer.Option(
         None, "--executable", help="Absolute installed engine/interpreter path for native units."
     ),
+    gpu_device: list[str] | None = typer.Option(
+        None,
+        "--gpu-device",
+        help="Ordered GPU ordinal or full UUID; repeat TP x PP times (Compose/systemd).",
+    ),
+    host_port: int | None = typer.Option(
+        None,
+        "--host-port",
+        help="Compose loopback host port (1-65535); native container port stays fixed.",
+    ),
 ) -> None:
     """Write serving config; no engines are installed, started or deployed."""
     from chimeraforge.api import PlanError, load_plan
@@ -41,6 +51,8 @@ def deploy(
             candidate_index=candidate_index,
             executable=executable,
             output_path=out,
+            gpu_devices=gpu_device,
+            host_port=host_port,
         )
         outputs = {
             out: result.content,

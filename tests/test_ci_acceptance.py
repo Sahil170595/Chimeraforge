@@ -22,6 +22,34 @@ def load_script(name):
     return module
 
 
+def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    checkpoint = load_script("ci_checkpoint_identity")
+    script = load_script("ci_deploy_placement")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
+    observation = checkpoint.seed(live=False)
+    origins = []
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: origins.append(args))
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments)
+        assert result.exit_code == expected_code, result.output
+        return result.output
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    receipt = script.accept(tmp_path, {}, tmp_path / "checkout", observation)
+    assert origins
+    assert receipt["gpus_per_replica"] == 2
+    assert receipt["gpu_devices"] == ["7", "3"]
+    assert receipt["host_port"] == 9001
+    assert receipt["source_plan_bytes_unchanged"]
+    assert receipt["scope"] == "offline declaration only"
+    assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
+
+
 def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkeypatch):
     import os
     from typer.testing import CliRunner

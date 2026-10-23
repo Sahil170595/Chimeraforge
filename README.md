@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study candidate**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study and 0.73.0 deployment-placement candidates**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
 pip install "chimeraforge[mcp]==0.71.0"
@@ -407,6 +407,18 @@ valid model-quality evidence remains measured. These are modeled alternatives,
 without probing this host, running inference or attesting hardware/weights.
 
 ### `deploy` -- export serving configuration
+
+**Unreleased 0.73.0 candidate:** repeat `--gpu-device` once per saved TP x PP GPU
+and optionally set Compose `--host-port`. For the one-GPU vLLM selection below,
+append `--gpu-device 7 --host-port 9001`. Two-GPU selection uses, for example,
+`--gpu-device 7 --gpu-device 3`. Full GPU UUIDs are also supported. Compose emits
+`device_ids` instead of `count`; its list order is a requested declaration, not
+observed CUDA rank mapping. systemd uses ordered `CUDA_VISIBLE_DEVICES` selectors.
+The API accepts `gpu_devices=["7", "3"]` and `host_port=9001`; see the
+[full options, API examples and refusals](docs/deployment.md#explicit-device-selection-and-host-ports).
+These options require candidate source/a built candidate wheel; published 0.71.0
+retains the default count/port exports. The export admission bound is 64 GPUs per
+replica, with no device, topology or performance verification.
 
 Export one saved candidate as Compose, a systemd user service, an Ollama macOS
 LaunchAgent, or a Modelfile. No engines are installed, started or deployed.

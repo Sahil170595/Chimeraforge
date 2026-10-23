@@ -14,6 +14,10 @@ The **unreleased 0.72.0 candidate** adds exact hardware alternatives to
 [frozen-model studies](planning-api.md#frozen-context-sensitivity); it requires
 candidate source or a candidate wheel.
 
+The **unreleased 0.73.0 candidate** adds explicit GPU IDs and Compose host ports:
+[deployment contract, CLI and direct Python API](deployment.md#explicit-device-selection-and-host-ports).
+Published 0.71.0 retains the default count/port exports.
+
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
