@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study candidate**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
 pip install "chimeraforge[mcp]==0.71.0"
@@ -340,7 +340,7 @@ valid missing evidence. Create/verify exit 0 for valid content, 2 for invalid in
 scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
 3 incomplete. Integrity does not qualify GPU evidence or authenticate measurements.
 
-### `study` -- frozen-context workload and cost sensitivity
+### `study` -- frozen-model workload, hardware and cost sensitivity
 
 Available in the published 0.61.0 CLI.
 Compare explicit assumptions against one saved plan or portable bundle offline:
@@ -361,7 +361,7 @@ chimeraforge study plan.json --cases cases.json --out study.json --json
 chimeraforge study handoff --cases cases.json --json
 ```
 
-The ordinary search uses the same bound model/GPU geometry and verified
+The ordinary search uses the same bound model geometry and verified
 coefficient/quality bytes for every case. Current engine-support, applicable
 cloud prices, grid intensity, quarantine records and their time observations
 are captured once. The report distinguishes those current facts from producer
@@ -370,13 +370,41 @@ and estimates in native units. A changed policy identity aborts the study.
 
 Supply 1-16 unique cases for up to 16 bound model targets. Workload, context,
 SLOs, quality/safety targets, budget, duty and cost assumptions may change;
-model, physical hardware and platform stay fixed. `gpu_cost_per_hour` is an
+model and platform stay fixed. Published 0.71.0 also holds physical hardware fixed.
+`gpu_cost_per_hour` is an
 operator price assumption, is refused for cloud instance pricing, and zero
 keeps the native unknown-price behavior. Output cannot overwrite known inputs.
 Exit 0 means a completed modeled study, including infeasible cases; invalid or
 unavailable inputs exit 2. No weights are downloaded or serving traffic generated.
 Integrity and modeled deltas do not authenticate inputs or qualify performance.
 See [the Python and case contract](docs/planning-api.md#frozen-context-sensitivity).
+
+**Unreleased 0.72.0 candidate: hardware alternatives.** Compare full GPU registry
+specifications through the same CLI or Python API, without changing the saved plan:
+
+```json
+[
+  {"name": "larger-gpu", "changes": {"hardware": "RTX 4090 24GB"}},
+  {"name": "ampere", "changes": {"hardware": "RTX 3090 24GB"}},
+  {"name": "explicit-price", "changes": {"hardware": "H100 80GB", "gpu_cost_per_hour": 2}}
+]
+```
+
+Save as `hardware-cases.json` and run the candidate's
+`chimeraforge study plan.json --cases hardware-cases.json --out hardware-study.json --json`.
+Use one exact case-insensitive canonical name from `chimeraforge plan --list-hardware`;
+partial names, ambiguous entries and `auto` refuse before search. Explicit hardware
+cases refuse sources with cloud instance pricing or `gpu_overrides`, including an
+explicit same-name selection; scenarios without `hardware` preserve that saved setup.
+An existing unified-memory fraction stays fixed and native compatibility rules apply.
+
+Each alternative binds the full raw/effective GPU spec from one held registry,
+including VRAM, bandwidth, compute, FP8, interconnect and price provenance. Base
+geometry stays bound to the source. Policy changes abort; physical configuration
+identity excludes price and source metadata. Unknown prices and infeasible cases
+remain explicit. Non-reference timing retains native extrapolation labels while
+valid model-quality evidence remains measured. These are modeled alternatives,
+without probing this host, running inference or attesting hardware/weights.
 
 ### `deploy` -- export serving configuration
 

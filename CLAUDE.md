@@ -57,7 +57,17 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.71.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.72.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Hardware studies (unreleased 0.72.0 candidate): `study PLAN_OR_BUNDLE --cases CASES
+--out STUDY --json` and `api.study_plan` accept exact case-insensitive `hardware`
+names from one held full GPU registry. Rebind full raw GPU facts and use native
+replay gates; model geometry, platform and original corpus/quality remain held.
+Explicit hardware selection refuses source cloud pricing or GPU overrides.
+Receipts distinguish saved source geometry from alternative registry facts,
+retain unknown/infeasible outcomes, and preserve native timing extrapolation
+and applicable measured quality. Published 0.71.0 has workload/cost studies without
+hardware alternatives. See [the study contract](docs/planning-api.md#frozen-context-sensitivity).
 
 Trusted signed gates (since 0.71.0): `contribute gate --baseline BEFORE --candidate AFTER
 --trusted-key RECEIVER_KEY --policy POLICY --out DECISION --json` and sync
