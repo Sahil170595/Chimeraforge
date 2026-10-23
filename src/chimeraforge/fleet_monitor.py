@@ -52,6 +52,7 @@ def _endpoint(value: FleetEndpoint) -> FleetEndpoint:
     if (
         type(value.url) is not str
         or not 0 < len(value.url) <= MAX_URL_CHARS
+        or "#" in value.url
         or any(ord(char) <= 32 or ord(char) == 127 for char in value.url)
     ):
         raise FleetMonitorError("endpoint URL exceeds fleet admission bounds")

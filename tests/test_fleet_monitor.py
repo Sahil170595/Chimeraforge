@@ -466,3 +466,33 @@ async def test_native_sglang_failed_route_and_fallback_both_count(native_fleet):
         )
     assert report.exit_code == 0 and report.budget["requests"] == len(calls) == 24
     assert len([value for value in calls if value.endswith("/get_server_info")]) == 6
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "fragment", ["http://example/#", "http://example/metrics#", "http://example/proxy/metrics#"]
+)
+async def test_empty_raw_fragment_is_refused_before_resource_or_contact(
+    native_fleet, monkeypatch, fragment
+):
+    from chimeraforge.fleet_monitor import FleetMonitorError, OwnedPool
+
+    saved, indices = native_fleet
+
+    def fail(*args):
+        pytest.fail("empty-fragment declaration reached resource construction")
+
+    monkeypatch.setattr(OwnedPool, "__init__", fail)
+    with pytest.raises(FleetMonitorError, match="URL|endpoint"):
+        await api.monitor_fleet(
+            saved,
+            request(["http://example/metrics", fragment, "http://third"]),
+            candidate_index=indices["vllm"],
+        )
+
+
+def test_encoded_hash_is_preserved_in_meaningful_proxy_prefix():
+    from chimeraforge.fleet_monitor import _endpoint, FleetEndpoint
+
+    url = "http://example/proxy%23segment/metrics"
+    assert _endpoint(FleetEndpoint("one", url)).url == url

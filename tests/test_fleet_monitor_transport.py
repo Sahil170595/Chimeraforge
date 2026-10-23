@@ -57,6 +57,7 @@ class NativeScene:
         self.metrics = {}
         self.started = asyncio.Event()
         self.metadata_started = asyncio.Event()
+        self.close_started = asyncio.Event()
         self.stall_gate = asyncio.Event()
         first, second = (text.replace("org/model", MODEL) for text in pair(ttft=ttft))
 
@@ -96,6 +97,7 @@ class NativeScene:
         class PoolTransport(Transport):
             async def aclose(self):
                 self.closed += 1
+                scene.close_started.set()
                 if close_gate is not None:
                     await close_gate.wait()
                 self.finished = True
@@ -211,15 +213,30 @@ async def test_second_caller_cancel_does_not_orphan_cleanup(native_fleet, monkey
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("slow_observation", [False, True])
 async def test_cleanup_allowance_overrun_is_sticky_even_after_all_owners_attempted(
-    native_fleet, monkeypatch
+    native_fleet, monkeypatch, slow_observation
 ):
+    from chimeraforge.bench import serving
+
     saved, indices = native_fleet
     gate = asyncio.Event()
     scene = NativeScene(monkeypatch, close_gate=gate)
+    if slow_observation:
+        original = serving.observe_backend
+
+        async def delayed(*args):
+            result = await original(*args)
+            await asyncio.sleep(0.035)
+            return result
+
+        monkeypatch.setattr(serving, "observe_backend", delayed)
     value = replace(request(urls()), cleanup_seconds=0.001)
-    asyncio.get_running_loop().call_later(0.05, gate.set)
-    result = await api.monitor_fleet(saved, value, candidate_index=indices["vllm"])
+    task = asyncio.create_task(api.monitor_fleet(saved, value, candidate_index=indices["vllm"]))
+    await scene.close_started.wait()
+    await asyncio.sleep(0.05)
+    gate.set()
+    result = await task
     assert result.exit_code == 4 and result.cleanup["allowance_exceeded"]
     assert result.cleanup["state"] == "incomplete" and all(pool.closed == 1 for pool in scene.pools)
     assert result.cleanup["resources_closed"] and all(pool.finished for pool in scene.pools)
