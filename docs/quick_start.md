@@ -25,6 +25,11 @@ Compose-only `--host-port`, plus direct `export_deployment` keywords. See
 [complete examples and limits](deployment.md#explicit-device-selection-and-host-ports).
 Published 0.71.0 uses the default GPU count and ports; no GPU placement is verified.
 
+The **unreleased 0.74.0 candidate** adds `deploy --replica-devices GROUP
+--replica-port PORT` for every original online vLLM/SGLang Compose replica. See
+[complete CLI/API examples](deployment.md#homogeneous-compose-replicas); these
+are manually targeted offline declarations, not measured fleet capacity.
+
 ## 5-Minute Setup
 
 ### 1. Install Prerequisites

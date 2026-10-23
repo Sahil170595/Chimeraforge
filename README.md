@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study and 0.73.0 deployment-placement candidates**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study, 0.73.0 deployment-placement and 0.74.0 multi-replica Compose candidates**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
 pip install "chimeraforge[mcp]==0.71.0"
@@ -407,6 +407,19 @@ valid model-quality evidence remains measured. These are modeled alternatives,
 without probing this host, running inference or attesting hardware/weights.
 
 ### `deploy` -- export serving configuration
+
+**Unreleased 0.74.0 candidate: homogeneous Compose fleets.** Select an original
+online Linux CUDA vLLM/SGLang candidate with N>1. Repeat `--replica-devices 7,3
+--replica-port 9001` once per replica, supplying disjoint ordered groups of TP x PP
+IDs and distinct loopback host ports. The direct API accepts
+`replica_gpu_devices=[["7", "3"], ["9", "2"], ["8", "4"]]` and
+`replica_host_ports=[9001, 9002, 9003]` for a three-replica TP=2 candidate. Do not mix
+these options with singular device/port options. Each `inference-1..N` service
+retains the saved model/revision and per-replica batch; manually target each port.
+There is no router, scaler or verified physical capacity. See the
+[complete CLI/API example and limits](docs/deployment.md#homogeneous-compose-replicas).
+These options require candidate source/a built wheel; published 0.71.0 does not
+include multi-replica export.
 
 **Unreleased 0.73.0 candidate:** repeat `--gpu-device` once per saved TP x PP GPU
 and optionally set Compose `--host-port`. For the one-GPU vLLM selection below,

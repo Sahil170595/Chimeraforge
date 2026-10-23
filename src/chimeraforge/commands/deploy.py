@@ -8,6 +8,28 @@ import typer
 from rich.console import Console
 
 
+def _replica_groups(values: list[str] | None) -> list[list[str]] | None:
+    from chimeraforge.deploy import (
+        DeploymentError,
+        MAX_EXPORT_GPUS_PER_REPLICA,
+        MAX_GPU_IDENTIFIER_CHARS,
+    )
+    from chimeraforge.planner.constants import MAX_REPLICAS
+
+    if values is None:
+        return None
+    max_chars = MAX_EXPORT_GPUS_PER_REPLICA * (MAX_GPU_IDENTIFIER_CHARS + 1) - 1
+    if type(values) is not list or not 1 <= len(values) <= MAX_REPLICAS:
+        raise DeploymentError(
+            f"replica device group count must be bounded between 1 and {MAX_REPLICAS}"
+        )
+    if any(type(value) is not str or not 1 <= len(value) <= max_chars for value in values):
+        raise DeploymentError(
+            f"each replica device group must be bounded to {max_chars} characters"
+        )
+    return [value.split(",") for value in values]
+
+
 def deploy(
     plan_path: Path = typer.Option(..., "--plan", help="Saved plan JSON from plan --save."),
     format: str = typer.Option(..., "--format", help="compose, systemd, launchd or modelfile."),
@@ -36,6 +58,16 @@ def deploy(
         "--host-port",
         help="Compose loopback host port (1-65535); native container port stays fixed.",
     ),
+    replica_devices: list[str] | None = typer.Option(
+        None,
+        "--replica-devices",
+        help="Comma-separated ordered GPU IDs per replica; repeat in replica order.",
+    ),
+    replica_port: list[int] | None = typer.Option(
+        None,
+        "--replica-port",
+        help="Explicit loopback host port per replica; repeat in replica order (Compose only).",
+    ),
 ) -> None:
     """Write serving config; no engines are installed, started or deployed."""
     from chimeraforge.api import PlanError, load_plan
@@ -53,6 +85,8 @@ def deploy(
             output_path=out,
             gpu_devices=gpu_device,
             host_port=host_port,
+            replica_gpu_devices=_replica_groups(replica_devices),
+            replica_host_ports=replica_port,
         )
         outputs = {
             out: result.content,

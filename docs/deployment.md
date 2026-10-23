@@ -66,15 +66,18 @@ These options are an **unreleased 0.73.0 candidate** and require candidate sourc
 or a built candidate wheel. Published 0.71.0 retains default GPU counts and ports;
 0.72.0's candidate hardware studies do not select observed deployment devices.
 
-The keyword-only direct module API is
+The current 0.74.0 candidate's keyword-only direct module API is
 `chimeraforge.deploy.export_deployment(artifact, *, format, model=None,
 image=None, candidate_index=0, executable=None, output_path=None,
-gpu_devices=None, host_port=None)`. It renders configuration; only the CLI writes
-new output files. Both options default to `None`, preserving supported legacy
+gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. It renders configuration; only the CLI writes
+new output files. The two replica keywords are introduced only by the 0.74.0
+candidate; the 0.73.0 candidate supports the singular options. All four options
+default to `None`, preserving supported legacy
 export content byte for byte. Explicit `gpu_devices=[]` is an error.
 
 Repeat `--gpu-device` in caller order once per selected candidate's **TP x PP**,
-not once per replica. Only one replica is supported. For example, produce an
+not once per replica. These singular options support one replica; multi-replica
+layouts use the separate 0.74.0 candidate interface below. For example, produce an
 offline manual geometry plan, then select its actual one-replica vLLM FP16 row:
 
 ```bash
@@ -156,6 +159,109 @@ validate declarations and syntax only. Device/runtime semantics were rechecked o
 [CUDA environment variables](https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/environment-variables.html)
 and [NVIDIA device ordering](https://docs.nvidia.com/deploy/topics/topic_5_2_1.html).
 
+## Homogeneous Compose replicas
+
+The **unreleased 0.74.0 candidate** renders an original selected multi-replica
+candidate as independent named Compose services. It supports **online-mode,
+Linux NVIDIA CUDA vLLM and SGLang only**. Here, homogeneous means the saved model,
+revision, backend, quantization, context and per-replica geometry/settings remain
+the same. It does not attest physical GPU-model equality or independent capacity.
+The native batch planner can produce multi-replica candidates; those remain
+outside this deliberately narrower export scope.
+
+Every original replica requires both an explicit ordered GPU group and a distinct
+loopback host port. API options are keyword-only
+`replica_gpu_devices: list[list[str]] | None` and
+`replica_host_ports: list[int] | None`. The CLI repeats
+`--replica-devices ID,ID` and `--replica-port PORT` in corresponding replica order.
+Do not mix these with singular `gpu_devices`/`host_port` or
+`--gpu-device`/`--host-port`, even if the values agree. A one-replica candidate
+must use the singular interface; replica matrices are refused for N=1.
+
+For a complete offline example, produce an actual native three-replica candidate
+using explicit illustrative geometry, then select its own vLLM FP16 row:
+
+```bash
+chimeraforge plan --model ci/manual-fleet --params-b 3 --n-layers 28 \
+  --n-kv-heads 8 --d-head 128 --hardware "RTX 4090 24GB" --platform linux \
+  --tensor-parallel 2 --request-rate 128 --latency-slo 10000 \
+  --quality-target 0 --budget 100000 --no-network --save fleet-plan.json --json
+FLEET_INDEX=$(python -c "import json; p=json.load(open('fleet-plan.json')); print(next(i for i,c in enumerate(p['result']['candidates']) if c['backend']=='vllm' and c['quant']=='FP16' and c['n_agents']==3 and c['tensor_parallel']==2 and c['pipeline_parallel']==1 and c['offload_fraction']==0))")
+mkdir fleet
+chimeraforge deploy --plan fleet-plan.json --candidate-index "$FLEET_INDEX" \
+  --model org/manual-fleet --format compose --image example/engine:1 \
+  --replica-devices 7,3 --replica-port 9001 \
+  --replica-devices 9,2 --replica-port 9002 \
+  --replica-devices 8,4 --replica-port 9003 --out fleet/compose.json
+docker compose --file fleet/compose.json config
+```
+
+The sample model/image are explicit illustrative assumptions, not provisioned
+weights or an available engine image. Resolve your real checkpoint and supply its
+matching image for actual use. The exporter preserves that saved HF revision
+through every service's native `--revision`; manual size-class overrides retain
+their existing geometry warning. It does not install/start the image or inference.
+
+```python
+from chimeraforge.api import load_plan
+from chimeraforge.deploy import export_deployment
+
+saved = load_plan("fleet-plan.json")
+index = next(i for i, c in enumerate(saved.to_dict()["result"]["candidates"])
+    if c["backend"] == "vllm" and c["quant"] == "FP16" and c["n_agents"] == 3
+    and c["tensor_parallel"] == 2 and c["pipeline_parallel"] == 1
+    and c["offload_fraction"] == 0)
+exported = export_deployment(saved, format="compose", candidate_index=index,
+    model="org/manual-fleet", image="example/engine:1",
+    replica_gpu_devices=[["7", "3"], ["9", "2"], ["8", "4"]],
+    replica_host_ports=[9001, 9002, 9003])
+print(exported.content)  # rendering only; the saved plan/candidate remain unchanged
+```
+
+The saved N=3 and total GPU count=6 remain intact. The output services are
+`inference-1`, `inference-2`, `inference-3`, each with TP=2 and the **original
+per-replica batch**, not batch multiplied by N. They share the model/revision and
+serving controls; every service records the original plan fingerprint, replica
+index and total replica count. There is no `deploy.replicas` shortcut hiding an
+unplaced population. No router or scaler is supplied. After your separately
+verified setup/startup, manually target the endpoints:
+
+| Service | Host endpoint | Container port (vLLM) | Declared GPU IDs |
+| --- | --- | --- | --- |
+| `inference-1` | `http://127.0.0.1:9001` | 8000 | `7,3` |
+| `inference-2` | `http://127.0.0.1:9002` | 8000 | `9,2` |
+| `inference-3` | `http://127.0.0.1:9003` | 8000 | `8,4` |
+
+For SGLang, select the actual SGLang candidate and matching image; its native
+container port remains 30000. Loopback ports are explicit rather than invented
+by arithmetic. Their availability is not probed. The printed Compose start command
+is an operator instruction, not an action performed by export.
+
+Population is bounded by the native `MAX_REPLICAS=16`; TP x PP is bounded to 64
+GPUs **per replica**. The original total must equal N x TP x PP, so a valid grand
+total can exceed 64 (for example, 16 replicas x 8 GPUs = 128). The renderer admits and
+uses the original candidate throughout; it does not copy it as a one-agent plan.
+Native model/checkpoint/quant/KV/platform/PP/offload/LoRA/recurrent-state and other
+fidelity refusals stay active. TGI, Ollama, native-unit formats and batch-mode
+multi-replica plans are refused.
+
+API matrices must be actual lists: exactly N groups of exactly TP x PP strings
+and N integer ports 1..65535, excluding booleans. IDs retain the singular interface's
+canonical ASCII ordinal/full-UUID grammar and 40-character bound. Use one namespace
+across the entire fleet, and globally disjoint canonical IDs; case-normalized UUID
+aliases also collide. All ports must be distinct. Missing/empty/incomplete layouts,
+wrong totals, mixed singular/matrix options, invalid names/aliases, overlap and
+unsupported modes/formats refuse before output. CLI group strings are bounded
+before splitting; whitespace, empty tokens and abbreviated UUID/MIG names are not
+silently normalized. Entire groups and their IDs retain caller order.
+
+Compose reserves each service's `device_ids` instead of `count`. It does not copy
+numeric host IDs into container CUDA visibility or verify CUDA rank mapping.
+The same Docker/NVIDIA visibility semantics linked above apply. No physical GPU
+existence/type/topology, independent capacity, model-weight access, engine
+compatibility or serving performance is verified. Actual installed CPU CLI/API
+and Compose-parser acceptance establish declaration/transport syntax only.
+
 Ollama exports run `ollama serve`, rather than an interactive `ollama run` client.
 Compose/native-unit exports also write `Modelfile` beside the output. Start the
 dedicated daemon, then follow the printed `ollama pull` and `ollama create` steps
@@ -168,7 +274,8 @@ those required settings are printed separately. The daemon is not automatically
 populated or warmed up. Quit an existing Ollama daemon before loading the native
 unit to avoid port conflicts.
 
-Exports refuse configurations they cannot express: multiple replicas, CPU
+Exports refuse configurations they cannot express: unsupported multi-replica
+formats/backends/modes/layouts, CPU
 offload, unresolved LoRA adapter paths, unsupported platforms, multi-GPU Ollama,
 TGI pipeline parallelism, backend-incompatible GGUF weight formats or q4 KV,
 unknown/mismatched quantized checkpoint identity, recurrent-state memory pools

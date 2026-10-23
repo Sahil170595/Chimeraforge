@@ -12,6 +12,12 @@ and `host_port: int | None` to the direct `chimeraforge.deploy.export_deployment
 API. This is a module API, not an additional `chimeraforge.api` re-export. See
 [the exact placement contract and complete example](deployment.md#explicit-device-selection-and-host-ports).
 
+The **unreleased 0.74.0 candidate** adds keyword-only
+`replica_gpu_devices: list[list[str]] | None` and `replica_host_ports: list[int] | None`
+to the same direct deployment API. They require a complete explicit layout for
+an original online vLLM/SGLang multi-replica Compose candidate. See the
+[full API/CLI contract](deployment.md#homogeneous-compose-replicas).
+
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
