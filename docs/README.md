@@ -27,6 +27,11 @@ The **unreleased 0.75.0 candidate** adds [offline deployment verification](deplo
 with typed direct API and `deploy-verify`. It requires independent saved-plan/render
 intent and checks current-renderer JSON/companion consistency without runtime claims.
 
+The **unreleased 0.76.0 candidate** adds [passive declared-fleet monitoring](fleet-monitoring.md)
+with typed async API and `monitor-fleet`. Original saved replica population, shared
+HTTP/time/body budgets, retained prefixes and cleanup remain explicit. Distinct
+URLs do not prove distinct processes, GPUs or independent capacity.
+
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
@@ -48,9 +53,9 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-27 commands in candidate source (published 0.71.0 has 26): `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
+28 commands in candidate source (published 0.71.0 has 26): `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
-`score`, `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
+`score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
 compares saved traces; `gate --kind trace-campaign` compares whole campaigns.
 Benchmark gating remains the default.

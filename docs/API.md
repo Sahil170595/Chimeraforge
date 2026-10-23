@@ -24,6 +24,13 @@ checks generated JSON Compose/required companion bytes against independent saved
 plan and render intent. See [full signatures, examples and outcomes](deployment-verification.md).
 It is not a `chimeraforge.api` re-export or a runtime/source-authentication check.
 
+The **unreleased 0.76.0 candidate** adds typed `FleetEndpoint`,
+`FleetMonitorRequest`, `FleetMonitorReport` and async
+`api.monitor_fleet(saved, request, *, candidate_index=0, stop_event=None)`.
+It observes every explicitly declared original replica under shared budgets,
+retaining partial native windows/metadata and separate closure/coverage facts.
+See [complete examples, outcomes and limits](fleet-monitoring.md).
+
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
