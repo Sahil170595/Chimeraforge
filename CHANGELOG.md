@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.72.0] - Unreleased
+
+### Hardware alternatives in frozen-model studies
+
+- `PlanScenario.changes.hardware`, `api.study_plan` and the existing `study` CLI compare exact case-insensitive canonical GPU registry entries through the ordinary replay/search gates. The full raw GPU specification is rebound, effective memory is recalculated natively, and saved model geometry, platform and original coefficient/quality bytes remain held.
+- One full held hardware registry is bound into the study policy receipt. Source/base and alternative raw/effective GPU facts remain distinct; live policy changes abort the study. Physical configuration identity detects same-name geometry changes while excluding price and source metadata. Timing retains native extrapolation and applicable model-quality evidence remains measured.
+- Explicit hardware cases refuse source cloud-instance pricing and GPU overrides, including same-name selection. Ordinary cases remain supported. Native compatibility, VRAM and price gates retain infeasible and unknown-price outcomes; explicit hourly assumptions retain their no-cloud rule. No host probe, inference, hardware/weights authentication or measured performance claim is introduced.
+- Extend the existing installed CPU consumer with real CLI/API alternatives over saved plans and absent-producer bundles; type-check the changed study core, CLI and consumer. Bounded bundle-member alias protection rejects hardlink output aliases without walking arbitrary directories.
+
 ## [0.71.0] - 2026-10-22
 
 ### Trusted signed native comparisons

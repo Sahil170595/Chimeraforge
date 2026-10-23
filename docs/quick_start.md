@@ -15,6 +15,11 @@ Chimeraforge 0.71.0 includes native streaming trace observations and
 [signed native regression gates](signed-native-gates.md).
 Benchmark gating remains the default.
 
+The **unreleased 0.72.0 candidate** adds offline hardware alternatives through
+`study`: see [the complete case and Python examples](planning-api.md#frozen-context-sensitivity).
+Published 0.71.0 retains workload/cost studies with fixed hardware. Candidate source
+or a candidate wheel is required; no host probe or measured GPU qualification occurs.
+
 ## 5-Minute Setup
 
 ### 1. Install Prerequisites

@@ -129,9 +129,10 @@ JSON keys and linked paths. Allowed changes are:
 | Workload | `request_rate`, `avg_tokens`, `reasoning_tokens`, `prompt_tokens`, `context_length`, `prefix_cache_hit_rate`, `workload_cv2` |
 | Targets | `latency_slo`, `ttft_slo`, `tpot_slo`, `quality_target`, `safety_target`, `budget` |
 | Cost assumptions | `duty_cycle`, `electricity_rate`, `gpu_price_multiplier`, `gpu_cost_per_hour` |
+| Hardware (unreleased 0.72.0 candidate) | `hardware`: one exact case-insensitive canonical GPU registry name |
 
 Types, finite values and combinations use existing `PlanRequest` validation.
-Unspecified values inherit the saved request. Model, physical hardware, deployment
+Unspecified values inherit the saved request. Model, deployment
 platform, mode, parallelism, adapter setup, contribution permission and source
 selection remain fixed in this version. Latency targets unsupported by the saved
 mode refuse. `gpu_cost_per_hour` changes only the assumed hourly price of the
@@ -139,7 +140,53 @@ bound GPU; its operator basis is recorded per case, and zero remains unknown
 instead of a free GPU. Cloud cases refuse this override because the cloud prices
 whole instances. Price multipliers retain the ordinary planner's semantics.
 
-The shared search receives saved full model/raw GPU geometry (the unified-memory
+**Unreleased 0.72.0 candidate:** the existing `study_plan` / `study` interfaces also
+accept `PlanScenario("larger-gpu", {"hardware": "RTX 4090 24GB"})`. Published 0.71.0
+provides workload/cost studies with fixed hardware; use this candidate source or
+its built wheel for alternatives. The same 1-16 case and 16-model bounds apply.
+Exact canonical names come from `chimeraforge plan --list-hardware`; case is ignored,
+but partial matches, `auto`, unknown or ambiguous names refuse before any search.
+Any explicit hardware selection refuses a source with nonempty `gpu_overrides` or
+cloud instance pricing, even a same-name selection. Cases without `hardware` retain
+those original bound workflows. The saved unified-memory fraction remains fixed;
+an alternative requiring an unavailable fraction refuses through native validation.
+
+```python
+from chimeraforge.api import PlanScenario, study_plan
+
+alternatives = study_plan("plan.json", [
+    PlanScenario("larger-gpu", {"hardware": "RTX 4090 24GB"}),
+    PlanScenario("ampere", {"hardware": "RTX 3090 24GB"}),
+    PlanScenario("operator-price", {"hardware": "H100 80GB", "gpu_cost_per_hour": 2}),
+])
+alternatives.save("hardware-study.json")
+```
+
+For the CLI, serialize those `name`/`changes` objects as `hardware-cases.json`, then
+run `chimeraforge study plan.json --cases hardware-cases.json --out hardware-study.json --json`.
+The model specs, original coefficient/quality bytes and saved deployment platform
+remain held. Full raw registry GPU facts replace both the hardware request and
+replay binding; the ordinary engine recalculates effective memory and applies its
+VRAM, vendor/platform, quantization, performance and budget gates. No display-only
+GPU substitution or price fallback is used.
+
+`frozen_context.hardware` preserves the source geometry. Its `hardware_registry`
+contains the full held registry entries and their digest, bound into the reported
+policy identity. Each result's `hardware` retains actual raw/effective specs and
+their provenance; `hardware_binding.basis` distinguishes `saved-source` from
+`held-registry` and binds the latter to its registry digest. Configuration comparison
+includes canonical hardware and a physical-spec digest, excluding hourly cost,
+price basis and source/capture metadata. Same-name physical changes therefore remain
+visible while price-only assumptions do not masquerade as physical switches.
+The full registry is held once before resolving alternatives. Live policy identity
+must still agree before/after every replay because native reference comparisons use
+the current registry. A detected mutation aborts rather than returning mixed facts;
+this is not an atomic snapshot or thread-safety attestation. Timing retains native
+extrapolation/estimate provenance; valid hardware-independent measured quality is
+preserved. No current host probe, inference, physical/topology/weight authentication,
+or scientific performance qualification is performed.
+
+The base and unchanged-hardware search receive saved full model/raw GPU geometry (the unified-memory
 fraction is applied once), held parsed coefficients/quality, and one captured
 current engine-support/cloud/grid/quarantine context. Grid/price staleness uses
 one observed date and existing expiry rules. Current policy tables and hardware
@@ -154,7 +201,8 @@ covers recorded facts, not source authenticity. Each case retains every feasible
 candidate and rejection trace, a recommendation or `null`, feasibility changes,
 added/removed identities, ordering, provenance, native-unit deltas and a
 configuration-switch flag. Unknown estimates remain `null` with unknown deltas.
-The selected planned configuration includes candidate identity, effective batch,
+The selected planned configuration includes candidate identity, canonical hardware,
+physical-spec digest, effective batch,
 context length, KV quantization and the fixed batched-token setting; a context
 or batch change is visible even when model/quant/backend/replica identity stays
 the same. These are planned settings, not observations of a deployed server.

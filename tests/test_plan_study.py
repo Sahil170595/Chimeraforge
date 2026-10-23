@@ -181,7 +181,7 @@ def test_policy_change_mid_search_refuses_instead_of_mixing_cases(source, monkey
 @pytest.mark.parametrize(
     "changes",
     [
-        {"hardware": "H100 80GB"},
+        {"hardware": 1},
         {"models": ["other"]},
         {"platform": "macos"},
         {"allow_network": True},
