@@ -22,6 +22,37 @@ def load_script(name):
     return module
 
 
+@pytest.mark.parametrize("diagnostic_stream", ["stderr", "stdout"])
+def test_source_protocol_uses_stdout_without_masking_stdout_contamination(
+    tmp_path, monkeypatch, diagnostic_stream
+):
+    import json
+    import typer
+
+    original_echo = typer.echo
+    injected = []
+
+    def echo_with_diagnostic(message=None, *args, **kwargs):
+        original_echo(message, *args, **kwargs)
+        if isinstance(message, str) and message.startswith("{") and not kwargs.get("err"):
+            original_echo("source-protocol-stream-diagnostic", err=diagnostic_stream == "stderr")
+            injected.append(diagnostic_stream)
+
+    monkeypatch.setattr(typer, "echo", echo_with_diagnostic)
+    try:
+        if diagnostic_stream == "stderr":
+            test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(
+                tmp_path, monkeypatch
+            )
+        else:
+            with pytest.raises(json.JSONDecodeError, match="Extra data"):
+                test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(
+                    tmp_path, monkeypatch
+                )
+    finally:
+        assert injected, "controlled diagnostic did not reach an actual CLI JSON response"
+
+
 def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp_path, monkeypatch):
     from typer.testing import CliRunner
     from chimeraforge.cli import app
@@ -40,7 +71,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     def source_cli(arguments, cwd, env, expected_code=0):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     receipt = script.accept(tmp_path, {}, tmp_path / "checkout", observation)
@@ -90,7 +121,7 @@ def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkey
     def source_cli(arguments, cwd, env, expected_code=0):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, dict(os.environ), tmp_path / "checkout")
@@ -110,7 +141,7 @@ def test_native_stream_consumer_protocol_through_public_trace_cli(tmp_path, monk
     def source_cli(arguments, cwd, env, expected_code=0):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     receipt = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -161,7 +192,7 @@ def test_regression_gate_installed_consumer_protocol_through_real_cli(tmp_path, 
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
         assert result.exception is None or isinstance(result.exception, SystemExit)
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -191,7 +222,7 @@ def test_trace_gate_consumer_protocol_through_public_cli(tmp_path, monkeypatch):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
         assert result.exception is None or isinstance(result.exception, SystemExit)
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -216,7 +247,7 @@ def test_trace_campaign_gate_installed_protocol_through_public_cli(tmp_path, mon
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
         assert result.exception is None or isinstance(result.exception, SystemExit)
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -434,7 +465,7 @@ def test_cpu_acceptance_consumes_native_outcome_through_real_gate_cli(
         result = CliRunner().invoke(app, arguments)
         allowed = expected_code if isinstance(expected_code, tuple) else (expected_code,)
         assert result.exit_code in allowed, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept_cpu(
