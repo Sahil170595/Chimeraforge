@@ -9,6 +9,8 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Unreleased **0.81.0** adds [Kubernetes declarations and independent intent verification](kubernetes-deployment.md), with original logical members, native engine fidelity and a separate required hosted server-dry-run gate. Public installation remains 0.76.0.
+
 Unreleased **0.80.0** adds [original-fleet regression gates](fleet-trace-gate.md), with closed source/population policy, native global metrics and guarded JSON/JUnit outputs. Public installation remains 0.76.0.
 
 Unreleased **0.79.0** adds [original-fleet active trace replay](fleet-trace.md), with one native schedule, full original member coverage, per-ID secure connections and a strict receiving API.
@@ -60,7 +62,7 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-30 commands in the unreleased Chimeraforge 0.80.0 source candidate: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
+30 commands in the unreleased Chimeraforge 0.81.0 source candidate: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`

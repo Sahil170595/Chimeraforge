@@ -20,6 +20,7 @@ from chimeraforge.deploy import (
 )
 from chimeraforge.plan_bundle import _plain_path, _read
 from chimeraforge.planner.constants import MAX_REPLICAS
+from chimeraforge.kubernetes_options import KubernetesOptions
 
 MAX_CONFIG_BYTES = 2 * 1024 * 1024
 MAX_COMPANION_BYTES = 64 * 1024
@@ -266,11 +267,32 @@ def _differences(expected: dict, actual: dict) -> tuple[list[DeploymentChange], 
     return changes, count, truncated
 
 
+def _kubernetes_document(data: dict) -> None:
+    if (
+        data.get("apiVersion") != "v1"
+        or data.get("kind") != "List"
+        or type(data.get("items")) is not list
+        or len(data["items"]) > 2 * MAX_REPLICAS
+    ):
+        _fail("Kubernetes verification requires a bounded native resource List")
+    versions = {"Deployment": "apps/v1", "Service": "v1"}
+    for item in data["items"]:
+        if (
+            type(item) is not dict
+            or type(item.get("kind")) is not str
+            or item["kind"] not in versions
+            or item.get("apiVersion") != versions[item["kind"]]
+        ):
+            _fail("unsupported Kubernetes resource kind or version")
+
+
 def verify_deployment(
     saved: PlanArtifact | str | Path,
     config_path: str | Path,
     *,
     image: str,
+    format: str = "compose",
+    kubernetes: KubernetesOptions | None = None,
     model: str | None = None,
     candidate_index: int = 0,
     gpu_devices: list[str] | None = None,
@@ -280,6 +302,8 @@ def verify_deployment(
 ) -> DeploymentVerification:
     """Compare held JSON/required siblings with current-renderer independent intent."""
     try:
+        if format not in ("compose", "kubernetes"):
+            _fail("verification format must be compose or kubernetes")
         _intent(image, model, candidate_index, gpu_devices, replica_gpu_devices, replica_host_ports)
         config = _absolute(config_path)
         artifact, source_raw, source_path = _source(saved)
@@ -291,7 +315,8 @@ def verify_deployment(
                 _fail("saved serving identity exceeds verifier bounds")
         expected = export_deployment(
             artifact,
-            format="compose",
+            format=format,
+            kubernetes=kubernetes,
             image=image,
             model=model,
             candidate_index=candidate_index,
@@ -304,6 +329,8 @@ def verify_deployment(
         expected_data = _json(expected_raw, MAX_CONFIG_BYTES)
         actual_raw = _read(config, MAX_CONFIG_BYTES)
         actual_data = _json(actual_raw, MAX_CONFIG_BYTES)
+        if format == "kubernetes":
+            _kubernetes_document(actual_data)
         buffers = [source_raw, expected_raw, actual_raw]
         _budget(*buffers)
         companions: list[DeploymentCompanion] = []
