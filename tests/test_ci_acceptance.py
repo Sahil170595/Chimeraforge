@@ -63,6 +63,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     load_script("ci_monitor_fleet")
     load_script("ci_secure_monitor")
     load_script("ci_inventory_check")
+    load_script("ci_fleet_trace")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
     observation = checkpoint.seed(live=False)
@@ -87,6 +88,10 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert fleet["replicas"] == 3 and fleet["gpus_total"] == 6
     assert fleet["service_names"] == ["inference-1", "inference-2", "inference-3"]
     assert fleet["source_plan_bytes_unchanged"] and fleet["router"] == "not provided"
+    active = fleet["original_fleet_trace"]
+    assert len(active["controls"]) == 8 and active["fixture_resources"] == "closed"
+    assert active["original_bytes_unchanged"]
+    assert {row["backend"] for row in active["controls"]} == {"vllm", "sglang"}
     verification = fleet["deployment_verification"]
     assert verification["match_exit"] == 0 and verification["drift_exit"] == 5
     assert verification["invalid_exit"] == 1

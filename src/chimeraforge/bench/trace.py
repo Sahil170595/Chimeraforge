@@ -8,7 +8,7 @@ from dataclasses import asdict, dataclass, field
 import logging
 from pathlib import Path
 import time
-from typing import Awaitable, Callable, TypeVar
+from typing import Any, Awaitable, Callable, Coroutine, TypeVar
 
 from chimeraforge.bench.backends import get_backend
 from chimeraforge.bench.backends.base import (
@@ -192,6 +192,65 @@ async def _until_stopped(
         await asyncio.gather(running, control, return_exceptions=True)
 
 
+@dataclass
+class _TraceOwnership:
+    """Managed fleet work and join-only aggregates; cancellation intent is shared."""
+
+    tasks: list[asyncio.Task[Any]] = field(default_factory=list)
+    joins: list[asyncio.Future[Any]] = field(default_factory=list)
+    cancelled: set[asyncio.Task[Any]] = field(default_factory=set)
+
+    def task(self, operation: Coroutine[Any, Any, T]) -> asyncio.Task[T]:
+        task = asyncio.create_task(operation)
+        self.tasks.append(task)
+        return task
+
+    def cancel(self, task: asyncio.Task[Any]) -> None:
+        if not task.done() and task not in self.cancelled:
+            self.cancelled.add(task)
+            task.cancel()
+
+    def cancel_pending(self) -> None:
+        for task in self.tasks:
+            self.cancel(task)
+
+
+async def _owned_generation(
+    operation: Callable[[], Coroutine[Any, Any, GenerationObservation]],
+    timeout: float,
+    ownership: _TraceOwnership,
+) -> GenerationObservation:
+    task = ownership.task(operation())
+    cancelled = False
+    error: Exception | None = None
+    result: GenerationObservation | None = None
+    try:
+        done, _ = await asyncio.wait({task}, timeout=timeout)
+        if not done:
+            raise asyncio.TimeoutError
+        result = task.result()
+    except asyncio.CancelledError:
+        cancelled = True
+    except Exception as exc:
+        error = exc
+    finally:
+        ownership.cancel(task)
+        joined = asyncio.gather(task, return_exceptions=True)
+        ownership.joins.append(joined)
+        while True:
+            try:
+                await asyncio.shield(joined)
+                break
+            except asyncio.CancelledError:
+                cancelled = True
+    if cancelled:
+        raise asyncio.CancelledError
+    if error is not None:
+        raise error
+    assert result is not None
+    return result
+
+
 async def _execute(
     backend: Backend,
     backend_name: str,
@@ -203,6 +262,9 @@ async def _execute(
     request_timeout: float,
     trace_timeout: float,
     stop_event: asyncio.Event,
+    *,
+    backends: dict[str, Backend] | None = None,
+    ownership: _TraceOwnership | None = None,
 ) -> str | None:
     semaphore = asyncio.Semaphore(concurrency)
 
@@ -229,20 +291,27 @@ async def _execute(
 
                 cap = request.max_output_tokens
                 options = {"num_predict": cap} if backend_name == "ollama" else {"max_tokens": cap}
-                capability = getattr(backend, "generate_observed", None)
+                selected_backend = backends[request.request_id] if backends is not None else backend
+                capability = getattr(selected_backend, "generate_observed", None)
 
                 async def generation() -> GenerationObservation:
                     nonlocal active_generation
                     active_generation = True
                     try:
                         if capability is None:
-                            metrics = await backend.generate(model, request.prompt, options)
+                            metrics = await selected_backend.generate(
+                                model, request.prompt, options
+                            )
                             return GenerationObservation(asdict(metrics))
                         return await capability(model, request.prompt, options, first_output)
                     finally:
                         active_generation = False
 
-                observed = await asyncio.wait_for(generation(), request_timeout)
+                observed = (
+                    await asyncio.wait_for(generation(), request_timeout)
+                    if ownership is None
+                    else await _owned_generation(generation, request_timeout, ownership)
+                )
                 native, tpot, basis = _native(observed, backend_name)
                 row.update(
                     native=native, mean_tpot_ms=tpot, mean_tpot_basis=basis, state="completed"
@@ -258,10 +327,13 @@ async def _execute(
             if row["state"] != "not_started":
                 times["terminal_s"] = _clock() - origin
 
-    tasks = [asyncio.create_task(one(request, row)) for request, row in zip(requests, rows)]
-    stopped = asyncio.create_task(stop_event.wait())
-    deadline = asyncio.create_task(_sleep_until(origin + trace_timeout))
+    create = ownership.task if ownership is not None else asyncio.create_task
+    tasks = [create(one(request, row)) for request, row in zip(requests, rows)]
+    stopped = create(stop_event.wait())
+    deadline = create(_sleep_until(origin + trace_timeout))
     finished = asyncio.gather(*tasks)
+    if ownership is not None:
+        ownership.joins.append(finished)
     try:
         completed, _ = await asyncio.wait(
             (finished, stopped, deadline), return_when=asyncio.FIRST_COMPLETED
@@ -271,47 +343,19 @@ async def _execute(
             return None
         return "cancelled" if stopped in completed else "trace_deadline"
     finally:
-        stopped.cancel()
-        deadline.cancel()
-        for task in tasks:
-            if not task.done():
-                task.cancel()
-        await asyncio.gather(stopped, deadline, *tasks, return_exceptions=True)
-        # Retrieve the aggregate exception too; it must not escape as an unowned task.
-        await asyncio.gather(finished, return_exceptions=True)
+        if ownership is None:
+            stopped.cancel()
+            deadline.cancel()
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(stopped, deadline, *tasks, return_exceptions=True)
+            # Retrieve the aggregate exception too; it must not escape as an unowned task.
+            await asyncio.gather(finished, return_exceptions=True)
 
 
-async def replay(
-    source: list[TraceRequest] | str | Path,
-    *,
-    model: str,
-    backend_name: str = "ollama",
-    base_url: str | None = None,
-    concurrency: int = 1,
-    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
-    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
-    slos: TraceSLO | None = None,
-    stop_event: asyncio.Event | None = None,
-) -> TraceReplay:
-    from chimeraforge import __version__
-    from chimeraforge.api import PlanError
-    from chimeraforge.bench.metrics import now_iso
-
-    requests, workload, protected = load_workload(source)
-    targets = slos if slos is not None else TraceSLO()
-    validate_options(
-        requests,
-        model,
-        backend_name,
-        concurrency,
-        request_timeout,
-        trace_timeout,
-        targets,
-        base_url,
-    )
-    if stop_event is not None and not isinstance(stop_event, asyncio.Event):
-        raise PlanError("stop_event needs an asyncio.Event")
-    rows = [
+def _initial_rows(requests: list[TraceRequest]) -> list[dict]:
+    return [
         {
             "descriptor": descriptor(request),
             "state": "not_started",
@@ -326,53 +370,30 @@ async def replay(
         }
         for request in requests
     ]
-    cleanup, observation = {}, {}
-    stopped = stop_event if stop_event is not None else asyncio.Event()
-    stop_reason, error, elapsed, origin = None, None, 0.0, None
-    stage = "preflight"
-    try:
-        backend = get_backend(backend_name, **({"base_url": base_url} if base_url else {}))
-    except (ValueError, TypeError) as exc:
-        raise PlanError("backend configuration is unavailable") from exc
-    try:
-        async with backend_lifecycle(backend, _cleanup=cleanup):
-            if stopped.is_set():
-                stop_reason = "cancelled"
-            else:
-                for probe in (backend.health_check, lambda: backend.check_model(model)):
-                    ok, _ = await _until_stopped(probe, request_timeout, stopped)
-                    if not ok:
-                        raise RuntimeError("preflight refused")
-                stage = "metadata_before"
-                observation["before"] = await _until_stopped(
-                    lambda: observe_backend(backend, model), request_timeout, stopped
-                )
-                origin = _clock()
-                stage = "scheduled_replay"
-                stop_reason = await _execute(
-                    backend,
-                    backend_name,
-                    model,
-                    requests,
-                    rows,
-                    origin,
-                    concurrency,
-                    request_timeout,
-                    trace_timeout,
-                    stopped,
-                )
-                elapsed = _clock() - origin
-                if stop_reason is None:
-                    stage = "metadata_after"
-                    observation["after"] = await _until_stopped(
-                        lambda: observe_backend(backend, model), request_timeout, stopped
-                    )
-    except _TraceStopped:
-        stop_reason = "cancelled"
-        if cleanup.get("state") == "incomplete":
-            error = _error(RuntimeError(), "cleanup")
-    except Exception as exc:
-        error = _error(exc, "cleanup" if cleanup.get("state") == "incomplete" else stage)
+
+
+def _report(
+    requests: list[TraceRequest],
+    rows: list[dict],
+    *,
+    workload: dict,
+    targets: TraceSLO,
+    model: str,
+    backend_name: str,
+    base_url: str | None,
+    concurrency: int,
+    request_timeout: float,
+    trace_timeout: float,
+    cleanup: dict,
+    observation: dict,
+    stop_reason: str | None,
+    error: dict | None,
+    elapsed: float,
+    origin: float | None,
+) -> dict:
+    from chimeraforge import __version__
+    from chimeraforge.bench.metrics import now_iso
+
     for row in rows:
         row["timing"] = _timing(row)
         row["slo"] = _qualify(row, asdict(targets))
@@ -464,4 +485,101 @@ async def replay(
         ),
     }
     report["fingerprint"] = digest(report)
+    return report
+
+
+async def replay(
+    source: list[TraceRequest] | str | Path,
+    *,
+    model: str,
+    backend_name: str = "ollama",
+    base_url: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    slos: TraceSLO | None = None,
+    stop_event: asyncio.Event | None = None,
+) -> TraceReplay:
+    from chimeraforge.api import PlanError
+
+    requests, workload, protected = load_workload(source)
+    targets = slos if slos is not None else TraceSLO()
+    validate_options(
+        requests,
+        model,
+        backend_name,
+        concurrency,
+        request_timeout,
+        trace_timeout,
+        targets,
+        base_url,
+    )
+    if stop_event is not None and not isinstance(stop_event, asyncio.Event):
+        raise PlanError("stop_event needs an asyncio.Event")
+    rows = _initial_rows(requests)
+    cleanup, observation = {}, {}
+    stopped = stop_event if stop_event is not None else asyncio.Event()
+    stop_reason, error, elapsed, origin = None, None, 0.0, None
+    stage = "preflight"
+    try:
+        backend = get_backend(backend_name, **({"base_url": base_url} if base_url else {}))
+    except (ValueError, TypeError) as exc:
+        raise PlanError("backend configuration is unavailable") from exc
+    try:
+        async with backend_lifecycle(backend, _cleanup=cleanup):
+            if stopped.is_set():
+                stop_reason = "cancelled"
+            else:
+                for probe in (backend.health_check, lambda: backend.check_model(model)):
+                    ok, _ = await _until_stopped(probe, request_timeout, stopped)
+                    if not ok:
+                        raise RuntimeError("preflight refused")
+                stage = "metadata_before"
+                observation["before"] = await _until_stopped(
+                    lambda: observe_backend(backend, model), request_timeout, stopped
+                )
+                origin = _clock()
+                stage = "scheduled_replay"
+                stop_reason = await _execute(
+                    backend,
+                    backend_name,
+                    model,
+                    requests,
+                    rows,
+                    origin,
+                    concurrency,
+                    request_timeout,
+                    trace_timeout,
+                    stopped,
+                )
+                elapsed = _clock() - origin
+                if stop_reason is None:
+                    stage = "metadata_after"
+                    observation["after"] = await _until_stopped(
+                        lambda: observe_backend(backend, model), request_timeout, stopped
+                    )
+    except _TraceStopped:
+        stop_reason = "cancelled"
+        if cleanup.get("state") == "incomplete":
+            error = _error(RuntimeError(), "cleanup")
+    except Exception as exc:
+        error = _error(exc, "cleanup" if cleanup.get("state") == "incomplete" else stage)
+    report = _report(
+        requests,
+        rows,
+        workload=workload,
+        targets=targets,
+        model=model,
+        backend_name=backend_name,
+        base_url=base_url,
+        cleanup=cleanup,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        observation=observation,
+        stop_reason=stop_reason,
+        error=error,
+        elapsed=elapsed,
+        origin=origin,
+    )
     return TraceReplay(report, protected)

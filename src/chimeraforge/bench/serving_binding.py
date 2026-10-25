@@ -197,7 +197,16 @@ def serving_stability(before: dict, after: dict) -> dict:
     )
 
 
-def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> dict:
+def serving_binding(
+    data: dict,
+    candidate: dict,
+    before: dict,
+    after: dict,
+    *,
+    replica_scope: str = "endpoint_topology",
+) -> dict:
+    if replica_scope not in ("endpoint_topology", "declared_member"):
+        raise ValueError("unsupported serving replica scope")
     inputs = data["inputs"]
     context = data["result"].get("replay_context")
     source = after.get("source")
@@ -235,10 +244,12 @@ def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> d
     for field in ("tensor_parallel", "pipeline_parallel"):
         result[field] = bind(candidate[field], after.get(field), source=source)
     result["replicas"] = bind(
-        candidate["n_agents"],
+        1 if replica_scope == "declared_member" else candidate["n_agents"],
         after.get("replicas"),
         source=source,
-        detail="Engine DP size does not attest the full endpoint/load-balancer replica topology.",
+        detail="Operator-declared one original member; not observed global fleet topology."
+        if replica_scope == "declared_member"
+        else "Engine DP size does not attest the full endpoint/load-balancer replica topology.",
     )
     result["serving_data_parallel_size"] = bind(
         None,
@@ -317,6 +328,8 @@ def serving_binding(data: dict, candidate: dict, before: dict, after: dict) -> d
         row["scope"] = (
             "serving engine configuration; not endpoint/load-balancer fleet"
             if name == "serving_data_parallel_size"
+            else "declared_member"
+            if name == "replicas" and replica_scope == "declared_member"
             else "endpoint/load-balancer fleet topology"
             if name == "replicas"
             else "before/after metadata observations"

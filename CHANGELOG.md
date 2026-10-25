@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Original-fleet scheduled trace (0.79.0 candidate)
+
+- Add typed async `api.replay_fleet_trace`, frozen `TraceRoute`/`FleetTraceReplay`, `trace-fleet` and strict `api.load_fleet_trace`. Hold the original plan, workload and closed one-to-one routes before contact; require exactly the original N direct endpoints without changing model, TP/PP, batch, output caps or saved targets.
+- Use one native row population, schedule, generation semaphore and deadline across members. Whole preflight/before-metadata admission precedes generation; retain failed, partial, unstarted and zero-assigned members. Member metadata compares one declared member without rewriting original N or conflating data parallelism.
+- Own generation/phase tasks, join-only aggregates and clients through a shared final cooperative cleanup allowance and repeated caller cancellation. Timed-out generation keeps its global semaphore lease until its owned child stops; every client close is attempted even after allowance exhaustion.
+- Recompute strict receiving schema, native row projections, route/slot references, common-horizon goodput and saved bindings. Empty members cannot vacuously pass token/latency/SLO checks. Execution completion, known mismatch, native SLO and cleanup are separate; fingerprints are integrity checks, not origin or physical authentication.
+- Inherit per-ID verified HTTPS for vLLM/SGLang; refuse opted-secure Ollama before contact. CLI output admission protects every saved/workload/routes/TLS input by path and file identity. Controlled CPU protocol acceptance and the bounded pinned three-daemon native CPU canary do not qualify GPU execution, physical independence, prediction accuracy or capacity.
+
 ### Runtime HTTPS and authenticated monitoring
 
 - Runtime-only `MonitorConnection` and named-environment CLI options supply verified HTTPS, private CA replacement, bearer authentication and optional client certificates to standalone, saved-plan and complete declared-fleet monitoring. The same origin-bound policy covers metrics and all before/after vLLM/SGLang metadata, including both actual fleet transport pools; redirects are refused.

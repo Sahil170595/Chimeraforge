@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**29 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes the unreleased 0.78.0 source candidate; the public installation remains 0.76.0.
+**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes the unreleased 0.79.0 source candidate; the public installation remains 0.76.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -890,6 +890,29 @@ including unpaired receipts, is retained. Exit `0` is a conditional policy pass,
 remains the default `--kind benchmark`. See the [trace policy/API contract](docs/trace-regression-gate.md)
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
+
+### `trace-fleet`
+
+**Unreleased 0.79.0 source candidate.** Replay one original saved fleet with an
+explicit direct endpoint and route map. All rows share one client schedule,
+concurrency semaphore and deadline; each declared member remains visible,
+including members assigned no requests.
+
+```bash
+chimeraforge trace-fleet requests.json --from-plan saved.json --candidate-index 0 \
+  --endpoint replica-1=http://host1:8000 --endpoint replica-2=http://host2:8000 \
+  --endpoint replica-3=http://host3:8000 --routes routes.json --concurrency 3 \
+  --out fleet-trace.json --json
+```
+
+The example requires an original N3 candidate and a route for every request.
+Output caps must equal the saved decode length. Complete execution exits 0,
+incomplete execution or known configuration/token mismatch exits 1, and invalid
+input exits 2; native SLO outcomes remain separate. URL declarations and metadata
+do not establish physical independence, GPU execution or capacity. See the
+[full original-fleet trace contract](docs/fleet-trace.md), including verified
+HTTPS for vLLM/SGLang and the strict receiving API. Public 0.76.0 does not include
+this command.
 
 ### `trace-campaign` -- frozen serial replay populations (since 0.64.0)
 

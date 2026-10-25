@@ -727,6 +727,7 @@ def main(argv: list[str] | None = None) -> int:
                 "OLLAMA_NO_CLOUD": "1",
                 "OLLAMA_NUM_PARALLEL": "1",
                 "OLLAMA_MAX_LOADED_MODELS": "1",
+                "OLLAMA_NOPRUNE": "1",
                 "CHIMERAFORGE_CACHE": str(work / "cache"),
                 "NO_COLOR": "1",
             }
@@ -778,22 +779,20 @@ def main(argv: list[str] | None = None) -> int:
                     receipt["runtime_observation"] = read_runtime_observation(work / "server.log")
                     print(json.dumps(receipt, indent=2))
             finally:
-                # The process group also owns Ollama's spawned model runner.
-                import signal
-
                 failed = sys.exc_info()[0] is not None
                 try:
-                    if server.poll() is None:
-                        os.killpg(server.pid, signal.SIGTERM)
-                        try:
-                            server.wait(timeout=10)
-                        except subprocess.TimeoutExpired:
-                            os.killpg(server.pid, signal.SIGKILL)
-                            server.wait(timeout=10)
+                    from ci_cpu_fleet import close_groups
+
+                    closed = close_groups([server], [port])
+                    print(json.dumps({"original_cpu_owned_cleanup": closed}), flush=True)
+                    assert closed["state"] == "completed", closed
                 finally:
                     if failed or sys.exc_info()[0] is not None:
                         log.flush()
                         print_runtime_failure(work / "server.log")
+        from ci_cpu_fleet import accept as accept_original_fleet
+
+        accept_original_fleet(work, binary, work / "models", env)
     return 0
 
 
