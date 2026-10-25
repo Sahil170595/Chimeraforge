@@ -196,3 +196,41 @@ def test_real_offline_checkpoint_fixture_produces_all_four_native_geometries(tmp
     ]
     assert all(len(row["manifest"]["items"]) == 2 * row["n"] for row in cases)
     assert all(row["saved"].read_bytes() == row["source"] for row in cases)
+
+
+@pytest.mark.parametrize("provider", ["podman", "nerdctl"])
+def test_provider_bound_refusal_never_adopts_a_foreign_docker_cluster(
+    tmp_path, monkeypatch, provider
+):
+    module = load_script("ci_kubernetes_admission")
+    calls = []
+
+    def run(argv, env, **kwargs):
+        calls.append((argv, dict(env)))
+        if argv[:3] == ["kind", "get", "clusters"]:
+            return "cf-admission\n" if env.get("KIND_EXPERIMENTAL_PROVIDER") == "docker" else ""
+        if argv[:3] == ["docker", "network", "ls"]:
+            return "existing-network"
+        if argv[:3] == ["docker", "network", "inspect"]:
+            return json.dumps([{"Id": "existing-network", "Name": "kind"}])
+        if argv[:3] == ["kind", "create", "cluster"]:
+            raise RuntimeError("controlled native foreign cluster already exists")
+        if argv[:3] == ["kind", "delete", "cluster"] or argv[:2] == ["docker", "ps"]:
+            return ""
+        raise AssertionError(argv)
+
+    monkeypatch.setattr(module, "run", run)
+    inherited = {
+        "KIND_EXPERIMENTAL_PROVIDER": provider,
+        "KUBECONFIG": "foreign-config",
+        "KIND_EXPERIMENTAL_DOCKER_NETWORK": "foreign-network",
+    }
+    original = dict(inherited)
+    with pytest.raises(RuntimeError) as error:
+        module.owned_cluster(tmp_path, inherited, "kind", "kubectl", {}, lambda *_: None)
+    assert "refusing preexisting" in str(error.value)
+    assert len(calls) == 1 and calls[0][0] == ["kind", "get", "clusters"]
+    assert calls[0][1]["KIND_EXPERIMENTAL_PROVIDER"] == "docker"
+    assert calls[0][1]["KUBECONFIG"] == str(tmp_path / "kubeconfig")
+    assert "KIND_EXPERIMENTAL_DOCKER_NETWORK" not in calls[0][1]
+    assert inherited == original

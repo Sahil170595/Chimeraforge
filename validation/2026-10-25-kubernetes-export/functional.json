@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-10-25T19:09:51.101344+00:00",
+  "captured_at": "2026-10-25T19:21:59.222449+00:00",
   "version": "0.81.0",
   "evidence": "source CLI/API offline controls; hosted installed and kind admission are separate",
   "result": [
@@ -36,7 +36,7 @@
           "cluster_or_image_executed": false
         }
       ],
-      "source_sha256": "5e1754b1e82d202703e6aef71abfbb6ad1507f3bd4671468ca02d6b819c675e5",
+      "source_sha256": "f4ebb07d23dffee537f62f9a14ccc5545539d259d905fe4976885275a03f78f5",
       "source_bytes_unchanged": true,
       "scope": "offline CLI/API declaration consistency; no API admission, image, scheduling, GPU or inference qualification"
     },
@@ -73,7 +73,7 @@
           "cluster_or_image_executed": false
         }
       ],
-      "source_sha256": "e08425f10fcf02f875bd917e90dd486d1c1cff7b1c3429ce14ae820a1b9a2165",
+      "source_sha256": "126cffbd80a176d79a112421e0e65c0d9f183bbc08210264658ab5cddf6ef304",
       "source_bytes_unchanged": true,
       "scope": "offline CLI/API declaration consistency; no API admission, image, scheduling, GPU or inference qualification"
     }
@@ -88,6 +88,6 @@
     "src/chimeraforge/commands/deploy.py": "d5c46841584ea635b8f6e1d8dc75c0a552a849898759fe204feb63dc86304806",
     "src/chimeraforge/commands/deploy_verify.py": "4f9bbf0a380b518b89f36b95aceb913c17accc2cc6b6be6372074a692d09f019",
     "scripts/ci_deploy_placement.py": "85ea1b5b5248014b6e48b9d7d041c74e627227f45763eeef74ed5b6458e6247d",
-    "scripts/ci_kubernetes_admission.py": "b55f1bca3d40c8c0c66ec7537da132ee27cf03abac1cacd7b52f6cc1532b013c"
+    "scripts/ci_kubernetes_admission.py": "a6c35e75e1c90836761ac7807f62503d6f5ea910b56c45c00d24c7d0720f4067"
   }
 }

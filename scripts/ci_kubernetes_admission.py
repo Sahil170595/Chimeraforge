@@ -114,7 +114,13 @@ def owned_cluster(
     check: Callable[[list[str], dict], None],
 ) -> None:
     owner = str(uuid.uuid4())
-    clusters = run([kind, "get", "clusters"], env).splitlines()
+    private = {
+        **env,
+        "KUBECONFIG": str(work / "kubeconfig"),
+        "KIND_EXPERIMENTAL_PROVIDER": "docker",
+    }
+    private.pop("KIND_EXPERIMENTAL_DOCKER_NETWORK", None)
+    clusters = run([kind, "get", "clusters"], private).splitlines()
     if CLUSTER in clusters:
         raise RuntimeError("refusing preexisting admission cluster")
     ids = run(
@@ -128,12 +134,6 @@ def owned_cluster(
     create_intent = False
     failure: BaseException | None = None
     errors: list[str] = []
-    private = {
-        **env,
-        "KUBECONFIG": str(work / "kubeconfig"),
-        "KIND_EXPERIMENTAL_PROVIDER": "docker",
-    }
-    private.pop("KIND_EXPERIMENTAL_DOCKER_NETWORK", None)
     config = work / "kind.json"
     config.write_text(
         json.dumps(
