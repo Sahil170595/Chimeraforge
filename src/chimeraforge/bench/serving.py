@@ -139,18 +139,51 @@ async def observe_backend(backend: Backend, model: str) -> dict:
     observer = getattr(backend, "observe_serving", None)
     if observer is None:
         return {"source": "serving metadata capability unavailable"}
+
+    async def operation() -> Any:
+        return await observer(model)
+
+    task = asyncio.create_task(operation())
+    cancelled = False
+    wait_expired = False
+    error: Exception | None = None
+    result: dict = {}
     try:
-        result = await asyncio.wait_for(observer(model), MAX_OBSERVATION_SECONDS)
-        if not isinstance(result, dict):
-            raise ValueError("serving observation must be an object")
-        return safe_observation(result)
+        done, _ = await asyncio.wait({task}, timeout=MAX_OBSERVATION_SECONDS)
+        if not done:
+            wait_expired = True
+            error = asyncio.TimeoutError()
+        else:
+            raw = task.result()
+            if not isinstance(raw, dict):
+                raise ValueError("serving observation must be an object")
+            result = safe_observation(raw)
+    except asyncio.CancelledError:
+        cancelled = True
     except Exception as exc:
-        category = error_category(exc)
+        error = exc
+    finally:
+        if not task.done():
+            task.cancel()
+        joined = asyncio.gather(task, return_exceptions=True)
+        while True:
+            try:
+                outcomes = await asyncio.shield(joined)
+                break
+            except asyncio.CancelledError:
+                cancelled = True
+        if isinstance(outcomes[0], Exception) and (cancelled or wait_expired):
+            logger.warning("serving metadata child failed (%s)", error_category(outcomes[0]))
+        if cancelled:
+            raise asyncio.CancelledError
+    if error is not None:
+        category = error_category(error)
         logger.warning("serving metadata observation unavailable (%s)", category)
         return {
             "source": "serving metadata capability unavailable",
             "limitations": [category],
         }
+    return result
 
 
 async def metadata(
