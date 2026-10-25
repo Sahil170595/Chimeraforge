@@ -12,13 +12,13 @@ jobs:
     if: github.repository == 'Sahil170595/Chimeraforge'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/cf079-native-feasibility-env
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          fetch-depth: 2
+          fetch-depth: 3
+      - name: Place the single candidate environment outside the checkout
+        run: echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/cf079-native-feasibility-env" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-ci
       - name: Build and install the actual inherited candidate wheel
         run: |
