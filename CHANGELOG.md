@@ -12,8 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runtime-only `MonitorConnection` and named-environment CLI options supply verified HTTPS, private CA replacement, bearer authentication and optional client certificates to standalone, saved-plan and complete declared-fleet monitoring. The same origin-bound policy covers metrics and all before/after vLLM/SGLang metadata, including both actual fleet transport pools; redirects are refused.
 - Prepare all secure fleet settings before contact. Explicit mappings (including empty mappings) require HTTPS for every original endpoint; credentials are assigned per ID without implicit broadcast. Secrets, environment names and certificate paths stay outside saved requests and reports; secure failures use categorical diagnostics. Explicit trust bypasses HTTPX proxy/CA discovery and implicit SSL key logging without mutating process environment.
 - Both CLI boundaries protect every explicit TLS file and saved-plan input against Prometheus output path/file-identity aliases before connection preparation or network contact.
-- Fleet window measurements use the native high-resolution monotonic performance counter, matching endpoint monitoring. This prevents zero elapsed windows on supported Windows event loops with coarse scheduling clocks; scheduling, shared deadlines and cleanup keep their original event-loop clock.
-- Metadata observations own and join their child task under timeout and repeated caller cancellation. Accepted cancellation propagates before returning metadata on supported Python versions; categorical errors, safe observations and native fleet failure priorities remain separate from cleanup facts.
 - Keep native evidence, budgets, failure priorities, anonymous defaults and owned cleanup. Real owned CPU TLS/auth/mTLS fixtures exercise source and installed CLI/API; they do not qualify physical servers, GPUs, running weights or capacity. Declare the already locked `certifi` as a direct core dependency without changing external package versions.
 
 ### Queried inventory and saved memory arithmetic (0.77.0 candidate)
@@ -23,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Owned native launch, bounded stdout/stderr readers and cleanup survive cancellation, including pending launch and repeated cancellation. MIG Enabled, Disabled and N/A remain raw diagnostics with identical arithmetic treatment. Every receipt keeps `deployment_ready: null`; no physical independence, summed capacity, allocation or runtime-peak claim is made.
 - Installed wheel and rebuilt-sdist consumers exercise complete CLI/API protocol controls and hosted CPU unavailability while preserving original plan bytes. Synthetic process fixtures qualify the contract only, not GPU execution.
 - Make the fleet-monitor final-deadline regression fixture deterministic by expiring the real shared budget after the sixth completed native metadata result. A removed-final-guard negative control fails with exit 0; production deadline behavior is unchanged. This repairs a demonstrated scheduling assumption in the old 60 ms fixture.
+
+### Monitoring runtime reliability
+
+- Measure fleet metrics-completion intervals with the native high-resolution monotonic performance counter, preserving the separate event-loop clocks for scheduling, observation budgets and cleanup. Valid short windows no longer collapse to zero on coarse Windows event-loop clocks.
+- Own and join serving-metadata observation tasks with native `asyncio.wait`, preserving categorical timeout/error results while propagating accepted cancellation before exposing a completed result. Repeated caller cancellation cannot abandon child cleanup; this addresses the demonstrated Python 3.10 `wait_for` completion/cancellation race.
 
 ## [0.76.0] - 2026-10-24
 

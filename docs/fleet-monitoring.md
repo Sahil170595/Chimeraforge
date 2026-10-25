@@ -105,8 +105,12 @@ overrun terminates further work.
 
 One observation deadline covers semaphore waiting, intervals, metrics and all
 metadata requests. Adjacent windows reuse their shared metrics/metadata boundary;
-window duration uses actual metrics-completion monotonic timestamps. Metadata
-brackets remain approximate. Cleanup has a separate, shared allowance: owned
+window duration uses actual metrics-completion high-resolution monotonic
+`time.perf_counter()` timestamps. Scheduling and shared deadlines keep their
+separate event-loop clock; the two clock domains are never subtracted. Metadata
+brackets remain approximate. Each native metadata observer is an owned task:
+accepted caller cancellation propagates before its result is exposed, and repeated
+cancellation still joins child cleanup. Cleanup has a separate, shared allowance: owned
 workers are cancelled and joined, clients/streams/pools are closed, and closure
 overrun remains a non-pass fact even when resources close later. These are
 cooperative deadlines, not universal kernel/DNS/cancellation-resistant hard-return

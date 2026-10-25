@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-10-25T12:29:05.897184+00:00",
+  "captured_at": "2026-10-25T13:13:23.331804+00:00",
   "version": "0.78.0",
   "evidence": "source CLI/API on owned CPU TLS fixtures; no installed-distribution or GPU qualification",
   "result": {
@@ -245,15 +245,15 @@
     "encrypted_key_cli": "noninteractive refusal; zero contacts",
     "proxy_contacts": 0,
     "implicit_keylog_created": false,
-    "source_sha256": "33cc96a81ba64dc6b1c53e5b13fee395974219f09110d70198e417300b3affe0",
+    "source_sha256": "03c434929cbfb92b6e1e62c1bea6bc0e0d713ab6ab415fe359525922b287af02",
     "source_bytes_unchanged": true,
     "fixture_resources": "closed",
     "physical_identity": "unverified",
     "runtime_capacity": "unverified"
   },
   "source_sha256": {
-    "scripts/ci_secure_monitor.py": "050e3970039eca94671b0a3230c3f00d7f7b1b5515288e12016739b95d6b533c",
-    "src/chimeraforge/monitor_connection.py": "11be8acee01499b176f29d8a3e151b95692fa6a809768816b488f9d69466c775",
+    "scripts/ci_secure_monitor.py": "7283ee9aabb6b4b879def6ec1e54606517b28cdfdb749f91d0b8d4eb80c0d3a8",
+    "src/chimeraforge/monitor_connection.py": "0d22702d07c8154958747d8813a49885c6e1b11a5bebb607b226c5d2a4e639ed",
     "src/chimeraforge/monitor.py": "62ef47b16828b3b7c4afdd8ff5c433f1a786d3df40e12668951edd4a8274e0cd",
     "src/chimeraforge/plan_monitor.py": "2d3c5d74cac2a67a59763572e3e485db4195184776a948a9a50e225f0d8c5a67",
     "src/chimeraforge/fleet_monitor.py": "a84309ddd30ae6459d2adeb1da6a9856f569749c48179d1813348e01df36aa87",
