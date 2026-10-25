@@ -1,0 +1,23 @@
+name: CF078 Windows 3.10 diagnostic
+
+on:
+  push:
+    branches: [codex/diagnose-cf078-windows310]
+
+permissions:
+  contents: read
+
+jobs:
+  native-fixture-diagnostic:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: ./.github/actions/setup-ci
+        with:
+          python-version: "3.10"
+      - run: uv run --no-sync ruff check scripts/ci_cf078_windows310_diagnostic.py
+      - run: uv run --no-sync python scripts/ci_cf078_windows310_diagnostic.py
