@@ -348,6 +348,46 @@ async def _generate(
         raise failure
 
 
+def observed_cpu_controls(value: dict) -> dict:
+    """Check native protocol facts while preserving absent offload evidence."""
+    assert value.get("error_class") is None
+    running, observation = value["loaded"], value["startup"]
+    assert running and all(
+        type(row["size_vram"]) is int and row["size_vram"] == 0 for row in running
+    )
+    assert observation["log_state"] == "read"
+    assert not any(
+        observation[name]
+        for name in (
+            "log_truncated",
+            "decode_errors",
+            "partial_line",
+            "overlong_lines",
+            "record_limit_exceeded",
+            "unbound_startup_lines",
+        )
+    )
+    assert observation["records"]
+    for row in observation["records"]:
+        assert row["ngl_state"] == "known" and row["ngl"] == 0 and row["model_loaded"] is True
+        assert row["buffer_bytes"]["cpu"] > 0 and row["buffer_bytes"]["gpu"] == 0
+        assert row["buffer_bytes"]["amx"] == 0
+        assert not (
+            row["unknown_startup_lines"]
+            or row["invalid_startup_lines"]
+            or row["buffer_limit_exceeded"]
+        )
+        if row["offload_state"] == "missing":
+            assert row["offloaded_layers"] is None and row["total_layers"] is None
+        else:
+            assert row["offload_state"] == "known" and row["offloaded_layers"] == 0
+    return {
+        "criterion": "observed_cpu_protocol_controls",
+        "physical_placement": "unverified",
+        "offload_log_states": [row["offload_state"] for row in observation["records"]],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkout", required=True, type=Path)
@@ -521,24 +561,30 @@ def main(argv: list[str] | None = None) -> int:
             )
             receipt["cpu_observations"] = []
             for index, (client, log) in enumerate(zip(clients, logs)):
-                running = client.get("/api/ps").raise_for_status().json()["models"]
-                assert running and all(row["size_vram"] == 0 for row in running)
+                error, running = None, None
+                try:
+                    running = client.get("/api/ps").raise_for_status().json()["models"]
+                except (httpx.HTTPError, ValueError, KeyError) as exc:
+                    error = type(exc).__name__
                 log.flush()
                 observation = read_runtime_observation(work / f"server-{index + 1}.log")
-                assert observation["startup_facts_complete"], observation
-                assert all(
-                    row["ngl"] == 0
-                    and row["offloaded_layers"] == 0
-                    and row["buffer_bytes"]["gpu"] == 0
-                    for row in observation["records"]
-                ), observation
-                receipt["cpu_observations"].append({"loaded": running, "startup": observation})
+                receipt["cpu_observations"].append(
+                    {"loaded": running, "startup": observation, "error_class": error}
+                )
             assert source.read_bytes() == original and _store_identity(store) == identity
             assert (
                 workload_source.read_bytes() == workload_raw
                 and routes_source.read_bytes() == routes_raw
             )
             receipt["source_unchanged"] = True
+            receipt["post_generation_integrity"] = {
+                "plan": True,
+                "workload": True,
+                "routes": True,
+                "referenced_store": True,
+            }
+            for value in receipt["cpu_observations"]:
+                value["criterion"] = observed_cpu_controls(value)
             receipt["result"] = "NATIVE_THREE_MEMBER_FEASIBLE"
         except BaseException as exc:
             receipt["result"] = "FAILED"

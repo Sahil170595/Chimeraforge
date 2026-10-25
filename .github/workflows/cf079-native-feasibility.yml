@@ -16,7 +16,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          fetch-depth: 3
+          fetch-depth: 1
+      - name: Fetch the immutable inherited source tree
+        run: git fetch --no-tags --depth=1 origin 0b94ad236cc705998627d59619ec7ed63f7b7de6
       - name: Place the single candidate environment outside the checkout
         run: echo "UV_PROJECT_ENVIRONMENT=$RUNNER_TEMP/cf079-native-feasibility-env" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-ci
