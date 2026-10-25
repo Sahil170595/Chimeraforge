@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.73.0] - 2026-10-24
+
+### Explicit deployment devices and Compose host ports
+
+- The direct `deploy.export_deployment` API accepts `gpu_devices` and `host_port`; the existing `deploy` CLI accepts repeatable `--gpu-device` and Compose-only `--host-port`. Ordered canonical decimal ordinals or full GPU UUIDs bind Linux NVIDIA Compose reservations and systemd application visibility to the saved one-replica TP x PP count.
+- Selections refuse mixed namespaces, duplicate/case-alias UUIDs, abbreviated UUIDs/MIG, malformed IDs, unsupported formats and cardinality mismatches before output. UUID casing is canonicalized. A named 64-GPU-per-replica export admission bound prevents unbounded native output; it is not a planner or host capability claim.
+- Compose retains loopback-only publishing and each engine's native container port, emits device IDs instead of count, and does not copy host ordinals into container CUDA visibility. Requested Compose list order does not verify CUDA rank mapping. Default supported exports remain byte-identical; native checkpoint, quantization, platform and fidelity refusals remain enforced.
+- The installed CPU consumer exports a real native two-GPU saved candidate through CLI/API, and host parser tests validate ordered ordinal/UUID reservations and ports. These offline declarations do not probe device availability/topology, download weights or start inference. Changed core, CLI and consumer modules have a real-import mypy gate.
+
+### Release qualification
+
+- Released independently from PR #129. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39885816890); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.72.0] - 2026-10-24
 
 ### Hardware alternatives in frozen-model studies

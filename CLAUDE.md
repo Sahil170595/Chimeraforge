@@ -57,7 +57,16 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.72.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.73.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Deployment placement (since 0.73.0): direct
+`deploy.export_deployment(..., gpu_devices=["7", "3"], host_port=9001)` and
+`deploy --gpu-device 7 --gpu-device 3 --host-port 9001` retain native TP x PP
+cardinality and all fidelity gates. Compose selects host device IDs without
+copying host ordinals into container CUDA visibility; systemd sets application
+visibility in order. Host ports apply only to Compose and remain loopback bound.
+The 64-GPU-per-replica limit bounds export work, not host/planner capability.
+Default exports retain their count/port behavior. See [deployment](docs/deployment.md).
 
 Hardware studies (since 0.72.0): `study PLAN_OR_BUNDLE --cases CASES
 --out STUDY --json` and `api.study_plan` accept exact case-insensitive `hardware`

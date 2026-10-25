@@ -278,6 +278,15 @@ performance remain unverified. A self-consistent bundle can be re-signed by
 anyone; hashes cannot authenticate the producing source, qualify actual served
 weights, or establish measured prediction accuracy.
 
+## Explicit deployment placement
+
+Since **Chimeraforge 0.73.0**, the direct API
+`chimeraforge.deploy.export_deployment` supports `gpu_devices` and `host_port`.
+The saved candidate's model and TP x PP geometry remain unchanged. See
+[complete CLI/API examples, identifier validation, ports and proof limits](deployment.md#explicit-device-selection-and-host-ports).
+Default exports retain their count/port behavior. Hardware studies, available
+since 0.72.0, model alternatives without observing host placement.
+
 ## Checkpoint identity
 
 This feature is available in Chimeraforge 0.57.0. Install `pip install "chimeraforge==0.57.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37953617963); each release separately qualifies its versioned artifacts.

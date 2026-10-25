@@ -55,10 +55,106 @@ chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" --form
 For SGLang, `--executable` is the Python interpreter containing SGLang. Native
 services use the exact supplied executable, argument arrays/escaped `ExecStart`,
 and loopback bindings. The systemd template is a **user** service; it does not
-declare a root service or invent a service account. Its `CUDA_VISIBLE_DEVICES`
+declare a root service or invent a service account. By default its `CUDA_VISIBLE_DEVICES`
 selects GPU indices `0..TP*PP-1`; check that those are the planned hardware before
-starting it. Compose reserves the same count of NVIDIA devices and publishes only
+starting it. By default Compose reserves the same count of NVIDIA devices and publishes only
 on `127.0.0.1`. It does not identify GPU models or provision an NVIDIA runtime.
+
+## Explicit device selection and host ports
+
+These options are available since **Chimeraforge 0.73.0**. Default exports retain
+their GPU counts and ports when the options are omitted. Hardware studies, available
+since 0.72.0, model alternatives without selecting observed deployment devices.
+
+The keyword-only direct module API is
+`chimeraforge.deploy.export_deployment(artifact, *, format, model=None,
+image=None, candidate_index=0, executable=None, output_path=None,
+gpu_devices=None, host_port=None)`. It renders configuration; only the CLI writes
+new output files. Both options default to `None`, preserving supported legacy
+export content byte for byte. Explicit `gpu_devices=[]` is an error.
+
+Repeat `--gpu-device` in caller order once per selected candidate's **TP x PP**,
+not once per replica. Only one replica is supported. For example, produce an
+offline manual geometry plan, then select its actual one-replica vLLM FP16 row:
+
+```bash
+chimeraforge plan --model org/manual-placement --params-b 3 --n-layers 28 \
+  --n-kv-heads 8 --d-head 128 --hardware "RTX 4090 24GB" --platform linux \
+  --tensor-parallel 2 --request-rate 0.01 --quality-target 0 --budget 100000 \
+  --no-network --save placement-plan.json --json
+CANDIDATE_INDEX=$(python -c "import json; p=json.load(open('placement-plan.json')); print(next(i for i,c in enumerate(p['result']['candidates']) if c['backend']=='vllm' and c['quant']=='FP16' and c['n_agents']==1 and c['tensor_parallel']==2 and c['pipeline_parallel']==1 and c['offload_fraction']==0))")
+mkdir placement
+chimeraforge deploy --plan placement-plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --model org/manual-placement --format compose --image example/engine:1 \
+  --gpu-device 7 --gpu-device 3 --host-port 9001 --out placement/compose.json
+chimeraforge deploy --plan placement-plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --model org/manual-placement --format systemd --executable /opt/vllm/bin/vllm \
+  --gpu-device 7 --gpu-device 3 --out placement/inference.service
+```
+
+The manual identity and image above are explicit illustrative assumptions, not
+verified model weights or a qualified engine image. Resolve a concrete checkpoint
+and supply your matching installed engine/image for an actual deployment.
+The saved platform, model geometry, context, dtype, KV settings, TP/PP and all
+native fidelity gates remain enforced; these options cannot enable an otherwise
+unsupported backend, platform, recurrent state, LoRA, offload or replica layout.
+
+```python
+from chimeraforge.api import load_plan
+from chimeraforge.deploy import export_deployment
+
+saved = load_plan("placement-plan.json")
+index = next(i for i, c in enumerate(saved.to_dict()["result"]["candidates"])
+    if c["backend"] == "vllm" and c["quant"] == "FP16" and c["n_agents"] == 1
+    and c["tensor_parallel"] == 2 and c["pipeline_parallel"] == 1
+    and c["offload_fraction"] == 0)
+config = export_deployment(saved, format="compose", candidate_index=index,
+    model="org/manual-placement", image="example/engine:1",
+    gpu_devices=["7", "3"], host_port=9001)
+print(config.content)  # no file write, host probe, engine start or inference
+```
+
+Device selection is supported only for **Linux NVIDIA CUDA Compose and systemd**.
+Use either ASCII canonical decimal ordinals (`"0"`, `"7"`, `"3"`) or full GPU UUIDs,
+for example `GPU-ad2367dd-a40e-6b86-6fc3-c44a2cc92c7e`. To select UUIDs, replace both
+CLI values or pass a list of full UUIDs in Python. UUID casing is canonicalized to
+`GPU-` plus lowercase hex; input order is retained. No host ordinal bound is
+inferred from the number of selected GPUs: `['7', '3']` is valid for TP=2.
+
+The API requires an actual list of strings, not a comma-separated string, tuple,
+generator or custom list subtype. Selections refuse leading-zero/negative/signed/
+whitespace/Unicode-digit aliases, abbreviated UUIDs, MIG IDs, duplicate IDs
+(including case aliases), mixed UUID/ordinal namespaces and incorrect cardinality.
+Each identifier is bounded to 40 characters. A named **64 GPUs per replica export
+admission limit** bounds validation/output work, including default systemd lists;
+saved candidates above that bound are refused even without explicit placement.
+It is not a native planner limit, topology observation or physical host ceiling.
+
+Compose emits the ordered `device_ids` declaration **instead of `count`**, retains
+`capabilities: [gpu]`, and does not copy host ordinals into container
+`CUDA_VISIBLE_DEVICES`. Container visibility and CUDA enumeration/remapping are
+different controls. The declared list order is not observed CUDA rank mapping;
+verify the actual runtime separately. systemd emits `CUDA_VISIBLE_DEVICES` in the
+requested application order. Numeric selectors depend on each runtime's device
+enumeration; full UUIDs avoid relying on a host index remaining stable.
+
+`--host-port` / `host_port` is Compose-only and must be an integer 1..65535 (Python
+booleans are refused). Publishing remains bound to `127.0.0.1`. The override
+changes only the host port; native container ports remain vLLM 8000, SGLang 30000,
+TGI 80, and Ollama 11434. Default host ports remain 8000, 30000, 8080 and 11434
+respectively. Unsupported option/format combinations refuse before output rather
+than being ignored. Existing main/companion output files and the source plan stay
+protected by the existing exclusive-create contract.
+
+These are **offline declarations**: no device existence, accessibility, CUDA rank,
+GPU model/topology, weights, engine availability or measured serving performance
+is verified. Installed CPU CLI/API and actual `docker compose config` acceptance
+validate declarations and syntax only. Device/runtime semantics were rechecked on
+**2026-10-22** against [Docker GPU support](https://docs.docker.com/compose/how-tos/gpu-support/),
+[Compose device reservations](https://docs.docker.com/reference/compose-file/deploy/),
+[NVIDIA container visibility](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html),
+[CUDA environment variables](https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/environment-variables.html)
+and [NVIDIA device ordering](https://docs.nvidia.com/deploy/topics/topic_5_2_1.html).
 
 Ollama exports run `ollama serve`, rather than an interactive `ollama run` client.
 Compose/native-unit exports also write `Modelfile` beside the output. Start the

@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-24).** [Chimeraforge 0.72.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.72.0) adds hardware alternatives in frozen-model studies. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-24).** [Chimeraforge 0.73.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.73.0) adds explicit deployment devices and Compose host ports. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.72.0"
+pip install "chimeraforge[mcp]==0.73.0"
 ```
 
 ## Quickstart
@@ -409,6 +409,18 @@ without probing this host, running inference or attesting hardware/weights.
 
 ### `deploy` -- export serving configuration
 
+**Explicit deployment devices (since 0.73.0):** repeat `--gpu-device` once per saved TP x PP GPU
+and optionally set Compose `--host-port`. For the one-GPU vLLM selection below,
+append `--gpu-device 7 --host-port 9001`. Two-GPU selection uses, for example,
+`--gpu-device 7 --gpu-device 3`. Full GPU UUIDs are also supported. Compose emits
+`device_ids` instead of `count`; its list order is a requested declaration, not
+observed CUDA rank mapping. systemd uses ordered `CUDA_VISIBLE_DEVICES` selectors.
+The API accepts `gpu_devices=["7", "3"]` and `host_port=9001`; see the
+[full options, API examples and refusals](docs/deployment.md#explicit-device-selection-and-host-ports).
+Default exports retain their GPU count and ports when these options are omitted.
+The export admission bound is 64 GPUs per replica, with no device, topology or
+performance verification.
+
 Export one saved candidate as Compose, a systemd user service, an Ollama macOS
 LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
 
@@ -601,7 +613,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.72.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.73.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
