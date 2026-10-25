@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.72.0] - Unreleased
+## [0.72.0] - 2026-10-24
 
 ### Hardware alternatives in frozen-model studies
 
@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - One full held hardware registry is bound into the study policy receipt. Source/base and alternative raw/effective GPU facts remain distinct; live policy changes abort the study. Physical configuration identity detects same-name geometry changes while excluding price and source metadata. Timing retains native extrapolation and applicable model-quality evidence remains measured.
 - Explicit hardware cases refuse source cloud-instance pricing and GPU overrides, including same-name selection. Ordinary cases remain supported. Native compatibility, VRAM and price gates retain infeasible and unknown-price outcomes; explicit hourly assumptions retain their no-cloud rule. No host probe, inference, hardware/weights authentication or measured performance claim is introduced.
 - Extend the existing installed CPU consumer with real CLI/API alternatives over saved plans and absent-producer bundles; type-check the changed study core, CLI and consumer. Bounded bundle-member alias protection rejects hardlink output aliases without walking arbitrary directories.
+
+### Release qualification
+
+- Refresh locked CI/evaluation dependencies after four new advisory findings: filelock 4.2.4 on Python 3.11+ and unaffected 3.20.3 on Python 3.10, plus setuptools 84.2.1. Conditional `eval`/`dev` requirements enforce the filelock boundary for public installs; build/dev setuptools requires at least 84.1.0. Native resolver markers preserve Python 3.10-3.14 support without ignoring advisories or changing core application dependencies. Sources: [filelock affected range and fix](https://github.com/tox-dev/filelock/security/advisories/GHSA-v4x8-3wr5-3wq8), [Windows SQLite locks](https://github.com/advisories/GHSA-9vhv-jxww-xfm5), [Windows soft locks](https://github.com/advisories/GHSA-567q-5qvw-pf92), and [setuptools fix](https://github.com/pypa/setuptools/security/advisories/GHSA-xmj3-9gf7-h52w).
+- Released independently from PR #128. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39882733594); the publishing workflow separately validates and attests the exact versioned distributions before publication.
 
 ## [0.71.0] - 2026-10-22
 
