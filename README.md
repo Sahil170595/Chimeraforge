@@ -598,6 +598,31 @@ chimeraforge monitor --from-plan plan.json --candidate-index "$CANDIDATE_INDEX" 
 
 Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. `--from-plan plan.json --candidate-index 0` binds the saved candidate and target sources to passive serving metadata. Known identity/configuration disagreements exit 5 separately from native SLO outcomes; unavailable required endpoint identity exits 4. GPU geometry, fleet topology, workload and immutable weights remain explicitly unverified when unavailable. Independent plan-binding and native SLO Prometheus gauges are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
 
+### `inventory-check` -- compare queried selectors and saved B1 memory
+
+**Unreleased 0.77.0 source candidate.** The public 0.76.0 installation does not
+include this command. Check every original ordered selector against one bounded
+NVIDIA inventory view and compare reported free memory with the saved per-GPU
+modeled batch-one baseline:
+
+```bash
+# When saved candidate 0 has N=3, TP=2 and PP=1, retain all six selectors:
+chimeraforge inventory-check --plan fleet.json --candidate-index 0 \
+  --replica-devices 7,3 --replica-devices 9,2 --replica-devices 8,4 --json
+
+# A saved single-replica TP=2 candidate instead uses repeated singular selectors:
+chimeraforge inventory-check --plan single.json --gpu-device 7 --gpu-device 3 --json
+```
+
+Exit 0 means only complete queried mapping and reported-free-versus-saved-baseline
+arithmetic; 5 means a complete view establishes selector absence or shortfall;
+4 means unavailable/incomplete evidence or overlap; malformed declarations exit 1
+before contact. Every report retains `deployment_ready: null`. Total memory is
+diagnostic and cannot replace unavailable free. MIG Enabled/Disabled/N/A remain raw
+diagnostics, with no physical independence, pooled capacity, allocation or runtime
+peak claim. The saved effective batch is reported separately from the B1 baseline.
+See the [complete CLI/API contract and exact interval](docs/inventory-check.md).
+
 ### `doctor` -- check this machine (read-only)
 
 ```bash
