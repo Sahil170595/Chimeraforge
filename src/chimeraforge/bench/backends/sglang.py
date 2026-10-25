@@ -23,6 +23,7 @@ from chimeraforge.bench.backends.base import (
     identity_message,
 )
 from chimeraforge.bench.metrics import RunMetrics
+from chimeraforge.monitor_connection import MonitorConnection, admit_connection
 
 logger = logging.getLogger(__name__)
 
@@ -52,15 +53,22 @@ class SGLangBackend(Backend):
         *,
         transport: httpx.AsyncBaseTransport | None = None,
         clock: Callable[[], float] | None = None,
+        connection: MonitorConnection | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
+        admit_connection(connection, self.base_url)
+        self._connection = connection
         self._transport = transport
         self._clock = clock or time.perf_counter
         self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=REQUEST_TIMEOUT_S, transport=self._transport)
+            self._client = httpx.AsyncClient(
+                timeout=REQUEST_TIMEOUT_S,
+                transport=self._transport,
+                **(self._connection._client_kwargs() if self._connection is not None else {}),
+            )
         return self._client
 
     async def close(self) -> None:

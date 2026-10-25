@@ -153,6 +153,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
 
     verification = accept_verification(cwd, env, saved, output, index, FLEET_DEVICES, FLEET_PORTS)
     from ci_monitor_fleet import accept as accept_monitoring
+    from ci_secure_monitor import accept as accept_secure_monitoring
 
     monitoring = accept_monitoring(cwd, env, saved, index)
     from ci_inventory_check import accept as accept_inventory
@@ -178,6 +179,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
         "physical_independence": "unverified",
         "deployment_verification": verification,
         "passive_monitoring": monitoring,
+        "secure_monitoring": accept_secure_monitoring(cwd, env, saved),
         "inventory_arithmetic": inventory,
     }
 

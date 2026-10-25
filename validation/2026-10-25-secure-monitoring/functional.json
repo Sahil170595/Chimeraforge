@@ -1,0 +1,212 @@
+{
+  "captured_at": "2026-10-25T10:42:18.385074+00:00",
+  "version": "0.78.0",
+  "evidence": "source CLI/API on owned CPU TLS fixtures; no installed-distribution or GPU qualification",
+  "result": {
+    "scope": "owned CPU TLS protocol fixtures; no real serving engine/GPU qualification",
+    "controls": [
+      {
+        "backend": "vllm",
+        "mode": "bearer-privateCA",
+        "scope": "standalone",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": false,
+        "authorized_routes": 4
+      },
+      {
+        "backend": "vllm",
+        "mode": "bearer-privateCA",
+        "scope": "saved",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": true,
+        "authorized_routes": 16
+      },
+      {
+        "backend": "vllm",
+        "mode": "bearer-privateCA",
+        "scope": "fleet",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 3,
+        "metadata_brackets": true,
+        "authorized_routes": 48
+      },
+      {
+        "backend": "vllm",
+        "mode": "bearer-privateCA-mTLS",
+        "scope": "standalone",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": false,
+        "authorized_routes": 4
+      },
+      {
+        "backend": "vllm",
+        "mode": "bearer-privateCA-mTLS",
+        "scope": "saved",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": true,
+        "authorized_routes": 16
+      },
+      {
+        "backend": "vllm",
+        "mode": "bearer-privateCA-mTLS",
+        "scope": "fleet",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 3,
+        "metadata_brackets": true,
+        "authorized_routes": 48
+      },
+      {
+        "backend": "sglang",
+        "mode": "bearer-privateCA",
+        "scope": "standalone",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": false,
+        "authorized_routes": 4
+      },
+      {
+        "backend": "sglang",
+        "mode": "bearer-privateCA",
+        "scope": "saved",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": true,
+        "authorized_routes": 12
+      },
+      {
+        "backend": "sglang",
+        "mode": "bearer-privateCA",
+        "scope": "fleet",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 3,
+        "metadata_brackets": true,
+        "authorized_routes": 36
+      },
+      {
+        "backend": "sglang",
+        "mode": "bearer-privateCA-mTLS",
+        "scope": "standalone",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": false,
+        "authorized_routes": 4
+      },
+      {
+        "backend": "sglang",
+        "mode": "bearer-privateCA-mTLS",
+        "scope": "saved",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 1,
+        "metadata_brackets": true,
+        "authorized_routes": 12
+      },
+      {
+        "backend": "sglang",
+        "mode": "bearer-privateCA-mTLS",
+        "scope": "fleet",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "declared_slots": 3,
+        "metadata_brackets": true,
+        "authorized_routes": 36
+      }
+    ],
+    "negative_controls": [
+      {
+        "backend": "vllm",
+        "mtls": false,
+        "fault": "wrong-ca",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "mtls": false,
+        "fault": "wrong-bearer",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 2
+      },
+      {
+        "backend": "vllm",
+        "mtls": true,
+        "fault": "wrong-ca",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "mtls": true,
+        "fault": "missing-client",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "mtls": false,
+        "fault": "wrong-ca",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "mtls": false,
+        "fault": "wrong-bearer",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 2
+      },
+      {
+        "backend": "sglang",
+        "mtls": true,
+        "fault": "wrong-ca",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "mtls": true,
+        "fault": "missing-client",
+        "api": "categorical error",
+        "cli_exit": 1,
+        "http_contacts": 0
+      }
+    ],
+    "encrypted_key_cli": "noninteractive refusal; zero contacts",
+    "proxy_contacts": 0,
+    "implicit_keylog_created": false,
+    "source_sha256": "5cfc56f5708ef9728fc38c28f60c44bd272520511daad795db0c824092d436d6",
+    "source_bytes_unchanged": true,
+    "fixture_resources": "closed",
+    "physical_identity": "unverified",
+    "runtime_capacity": "unverified"
+  },
+  "source_sha256": {
+    "scripts/ci_secure_monitor.py": "d03dbb9f4d2dec97ee090743f03e8a22b65808d0c3229e15af5beedbab3a5ae9",
+    "src/chimeraforge/monitor_connection.py": "11be8acee01499b176f29d8a3e151b95692fa6a809768816b488f9d69466c775",
+    "src/chimeraforge/monitor.py": "62ef47b16828b3b7c4afdd8ff5c433f1a786d3df40e12668951edd4a8274e0cd",
+    "src/chimeraforge/plan_monitor.py": "2d3c5d74cac2a67a59763572e3e485db4195184776a948a9a50e225f0d8c5a67",
+    "src/chimeraforge/fleet_monitor.py": "56e70553ee6e4c95dbff8b2195b051639eeac95123d338923ef1f99ccf0bef23",
+    "src/chimeraforge/fleet_monitor_transport.py": "be4b33f762093626a7df82b7c82e9974ebe8b5c8e2a280abb2845e11079d1acc"
+  }
+}

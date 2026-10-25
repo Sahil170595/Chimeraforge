@@ -14,6 +14,7 @@ from chimeraforge.bench import serving
 from chimeraforge.bench.backends import get_backend
 from chimeraforge.bench.backends.base import backend_lifecycle
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow, run_monitor
+from chimeraforge.monitor_connection import MonitorConnection, admit_connection
 
 if TYPE_CHECKING:
     from chimeraforge.api import PlanArtifact
@@ -35,7 +36,9 @@ def _serving_url(url: str) -> str | None:
     return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
 
 
-async def _observe(request: MonitorRequest, stop: threading.Event) -> dict:
+async def _observe(
+    request: MonitorRequest, stop: threading.Event, connection: MonitorConnection | None = None
+) -> dict:
     """Bound metadata traffic and cooperative cleanup separately, with explicit limits."""
     url = _serving_url(request.url)
     if url is None:
@@ -49,7 +52,11 @@ async def _observe(request: MonitorRequest, stop: threading.Event) -> dict:
     }
 
     async def operation() -> dict:
-        backend = get_backend(request.backend, base_url=url)
+        backend = get_backend(
+            request.backend,
+            base_url=url,
+            **({"connection": connection} if connection is not None else {}),
+        )
         async with backend_lifecycle(backend, _cleanup=cleanup):
             return await serving.observe_backend(backend, request.model)
 
@@ -71,11 +78,7 @@ async def _observe(request: MonitorRequest, stop: threading.Event) -> dict:
                 result = serving.safe_observation(task.result())
                 break
     except Exception as exc:
-        logger.warning(
-            "monitor metadata unavailable (%s): %s",
-            type(exc).__name__,
-            serving.sanitize_message(str(exc)),
-        )
+        logger.warning("monitor metadata unavailable (%s)", type(exc).__name__)
         result = {"source": "metadata observation unavailable", "limitations": [type(exc).__name__]}
     finally:
         if not task.done():
@@ -89,9 +92,7 @@ async def _observe(request: MonitorRequest, stop: threading.Event) -> dict:
                 )
         except Exception as exc:
             logger.warning(
-                "monitor adapter operation failed during closure (%s): %s",
-                type(exc).__name__,
-                serving.sanitize_message(str(exc)),
+                "monitor adapter operation failed during closure (%s)", type(exc).__name__
             )
     result["resource_cleanup"] = cleanup
     return result
@@ -104,6 +105,7 @@ def monitor_saved(
     candidate_index: int = 0,
     stop_event: threading.Event | None = None,
     on_window: Callable[[MonitorWindow], None] | None = None,
+    connection: MonitorConnection | None = None,
 ) -> MonitorReport:
     from chimeraforge.api import PlanArtifact, artifact_from_dict, load_plan
 
@@ -128,14 +130,25 @@ def monitor_saved(
         )
     effective = replace(request, **targets)
     effective.validate()
+    admit_connection(connection, effective.url)
     stop = stop_event if stop_event is not None else threading.Event()
     observations: list[dict] = []
 
     def observe() -> None:
         if not stop.is_set():
-            observations.append(asyncio.run(_observe(effective, stop)))
+            observations.append(
+                asyncio.run(_observe(effective, stop, connection))
+                if connection is not None
+                else asyncio.run(_observe(effective, stop))
+            )
 
-    report = run_monitor(effective, stop_event=stop, on_window=on_window, _on_scrape=observe)
+    report = run_monitor(
+        effective,
+        stop_event=stop,
+        on_window=on_window,
+        _on_scrape=observe,
+        **({"connection": connection} if connection is not None else {}),
+    )
     from chimeraforge.monitor_binding import assemble_binding
 
     binding = assemble_binding(data, candidate, candidate_index, effective, sources, observations)

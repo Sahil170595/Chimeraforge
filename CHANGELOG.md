@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Runtime HTTPS and authenticated monitoring
+
+- Runtime-only `MonitorConnection` and named-environment CLI options supply verified HTTPS, private CA replacement, bearer authentication and optional client certificates to standalone, saved-plan and complete declared-fleet monitoring. The same origin-bound policy covers metrics and all before/after vLLM/SGLang metadata, including both actual fleet transport pools; redirects are refused.
+- Prepare all secure fleet settings before contact. Explicit mappings (including empty mappings) require HTTPS for every original endpoint; credentials are assigned per ID without implicit broadcast. Secrets, environment names and certificate paths stay outside saved requests and reports; secure failures use categorical diagnostics. Explicit trust bypasses HTTPX proxy/CA discovery and implicit SSL key logging without mutating process environment.
+- Keep native evidence, budgets, failure priorities, anonymous defaults and owned cleanup. Real owned CPU TLS/auth/mTLS fixtures exercise source and installed CLI/API; they do not qualify physical servers, GPUs, running weights or capacity. Declare the already locked `certifi` as a direct core dependency without changing external package versions.
+
 ### Queried inventory and saved memory arithmetic (0.77.0 candidate)
 
 - `inventory-check` and typed async `api.check_inventory` retain every original ordered replica/TP/PP selector, resolve one strict bounded NVIDIA inventory observation, and compare each reported free-memory value with the saved per-GPU modeled batch-one baseline. The exact rounding interval is independent of caller Decimal settings; it bounds serialization rounding, not model error or runtime demand.

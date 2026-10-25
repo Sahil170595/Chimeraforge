@@ -43,6 +43,7 @@ def run_cli(
         env=env,
         text=True,
         capture_output=True,
+        stdin=subprocess.DEVNULL,
         timeout=CLI_TIMEOUT_SECONDS,
     )
     allowed = expected_code if isinstance(expected_code, tuple) else (expected_code,)

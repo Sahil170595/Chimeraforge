@@ -26,7 +26,9 @@ API `stop_event` cancel the observation. No process remains running afterwards.
 
 The URL must use HTTP(S), without userinfo, query parameters or fragments. A base
 URL is normalized to `/metrics`. TLS certificate verification remains enabled.
-The monitor provides no authentication-token or unverified-TLS flags.
+The public 0.76.0 monitor has no authentication settings. Unreleased 0.78.0
+adds runtime HTTPS, named-environment bearer, private CA and client certificates
+through [secure monitoring](secure-monitoring.md). There is no unverified-TLS flag.
 
 ## What is measured
 
@@ -205,3 +207,7 @@ endpoint-only and accepts saved multi-replica candidates; observed engine DP=1
 is not a full-fleet topology mismatch. Both paths retain known BEFORE saved-config
 contradictions when AFTER is unavailable; unknown-only config remains unverified.
 Declared coverage does not authenticate physical servers, GPUs, weights or capacity.
+
+## Runtime secure connections (unreleased 0.78.0)
+
+`run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); public installation remains 0.76.0.

@@ -35,6 +35,8 @@ from chimeraforge.signed_contribution import SignedContribution, SignedContribut
 
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
+from chimeraforge.monitor_connection import MonitorConnection as MonitorConnection
+from chimeraforge.monitor_connection import MonitorConnectionError as MonitorConnectionError
 from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
 from chimeraforge.inventory_types import (
@@ -706,12 +708,18 @@ def monitor_plan(
     candidate_index: int = 0,
     stop_event: threading.Event | None = None,
     on_window: Callable[[MonitorWindow], None] | None = None,
+    connection: MonitorConnection | None = None,
 ) -> MonitorReport:
     """Passively observe saved candidate bindings and native SLOs as separate evidence."""
     from chimeraforge.plan_monitor import monitor_saved
 
     return monitor_saved(
-        saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
+        saved,
+        request,
+        candidate_index=candidate_index,
+        stop_event=stop_event,
+        on_window=on_window,
+        connection=connection,
     )
 
 
@@ -741,11 +749,18 @@ async def monitor_fleet(
     *,
     candidate_index: int = 0,
     stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
 ) -> FleetMonitorReport:
     """Passively observe all declared replicas with shared budgets and retained prefixes."""
     from chimeraforge.fleet_monitor import monitor_fleet as observe
 
-    return await observe(saved, request, candidate_index=candidate_index, stop_event=stop_event)
+    return await observe(
+        saved,
+        request,
+        candidate_index=candidate_index,
+        stop_event=stop_event,
+        connections=connections,
+    )
 
 
 def sign_contribution(

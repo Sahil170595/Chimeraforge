@@ -9,9 +9,11 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Unreleased **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
+
 Public CLI: **0.76.0**. The released features below are included in this version.
 
-Unreleased **0.77.0 source candidate** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
+Unreleased **0.78.0 source candidate** includes [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
 [frozen-model studies](planning-api.md#frozen-context-sensitivity).
 

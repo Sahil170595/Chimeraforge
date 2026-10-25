@@ -29,10 +29,26 @@ def monitor(
     prometheus: Path | None = typer.Option(
         None, "--prometheus", help="Atomic textfile gauge output."
     ),
+    secure: bool = typer.Option(
+        False, "--secure", help="Require verified HTTPS with explicit trust."
+    ),
+    bearer_env: str | None = typer.Option(
+        None, "--bearer-env", help="Read bearer once from this named environment variable."
+    ),
+    ca_bundle: Path | None = typer.Option(
+        None, "--ca-bundle", help="Private PEM CA bundle replacing default roots."
+    ),
+    client_cert: Path | None = typer.Option(
+        None, "--client-cert", help="Client certificate PEM (requires key)."
+    ),
+    client_key: Path | None = typer.Option(
+        None, "--client-key", help="Unencrypted client key PEM (requires certificate)."
+    ),
 ) -> None:
     """Monitor bounded two-scrape SLO windows (pass 0, breach 3, unknown 4)."""
     from chimeraforge.api import PlanError, monitor_plan
     from chimeraforge.monitor import MonitorError, MonitorRequest, run_monitor, write_prometheus
+    from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
 
     try:
         if from_plan is None and candidate_index != 0:
@@ -47,14 +63,26 @@ def monitor(
         request = MonitorRequest(
             backend, url, model, ttft_slo, tpot_slo, interval, windows, timeout
         )
+        connection = (
+            MonitorConnection.from_env(
+                url,
+                bearer_env=bearer_env,
+                ca_bundle=ca_bundle,
+                client_cert=client_cert,
+                client_key=client_key,
+            )
+            if secure
+            or any(value is not None for value in (bearer_env, ca_bundle, client_cert, client_key))
+            else None
+        )
         report = (
-            monitor_plan(from_plan, request, candidate_index=candidate_index)
+            monitor_plan(from_plan, request, candidate_index=candidate_index, connection=connection)
             if from_plan is not None
-            else run_monitor(request)
+            else run_monitor(request, connection=connection)
         )
         if prometheus is not None:
             write_prometheus(report, prometheus)
-    except (MonitorError, PlanError) as exc:
+    except (MonitorError, PlanError, MonitorConnectionError) as exc:
         if output_json:
             typer.echo(json.dumps({"error": str(exc)}, allow_nan=False))
         else:

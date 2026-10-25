@@ -14,6 +14,15 @@ registry bootstrap boundary. The
 independent validation corpus/error-band
 tests remain part of the full suite.
 
+The unreleased 0.78.0 candidate adds a focused typed runtime monitoring-connection
+boundary and real owned CPU HTTPS fixtures. Every installed wheel/rebuilt-sdist
+profile exercises both vLLM/SGLang metadata protocols, standalone/saved/all-three
+replica CLI/API, explicit private trust, bearer and mTLS, negative trust/auth
+controls and noninteractive encrypted-key refusal. Authorized metadata brackets
+are counted separately from SLOs; proxy/keylog sentinels and joined owned handlers
+bound these fixture claims. This is protocol acceptance without real inference,
+customer credentials, GPU execution or physical capacity qualification.
+
 `uv.lock` contains the universal dependency resolution and distribution hashes.
 PR/release jobs refuse a stale lock. Build tooling is included in the lock and
 distributions are built without a second isolated, live dependency resolution.

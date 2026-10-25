@@ -34,6 +34,21 @@ def monitor_fleet(
     max_body_bytes: int = typer.Option(8 * 1024 * 1024, "--max-body-bytes"),
     output_json: bool = typer.Option(False, "--json"),
     prometheus: Path | None = typer.Option(None, "--prometheus"),
+    secure: bool = typer.Option(
+        False, "--secure", help="Verified HTTPS for every declared endpoint."
+    ),
+    bearer_env: list[str] | None = typer.Option(
+        None, "--bearer-env", help="Repeat ID=ENV_NAME; no credential broadcast."
+    ),
+    ca_bundle: list[str] | None = typer.Option(
+        None, "--ca-bundle", help="Repeat ID=PEM_PATH; replaces that endpoint roots."
+    ),
+    client_cert: list[str] | None = typer.Option(
+        None, "--client-cert", help="Repeat ID=PEM_PATH (requires key)."
+    ),
+    client_key: list[str] | None = typer.Option(
+        None, "--client-key", help="Repeat ID=PEM_PATH (requires certificate)."
+    ),
 ) -> None:
     """Passively qualify declared coverage: pass0, breach3, unknown4, mismatch5."""
     from chimeraforge.api import PlanError, monitor_fleet as observe
@@ -47,6 +62,7 @@ def monitor_fleet(
         write_prometheus,
     )
     from chimeraforge.plan_study import protect_output
+    from chimeraforge.monitor_connection import MonitorConnection
 
     async def operation(request: FleetMonitorRequest) -> FleetMonitorReport:
         stop = asyncio.Event()
@@ -54,7 +70,11 @@ def monitor_fleet(
         signal.signal(signal.SIGINT, lambda *_: stop.set())
         try:
             return await observe(
-                from_plan, request, candidate_index=candidate_index, stop_event=stop
+                from_plan,
+                request,
+                candidate_index=candidate_index,
+                stop_event=stop,
+                connections=connections,
             )
         finally:
             signal.signal(signal.SIGINT, previous)
@@ -83,6 +103,32 @@ def monitor_fleet(
             ttft_slo,
             tpot_slo,
         )
+        connections = None
+        if secure or any(
+            value is not None for value in (bearer_env, ca_bundle, client_cert, client_key)
+        ):
+            settings: dict[str, dict[str, str]] = {value.id: {} for value in values}
+            for field, declarations in (
+                ("bearer_env", bearer_env),
+                ("ca_bundle", ca_bundle),
+                ("client_cert", client_cert),
+                ("client_key", client_key),
+            ):
+                if declarations is None:
+                    continue
+                if len(declarations) > MAX_ENDPOINTS:
+                    raise FleetMonitorError("invalid fleet secure configuration")
+                for declaration in declarations:
+                    if len(declaration) > MAX_URL_CHARS or "=" not in declaration:
+                        raise FleetMonitorError("invalid fleet secure configuration")
+                    name, setting = declaration.split("=", 1)
+                    if name not in settings or not setting or field in settings[name]:
+                        raise FleetMonitorError("invalid fleet secure configuration")
+                    settings[name][field] = setting
+            connections = {
+                value.id: MonitorConnection.from_env(value.url, **settings[value.id])
+                for value in values
+            }
         report = asyncio.run(operation(request))
         if prometheus is not None:
             write_prometheus(report, prometheus)

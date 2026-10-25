@@ -61,6 +61,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     script = load_script("ci_deploy_placement")
     load_script("ci_deployment_verify")
     load_script("ci_monitor_fleet")
+    load_script("ci_secure_monitor")
     load_script("ci_inventory_check")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
@@ -69,7 +70,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: origins.append(args))
 
     def source_cli(arguments, cwd, env, expected_code=0):
-        result = CliRunner().invoke(app, arguments)
+        result = CliRunner().invoke(app, arguments, env=env)
         assert result.exit_code == expected_code, result.output
         return result.stdout
 

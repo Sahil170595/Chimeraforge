@@ -57,7 +57,9 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.77.0 (unreleased candidate; public installation 0.76.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.78.0 (unreleased candidate; public installation 0.76.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Secure monitoring (unreleased 0.78.0): runtime-only `MonitorConnection` supplies verified HTTPS, explicit private CA trust, environment-sourced bearer and optional unencrypted client keys to standalone/saved/fleet metrics and all metadata. Explicit fleet mappings, including `{}`, require HTTPS for every original slot; credentials stay per ID and outside persisted requests/reports. Anonymous defaults remain available. CPU TLS fixtures do not qualify a real inference deployment. See [secure monitoring](docs/secure-monitoring.md).
 
 Inventory arithmetic (unreleased 0.77.0): `inventory-check` and async `api.check_inventory` preserve every original N*TP*PP selector and compare one bounded strict native NVIDIA inventory view with the saved per-GPU batch-one baseline. Exact bounded rational comparisons do not inherit caller Decimal settings. Malformed input1, unknown4, complete known missing/shortfall5, arithmetic-only pass0; deployment_ready is always null. MIG Enabled/Disabled/N/A are raw diagnostics, with no physical independence, allocation or runtime-peak claim. See [the inventory contract](docs/inventory-check.md).
 

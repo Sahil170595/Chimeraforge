@@ -3,7 +3,9 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers released Chimeraforge 0.76.0 and the explicitly marked unreleased 0.77.0 source candidate.
+This document covers released Chimeraforge 0.76.0 and the explicitly marked unreleased 0.78.0 source candidate (including 0.77.0 inventory features).
+
+Unreleased 0.78.0 adds opaque runtime `api.MonitorConnection` / `MonitorConnectionError`, `run_monitor(..., connection=None)`, `api.monitor_plan(..., connection=None)` and async `api.monitor_fleet(..., connections=None)`. Explicit fleet mappings, including `{}`, opt every original endpoint into verified HTTPS; omitted IDs receive secure anonymous trust, without credential broadcast. The same origin-bound bearer/privateCA/mTLS policy covers metrics and all metadata. These settings stay outside persisted requests/reports. See [constructor, CLI/API examples, trust and lifecycle limits](secure-monitoring.md).
 
 Unreleased 0.77.0 adds async `api.check_inventory(saved, *, candidate_index=0, gpu_devices=None, replica_gpu_devices=None, timeout=10)` and frozen `InventoryCheck`, `InventoryBaseline`, `InventoryDevice`, `InventoryObservation`, `InventorySlot` types. It compares the full original ordered selector population and reported free memory with the saved per-GPU modeled batch-one baseline. Invalid input raises `InventoryCheckError`; unknown observations remain explicit. See [exact CLI/API examples, outcomes and limits](inventory-check.md). Every result has `deployment_ready: null`.
 Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
