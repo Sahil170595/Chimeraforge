@@ -467,7 +467,7 @@ async def test_secure_owned_pools_clients_streams_and_tasks_close(
                     result.exit_code == 4
                     and len(result.slots) == 3
                     and result.cleanup["state"] == "completed"
-                )
+                ), result.to_dict()
         finally:
             gate.set()
             if not task.done():

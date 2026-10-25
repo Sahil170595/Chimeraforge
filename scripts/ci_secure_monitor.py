@@ -624,6 +624,7 @@ def main() -> int:
         root / "src/chimeraforge/plan_monitor.py",
         root / "src/chimeraforge/fleet_monitor.py",
         root / "src/chimeraforge/fleet_monitor_transport.py",
+        root / "src/chimeraforge/bench/serving.py",
         root / "src/chimeraforge/commands/monitor.py",
         root / "src/chimeraforge/commands/monitor_fleet.py",
     ]
