@@ -28,6 +28,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
 
     checkpoint = load_script("ci_checkpoint_identity")
     script = load_script("ci_deploy_placement")
+    load_script("ci_deployment_verify")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
     observation = checkpoint.seed(live=False)
@@ -52,6 +53,12 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert fleet["replicas"] == 3 and fleet["gpus_total"] == 6
     assert fleet["service_names"] == ["inference-1", "inference-2", "inference-3"]
     assert fleet["source_plan_bytes_unchanged"] and fleet["router"] == "not provided"
+    verification = fleet["deployment_verification"]
+    assert verification["match_exit"] == 0 and verification["drift_exit"] == 5
+    assert verification["invalid_exit"] == 1
+    assert verification["independent_intent_drift_exit"] == 5
+    assert verification["original_plan_and_config_bytes_unchanged"]
+    assert verification["gpu_execution"] == "unverified"
 
 
 def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkeypatch):

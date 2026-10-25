@@ -9,7 +9,7 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
-Current CLI: **0.74.0**. The linked features are included in this version.
+Current CLI: **0.75.0**. The linked features are included in this version.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
 [frozen-model studies](planning-api.md#frozen-context-sensitivity).
 
@@ -21,6 +21,10 @@ Chimeraforge 0.74.0 adds bounded homogeneous online vLLM/SGLang
 [Compose replica exports](deployment.md#homogeneous-compose-replicas) with complete
 explicit GPU groups/ports and manual endpoint targeting. No router/scaler or
 physical GPU verification is supplied. Single exports retain their existing behavior.
+
+Chimeraforge 0.75.0 adds [offline deployment verification](deployment-verification.md)
+with typed direct API and `deploy-verify`. It requires independent saved-plan/render
+intent and checks current-renderer JSON/companion consistency without runtime claims.
 
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
@@ -43,7 +47,7 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-26 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
+27 commands in Chimeraforge 0.75.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`

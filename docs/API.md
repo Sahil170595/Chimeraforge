@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.74.0.
+This document covers Chimeraforge 0.75.0.
 Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
 alternatives under held model/input facts; see
 [the complete study contract](planning-api.md#frozen-context-sensitivity).
@@ -17,6 +17,12 @@ Chimeraforge 0.74.0 adds keyword-only
 to the same direct deployment API. They require a complete explicit layout for
 an original online vLLM/SGLang multi-replica Compose candidate. See the
 [full API/CLI contract](deployment.md#homogeneous-compose-replicas).
+
+Chimeraforge 0.75.0 adds the separate typed direct module API
+`chimeraforge.deployment_verify.verify_deployment` and `deploy-verify` CLI. It
+checks generated JSON Compose/required companion bytes against independent saved
+plan and render intent. See [full signatures, examples and outcomes](deployment-verification.md).
+It is not a `chimeraforge.api` re-export or a runtime/source-authentication check.
 
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is

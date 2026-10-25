@@ -66,7 +66,7 @@ These options are available since **Chimeraforge 0.73.0**. Default exports retai
 their GPU counts and ports when the options are omitted. Hardware studies, available
 since 0.72.0, model alternatives without selecting observed deployment devices.
 
-The keyword-only direct module API in Chimeraforge 0.74.0 is
+The keyword-only direct rendering API, available since Chimeraforge 0.74.0, is
 `chimeraforge.deploy.export_deployment(artifact, *, format, model=None,
 image=None, candidate_index=0, executable=None, output_path=None,
 gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. It renders configuration; only the CLI writes
@@ -328,3 +328,13 @@ documentation on **2026-10-05**:
 Tests exercise Docker Compose's real parser, Linux `systemd-analyze verify`, and
 macOS `plutil -lint` where those tools are installed. These are config acceptance
 checks; they do not run a GPU engine or qualify prediction accuracy.
+
+
+## Offline declaration drift verification
+
+Chimeraforge 0.75.0 adds a separate read-only `deploy-verify`
+command and typed `deployment_verify.verify_deployment` API. Retain the saved plan,
+selected candidate and full rendering options independently; verify generated JSON
+Compose plus only required fixed sibling bytes. See [the complete contract,
+CLI/API examples and bounds](deployment-verification.md). This checks consistency
+with the current renderer; it does not validate runtime state or authenticate a producer.

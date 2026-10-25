@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.75.0] - 2026-10-24
+
+### Offline deployment drift verification
+
+- Typed `deployment_verify.verify_deployment` and `deploy-verify` compare generated JSON Compose and renderer-required companion bytes with an independently supplied original saved plan, selected candidate and complete image/model/device/port intent. The existing renderer and all native fidelity gates remain authoritative; original multi-replica candidates are preserved.
+- Object whitespace/key order are immaterial, scalar types are exact and arrays remain ordered. Pre-interpolation doubled dollars stay literal. Required Ollama Modelfile bytes are compared only at the expected fixed sibling; actual mount paths, environment files, arbitrary YAML and runtime/provider state are never followed.
+- Complete bounded duplicate-free UTF-8/finite JSON admission precedes capped diagnostics. Native no-link regular-file reads, input identity/alias protection and held hashes retain byte boundaries. Value-redacted paths/categories and sanitized public exception tracebacks preserve private actual values and unknown keys.
+- Outcomes are 0 match, 5 admitted config/required-companion drift, and 1 invalid intent, malformed/unsafe/unavailable or overlimit input; native CLI syntax errors remain 2. A match means current-renderer consistency, not authenticity, registry or running-weight truth, atomic cross-file snapshot, physical GPU identity or performance.
+
+### Release qualification
+
+- Released independently from PR #131. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39895105613); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.74.0] - 2026-10-24
 
 ### Homogeneous multi-replica Compose export

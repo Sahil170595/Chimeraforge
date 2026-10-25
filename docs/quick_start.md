@@ -3,7 +3,7 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.74.0 includes native streaming trace observations and
+Chimeraforge 0.75.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
@@ -28,6 +28,11 @@ Since 0.74.0, `deploy` supports `--replica-devices GROUP
 --replica-port PORT` for every original online vLLM/SGLang Compose replica. See
 [complete CLI/API examples](deployment.md#homogeneous-compose-replicas); these
 are manually targeted offline declarations, not measured fleet capacity.
+
+Since 0.75.0, `deploy-verify --plan --config --image --json` verifies declarations
+against independently retained saved-plan and full render intent. See
+[complete CLI/API examples and exit statuses](deployment-verification.md). A match
+means current-renderer consistency, not source authenticity or running GPU proof.
 
 ## 5-Minute Setup
 

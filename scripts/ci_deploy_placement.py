@@ -149,6 +149,9 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
     refused = cwd / "fleet-refused.json"
     run_cli([*common, "--out", str(refused), *layout, "--gpu-device", "7"], cwd, env, 1)
     assert not refused.exists() and saved.read_bytes() == original
+    from ci_deployment_verify import accept as accept_verification
+
+    verification = accept_verification(cwd, env, saved, output, index, FLEET_DEVICES, FLEET_PORTS)
     return {
         "scope": "offline homogeneous serving declaration",
         "replicas": 3,
@@ -167,6 +170,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
         "gpu_execution": "unverified",
         "device_availability": "unverified",
         "physical_independence": "unverified",
+        "deployment_verification": verification,
     }
 
 

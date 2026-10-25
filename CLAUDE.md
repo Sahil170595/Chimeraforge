@@ -57,7 +57,19 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.74.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.75.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Deployment verification (since 0.75.0): separate typed
+`deployment_verify.verify_deployment(saved, config_path, *, image, ...)` and
+`deploy-verify --plan --config --image [same selection/layout flags] --json`
+compare bounded generated JSON Compose and only renderer-required sibling bytes
+against independently supplied original intent. Outcomes: 0 match, 5 admitted
+JSON/companion drift, 1 invalid/unsafe/unavailable; native Typer usage errors stay 2.
+No interpolation, actual mount following, Docker calls or writes. Receipts identify
+the current renderer and file-byte versus object-snapshot source hashes; fixed
+expected paths/categories disclose no actual values/unknown keys. Current-renderer
+consistency is not source authenticity, running weights or an atomic file snapshot.
+See [the complete verification contract](docs/deployment-verification.md).
 
 Homogeneous Compose fleets (since 0.74.0): direct
 `export_deployment(..., replica_gpu_devices=GROUPS, replica_host_ports=PORTS)`

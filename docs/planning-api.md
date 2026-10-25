@@ -292,6 +292,16 @@ Since **Chimeraforge 0.74.0**, this API also accepts `replica_gpu_devices` and
 The exporter preserves original N, total GPU accounting and per-replica batch;
 see [the complete replica contract](deployment.md#homogeneous-compose-replicas).
 
+## Offline deployment verification
+
+Chimeraforge 0.75.0 adds the separate direct module
+`chimeraforge.deployment_verify.verify_deployment(saved, config_path, *, image, ...)`
+returning immutable typed `DeploymentVerification`. Pass the original independent
+saved plan, selected index and complete image/model/placement intent; no options
+are inferred from actual files. See [the full signature, CLI/API examples,
+source hash basis and limits](deployment-verification.md). This does not replan,
+contact a provider, start an engine or authenticate running/source state.
+
 ## Checkpoint identity
 
 This feature is available in Chimeraforge 0.57.0. Install `pip install "chimeraforge==0.57.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37953617963); each release separately qualifies its versioned artifacts.

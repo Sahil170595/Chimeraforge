@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**26 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**27 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.75.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-24).** [Chimeraforge 0.74.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.74.0) adds homogeneous multi-replica Compose export. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-24).** [Chimeraforge 0.75.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.75.0) adds offline deployment drift verification. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.74.0"
+pip install "chimeraforge[mcp]==0.75.0"
 ```
 
 ## Quickstart
@@ -455,6 +455,32 @@ steps. Native units require an explicit installed executable path. See
 [supported templates and config validation](docs/deployment.md). Config acceptance
 does not establish GPU execution or prediction accuracy.
 
+### `deploy-verify` -- check offline declaration drift
+
+**Offline deployment verification (since 0.75.0).** Keep the
+original saved plan, candidate index and full render intent independently from
+the file being checked. For the single-replica export above:
+
+```bash
+chimeraforge deploy-verify --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --config deployment/compose.yaml --image vllm/vllm-openai:v0.30.0 --json
+```
+
+Supply the same `--model` if required and the same singular `--gpu-device` /
+`--host-port`, or repeat all `--replica-devices` / `--replica-port` groups for a
+fleet. Defaults request the renderer defaults; options are never inferred from
+the actual file. It reads generated **JSON Compose** (regardless of extension)
+and only the expected Ollama sibling `Modelfile`. No YAML interpretation,
+interpolation, `.env`/actual-mount reads, Docker calls or writes occur.
+
+Exit 0 means consistency with this installed renderer; 5 means admitted JSON or
+required-companion drift; 1 means invalid/unsafe/unavailable/overlimit input.
+Native CLI usage errors remain 2. JSON object order/whitespace do not matter;
+scalar types, array order and companion bytes do. Fixed expected paths/categories
+omit actual values and unknown key names. This is not source authenticity,
+image/registry truth, running weights, an atomic snapshot or GPU execution proof.
+See [full API/fleet examples, bounds and receipt semantics](docs/deployment-verification.md).
+
 ### `suggest` -- discover & rank models
 
 ```bash
@@ -624,7 +650,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.74.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.75.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
