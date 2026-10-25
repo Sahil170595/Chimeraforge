@@ -59,24 +59,24 @@ ChimeraForge is an LLM inference benchmarking and deployment planning platform, 
 
 **Version:** 0.73.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
-Deployment placement (unreleased 0.73.0 candidate): direct
+Deployment placement (since 0.73.0): direct
 `deploy.export_deployment(..., gpu_devices=["7", "3"], host_port=9001)` and
 `deploy --gpu-device 7 --gpu-device 3 --host-port 9001` retain native TP x PP
 cardinality and all fidelity gates. Compose selects host device IDs without
 copying host ordinals into container CUDA visibility; systemd sets application
 visibility in order. Host ports apply only to Compose and remain loopback bound.
 The 64-GPU-per-replica limit bounds export work, not host/planner capability.
-Published 0.71.0 retains default count/port exports. See [deployment](docs/deployment.md).
+Default exports retain their count/port behavior. See [deployment](docs/deployment.md).
 
-Hardware studies (unreleased 0.72.0 candidate): `study PLAN_OR_BUNDLE --cases CASES
+Hardware studies (since 0.72.0): `study PLAN_OR_BUNDLE --cases CASES
 --out STUDY --json` and `api.study_plan` accept exact case-insensitive `hardware`
 names from one held full GPU registry. Rebind full raw GPU facts and use native
 replay gates; model geometry, platform and original corpus/quality remain held.
 Explicit hardware selection refuses source cloud pricing or GPU overrides.
 Receipts distinguish saved source geometry from alternative registry facts,
 retain unknown/infeasible outcomes, and preserve native timing extrapolation
-and applicable measured quality. Published 0.71.0 has workload/cost studies without
-hardware alternatives. See [the study contract](docs/planning-api.md#frozen-context-sensitivity).
+and applicable measured quality. Ordinary workload/cost studies retain saved
+hardware when no alternative is selected. See [the study contract](docs/planning-api.md#frozen-context-sensitivity).
 
 Trusted signed gates (since 0.71.0): `contribute gate --baseline BEFORE --candidate AFTER
 --trusted-key RECEIVER_KEY --policy POLICY --out DECISION --json` and sync

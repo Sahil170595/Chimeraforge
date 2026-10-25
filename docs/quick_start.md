@@ -3,7 +3,7 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.71.0 includes native streaming trace observations and
+Chimeraforge 0.73.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
@@ -15,15 +15,14 @@ Chimeraforge 0.71.0 includes native streaming trace observations and
 [signed native regression gates](signed-native-gates.md).
 Benchmark gating remains the default.
 
-The **unreleased 0.72.0 candidate** adds offline hardware alternatives through
-`study`: see [the complete case and Python examples](planning-api.md#frozen-context-sensitivity).
-Published 0.71.0 retains workload/cost studies with fixed hardware. Candidate source
-or a candidate wheel is required; no host probe or measured GPU qualification occurs.
+Since 0.72.0, `study` supports offline hardware alternatives: see
+[the complete case and Python examples](planning-api.md#frozen-context-sensitivity).
+Ordinary cases retain saved hardware; no host probe or measured GPU qualification occurs.
 
-The **unreleased 0.73.0 candidate** adds repeatable `deploy --gpu-device` and
+Since 0.73.0, `deploy` supports repeatable `--gpu-device` and
 Compose-only `--host-port`, plus direct `export_deployment` keywords. See
 [complete examples and limits](deployment.md#explicit-device-selection-and-host-ports).
-Published 0.71.0 uses the default GPU count and ports; no GPU placement is verified.
+Default exports retain their GPU count and ports; no GPU placement is verified.
 
 ## 5-Minute Setup
 

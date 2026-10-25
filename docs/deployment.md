@@ -62,9 +62,9 @@ on `127.0.0.1`. It does not identify GPU models or provision an NVIDIA runtime.
 
 ## Explicit device selection and host ports
 
-These options are an **unreleased 0.73.0 candidate** and require candidate source
-or a built candidate wheel. Published 0.71.0 retains default GPU counts and ports;
-0.72.0's candidate hardware studies do not select observed deployment devices.
+These options are available since **Chimeraforge 0.73.0**. Default exports retain
+their GPU counts and ports when the options are omitted. Hardware studies, available
+since 0.72.0, model alternatives without selecting observed deployment devices.
 
 The keyword-only direct module API is
 `chimeraforge.deploy.export_deployment(artifact, *, format, model=None,

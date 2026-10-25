@@ -9,14 +9,13 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
-Current CLI: **0.71.0**. The linked features are included in this version.
-The **unreleased 0.72.0 candidate** adds exact hardware alternatives to
-[frozen-model studies](planning-api.md#frozen-context-sensitivity); it requires
-candidate source or a candidate wheel.
+Current CLI: **0.73.0**. The linked features are included in this version.
+Chimeraforge 0.72.0 adds exact hardware alternatives to
+[frozen-model studies](planning-api.md#frozen-context-sensitivity).
 
-The **unreleased 0.73.0 candidate** adds explicit GPU IDs and Compose host ports:
+Chimeraforge 0.73.0 adds explicit GPU IDs and Compose host ports:
 [deployment contract, CLI and direct Python API](deployment.md#explicit-device-selection-and-host-ports).
-Published 0.71.0 retains the default count/port exports.
+Default exports retain their count/port behavior.
 
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes

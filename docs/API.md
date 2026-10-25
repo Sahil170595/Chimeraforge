@@ -3,11 +3,11 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.71.0.
-The **unreleased 0.72.0 candidate** extends `PlanScenario` / `study_plan` with exact
-hardware alternatives under held model/input facts. It requires candidate source
-or a candidate wheel; see [the complete study contract](planning-api.md#frozen-context-sensitivity).
-The **unreleased 0.73.0 candidate** adds keyword-only `gpu_devices: list[str] | None`
+This document covers Chimeraforge 0.73.0.
+Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
+alternatives under held model/input facts; see
+[the complete study contract](planning-api.md#frozen-context-sensitivity).
+Chimeraforge 0.73.0 adds keyword-only `gpu_devices: list[str] | None`
 and `host_port: int | None` to the direct `chimeraforge.deploy.export_deployment`
 API. This is a module API, not an additional `chimeraforge.api` re-export. See
 [the exact placement contract and complete example](deployment.md#explicit-device-selection-and-host-ports).
