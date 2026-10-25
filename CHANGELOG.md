@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Installed wheel and rebuilt-sdist consumers exercise complete CLI/API protocol controls and hosted CPU unavailability while preserving original plan bytes. Synthetic process fixtures qualify the contract only, not GPU execution.
 - Make the fleet-monitor final-deadline regression fixture deterministic by expiring the real shared budget after the sixth completed native metadata result. A removed-final-guard negative control fails with exit 0; production deadline behavior is unchanged. This repairs a demonstrated scheduling assumption in the old 60 ms fixture.
 
+### Monitoring runtime reliability
+
+- Measure fleet metrics-completion intervals with the native high-resolution monotonic performance counter, preserving the separate event-loop clocks for scheduling, observation budgets and cleanup. Valid short windows no longer collapse to zero on coarse Windows event-loop clocks.
+- Own and join serving-metadata observation tasks with native `asyncio.wait`, preserving categorical timeout/error results while propagating accepted cancellation before exposing a completed result. Repeated caller cancellation cannot abandon child cleanup; this addresses the demonstrated Python 3.10 `wait_for` completion/cancellation race.
+
 ## [0.76.0] - 2026-10-24
 
 ### Passive declared-fleet monitoring
