@@ -405,17 +405,18 @@ async def test_secure_owned_pools_clients_streams_and_tasks_close(
         pools.append(value)
         return value
 
-    original_close = original_pool.aclose
+    original_cleanup = fleet_monitor._cleanup
 
-    async def close(self):
+    async def cleanup(*args):
         if kind == "second-cancel":
+            # Handshake before cooperative worker/client drain reaches the pool-close phase.
             closing.set()
             await gate.wait()
-        await original_close(self)
+        return await original_cleanup(*args)
 
     monkeypatch.setattr(httpx.AsyncClient, "__init__", client_init)
     monkeypatch.setattr(fleet_monitor, "OwnedPool", pool)
-    monkeypatch.setattr(original_pool, "aclose", close)
+    monkeypatch.setattr(fleet_monitor, "_cleanup", cleanup)
     with fixture.server(certs, token="CleanupToken_78", mtls=True) as (url, calls):
         connection = MonitorConnection(
             url,
@@ -445,30 +446,87 @@ async def test_secure_owned_pools_clients_streams_and_tasks_close(
             while sum(row["route"] == "server_info?config_format=json" for row in calls) < 3:
                 await asyncio.sleep(0.01)
 
-        await asyncio.wait_for(observed(), timeout=10)
-        if kind == "second-cancel":
-            task.cancel()
-            await asyncio.wait_for(closing.wait(), timeout=5)
-            task.cancel()
-            gate.set()
-            with pytest.raises(asyncio.CancelledError):
-                await task
-        else:
-            if kind == "stop":
-                stop.set()
+        try:
+            await asyncio.wait_for(observed(), timeout=10)
+            if kind == "second-cancel":
+                assert task.cancel()
+                await asyncio.wait_for(closing.wait(), timeout=5)
+                assert not task.done()
+                assert task.cancel()
+                gate.set()
+                with pytest.raises(asyncio.CancelledError):
+                    await task
             else:
-                assert len(pools) == 6
-                pools[0].budget.deadline = asyncio.get_running_loop().time() - 1
-            result = await task
-            assert (
-                result.exit_code == 4
-                and len(result.slots) == 3
-                and result.cleanup["state"] == "completed"
-            )
+                if kind == "stop":
+                    stop.set()
+                else:
+                    assert len(pools) == 6
+                    pools[0].budget.deadline = asyncio.get_running_loop().time() - 1
+                result = await task
+                assert (
+                    result.exit_code == 4
+                    and len(result.slots) == 3
+                    and result.cleanup["state"] == "completed"
+                )
+        finally:
+            gate.set()
+            if not task.done():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
         assert len(pools) == len(clients) == 6
         assert all(value.closed and not value.streams for value in pools)
         assert all(value.is_closed for value in clients)
         assert asyncio.all_tasks() == before
+
+
+@pytest.mark.asyncio
+async def test_real_tls_fixture_readiness_failure_still_closes_all_owners(
+    native_fleet, certs, monkeypatch
+):
+    import httpx
+    from chimeraforge import fleet_monitor
+
+    clients, pools, injected = [], [], []
+    before = asyncio.all_tasks()
+    original_init, original_pool = httpx.AsyncClient.__init__, fleet_monitor.OwnedPool
+    original_wait = asyncio.wait_for
+
+    def client_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        clients.append(self)
+
+    def pool(*args, **kwargs):
+        value = original_pool(*args, **kwargs)
+        pools.append(value)
+        return value
+
+    async def fail_after_readiness(awaitable, timeout):
+        code = getattr(awaitable, "cr_code", None)
+        readiness = code is not None and code.co_name == "observed" and code.co_filename == __file__
+        result = await original_wait(awaitable, timeout)
+        if readiness:
+            injected.append(True)
+            raise RuntimeError("controlled fixture readiness failure")
+        return result
+
+    monkeypatch.setattr(httpx.AsyncClient, "__init__", client_init)
+    monkeypatch.setattr(fleet_monitor, "OwnedPool", pool)
+    monkeypatch.setattr(asyncio, "wait_for", fail_after_readiness)
+    try:
+        with pytest.raises(RuntimeError, match="controlled fixture readiness failure"):
+            await test_secure_owned_pools_clients_streams_and_tasks_close(
+                native_fleet, certs, monkeypatch, "stop"
+            )
+        assert injected == [True]
+        assert len(clients) == len(pools) == 6
+        assert all(value.is_closed for value in clients)
+        assert all(value.closed and not value.streams for value in pools)
+        assert asyncio.all_tasks() == before
+    finally:
+        pending = asyncio.all_tasks() - before
+        for task in pending:
+            task.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
 
 
 def test_cli_private_admission_and_per_id_errors_never_contact(
@@ -641,3 +699,178 @@ def test_secure_metadata_and_closure_errors_remain_categorical(
     assert "cleanup failed" in caplog.text and all(
         backend._client.is_closed for backend in backends
     )
+
+
+@pytest.mark.parametrize("scope", ["standalone", "saved", "fleet"])
+@pytest.mark.parametrize("role", ["ca", "client", "client_key"])
+def test_cli_output_cannot_replace_any_tls_input_before_contact(
+    certs, native_fleet, tmp_path, scope, role
+):
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    saved, indices = native_fleet
+    plan_path = tmp_path / "saved.json"
+    saved.save(plan_path)
+    inputs = {path: path.read_bytes() for path in (*certs.values(), plan_path)}
+    with fixture.server(certs, mtls=True) as (url, calls):
+        if scope == "fleet":
+            arguments = [
+                "monitor-fleet",
+                "--from-plan",
+                str(plan_path),
+                "--candidate-index",
+                str(indices["vllm"]),
+                "--ttft-slo",
+                "500",
+                "--interval",
+                ".01",
+                "--json",
+            ]
+            for i in range(1, 4):
+                arguments += [
+                    "--endpoint",
+                    f"r{i}={url}/r{i}/metrics",
+                    "--ca-bundle",
+                    f"r{i}={certs['ca']}",
+                    "--client-cert",
+                    f"r{i}={certs['client']}",
+                    "--client-key",
+                    f"r{i}={certs['client_key']}",
+                ]
+        else:
+            arguments = [
+                "monitor",
+                "--backend",
+                "vllm",
+                "--url",
+                url,
+                "--model",
+                "ci/manual-fleet",
+                "--ttft-slo",
+                "500",
+                "--interval",
+                ".01",
+                "--json",
+                "--ca-bundle",
+                str(certs["ca"]),
+                "--client-cert",
+                str(certs["client"]),
+                "--client-key",
+                str(certs["client_key"]),
+            ]
+            if scope == "saved":
+                arguments += [
+                    "--from-plan",
+                    str(plan_path),
+                    "--candidate-index",
+                    str(indices["vllm"]),
+                ]
+        result = CliRunner().invoke(app, arguments + ["--prometheus", str(certs[role])])
+        assert all(path.read_bytes() == raw for path, raw in inputs.items()), (
+            "TLS/source input was replaced by observation output"
+        )
+        assert calls == [], "alias was not refused before contact"
+        assert result.exit_code == 1, result.output
+        assert all(str(path) not in result.stdout + result.stderr for path in certs.values())
+
+
+@pytest.mark.parametrize("scope", ["saved", "fleet"])
+@pytest.mark.parametrize("hardlink", [False, True])
+def test_saved_source_output_aliases_are_refused_with_native_file_identity(
+    native_fleet, tmp_path, scope, hardlink
+):
+    import os
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    saved, indices = native_fleet
+    source, output = tmp_path / "source.json", tmp_path / "output.json"
+    saved.save(source)
+    original = source.read_bytes()
+    if hardlink:
+        os.link(source, output)
+    else:
+        output = source.parent / "." / source.name
+    common = [
+        "--from-plan",
+        str(source),
+        "--candidate-index",
+        str(indices["vllm"]),
+        "--prometheus",
+        str(output),
+        "--json",
+    ]
+    if scope == "saved":
+        arguments = [
+            "monitor",
+            "--backend",
+            "vllm",
+            "--url",
+            "https://must-not-contact.invalid",
+            "--model",
+            "ci/manual-fleet",
+            "--secure",
+            *common,
+        ]
+    else:
+        arguments = ["monitor-fleet", "--secure", *common]
+        for i in range(1, 4):
+            arguments += ["--endpoint", f"r{i}=https://must-not-contact.invalid/r{i}/metrics"]
+    result = CliRunner().invoke(app, arguments)
+    assert result.exit_code == 1, result.output
+    assert source.read_bytes() == original and output.read_bytes() == original
+
+
+@pytest.mark.parametrize("scope", ["standalone", "fleet"])
+def test_private_guard_oserror_is_categorical_before_connection_construction(
+    certs, native_fleet, tmp_path, monkeypatch, scope
+):
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+    from chimeraforge import plan_study
+
+    secret = "PrivateGuardPathCanary_78"
+
+    def failure(*args):
+        raise OSError(secret)
+
+    def construct(*args, **kwargs):
+        pytest.fail("output admission must precede connection preparation")
+
+    monkeypatch.setattr(plan_study, "protect_output", failure)
+    monkeypatch.setattr(MonitorConnection, "from_env", construct)
+    if scope == "standalone":
+        arguments = [
+            "monitor",
+            "--backend",
+            "vllm",
+            "--url",
+            "https://example.test",
+            "--model",
+            "ci/manual-fleet",
+            "--ttft-slo",
+            "500",
+            "--ca-bundle",
+            str(certs["ca"]),
+        ]
+    else:
+        saved, indices = native_fleet
+        source = tmp_path / "saved.json"
+        saved.save(source)
+        arguments = [
+            "monitor-fleet",
+            "--from-plan",
+            str(source),
+            "--candidate-index",
+            str(indices["vllm"]),
+            "--ca-bundle",
+            f"r1={certs['ca']}",
+        ]
+        for i in range(1, 4):
+            arguments += ["--endpoint", f"r{i}=https://example.test/r{i}/metrics"]
+    result = CliRunner().invoke(
+        app, arguments + ["--prometheus", str(tmp_path / "out.prom"), "--json"]
+    )
+    assert result.exit_code == 1, result.output
+    assert secret not in result.stdout + result.stderr

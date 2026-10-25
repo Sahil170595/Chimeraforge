@@ -125,6 +125,16 @@ def monitor_fleet(
                     if name not in settings or not setting or field in settings[name]:
                         raise FleetMonitorError("invalid fleet secure configuration")
                     settings[name][field] = setting
+            if prometheus is not None:
+                protect_output(
+                    prometheus,
+                    tuple(
+                        Path(setting)
+                        for configuration in settings.values()
+                        for field, setting in configuration.items()
+                        if field != "bearer_env"
+                    ),
+                )
             connections = {
                 value.id: MonitorConnection.from_env(value.url, **settings[value.id])
                 for value in values
@@ -132,7 +142,7 @@ def monitor_fleet(
         report = asyncio.run(operation(request))
         if prometheus is not None:
             write_prometheus(report, prometheus)
-    except (FleetMonitorError, PlanError, OSError, ValueError):
+    except (FleetMonitorError, PlanError, OSError, ValueError, RuntimeError):
         if output_json:
             typer.echo(
                 json.dumps({"error": "invalid, unsupported or unavailable fleet observation"})

@@ -66,6 +66,7 @@ def accept(cwd: Path, env: dict[str, str], saved: Path) -> dict[str, Any]:
     paths = certificates(cwd / "secure-fixture")
     controls = []
     negative_controls = []
+    output_alias_controls = []
     for backend in ("vllm", "sglang"):
         index = next(
             i
@@ -197,6 +198,28 @@ def accept(cwd: Path, env: dict[str, str], saved: Path) -> dict[str, Any]:
                             cli += ["--from-plan", str(saved), "--candidate-index", str(index)]
                     observed = json.loads(run_cli(cli, cwd, child_env))
                     assert direct.exit_code == 0
+                    if mtls:
+                        role = {"standalone": "ca", "saved": "client", "fleet": "client_key"}[scope]
+                        held = {
+                            path: path.read_bytes()
+                            for path in (paths["ca"], paths["client"], paths["client_key"], saved)
+                        }
+                        before = len(calls)
+                        refused_alias = json.loads(
+                            run_cli([*cli, "--prometheus", str(paths[role])], cwd, child_env, 1)
+                        )
+                        assert "error" in refused_alias and len(calls) == before
+                        assert all(path.read_bytes() == raw for path, raw in held.items())
+                        output_alias_controls.append(
+                            {
+                                "backend": backend,
+                                "scope": scope,
+                                "protected_role": role,
+                                "cli_exit": 1,
+                                "http_contacts": 0,
+                                "inputs_unchanged": True,
+                            }
+                        )
                     if scope == "fleet":
                         assert isinstance(direct, api.FleetMonitorReport)
                         assert observed["exit_code"] == 0 and len(observed["slots"]) == 3
@@ -274,6 +297,7 @@ def accept(cwd: Path, env: dict[str, str], saved: Path) -> dict[str, Any]:
         "scope": "owned CPU TLS protocol fixtures; no real serving engine/GPU qualification",
         "controls": controls,
         "negative_controls": negative_controls,
+        "output_alias_controls": output_alias_controls,
         "encrypted_key_cli": "noninteractive refusal; zero contacts",
         "proxy_contacts": 0,
         "implicit_keylog_created": False,
@@ -600,6 +624,8 @@ def main() -> int:
         root / "src/chimeraforge/plan_monitor.py",
         root / "src/chimeraforge/fleet_monitor.py",
         root / "src/chimeraforge/fleet_monitor_transport.py",
+        root / "src/chimeraforge/commands/monitor.py",
+        root / "src/chimeraforge/commands/monitor_fleet.py",
     ]
     record = {
         "captured_at": datetime.now(timezone.utc).isoformat(),

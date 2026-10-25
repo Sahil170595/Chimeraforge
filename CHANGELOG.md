@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Runtime-only `MonitorConnection` and named-environment CLI options supply verified HTTPS, private CA replacement, bearer authentication and optional client certificates to standalone, saved-plan and complete declared-fleet monitoring. The same origin-bound policy covers metrics and all before/after vLLM/SGLang metadata, including both actual fleet transport pools; redirects are refused.
 - Prepare all secure fleet settings before contact. Explicit mappings (including empty mappings) require HTTPS for every original endpoint; credentials are assigned per ID without implicit broadcast. Secrets, environment names and certificate paths stay outside saved requests and reports; secure failures use categorical diagnostics. Explicit trust bypasses HTTPX proxy/CA discovery and implicit SSL key logging without mutating process environment.
+- Both CLI boundaries protect every explicit TLS file and saved-plan input against Prometheus output path/file-identity aliases before connection preparation or network contact.
 - Keep native evidence, budgets, failure priorities, anonymous defaults and owned cleanup. Real owned CPU TLS/auth/mTLS fixtures exercise source and installed CLI/API; they do not qualify physical servers, GPUs, running weights or capacity. Declare the already locked `certifi` as a direct core dependency without changing external package versions.
 
 ### Queried inventory and saved memory arithmetic (0.77.0 candidate)

@@ -19,6 +19,10 @@ Eight additional installed/source CLI/API controls refuse wrong server trust,
 wrong bearer or absent required client certificates. TLS failures reach zero
 HTTP handlers; wrong bearers reach only unauthorized handlers. Both owned
 listeners use non-daemon handlers and native blocking close before thread join.
+Six additional mTLS CLI projections cover standalone CA, saved-monitor client
+certificate and full-fleet client-key output aliases for both native adapters.
+They refuse before contact and retain every input byte. Source controls cover
+all nine scope/file combinations, saved-plan hardlinks and private guard errors.
 
 Run the source security and lifecycle negative controls with:
 

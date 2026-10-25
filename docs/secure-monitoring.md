@@ -102,6 +102,12 @@ at most 1 MiB. Client cert/key checks are **preflight**: OpenSSL rereads their
 paths, so no atomic held-key snapshot, hostile-race immunity or hard parser-time
 bound is claimed. Contexts load once, without automatic credential renewal.
 
+Both CLI commands refuse a `--prometheus` destination that aliases any explicit
+CA, certificate, key or saved-plan input before constructing connections or
+contacting endpoints. This uses native resolved-path/file-identity admission;
+it is not a hostile-filesystem atomicity guarantee. The direct textfile writer
+API still writes to the destination its caller explicitly owns.
+
 Admission failures raise categorical `MonitorConnectionError` (`ValueError`) or
 CLI exit1. Secure standalone metrics failures remain exit1; saved unavailable
 identity remains4; full fleet retains its native mismatch5/breach3/unknown4

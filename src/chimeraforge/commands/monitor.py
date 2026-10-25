@@ -49,17 +49,25 @@ def monitor(
     from chimeraforge.api import PlanError, monitor_plan
     from chimeraforge.monitor import MonitorError, MonitorRequest, run_monitor, write_prometheus
     from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
+    from chimeraforge.plan_study import protect_output
 
     try:
         if from_plan is None and candidate_index != 0:
             raise MonitorError("--candidate-index requires --from-plan")
-        if from_plan is not None and prometheus is not None:
+        if prometheus is not None:
             try:
-                collision = from_plan.resolve() == prometheus.resolve()
-            except (OSError, RuntimeError) as exc:
-                raise MonitorError(f"cannot resolve saved input/output paths: {exc}") from exc
-            if collision:
-                raise MonitorError("--prometheus must not overwrite the saved --from-plan artifact")
+                protect_output(
+                    prometheus,
+                    tuple(
+                        value
+                        for value in (from_plan, ca_bundle, client_cert, client_key)
+                        if value is not None
+                    ),
+                )
+            except (PlanError, OSError, RuntimeError):
+                raise MonitorError(
+                    "--prometheus must not overwrite monitoring inputs; invalid output destination"
+                ) from None
         request = MonitorRequest(
             backend, url, model, ttft_slo, tpot_slo, interval, windows, timeout
         )
