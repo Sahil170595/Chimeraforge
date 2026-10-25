@@ -9,6 +9,8 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Unreleased **0.80.0** adds [original-fleet regression gates](fleet-trace-gate.md), with closed source/population policy, native global metrics and guarded JSON/JUnit outputs. Public installation remains 0.76.0.
+
 Unreleased **0.79.0** adds [original-fleet active trace replay](fleet-trace.md), with one native schedule, full original member coverage, per-ID secure connections and a strict receiving API.
 
 Unreleased **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
@@ -58,11 +60,12 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-30 commands in the unreleased Chimeraforge 0.79.0 source candidate: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
+30 commands in the unreleased Chimeraforge 0.80.0 source candidate: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
-compares saved traces; `gate --kind trace-campaign` compares whole campaigns.
+compares saved traces; `gate --kind trace-campaign` compares whole campaigns;
+`gate --kind fleet-trace` compares two complete original-fleet executions.
 Benchmark gating remains the default.
 
 ## Project Information

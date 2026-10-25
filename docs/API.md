@@ -3,7 +3,9 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers released Chimeraforge 0.76.0 and the explicitly marked unreleased 0.79.0 source candidate (including 0.77.0 inventory and 0.78.0 secure monitoring).
+This document covers released Chimeraforge 0.76.0 and the explicitly marked unreleased 0.80.0 source candidate (including 0.77.0 inventory, 0.78.0 secure monitoring and 0.79.0 original-fleet trace).
+
+Unreleased 0.80.0 adds closed `api.FleetTraceGatePolicy`, sync `api.gate_fleet_traces(baseline, candidate, *, policy)` and `api.write_fleet_trace_gate(decision, *, out=None, junit=None)`. One whole fleet per arm retains every member/row, strict source and ordered-population commitments, native global arithmetic and separate evidence blockers. Bounded JSON/JUnit output protects held inputs and both destinations. See [full original-fleet regression policy and output contract](fleet-trace-gate.md).
 
 Unreleased 0.79.0 adds frozen `api.TraceRoute`, defensive `api.FleetTraceReplay`, async `api.replay_fleet_trace(saved, requests, endpoints, routes, *, candidate_index=0, model=None, concurrency=1, request_timeout=300, trace_timeout=600, cleanup_timeout=2, stop_event=None, connections=None)` and sync strict `api.load_fleet_trace(source)`. Every original member and routed request stays in one native population with separate execution, SLO, configuration and cooperative cleanup facts. See [complete original-fleet examples, receiving schema and limits](fleet-trace.md).
 

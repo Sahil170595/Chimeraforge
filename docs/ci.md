@@ -23,6 +23,13 @@ are counted separately from SLOs; proxy/keylog sentinels and joined owned handle
 bound these fixture claims. This is protocol acceptance without real inference,
 customer credentials, GPU execution or physical capacity qualification.
 
+The unreleased 0.80.0 candidate adds a typed closed fleet-gate lane and actual
+installed API/CLI/JSON/JUnit pass, regression and inconclusive synthetic controls.
+The existing native CPU job consumes its unchanged original-fleet API/CLI receipts
+as adverse gate evidence (3), retaining CPU/GPU mismatch and unknown cache facts
+without additional inference. [Regenerate the source controls](../validation/2026-10-25-fleet-trace-gate/README.md)
+separately from exact-head hosted installed/native qualification.
+
 The unreleased 0.79.0 candidate adds a focused typed original-fleet
 producer/strict-receiver/CLI boundary. Each installed wheel/rebuilt-sdist profile
 exercises complete and mTLS/bearer vLLM/SGLang protocol controls, actual short-token

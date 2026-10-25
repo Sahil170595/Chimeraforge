@@ -160,6 +160,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
 
     inventory = accept_inventory(cwd, env, saved, index)
     from ci_fleet_trace import accept as accept_fleet_trace
+    from ci_fleet_trace_gate import accept as accept_fleet_gate
 
     return {
         "scope": "offline homogeneous serving declaration",
@@ -184,6 +185,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
         "secure_monitoring": accept_secure_monitoring(cwd, env, saved),
         "inventory_arithmetic": inventory,
         "original_fleet_trace": accept_fleet_trace(cwd, env, saved),
+        "fleet_trace_gate": accept_fleet_gate(cwd, env, saved),
     }
 
 

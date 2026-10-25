@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes the unreleased 0.79.0 source candidate; the public installation remains 0.76.0.
+**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes the unreleased 0.80.0 source candidate; the public installation remains 0.76.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -890,6 +890,26 @@ including unpaired receipts, is retained. Exit `0` is a conditional policy pass,
 remains the default `--kind benchmark`. See the [trace policy/API contract](docs/trace-regression-gate.md)
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
+
+### `gate --kind fleet-trace` -- original-fleet regression decisions
+
+**Unreleased 0.80.0 source candidate; public installation remains 0.76.0.**
+Compare one complete original-fleet trace per arm under a closed predeclared policy:
+
+```bash
+chimeraforge gate --kind fleet-trace --baseline baseline-fleet.json --candidate candidate-fleet.json --policy fleet-policy.json --out fleet-gate.json --junit fleet-gate.xml --json
+```
+
+All original members, ordered routes/work, selected source and common client controls
+must match the declarations. Required identity/cache/binding/cleanup evidence is
+checked per member; global native p95/goodput uses every row and one common horizon.
+Evidence blockers return 3 before known regressions 1, retaining arithmetic. Eligible
+conditional pass is 0; malformed/unsafe input or output is 2. JUnit emits population
+and metric cases with errors for inconclusive evidence and failures for regressions.
+Both destinations protect held inputs and each other; per-file atomic writes are
+not a two-file transaction. Hashes and distinct URLs do not prove independent runs,
+source authenticity, cold/GPU execution or capacity. The decision may carry private
+plan intent. See the [closed policy and API contract](docs/fleet-trace-gate.md).
 
 ### `trace-fleet`
 

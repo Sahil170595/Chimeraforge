@@ -149,6 +149,20 @@ def _evidence_real(value: int | float) -> float:
     return 0.0 if value == 0 else float(value)
 
 
+def _normalize_evidence_facts(observations: dict) -> None:
+    # These supported facts accept either numeric representation; integer counters do not.
+    real_facts = {
+        "hardware": ("vram_gb", "bandwidth_gbps", "fp16_tflops", "tdp_watts", "interconnect_gbps"),
+        "model_spec": ("params_b", "recurrent_state_bytes_per_seq"),
+    }
+    for observation in observations.values():
+        for group, names in real_facts.items():
+            for name in names:
+                value = observation[group][name]
+                if value is not None:
+                    observation[group][name] = _evidence_real(value)
+
+
 def _evidence(row: dict) -> str:
     data = row["data"]
     view = _view(row)
@@ -170,17 +184,7 @@ def _evidence(row: dict) -> str:
             for request in data["requests"]
         ]
     )
-    # These supported facts accept either numeric representation; integer counters do not.
-    real_facts = {
-        "hardware": ("vram_gb", "bandwidth_gbps", "fp16_tflops", "tdp_watts", "interconnect_gbps"),
-        "model_spec": ("params_b", "recurrent_state_bytes_per_seq"),
-    }
-    for observation in view["execution"].values():
-        for group, names in real_facts.items():
-            for name in names:
-                value = observation[group][name]
-                if value is not None:
-                    observation[group][name] = _evidence_real(value)
+    _normalize_evidence_facts(view["execution"])
     measurements = []
     for r in data["requests"]:
         native = dict(r["native"])
@@ -264,6 +268,50 @@ def _metric(row: dict, name: str) -> tuple[float | None, str | None]:
     return _p95(values), next(iter(bases))
 
 
+def _compare_metrics(left: dict, right: dict, rules: dict[str, float]) -> tuple[dict, list[str]]:
+    """Shared native directions/fractions; eligibility stays with each caller."""
+    blockers = []
+    metrics = {}
+    for name, threshold in rules.items():
+        baseline, bb = _metric(left, name)
+        candidate, cb = _metric(right, name)
+        comparable = baseline is not None and candidate is not None and bb == cb and baseline > 0
+        if not comparable:
+            blockers.append("zero_baseline_or_metric_basis_unavailable:" + name)
+        fraction = (
+            (
+                (baseline - candidate) / baseline
+                if RULES[name][1] == "higher"
+                else (candidate - baseline) / baseline
+            )
+            if comparable
+            else None
+        )
+        if fraction is not None and not finite(fraction):
+            comparable = False
+            fraction = None
+            blockers.append("derived_regression_unavailable:" + name)
+        metrics[name] = {
+            "baseline": baseline,
+            "candidate": candidate,
+            "baseline_basis": bb,
+            "candidate_basis": cb,
+            "unit": RULES[name][0],
+            "statistic": "full-population joint goodput"
+            if name == "goodput_rps"
+            else "linear-interpolated p95 over every request"
+            + (" of per-request mean TPOT; not every token" if name == "tpot_p95_ms" else ""),
+            "regression_fraction": fraction,
+            "max_regression_fraction": threshold,
+            "state": "inconclusive"
+            if not comparable
+            else "regression"
+            if fraction > threshold
+            else "pass",
+        }
+    return metrics, blockers
+
+
 def _pair(left: dict, right: dict, policy: TraceGatePolicy, index: int) -> dict:
     blockers = []
     for receipt in (left, right):
@@ -323,44 +371,8 @@ def _pair(left: dict, right: dict, policy: TraceGatePolicy, index: int) -> dict:
         ]
         if bases[0] != bases[1] or len(bases[0]) != 1 or "unavailable" in bases[0]:
             blockers.append("mean_timing_basis_unavailable_or_changed")
-    metrics = {}
-    for name, threshold in policy.rules.items():
-        baseline, bb = _metric(left, name)
-        candidate, cb = _metric(right, name)
-        comparable = baseline is not None and candidate is not None and bb == cb and baseline > 0
-        if not comparable:
-            blockers.append("zero_baseline_or_metric_basis_unavailable:" + name)
-        fraction = (
-            (
-                (baseline - candidate) / baseline
-                if RULES[name][1] == "higher"
-                else (candidate - baseline) / baseline
-            )
-            if comparable
-            else None
-        )
-        if fraction is not None and not finite(fraction):
-            comparable = False
-            fraction = None
-            blockers.append("derived_regression_unavailable:" + name)
-        metrics[name] = {
-            "baseline": baseline,
-            "candidate": candidate,
-            "baseline_basis": bb,
-            "candidate_basis": cb,
-            "unit": RULES[name][0],
-            "statistic": "full-population joint goodput"
-            if name == "goodput_rps"
-            else "linear-interpolated p95 over every request"
-            + (" of per-request mean TPOT; not every token" if name == "tpot_p95_ms" else ""),
-            "regression_fraction": fraction,
-            "max_regression_fraction": threshold,
-            "state": "inconclusive"
-            if not comparable
-            else "regression"
-            if fraction > threshold
-            else "pass",
-        }
+    metrics, metric_blocks = _compare_metrics(left, right, policy.rules)
+    blockers.extend(metric_blocks)
     if blockers:
         for metric in metrics.values():
             metric["state"] = "inconclusive"

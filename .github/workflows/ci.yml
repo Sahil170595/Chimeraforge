@@ -37,6 +37,7 @@ jobs:
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_campaign_inputs.py src/chimeraforge/bench/trace_campaign_gate.py scripts/ci_registry_runtime.py scripts/ci_registry_native_runner.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/fleet_trace_types.py src/chimeraforge/bench/fleet_trace_inputs.py src/chimeraforge/bench/fleet_trace_receipt.py src/chimeraforge/bench/fleet_trace.py src/chimeraforge/commands/trace_fleet.py scripts/ci_fleet_trace.py
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/fleet_gate_inputs.py src/chimeraforge/bench/fleet_gate_evidence.py src/chimeraforge/bench/fleet_trace_gate.py src/chimeraforge/bench/fleet_gate_output.py src/chimeraforge/commands/gate.py scripts/ci_fleet_trace_gate.py
       - run: uv run --no-sync mypy --follow-imports skip scripts/ci_cpu_runtime_observation.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_envelope_inputs.py src/chimeraforge/bench/trace_envelope.py src/chimeraforge/commands/trace_envelope.py scripts/ci_trace_envelope.py
 

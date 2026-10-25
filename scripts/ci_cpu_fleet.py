@@ -447,6 +447,9 @@ def accept(work: Path, binary: Path, store: Path, parent_env: dict) -> dict:
                 for slot in report["slots"]
             )
         receipt["cpu_observations"] = []
+        from ci_fleet_trace_gate import accept_native as accept_native_gate
+
+        receipt["fleet_trace_gate"] = accept_native_gate(directory, environments[0], direct, cli)
         for index, (client, log) in enumerate(zip(clients, logs)):
             error, loaded = None, None
             try:

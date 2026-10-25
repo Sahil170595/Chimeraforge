@@ -575,3 +575,12 @@ quarantine writes before execution. URL credentials/query values are redacted.
 ## Original-fleet active trace (unreleased 0.79.0)
 
 `api.TraceRoute`, `api.FleetTraceReplay`, async `api.replay_fleet_trace(saved, requests, endpoints, routes, ...)` and sync `api.load_fleet_trace(source)` retain the entire original N-member candidate under one native client schedule. Complete CLI/API admission, per-ID runtime HTTPS, cooperative task/client ownership and strict receiving semantics are documented in [original-fleet trace](fleet-trace.md). Public installation remains 0.76.0; these APIs require the unreleased source candidate.
+
+
+## Original-fleet regression gate (unreleased 0.80.0)
+
+`api.FleetTraceGatePolicy`, sync `api.gate_fleet_traces(baseline, candidate, *, policy)`
+and `api.write_fleet_trace_gate(decision, *, out=None, junit=None)` compare one whole
+original fleet per arm and write bounded guarded projections. See the complete
+[closed policy, receiving, metric, outcome and output contract](fleet-trace-gate.md).
+Public installation remains 0.76.0; these APIs require the unreleased source candidate.

@@ -20,6 +20,7 @@ from chimeraforge.bench.plan import PlanBenchmark
 from chimeraforge.bench.plan_trace import PlanTraceReplay
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
+from chimeraforge.bench.fleet_gate_inputs import FleetTraceGatePolicy as FleetTraceGatePolicy
 from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
 from chimeraforge.bench.fleet_trace_receipt import load_fleet_trace as load_fleet_trace
 from chimeraforge.bench.fleet_trace_types import FleetTraceReplay as FleetTraceReplay
@@ -136,6 +137,30 @@ def gate_traces(
     from chimeraforge.bench.trace_gate import gate_traces as apply_gate
 
     return apply_gate(baseline_receipts, candidate_receipts, policy=policy)
+
+
+def gate_fleet_traces(
+    baseline: FleetTraceReplay | dict | str | Path,
+    candidate: FleetTraceReplay | dict | str | Path,
+    *,
+    policy: FleetTraceGatePolicy | dict | str | Path,
+) -> RegressionGate:
+    """Compare one complete declared original fleet per arm under an explicit policy."""
+    from chimeraforge.bench.fleet_trace_gate import gate_fleet_traces as apply_gate
+
+    return apply_gate(baseline, candidate, policy=policy)
+
+
+def write_fleet_trace_gate(
+    result: RegressionGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Write bounded decision/JUnit projections after admitting both destinations."""
+    from chimeraforge.bench.fleet_gate_output import write_fleet_trace_gate as write
+
+    write(result, out=out, junit=junit)
 
 
 def gate_trace_campaigns(

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Original-fleet regression decisions (0.80.0 candidate)
+
+- Add closed `FleetTraceGatePolicy`, sync `api.gate_fleet_traces` and `gate --kind fleet-trace`: one whole original fleet per arm, with exact source/selection, ordered work/routes and common client controls. Require every original member to contribute eligible before/after identity, binding and cache evidence.
+- Reuse native full-row/common-horizon regression math, strict threshold comparisons and observed-condition/cache semantics. Retain adverse and inactive members; any evidence blocker returns 3 before known regression 1, preserving available arithmetic. Label-invariant semantic-copy checks include original N and the member multiset without claiming independent executions or authenticated inputs.
+- Keep the public original-fleet receiver strict while admitting both held receipts under one combined 32 MiB budget, plus a separate bounded policy. Retain outer raw-byte identity separately from native projections and protect typed inherited inputs.
+- Write bounded decision JSON and escaped JUnit from one finalized result, checking both payloads and destinations before per-file atomic replacements. JUnit separates population/metric cases, errors for inconclusive evidence and failures for eligible regressions; two outputs are not a transaction.
+- Exercise actual API/CLI/JUnit pass/regression/inconclusive controls in existing installed wheel/rebuilt-sdist consumers. Consume the existing unchanged native CPU fleet API/CLI reports as adverse gate evidence without additional inference or forced GPU/capacity qualification.
+
 ### Original-fleet scheduled trace (0.79.0 candidate)
 
 - Add typed async `api.replay_fleet_trace`, frozen `TraceRoute`/`FleetTraceReplay`, `trace-fleet` and strict `api.load_fleet_trace`. Hold the original plan, workload and closed one-to-one routes before contact; require exactly the original N direct endpoints without changing model, TP/PP, batch, output caps or saved targets.

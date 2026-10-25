@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import asdict
+import hashlib
 from pathlib import Path
 
 from chimeraforge.bench import plan_trace, trace
@@ -236,13 +237,17 @@ def make_report(
     return report
 
 
-def load_fleet_trace(source: FleetTraceReplay | dict | str | Path) -> FleetTraceReplay:
+def _held_fleet_trace(
+    source: FleetTraceReplay | dict | str | Path, *, limit: int = MAX_FLEET_RECEIPT_BYTES
+) -> dict:
     from chimeraforge import api
 
     protected = source._protected_paths if isinstance(source, FleetTraceReplay) else ()
     try:
+        if type(limit) is not int or not 0 < limit <= MAX_FLEET_RECEIPT_BYTES:
+            _fail()
         value = source.to_dict() if isinstance(source, FleetTraceReplay) else source
-        data, raw, path = held_json(value, MAX_FLEET_RECEIPT_BYTES)
+        data, raw, path = held_json(value, limit)
         if (
             set(data) != ENVELOPE
             or type(data["schema_version"]) is not int
@@ -271,7 +276,7 @@ def load_fleet_trace(source: FleetTraceReplay | dict | str | Path) -> FleetTrace
         native = data["native_trace"]
         if native["fingerprint"] != digest({k: v for k, v in native.items() if k != "fingerprint"}):
             _fail()
-        load_trace(native_projection(native))
+        native_loaded = load_trace(native_projection(native))
         if (
             native["endpoint"] is not None
             or native["serving_before"] is not None
@@ -465,9 +470,15 @@ def load_fleet_trace(source: FleetTraceReplay | dict | str | Path) -> FleetTrace
         expected = make_report(prepared, native, resources, cleanup)
         if digest(data) != digest(expected) or data["workload"] != native["workload"]:
             _fail()
-        return FleetTraceReplay(
-            copy.deepcopy(data), tuple(dict.fromkeys((*protected, *((path,) if path else ()))))
-        )
+        return {
+            "data": copy.deepcopy(data),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "size_bytes": len(raw),
+            "path": path,
+            "protected_paths": tuple(dict.fromkeys((*protected, *((path,) if path else ())))),
+            "fingerprint": data["fingerprint"],
+            "native": native_loaded,
+        }
     except (
         api.PlanError,
         ValueError,
@@ -479,3 +490,8 @@ def load_fleet_trace(source: FleetTraceReplay | dict | str | Path) -> FleetTrace
     ):
         _fail()
     raise AssertionError("unreachable")
+
+
+def load_fleet_trace(source: FleetTraceReplay | dict | str | Path) -> FleetTraceReplay:
+    held = _held_fleet_trace(source)
+    return FleetTraceReplay(held["data"], held["protected_paths"])
