@@ -37,6 +37,14 @@ from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
+from chimeraforge.inventory_types import (
+    InventoryCheckError as InventoryCheckError,
+    InventoryCheck as InventoryCheck,
+    InventoryBaseline as InventoryBaseline,
+    InventoryDevice as InventoryDevice,
+    InventoryObservation as InventoryObservation,
+    InventorySlot as InventorySlot,
+)
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
@@ -704,6 +712,26 @@ def monitor_plan(
 
     return monitor_saved(
         saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
+    )
+
+
+async def check_inventory(
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+    gpu_devices: list[str] | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    timeout: float = 10.0,
+) -> InventoryCheck:
+    """Resolve queried selectors and compare reported memory with a saved B1 baseline."""
+    from chimeraforge.inventory_check import check_inventory as check
+
+    return await check(
+        saved,
+        candidate_index=candidate_index,
+        gpu_devices=gpu_devices,
+        replica_gpu_devices=replica_gpu_devices,
+        timeout=timeout,
     )
 
 

@@ -27,6 +27,7 @@ jobs:
       - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
       - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
       - run: uv run --no-sync mypy
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/inventory_types.py src/chimeraforge/inventory_numbers.py src/chimeraforge/inventory_process.py src/chimeraforge/inventory_check.py src/chimeraforge/commands/inventory_check.py scripts/ci_inventory_check.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/plan_study.py src/chimeraforge/commands/study.py scripts/ci_plan_study.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/deploy.py src/chimeraforge/commands/deploy.py scripts/ci_deploy_placement.py scripts/ci_installed_acceptance.py src/chimeraforge/deployment_verify.py src/chimeraforge/commands/deploy_verify.py scripts/ci_deployment_verify.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_monitor_types.py src/chimeraforge/fleet_monitor_transport.py src/chimeraforge/fleet_monitor_output.py src/chimeraforge/fleet_monitor.py src/chimeraforge/monitor_binding.py src/chimeraforge/plan_monitor.py src/chimeraforge/commands/monitor_fleet.py scripts/ci_monitor_fleet.py

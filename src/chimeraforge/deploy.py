@@ -429,6 +429,31 @@ def _device_selection(devices: list[str] | None, count: int) -> list[str] | None
     return selected
 
 
+def _replica_device_selection(
+    candidate: Candidate, groups: list[list[str]] | None
+) -> list[list[str]]:
+    if candidate.n_agents == 1:
+        raise DeploymentError("replica matrices require a multi-replica saved candidate")
+    if type(groups) is not list or len(groups) != candidate.n_agents:
+        raise DeploymentError("each saved replica requires an explicit GPU group")
+    selected = []
+    for group in groups:
+        if type(group) is not list:
+            raise DeploymentError("each replica GPU group must be a list of device IDs")
+        canonical = _device_selection(
+            group, candidate.tensor_parallel * candidate.pipeline_parallel
+        )
+        assert canonical is not None
+        selected.append(canonical)
+    namespaces = {"uuid" if row[0].startswith("GPU-") else "ordinal" for row in selected}
+    all_ids = [device for row in selected for device in row]
+    if len(namespaces) != 1 or len(set(all_ids)) != len(all_ids):
+        raise DeploymentError(
+            "replica GPU groups must be globally disjoint in one namespace; no duplicate IDs"
+        )
+    return selected
+
+
 def _replica_layout(
     candidate: Candidate,
     groups: list[list[str]] | None,
@@ -445,21 +470,7 @@ def _replica_layout(
         or len(ports) != candidate.n_agents
     ):
         raise DeploymentError("each saved replica requires an explicit GPU group and host port")
-    selected = []
-    for group in groups:
-        if type(group) is not list:
-            raise DeploymentError("each replica GPU group must be a list of device IDs")
-        canonical = _device_selection(
-            group, candidate.tensor_parallel * candidate.pipeline_parallel
-        )
-        assert canonical is not None
-        selected.append(canonical)
-    namespaces = {"uuid" if row[0].startswith("GPU-") else "ordinal" for row in selected}
-    all_ids = [device for row in selected for device in row]
-    if len(namespaces) != 1 or len(set(all_ids)) != len(all_ids):
-        raise DeploymentError(
-            "replica GPU groups must be globally disjoint in one namespace; no duplicate IDs"
-        )
+    selected = _replica_device_selection(candidate, groups)
     if any(type(port) is not int or not 1 <= port <= MAX_HOST_PORT for port in ports):
         raise DeploymentError("each replica host port must be an integer between 1 and 65535")
     if len(set(ports)) != len(ports):

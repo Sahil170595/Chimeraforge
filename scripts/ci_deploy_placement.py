@@ -155,6 +155,9 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
     from ci_monitor_fleet import accept as accept_monitoring
 
     monitoring = accept_monitoring(cwd, env, saved, index)
+    from ci_inventory_check import accept as accept_inventory
+
+    inventory = accept_inventory(cwd, env, saved, index)
     return {
         "scope": "offline homogeneous serving declaration",
         "replicas": 3,
@@ -175,6 +178,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
         "physical_independence": "unverified",
         "deployment_verification": verification,
         "passive_monitoring": monitoring,
+        "inventory_arithmetic": inventory,
     }
 
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Queried inventory and saved memory arithmetic (0.77.0 candidate)
+
+- `inventory-check` and typed async `api.check_inventory` retain every original ordered replica/TP/PP selector, resolve one strict bounded NVIDIA inventory observation, and compare each reported free-memory value with the saved per-GPU modeled batch-one baseline. The exact rounding interval is independent of caller Decimal settings; it bounds serialization rounding, not model error or runtime demand.
+- Complete known selector absence or baseline shortfall returns 5; unavailable, malformed, duplicate or incomplete observations return 4. Invalid source/options/selection return 1 before contact. Unsupported valid saved fidelity/basis retains all slots with unknown evidence without probing or reconstructing a model.
+- Owned native launch, bounded stdout/stderr readers and cleanup survive cancellation, including pending launch and repeated cancellation. MIG Enabled, Disabled and N/A remain raw diagnostics with identical arithmetic treatment. Every receipt keeps `deployment_ready: null`; no physical independence, summed capacity, allocation or runtime-peak claim is made.
+- Installed wheel and rebuilt-sdist consumers exercise complete CLI/API protocol controls and hosted CPU unavailability while preserving original plan bytes. Synthetic process fixtures qualify the contract only, not GPU execution.
+- Make the fleet-monitor final-deadline regression fixture deterministic by expiring the real shared budget after the sixth completed native metadata result. A removed-final-guard negative control fails with exit 0; production deadline behavior is unchanged. This repairs a demonstrated scheduling assumption in the old 60 ms fixture.
+
 ## [0.76.0] - 2026-10-24
 
 ### Passive declared-fleet monitoring

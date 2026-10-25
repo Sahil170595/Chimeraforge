@@ -9,7 +9,9 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
-Current CLI: **0.76.0**. The linked features are included in this version.
+Public CLI: **0.76.0**. The released features below are included in this version.
+
+Unreleased **0.77.0 source candidate** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
 [frozen-model studies](planning-api.md#frozen-context-sensitivity).
 
@@ -52,7 +54,7 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-28 commands in Chimeraforge 0.76.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
+29 commands in the unreleased Chimeraforge 0.77.0 source candidate: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`

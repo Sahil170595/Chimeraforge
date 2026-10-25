@@ -3,7 +3,6 @@
 import asyncio
 import json
 import logging
-import time
 from dataclasses import replace
 
 import httpx
@@ -421,26 +420,43 @@ async def test_late_final_metadata_processing_cannot_pass_after_observation_dead
     native_fleet, monkeypatch
 ):
     from chimeraforge.bench import serving
+    from chimeraforge import fleet_monitor
 
     saved, indices = native_fleet
-    NativeScene(monkeypatch)
+    scene = NativeScene(monkeypatch)
     original = serving.observe_backend
+    original_budget = fleet_monitor.SharedBudget
+    budgets = []
     count = 0
+
+    def capture_budget(*args):
+        budget = original_budget(*args)
+        budgets.append(budget)
+        return budget
+
+    monkeypatch.setattr(fleet_monitor, "SharedBudget", capture_budget)
 
     async def delayed(*args):
         nonlocal count
         result = await original(*args)
         count += 1
         if count == 6:
-            time.sleep(0.08)
+            assert len(budgets) == 1 and budgets[0].termination is None
+            budgets[0].deadline = asyncio.get_running_loop().time() - 1
         return result
 
     monkeypatch.setattr(serving, "observe_backend", delayed)
     result = await api.monitor_fleet(
-        saved, replace(request(urls()), observation_seconds=0.06), candidate_index=indices["vllm"]
+        saved, replace(request(urls()), observation_seconds=10), candidate_index=indices["vllm"]
     )
+    assert count == 6 and len(budgets) == 1
     assert result.exit_code == 4 and result.budget["termination"] == "observation_deadline"
-    assert all(len(slot.windows) == 1 and len(slot.observations) == 2 for slot in result.slots)
+    assert all(
+        slot.state == "complete" and len(slot.windows) == 1 and len(slot.observations) == 2
+        for slot in result.slots
+    )
+    assert all(stream.closed == 1 for stream in scene.streams)
+    assert all(pool.closed == 1 and pool.finished for pool in scene.pools)
 
 
 @pytest.mark.asyncio

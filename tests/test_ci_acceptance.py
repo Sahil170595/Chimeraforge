@@ -30,6 +30,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     script = load_script("ci_deploy_placement")
     load_script("ci_deployment_verify")
     load_script("ci_monitor_fleet")
+    load_script("ci_inventory_check")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
     observation = checkpoint.seed(live=False)
@@ -65,6 +66,15 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert monitoring["api_exit"] == monitoring["cli_exit"] == 0
     assert monitoring["partial_exit"] == 4 and monitoring["source_bytes_unchanged"]
     assert monitoring["physical_independence"] == "unverified"
+    inventory = fleet["inventory_arithmetic"]
+    assert inventory["source_bytes_unchanged"] and inventory["deployment_ready"] is None
+    assert {key: value["api"]["exit_code"] for key, value in inventory["controls"].items()} == {
+        "complete": 0,
+        "unavailable_free": 4,
+        "shortfall": 5,
+        "malformed": 4,
+        "missing": 5,
+    }
 
 
 def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkeypatch):
