@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+import time
 from dataclasses import replace
 
 import httpx
@@ -12,6 +13,8 @@ from chimeraforge import api
 from chimeraforge.fleet_monitor_transport import BorrowedTransport, OwnedPool, SharedBudget
 from test_fleet_monitor import MODEL, native_fleet as native_fleet, request
 from test_monitor_slo import pair
+
+MAX_READY_WORK_TURNS = 10000
 
 
 class Stream(httpx.AsyncByteStream):
@@ -116,6 +119,58 @@ def urls():
 
 
 @pytest.mark.asyncio
+async def test_window_timestamps_use_real_monotonic_measurement_with_ready_work(
+    native_fleet, monkeypatch
+):
+    from chimeraforge import fleet_monitor
+
+    saved, indices = native_fleet
+    scene = NativeScene(monkeypatch)
+    native_metrics = fleet_monitor._metrics
+    measurements = {}
+    before_tasks = asyncio.all_tasks()
+    stop = asyncio.Event()
+
+    async def measure(resources):
+        before = time.perf_counter()
+        payload, timestamp = await native_metrics(resources)
+        after = time.perf_counter()
+        measurements.setdefault(resources.slot.id, []).append((before, timestamp, after))
+        return payload, timestamp
+
+    async def ready():
+        for _ in range(MAX_READY_WORK_TURNS):
+            if stop.is_set():
+                break
+            await asyncio.sleep(0)
+
+    monkeypatch.setattr(fleet_monitor, "_metrics", measure)
+    worker = asyncio.create_task(ready())
+    start = time.perf_counter()
+    try:
+        report = await api.monitor_fleet(saved, request(urls()), candidate_index=indices["vllm"])
+    finally:
+        stop.set()
+        if not worker.done():
+            worker.cancel()
+        await asyncio.gather(worker, return_exceptions=True)
+    elapsed = time.perf_counter() - start
+    assert report.exit_code == 0, {
+        "exit": report.exit_code,
+        "actual_sample_deltas": [rows[1][1] - rows[0][1] for rows in measurements.values()],
+    }
+    assert all(len(rows) == 2 for rows in measurements.values())
+    assert all(
+        before <= stamp <= after for rows in measurements.values() for before, stamp, after in rows
+    )
+    assert all(0 < slot.windows[0].seconds <= elapsed for slot in report.slots)
+    assert report.cleanup["resources_closed"] and report.cleanup["closed_pools"] == 6
+    assert all(pool.closed == 1 for pool in scene.pools)
+    assert all(stream.closed == 1 for stream in scene.streams)
+    assert asyncio.all_tasks() == before_tasks
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "kind,fail_after,expected_exit", [("initial", 0, 4), ("mismatch", 2, 5), ("breach", 2, 3)]
 )
@@ -175,7 +230,7 @@ async def test_unexpected_metrics_stream_failure_retains_context_and_owned_clean
     await asyncio.sleep(0)
 
     assert [slot.id for slot in report.slots] == ["replica-1", "replica-2", "replica-3"]
-    assert scene.metrics["one"] == fail_after + 1
+    assert scene.metrics["one"] == fail_after + 1, report.to_dict()
     assert report.budget["requests"] == len(scene.calls) and report.budget["termination"] is None
     assert report.exit_code == expected_exit
     assert report.cleanup["state"] == "completed" and report.cleanup["resources_closed"]

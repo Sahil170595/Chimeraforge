@@ -9,6 +9,7 @@ import logging
 import math
 from pathlib import Path
 import re
+import time
 from typing import Any, TYPE_CHECKING
 
 import httpx
@@ -183,7 +184,7 @@ async def _metrics(resources: _Resources) -> tuple[str, float]:
         response.raise_for_status()
         async for chunk in response.aiter_bytes():
             content.extend(chunk)
-    return content.decode("utf-8"), asyncio.get_running_loop().time()
+    return content.decode("utf-8"), time.perf_counter()
 
 
 async def _worker(resources: _Resources, request: FleetMonitorRequest) -> None:

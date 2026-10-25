@@ -367,3 +367,121 @@ def test_real_ollama_adapter_produces_useful_native_audit_without_gpu_accuracy(
     assert json.loads(receipt.read_text()) == report
     assert "private-" not in json.dumps(report)
     assert sum(request.url.path == "/api/generate" for request in calls) == 3
+
+
+@pytest.mark.asyncio
+async def test_accepted_observation_cancel_never_exposes_completed_metadata():
+    from chimeraforge.bench import serving
+
+    before = asyncio.all_tasks()
+    accepted, closed, exposed = [], [], []
+    parent = None
+
+    class Observer:
+        async def observe_serving(self, model):
+            try:
+                assert parent is not None
+                accepted.append(parent.cancel())
+                return {"source": "controlled-native-capability"}
+            finally:
+                closed.append(True)
+
+    async def consumer():
+        result = await serving.observe_backend(Observer(), "model")
+        exposed.append(result)
+        await asyncio.sleep(0)
+
+    parent = asyncio.create_task(consumer())
+    try:
+        with pytest.raises(asyncio.CancelledError):
+            await parent
+    finally:
+        if not parent.done():
+            parent.cancel()
+        await asyncio.gather(parent, return_exceptions=True)
+    assert accepted == [True] and closed == [True]
+    assert exposed == [], "accepted cancellation exposed successful metadata before propagating"
+    assert asyncio.all_tasks() == before
+
+
+@pytest.mark.asyncio
+async def test_second_observation_cancel_joins_held_child_cleanup():
+    from chimeraforge.bench import serving
+
+    before = asyncio.all_tasks()
+    started, closing, release = asyncio.Event(), asyncio.Event(), asyncio.Event()
+    children, closed = [], []
+
+    class Observer:
+        async def observe_serving(self, model):
+            children.append(asyncio.current_task())
+            started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                closing.set()
+                await release.wait()
+                closed.append(True)
+
+    parent = asyncio.create_task(serving.observe_backend(Observer(), "model"))
+    try:
+        await asyncio.wait_for(started.wait(), timeout=5)
+        assert parent.cancel()
+        await asyncio.wait_for(closing.wait(), timeout=5)
+        assert parent.cancel()
+        await asyncio.sleep(0)
+        assert not parent.done(), "caller cancellation abandoned held observer cleanup"
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await parent
+        assert closed == [True] and all(task.done() for task in children)
+    finally:
+        release.set()
+        if not parent.done():
+            parent.cancel()
+        await asyncio.gather(parent, *children, return_exceptions=True)
+    assert asyncio.all_tasks() == before
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["valid", "exception", "nondict", "timeout", "observer-timeout"])
+async def test_owned_observation_keeps_result_error_and_timeout_contract(monkeypatch, caplog, mode):
+    from chimeraforge.bench import serving
+
+    before = asyncio.all_tasks()
+    closed = []
+    secret = "PrivateObservationErrorCanary"
+
+    class Observer:
+        async def observe_serving(self, model):
+            try:
+                if mode == "exception":
+                    raise RuntimeError(secret)
+                if mode == "observer-timeout":
+                    raise asyncio.TimeoutError(secret)
+                if mode == "timeout":
+                    await asyncio.Event().wait()
+                return [] if mode == "nondict" else {"source": "controlled", "private": secret}
+            finally:
+                closed.append(True)
+
+    monkeypatch.setattr(serving, "MAX_OBSERVATION_SECONDS", 0.01)
+    result = await serving.observe_backend(Observer(), "model")
+    if mode == "valid":
+        assert result == {"source": "controlled"}
+    else:
+        category = {
+            "exception": "RuntimeError",
+            "nondict": "ValueError",
+            "timeout": "TimeoutError",
+            "observer-timeout": "TimeoutError",
+        }[mode]
+        assert result == {
+            "source": "serving metadata capability unavailable",
+            "limitations": [category],
+        }
+    assert closed == [True]
+    if mode == "observer-timeout":
+        assert "serving metadata child" not in caplog.text
+    assert secret not in json.dumps(result) + caplog.text
+    assert asyncio.all_tasks() == before
