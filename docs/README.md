@@ -9,25 +9,24 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
-Current CLI: **0.71.0**. The linked features are included in this version.
-The **unreleased 0.72.0 candidate** adds exact hardware alternatives to
-[frozen-model studies](planning-api.md#frozen-context-sensitivity); it requires
-candidate source or a candidate wheel.
+Current CLI: **0.76.0**. The linked features are included in this version.
+Chimeraforge 0.72.0 adds exact hardware alternatives to
+[frozen-model studies](planning-api.md#frozen-context-sensitivity).
 
-The **unreleased 0.73.0 candidate** adds explicit GPU IDs and Compose host ports:
+Chimeraforge 0.73.0 adds explicit GPU IDs and Compose host ports:
 [deployment contract, CLI and direct Python API](deployment.md#explicit-device-selection-and-host-ports).
-Published 0.71.0 retains the default count/port exports.
+Default exports retain their count/port behavior.
 
-The **unreleased 0.74.0 candidate** adds bounded homogeneous online vLLM/SGLang
+Chimeraforge 0.74.0 adds bounded homogeneous online vLLM/SGLang
 [Compose replica exports](deployment.md#homogeneous-compose-replicas) with complete
 explicit GPU groups/ports and manual endpoint targeting. No router/scaler or
-physical GPU verification is supplied; published 0.71.0 retains single exports.
+physical GPU verification is supplied. Single exports retain their existing behavior.
 
-The **unreleased 0.75.0 candidate** adds [offline deployment verification](deployment-verification.md)
+Chimeraforge 0.75.0 adds [offline deployment verification](deployment-verification.md)
 with typed direct API and `deploy-verify`. It requires independent saved-plan/render
 intent and checks current-renderer JSON/companion consistency without runtime claims.
 
-The **unreleased 0.76.0 candidate** adds [passive declared-fleet monitoring](fleet-monitoring.md)
+Chimeraforge 0.76.0 adds [passive declared-fleet monitoring](fleet-monitoring.md)
 with typed async API and `monitor-fleet`. Original saved replica population, shared
 HTTP/time/body budgets, retained prefixes and cleanup remain explicit. Distinct
 URLs do not prove distinct processes, GPUs or independent capacity.
@@ -53,7 +52,7 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-28 commands in candidate source (published 0.71.0 has 26): `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
+28 commands in Chimeraforge 0.76.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`

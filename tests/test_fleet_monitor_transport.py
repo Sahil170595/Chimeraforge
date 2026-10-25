@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import time
 from dataclasses import replace
 
@@ -10,7 +11,7 @@ import pytest
 
 from chimeraforge import api
 from chimeraforge.fleet_monitor_transport import BorrowedTransport, OwnedPool, SharedBudget
-from test_fleet_monitor import MODEL, native_fleet, request
+from test_fleet_monitor import MODEL, native_fleet as native_fleet, request
 from test_monitor_slo import pair
 
 
@@ -113,6 +114,92 @@ class NativeScene:
 
 def urls():
     return ["http://one/metrics", "http://two/metrics", "http://three/metrics"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "kind,fail_after,expected_exit", [("initial", 0, 4), ("mismatch", 2, 5), ("breach", 2, 3)]
+)
+async def test_unexpected_metrics_stream_failure_retains_context_and_owned_cleanup(
+    native_fleet, monkeypatch, caplog, kind, fail_after, expected_exit
+):
+    saved, indices = native_fleet
+    original = saved.to_dict()
+    scene = NativeScene(monkeypatch)
+    clients, failed_streams = [], []
+    original_client = httpx.AsyncClient
+    original_handle = Transport.handle_async_request
+    secret = "PRIVATE_METRICS_STREAM_FAILURE_CANARY"
+    breach = [text.replace("org/model", MODEL).encode() for text in pair(ttft=0.7)]
+
+    class UnexpectedStream(httpx.AsyncByteStream):
+        def __init__(self, inner):
+            self.inner, self.closed = inner, 0
+
+        async def __aiter__(self):
+            async for chunk in self.inner:
+                yield chunk
+            raise RuntimeError(secret)
+
+        async def aclose(self):
+            self.closed += 1
+            await self.inner.aclose()
+
+    def client(*args, **kwargs):
+        value = original_client(*args, **kwargs)
+        clients.append(value)
+        return value
+
+    async def handle(transport, value):
+        response = await original_handle(transport, value)
+        if value.url.host == "one":
+            if value.url.path == "/metrics":
+                count = scene.metrics["one"] - 1
+                if kind == "breach":
+                    response.stream.chunks = [breach[min(count, 1)]]
+                if count == fail_after:
+                    response.stream = UnexpectedStream(response.stream)
+                    failed_streams.append(response.stream)
+            elif kind == "mismatch" and value.url.path == "/server_info":
+                response.stream.chunks = [
+                    json.dumps({"vllm_config": {"model_config": {"dtype": "Q8_0"}}}).encode()
+                ]
+        return response
+
+    monkeypatch.setattr(httpx, "AsyncClient", client)
+    monkeypatch.setattr(Transport, "handle_async_request", handle)
+    caplog.set_level(logging.INFO, logger="chimeraforge.fleet_monitor")
+    before_tasks = asyncio.all_tasks()
+    report = await api.monitor_fleet(
+        saved, request(urls(), windows=2), candidate_index=indices["vllm"]
+    )
+    await asyncio.sleep(0)
+
+    assert [slot.id for slot in report.slots] == ["replica-1", "replica-2", "replica-3"]
+    assert scene.metrics["one"] == fail_after + 1
+    assert report.budget["requests"] == len(scene.calls) and report.budget["termination"] is None
+    assert report.exit_code == expected_exit
+    assert report.cleanup["state"] == "completed" and report.cleanup["resources_closed"]
+    assert report.cleanup["owned_pools"] == report.cleanup["closed_pools"] == 6
+    assert report.cleanup["joined_endpoint_tasks"] == 3 and report.cleanup["close_errors"] == 0
+    assert len(clients) == (5 if kind == "initial" else 6)
+    assert all(value.is_closed for value in clients)
+    assert len(failed_streams) == 1 and failed_streams[0].closed == 1
+    assert all(pool.closed == 1 for pool in scene.pools)
+    assert all(stream.closed == 1 for stream in scene.streams)
+    assert asyncio.all_tasks() == before_tasks
+    assert saved.to_dict() == original
+    failed = report.slots[0]
+    assert len(failed.windows) == (0 if kind == "initial" else 1)
+    assert len(failed.observations) == (0 if kind == "initial" else 2)
+    if kind == "mismatch":
+        assert failed.binding["configuration"]["state"] == "mismatch"
+    if kind == "breach":
+        assert failed.slo == "breach" and failed.windows[0].outcome == "breach"
+    assert secret not in json.dumps(report.to_dict()) and secret not in caplog.text
+    assert failed.state == "error", report.to_dict()
+    assert failed.error == "RuntimeError"
+    assert "fleet endpoint replica-1 observation failed (RuntimeError)" in caplog.messages
 
 
 @pytest.mark.asyncio

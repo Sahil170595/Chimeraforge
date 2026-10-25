@@ -1,16 +1,16 @@
 # Quick Start Guide
 
-**Unreleased 0.76.0 candidate:** [passive declared-fleet monitoring](fleet-monitoring.md)
+**Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
 adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
 declarations for the original saved replica count. Shared budgets, retained
 partial windows/metadata, required identity and cleanup qualify declared coverage
-without GPU or physical-independence claims. Published 0.71.0 retains endpoint-only
-`monitor`; the new command requires candidate source/a built wheel.
+without GPU or physical-independence claims. Existing endpoint-only `monitor`
+retains its behavior.
 
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.71.0 includes native streaming trace observations and
+Chimeraforge 0.76.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
@@ -22,23 +22,22 @@ Chimeraforge 0.71.0 includes native streaming trace observations and
 [signed native regression gates](signed-native-gates.md).
 Benchmark gating remains the default.
 
-The **unreleased 0.72.0 candidate** adds offline hardware alternatives through
-`study`: see [the complete case and Python examples](planning-api.md#frozen-context-sensitivity).
-Published 0.71.0 retains workload/cost studies with fixed hardware. Candidate source
-or a candidate wheel is required; no host probe or measured GPU qualification occurs.
+Since 0.72.0, `study` supports offline hardware alternatives: see
+[the complete case and Python examples](planning-api.md#frozen-context-sensitivity).
+Ordinary cases retain saved hardware; no host probe or measured GPU qualification occurs.
 
-The **unreleased 0.73.0 candidate** adds repeatable `deploy --gpu-device` and
+Since 0.73.0, `deploy` supports repeatable `--gpu-device` and
 Compose-only `--host-port`, plus direct `export_deployment` keywords. See
 [complete examples and limits](deployment.md#explicit-device-selection-and-host-ports).
-Published 0.71.0 uses the default GPU count and ports; no GPU placement is verified.
+Default exports retain their GPU count and ports; no GPU placement is verified.
 
-The **unreleased 0.74.0 candidate** adds `deploy --replica-devices GROUP
+Since 0.74.0, `deploy` supports `--replica-devices GROUP
 --replica-port PORT` for every original online vLLM/SGLang Compose replica. See
 [complete CLI/API examples](deployment.md#homogeneous-compose-replicas); these
 are manually targeted offline declarations, not measured fleet capacity.
 
-The **unreleased 0.75.0 candidate** adds `deploy-verify --plan --config --image
---json` against independently retained saved-plan and full render intent. See
+Since 0.75.0, `deploy-verify --plan --config --image --json` verifies declarations
+against independently retained saved-plan and full render intent. See
 [complete CLI/API examples and exit statuses](deployment-verification.md). A match
 means current-renderer consistency, not source authenticity or running GPU proof.
 

@@ -1,8 +1,6 @@
 # Verify offline deployment declarations
 
-This is an **unreleased 0.75.0 candidate** feature. Use candidate source or a built
-candidate wheel. Published 0.71.0 does not include `deploy-verify`; the 0.72/0.73/0.74
-features remain separately marked unreleased candidates.
+This feature is available since **Chimeraforge 0.75.0**.
 
 `deploy-verify` compares an existing generated **JSON Compose object** and required
 companion bytes with what the current installed renderer produces from an original,

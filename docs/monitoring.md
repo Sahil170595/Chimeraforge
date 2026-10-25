@@ -197,9 +197,9 @@ declarations **and observation sites**, update the mapping/semantics and fixture
 producer together, and rerun the tests. Do not add a metric alias merely because
 its name looks similar.
 
-## Declared-fleet monitoring candidate
+## Declared-fleet monitoring
 
-The **unreleased 0.76.0 candidate** adds the separate
+Chimeraforge 0.76.0 adds the separate
 [monitor-fleet API/CLI](fleet-monitoring.md). Existing `monitor` remains
 endpoint-only and accepts saved multi-replica candidates; observed engine DP=1
 is not a full-fleet topology mismatch. Both paths retain known BEFORE saved-config

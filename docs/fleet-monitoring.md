@@ -1,7 +1,7 @@
 # Passive declared-fleet monitoring
 
-**Unreleased 0.76.0 candidate.** Use this source or its built wheel. Published
-0.71.0 supplies the existing single-endpoint `monitor`, including monitoring an
+Available since **Chimeraforge 0.76.0**. The existing single-endpoint `monitor`
+remains available, including monitoring an
 endpoint selected from a multi-replica plan; it does not establish whole-fleet
 coverage. `monitor-fleet` is separate and requires one explicit endpoint per
 original saved replica. It never changes the selected candidate to one replica.

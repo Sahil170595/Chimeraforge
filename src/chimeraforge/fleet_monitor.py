@@ -224,7 +224,7 @@ async def _worker(resources: _Resources, request: FleetMonitorRequest) -> None:
     except asyncio.CancelledError:
         slot.state = "cancelled" if resources.contacted else "unstarted"
         raise
-    except (httpx.HTTPError, ValueError, UnicodeError) as exc:
+    except Exception as exc:
         slot.state = "error" if resources.contacted else "unstarted"
         slot.error = type(exc).__name__
         logger.info("fleet endpoint %s observation failed (%s)", slot.id, slot.error)
