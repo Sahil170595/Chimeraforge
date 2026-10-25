@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.75.0.
+This document covers Chimeraforge 0.76.0.
 Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
 alternatives under held model/input facts; see
 [the complete study contract](planning-api.md#frozen-context-sensitivity).
@@ -23,6 +23,13 @@ Chimeraforge 0.75.0 adds the separate typed direct module API
 checks generated JSON Compose/required companion bytes against independent saved
 plan and render intent. See [full signatures, examples and outcomes](deployment-verification.md).
 It is not a `chimeraforge.api` re-export or a runtime/source-authentication check.
+
+Chimeraforge 0.76.0 adds typed `FleetEndpoint`,
+`FleetMonitorRequest`, `FleetMonitorReport` and async
+`api.monitor_fleet(saved, request, *, candidate_index=0, stop_event=None)`.
+It observes every explicitly declared original replica under shared budgets,
+retaining partial native windows/metadata and separate closure/coverage facts.
+See [complete examples, outcomes and limits](fleet-monitoring.md).
 
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is

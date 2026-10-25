@@ -35,6 +35,8 @@ from chimeraforge.signed_contribution import SignedContribution, SignedContribut
 
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
+from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
+from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
@@ -703,6 +705,19 @@ def monitor_plan(
     return monitor_saved(
         saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
     )
+
+
+async def monitor_fleet(
+    saved: PlanArtifact | str | Path,
+    request: FleetMonitorRequest,
+    *,
+    candidate_index: int = 0,
+    stop_event: asyncio.Event | None = None,
+) -> FleetMonitorReport:
+    """Passively observe all declared replicas with shared budgets and retained prefixes."""
+    from chimeraforge.fleet_monitor import monitor_fleet as observe
+
+    return await observe(saved, request, candidate_index=candidate_index, stop_event=stop_event)
 
 
 def sign_contribution(

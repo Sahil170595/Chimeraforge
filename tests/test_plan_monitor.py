@@ -248,6 +248,35 @@ def test_known_before_identity_mismatch_cannot_be_erased_by_after_match(saved, m
     )
 
 
+@pytest.mark.parametrize(
+    "field,wrong", [("quant", "Q8_0"), ("tensor_parallel", 7), ("context_length", 99999)]
+)
+def test_known_before_configuration_cannot_be_erased_by_unavailable_after(
+    saved, monkeypatch, field, wrong
+):
+    from chimeraforge.api import monitor_plan
+    from chimeraforge import monitor
+    from chimeraforge.bench import serving
+
+    snapshots = iter(pair())
+    monkeypatch.setattr(monitor, "_fetch", lambda *args: next(snapshots))
+    scenes = iter(
+        [dict(observe_scene(saved), **{field: wrong}), dict(observe_scene(saved), **{field: None})]
+    )
+
+    async def observe(*args):
+        return next(scenes)
+
+    monkeypatch.setattr(serving, "observe_backend", observe)
+    report = monitor_plan(
+        saved[0],
+        MonitorRequest("vllm", "http://serving", MODEL, interval=0.01),
+        candidate_index=saved[1],
+    )
+    assert report.outcome == "pass" and report.exit_code == 5
+    assert report.to_dict()["plan_binding"]["configuration"]["state"] == "mismatch"
+
+
 def test_saved_multiple_engine_fleet_and_engine_dp1_is_not_a_topology_mismatch(monkeypatch):
     artifact = plan(
         PlanRequest(

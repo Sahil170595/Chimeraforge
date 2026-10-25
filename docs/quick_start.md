@@ -1,9 +1,16 @@
 # Quick Start Guide
 
+**Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
+adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
+declarations for the original saved replica count. Shared budgets, retained
+partial windows/metadata, required identity and cleanup qualify declared coverage
+without GPU or physical-independence claims. Existing endpoint-only `monitor`
+retains its behavior.
+
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.75.0 includes native streaming trace observations and
+Chimeraforge 0.76.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,

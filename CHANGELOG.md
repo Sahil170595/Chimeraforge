@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.76.0] - 2026-10-24
+
+### Passive declared-fleet monitoring
+
+- Typed async `api.monitor_fleet` and `monitor-fleet` observe one explicit vLLM/SGLang endpoint per original saved replica, retaining caller-order complete/error/cancelled/unstarted slots, native histogram windows and independently bound metadata prefixes. All declared slots, required identities, native SLOs, budget state and cleanup must qualify before a fleet pass; no pooled percentiles or physical-independence/capacity claim is made.
+- One cooperative observation deadline, request-attempt/accepted-body budget and bounded HTTP concurrency cover metrics and every native metadata/fallback route. Identity encoding and per-response bounds prevent compressed expansion or optional-metadata handling from concealing a contract violation. Owned async streams, clients and pools are closed and tasks joined under a separate shared cleanup allowance; cancellation and cleanup overruns retain non-pass facts.
+- Replica-labelled Prometheus output has one HELP/TYPE per family and protects the original saved plan against path/file-identity output aliases before contact. The installed CPU consumer exercises native three-replica CLI/API, partial quotas, JSON and textfile output against closed local passive protocol fixtures; no inference, GPU or model download is performed.
+- Preserve the existing endpoint-only multi-replica/engine-DP behavior. Correct its demonstrated loss of a known BEFORE saved-configuration contradiction when AFTER becomes unavailable; unknown-only configuration remains unverified rather than a mismatch.
+- Unexpected endpoint observation failures retain contacted-slot error state and class-only contextual diagnostics, preserving partial evidence, known mismatch/breach priority and owned cleanup.
+
+### Release qualification
+
+- Released independently from PR #132. The original feature implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39902501863); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.75.0] - 2026-10-24
 
 ### Offline deployment drift verification
