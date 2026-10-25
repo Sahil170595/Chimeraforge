@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-22).** [Chimeraforge 0.71.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.71.0) adds trusted signed native comparisons. The workflows below are available in this version except the explicitly marked **unreleased 0.72.0 hardware-study, 0.73.0 deployment-placement and 0.74.0 multi-replica Compose candidates**. Candidate behavior requires this source or its built wheel. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-24).** [Chimeraforge 0.74.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.74.0) adds homogeneous multi-replica Compose export. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.71.0"
+pip install "chimeraforge[mcp]==0.74.0"
 ```
 
 ## Quickstart
@@ -370,7 +370,8 @@ and estimates in native units. A changed policy identity aborts the study.
 
 Supply 1-16 unique cases for up to 16 bound model targets. Workload, context,
 SLOs, quality/safety targets, budget, duty and cost assumptions may change;
-model and platform stay fixed. Published 0.71.0 also holds physical hardware fixed.
+model and platform stay fixed. Cases without an explicit hardware alternative also
+hold physical hardware fixed.
 `gpu_cost_per_hour` is an
 operator price assumption, is refused for cloud instance pricing, and zero
 keeps the native unknown-price behavior. Output cannot overwrite known inputs.
@@ -379,7 +380,7 @@ unavailable inputs exit 2. No weights are downloaded or serving traffic generate
 Integrity and modeled deltas do not authenticate inputs or qualify performance.
 See [the Python and case contract](docs/planning-api.md#frozen-context-sensitivity).
 
-**Unreleased 0.72.0 candidate: hardware alternatives.** Compare full GPU registry
+**Hardware alternatives (since 0.72.0).** Compare full GPU registry
 specifications through the same CLI or Python API, without changing the saved plan:
 
 ```json
@@ -390,7 +391,7 @@ specifications through the same CLI or Python API, without changing the saved pl
 ]
 ```
 
-Save as `hardware-cases.json` and run the candidate's
+Save as `hardware-cases.json` and run
 `chimeraforge study plan.json --cases hardware-cases.json --out hardware-study.json --json`.
 Use one exact case-insensitive canonical name from `chimeraforge plan --list-hardware`;
 partial names, ambiguous entries and `auto` refuse before search. Explicit hardware
@@ -408,7 +409,7 @@ without probing this host, running inference or attesting hardware/weights.
 
 ### `deploy` -- export serving configuration
 
-**Unreleased 0.74.0 candidate: homogeneous Compose fleets.** Select an original
+**Homogeneous Compose fleets (since 0.74.0).** Select an original
 online Linux CUDA vLLM/SGLang candidate with N>1. Repeat `--replica-devices 7,3
 --replica-port 9001` once per replica, supplying disjoint ordered groups of TP x PP
 IDs and distinct loopback host ports. The direct API accepts
@@ -418,10 +419,8 @@ these options with singular device/port options. Each `inference-1..N` service
 retains the saved model/revision and per-replica batch; manually target each port.
 There is no router, scaler or verified physical capacity. See the
 [complete CLI/API example and limits](docs/deployment.md#homogeneous-compose-replicas).
-These options require candidate source/a built wheel; published 0.71.0 does not
-include multi-replica export.
 
-**Unreleased 0.73.0 candidate:** repeat `--gpu-device` once per saved TP x PP GPU
+**Explicit deployment devices (since 0.73.0):** repeat `--gpu-device` once per saved TP x PP GPU
 and optionally set Compose `--host-port`. For the one-GPU vLLM selection below,
 append `--gpu-device 7 --host-port 9001`. Two-GPU selection uses, for example,
 `--gpu-device 7 --gpu-device 3`. Full GPU UUIDs are also supported. Compose emits
@@ -429,9 +428,9 @@ append `--gpu-device 7 --host-port 9001`. Two-GPU selection uses, for example,
 observed CUDA rank mapping. systemd uses ordered `CUDA_VISIBLE_DEVICES` selectors.
 The API accepts `gpu_devices=["7", "3"]` and `host_port=9001`; see the
 [full options, API examples and refusals](docs/deployment.md#explicit-device-selection-and-host-ports).
-These options require candidate source/a built candidate wheel; published 0.71.0
-retains the default count/port exports. The export admission bound is 64 GPUs per
-replica, with no device, topology or performance verification.
+Default exports retain their GPU count and ports when these options are omitted.
+The export admission bound is 64 GPUs per replica, with no device, topology or
+performance verification.
 
 Export one saved candidate as Compose, a systemd user service, an Ollama macOS
 LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
@@ -625,7 +624,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.71.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.74.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

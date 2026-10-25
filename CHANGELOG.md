@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.74.0] - Unreleased
+## [0.74.0] - 2026-10-24
 
 ### Homogeneous multi-replica Compose export
 
@@ -16,7 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Default and explicit single-replica exports retain exact prior content and metadata. Native checkpoint/quant/KV/platform/offload/LoRA/recurrent-state fidelity gates remain enforced. Compose host ordinals are not copied into container CUDA visibility.
 - The installed CPU consumer and actual Compose parser exercise a real native three-replica candidate. Homogeneity describes saved serving settings, not verified physical GPU models or independent capacity. No router, scaler, device/topology/weight verification or engine startup is supplied; native batch-mode fleets remain outside this export scope.
 
-## [0.73.0] - Unreleased
+### Release qualification
+
+- Released independently from PR #130. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39890220637); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
+## [0.73.0] - 2026-10-24
 
 ### Explicit deployment devices and Compose host ports
 
@@ -25,7 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compose retains loopback-only publishing and each engine's native container port, emits device IDs instead of count, and does not copy host ordinals into container CUDA visibility. Requested Compose list order does not verify CUDA rank mapping. Default supported exports remain byte-identical; native checkpoint, quantization, platform and fidelity refusals remain enforced.
 - The installed CPU consumer exports a real native two-GPU saved candidate through CLI/API, and host parser tests validate ordered ordinal/UUID reservations and ports. These offline declarations do not probe device availability/topology, download weights or start inference. Changed core, CLI and consumer modules have a real-import mypy gate.
 
-## [0.72.0] - Unreleased
+### Release qualification
+
+- Released independently from PR #129. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39885816890); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
+## [0.72.0] - 2026-10-24
 
 ### Hardware alternatives in frozen-model studies
 
@@ -33,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - One full held hardware registry is bound into the study policy receipt. Source/base and alternative raw/effective GPU facts remain distinct; live policy changes abort the study. Physical configuration identity detects same-name geometry changes while excluding price and source metadata. Timing retains native extrapolation and applicable model-quality evidence remains measured.
 - Explicit hardware cases refuse source cloud-instance pricing and GPU overrides, including same-name selection. Ordinary cases remain supported. Native compatibility, VRAM and price gates retain infeasible and unknown-price outcomes; explicit hourly assumptions retain their no-cloud rule. No host probe, inference, hardware/weights authentication or measured performance claim is introduced.
 - Extend the existing installed CPU consumer with real CLI/API alternatives over saved plans and absent-producer bundles; type-check the changed study core, CLI and consumer. Bounded bundle-member alias protection rejects hardlink output aliases without walking arbitrary directories.
+
+### Release qualification
+
+- Refresh locked CI/evaluation dependencies after four new advisory findings: filelock 4.2.4 on Python 3.11+ and unaffected 3.20.3 on Python 3.10, plus setuptools 84.2.1. Conditional `eval`/`dev` requirements enforce the filelock boundary for public installs; build/dev setuptools requires at least 84.1.0. Native resolver markers preserve Python 3.10-3.14 support without ignoring advisories or changing core application dependencies. Sources: [filelock affected range and fix](https://github.com/tox-dev/filelock/security/advisories/GHSA-v4x8-3wr5-3wq8), [Windows SQLite locks](https://github.com/advisories/GHSA-9vhv-jxww-xfm5), [Windows soft locks](https://github.com/advisories/GHSA-567q-5qvw-pf92), and [setuptools fix](https://github.com/pypa/setuptools/security/advisories/GHSA-xmj3-9gf7-h52w).
+- Released independently from PR #128. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39882733594); the publishing workflow separately validates and attests the exact versioned distributions before publication.
 
 ## [0.71.0] - 2026-10-22
 

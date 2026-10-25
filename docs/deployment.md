@@ -62,22 +62,22 @@ on `127.0.0.1`. It does not identify GPU models or provision an NVIDIA runtime.
 
 ## Explicit device selection and host ports
 
-These options are an **unreleased 0.73.0 candidate** and require candidate source
-or a built candidate wheel. Published 0.71.0 retains default GPU counts and ports;
-0.72.0's candidate hardware studies do not select observed deployment devices.
+These options are available since **Chimeraforge 0.73.0**. Default exports retain
+their GPU counts and ports when the options are omitted. Hardware studies, available
+since 0.72.0, model alternatives without selecting observed deployment devices.
 
-The current 0.74.0 candidate's keyword-only direct module API is
+The keyword-only direct module API in Chimeraforge 0.74.0 is
 `chimeraforge.deploy.export_deployment(artifact, *, format, model=None,
 image=None, candidate_index=0, executable=None, output_path=None,
 gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. It renders configuration; only the CLI writes
-new output files. The two replica keywords are introduced only by the 0.74.0
-candidate; the 0.73.0 candidate supports the singular options. All four options
+new output files. The replica keywords are available since 0.74.0; the singular
+options are available since 0.73.0. All four options
 default to `None`, preserving supported legacy
 export content byte for byte. Explicit `gpu_devices=[]` is an error.
 
 Repeat `--gpu-device` in caller order once per selected candidate's **TP x PP**,
 not once per replica. These singular options support one replica; multi-replica
-layouts use the separate 0.74.0 candidate interface below. For example, produce an
+layouts use the separate 0.74.0 interface below. For example, produce an
 offline manual geometry plan, then select its actual one-replica vLLM FP16 row:
 
 ```bash
@@ -161,7 +161,7 @@ and [NVIDIA device ordering](https://docs.nvidia.com/deploy/topics/topic_5_2_1.h
 
 ## Homogeneous Compose replicas
 
-The **unreleased 0.74.0 candidate** renders an original selected multi-replica
+Since **Chimeraforge 0.74.0**, the exporter renders an original selected multi-replica
 candidate as independent named Compose services. It supports **online-mode,
 Linux NVIDIA CUDA vLLM and SGLang only**. Here, homogeneous means the saved model,
 revision, backend, quantization, context and per-replica geometry/settings remain

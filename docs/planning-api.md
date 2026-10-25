@@ -129,7 +129,7 @@ JSON keys and linked paths. Allowed changes are:
 | Workload | `request_rate`, `avg_tokens`, `reasoning_tokens`, `prompt_tokens`, `context_length`, `prefix_cache_hit_rate`, `workload_cv2` |
 | Targets | `latency_slo`, `ttft_slo`, `tpot_slo`, `quality_target`, `safety_target`, `budget` |
 | Cost assumptions | `duty_cycle`, `electricity_rate`, `gpu_price_multiplier`, `gpu_cost_per_hour` |
-| Hardware (unreleased 0.72.0 candidate) | `hardware`: one exact case-insensitive canonical GPU registry name |
+| Hardware (since 0.72.0) | `hardware`: one exact case-insensitive canonical GPU registry name |
 
 Types, finite values and combinations use existing `PlanRequest` validation.
 Unspecified values inherit the saved request. Model, deployment
@@ -140,10 +140,9 @@ bound GPU; its operator basis is recorded per case, and zero remains unknown
 instead of a free GPU. Cloud cases refuse this override because the cloud prices
 whole instances. Price multipliers retain the ordinary planner's semantics.
 
-**Unreleased 0.72.0 candidate:** the existing `study_plan` / `study` interfaces also
-accept `PlanScenario("larger-gpu", {"hardware": "RTX 4090 24GB"})`. Published 0.71.0
-provides workload/cost studies with fixed hardware; use this candidate source or
-its built wheel for alternatives. The same 1-16 case and 16-model bounds apply.
+Since **Chimeraforge 0.72.0**, the existing `study_plan` / `study` interfaces also
+accept `PlanScenario("larger-gpu", {"hardware": "RTX 4090 24GB"})`.
+The same 1-16 case and 16-model bounds apply.
 Exact canonical names come from `chimeraforge plan --list-hardware`; case is ignored,
 but partial matches, `auto`, unknown or ambiguous names refuse before any search.
 Any explicit hardware selection refuses a source with nonempty `gpu_overrides` or
@@ -281,14 +280,14 @@ weights, or establish measured prediction accuracy.
 
 ## Explicit deployment placement
 
-The **unreleased 0.73.0 candidate** extends direct
-`chimeraforge.deploy.export_deployment` with `gpu_devices` and `host_port`.
+Since **Chimeraforge 0.73.0**, the direct API
+`chimeraforge.deploy.export_deployment` supports `gpu_devices` and `host_port`.
 The saved candidate's model and TP x PP geometry remain unchanged. See
 [complete CLI/API examples, identifier validation, ports and proof limits](deployment.md#explicit-device-selection-and-host-ports).
-Published 0.71.0 retains the default count/port behavior; 0.72.0's candidate
-hardware studies are separate modeled alternatives, not observed host placement.
+Default exports retain their count/port behavior. Hardware studies, available
+since 0.72.0, model alternatives without observing host placement.
 
-The **unreleased 0.74.0 candidate** also accepts `replica_gpu_devices` and
+Since **Chimeraforge 0.74.0**, this API also accepts `replica_gpu_devices` and
 `replica_host_ports` for original multi-replica online vLLM/SGLang Compose plans.
 The exporter preserves original N, total GPU accounting and per-replica batch;
 see [the complete replica contract](deployment.md#homogeneous-compose-replicas).
