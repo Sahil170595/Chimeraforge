@@ -1,0 +1,30 @@
+name: CF079 native fleet feasibility
+
+on:
+  push:
+    branches: [codex/diagnose-cf079-native-fleet]
+
+permissions:
+  contents: read
+
+jobs:
+  native-three-members:
+    if: github.repository == 'Sahil170595/Chimeraforge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/cf079-native-feasibility-env
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: ./.github/actions/setup-ci
+      - name: Build and install the actual inherited candidate wheel
+        run: |
+          uv run --no-sync python -m build --no-isolation
+          uv pip install --python "$UV_PROJECT_ENVIRONMENT/bin/python" --no-deps --reinstall dist/*.whl
+      - name: Three native CPU daemons, original N3 plan and owned cleanup
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          "$UV_PROJECT_ENVIRONMENT/bin/python" scripts/ci_cpu_fleet.py --expect-version "$version" --checkout "$GITHUB_WORKSPACE"
