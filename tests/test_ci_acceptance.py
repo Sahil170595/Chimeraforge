@@ -48,6 +48,10 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert receipt["source_plan_bytes_unchanged"]
     assert receipt["scope"] == "offline declaration only"
     assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
+    fleet = receipt["homogeneous_fleet"]
+    assert fleet["replicas"] == 3 and fleet["gpus_total"] == 6
+    assert fleet["service_names"] == ["inference-1", "inference-2", "inference-3"]
+    assert fleet["source_plan_bytes_unchanged"] and fleet["router"] == "not provided"
 
 
 def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkeypatch):

@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.73.0.
+This document covers Chimeraforge 0.74.0.
 Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
 alternatives under held model/input facts; see
 [the complete study contract](planning-api.md#frozen-context-sensitivity).
@@ -11,6 +11,12 @@ Chimeraforge 0.73.0 adds keyword-only `gpu_devices: list[str] | None`
 and `host_port: int | None` to the direct `chimeraforge.deploy.export_deployment`
 API. This is a module API, not an additional `chimeraforge.api` re-export. See
 [the exact placement contract and complete example](deployment.md#explicit-device-selection-and-host-ports).
+
+Chimeraforge 0.74.0 adds keyword-only
+`replica_gpu_devices: list[list[str]] | None` and `replica_host_ports: list[int] | None`
+to the same direct deployment API. They require a complete explicit layout for
+an original online vLLM/SGLang multi-replica Compose candidate. See the
+[full API/CLI contract](deployment.md#homogeneous-compose-replicas).
 
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is

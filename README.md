@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-24).** [Chimeraforge 0.73.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.73.0) adds explicit deployment devices and Compose host ports. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-24).** [Chimeraforge 0.74.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.74.0) adds homogeneous multi-replica Compose export. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.73.0"
+pip install "chimeraforge[mcp]==0.74.0"
 ```
 
 ## Quickstart
@@ -409,6 +409,17 @@ without probing this host, running inference or attesting hardware/weights.
 
 ### `deploy` -- export serving configuration
 
+**Homogeneous Compose fleets (since 0.74.0).** Select an original
+online Linux CUDA vLLM/SGLang candidate with N>1. Repeat `--replica-devices 7,3
+--replica-port 9001` once per replica, supplying disjoint ordered groups of TP x PP
+IDs and distinct loopback host ports. The direct API accepts
+`replica_gpu_devices=[["7", "3"], ["9", "2"], ["8", "4"]]` and
+`replica_host_ports=[9001, 9002, 9003]` for a three-replica TP=2 candidate. Do not mix
+these options with singular device/port options. Each `inference-1..N` service
+retains the saved model/revision and per-replica batch; manually target each port.
+There is no router, scaler or verified physical capacity. See the
+[complete CLI/API example and limits](docs/deployment.md#homogeneous-compose-replicas).
+
 **Explicit deployment devices (since 0.73.0):** repeat `--gpu-device` once per saved TP x PP GPU
 and optionally set Compose `--host-port`. For the one-GPU vLLM selection below,
 append `--gpu-device 7 --host-port 9001`. Two-GPU selection uses, for example,
@@ -613,7 +624,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.73.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.74.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

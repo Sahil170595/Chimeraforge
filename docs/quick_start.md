@@ -3,7 +3,7 @@
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.73.0 includes native streaming trace observations and
+Chimeraforge 0.74.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
@@ -23,6 +23,11 @@ Since 0.73.0, `deploy` supports repeatable `--gpu-device` and
 Compose-only `--host-port`, plus direct `export_deployment` keywords. See
 [complete examples and limits](deployment.md#explicit-device-selection-and-host-ports).
 Default exports retain their GPU count and ports; no GPU placement is verified.
+
+Since 0.74.0, `deploy` supports `--replica-devices GROUP
+--replica-port PORT` for every original online vLLM/SGLang Compose replica. See
+[complete CLI/API examples](deployment.md#homogeneous-compose-replicas); these
+are manually targeted offline declarations, not measured fleet capacity.
 
 ## 5-Minute Setup
 

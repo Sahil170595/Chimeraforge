@@ -12,6 +12,7 @@ from typing import Any
 
 from chimeraforge.api import PlanArtifact, PlanError, artifact_from_dict
 from chimeraforge.planner.engine import Candidate
+from chimeraforge.planner.constants import MAX_REPLICAS, PLAN_MODE_ONLINE
 from chimeraforge.planner.launch import (
     OLLAMA_KV_CACHE_TYPE,
     RECOMMENDED_GPU_MEM_UTIL,
@@ -179,10 +180,15 @@ def _model_identity(
 def _validate_fidelity(
     candidate: Candidate, spec: ModelSpec | None, inputs: dict, platform: str, format: str
 ) -> None:
-    if candidate.n_agents != 1:
-        raise DeploymentError(
-            "multi-replica fleet export is unsupported; select a one-replica candidate"
-        )
+    if type(candidate.n_agents) is not int or not 1 <= candidate.n_agents <= MAX_REPLICAS:
+        raise DeploymentError(f"replica population must be between 1 and {MAX_REPLICAS}")
+    if candidate.n_agents > 1 and (
+        format != "compose"
+        or candidate.backend not in ("vllm", "sglang")
+        or candidate.mode != PLAN_MODE_ONLINE
+        or inputs["mode"] != PLAN_MODE_ONLINE
+    ):
+        raise DeploymentError("multi-replica export supports online vLLM/SGLang Compose only")
     if candidate.offload_fraction is None or candidate.offload_fraction != 0:
         raise DeploymentError(
             "CPU offload is not expressed by these templates; select a fully resident plan"
@@ -195,13 +201,18 @@ def _validate_fidelity(
         raise DeploymentError("parallel degrees must be positive")
     if any(
         type(value) is not int or not 1 <= value <= MAX_EXPORT_GPUS_PER_REPLICA
-        for value in (candidate.tensor_parallel, candidate.pipeline_parallel, candidate.gpus_total)
+        for value in (candidate.tensor_parallel, candidate.pipeline_parallel)
     ):
         raise DeploymentError(
             f"deployment export supports at most {MAX_EXPORT_GPUS_PER_REPLICA} GPUs per replica"
         )
-    if candidate.gpus_total != candidate.tensor_parallel * candidate.pipeline_parallel:
-        raise DeploymentError("candidate GPU count does not equal its one-replica TP x PP")
+    per_replica = candidate.tensor_parallel * candidate.pipeline_parallel
+    if per_replica > MAX_EXPORT_GPUS_PER_REPLICA:
+        raise DeploymentError(
+            f"deployment export supports at most {MAX_EXPORT_GPUS_PER_REPLICA} GPUs per replica"
+        )
+    if candidate.gpus_total != candidate.n_agents * per_replica:
+        raise DeploymentError("candidate GPU count does not equal replicas x TP x PP")
     if candidate.backend in _HF_BACKENDS and inputs["kv_quant"] == "q4":
         raise DeploymentError(
             "q4 KV is not faithfully represented by this backend's fp8 template; "
@@ -418,6 +429,84 @@ def _device_selection(devices: list[str] | None, count: int) -> list[str] | None
     return selected
 
 
+def _replica_layout(
+    candidate: Candidate,
+    groups: list[list[str]] | None,
+    ports: list[int] | None,
+) -> tuple[list[list[str]], list[int]] | None:
+    if candidate.n_agents == 1:
+        if groups is not None or ports is not None:
+            raise DeploymentError("replica matrices require a multi-replica saved candidate")
+        return None
+    if (
+        type(groups) is not list
+        or type(ports) is not list
+        or len(groups) != candidate.n_agents
+        or len(ports) != candidate.n_agents
+    ):
+        raise DeploymentError("each saved replica requires an explicit GPU group and host port")
+    selected = []
+    for group in groups:
+        if type(group) is not list:
+            raise DeploymentError("each replica GPU group must be a list of device IDs")
+        canonical = _device_selection(
+            group, candidate.tensor_parallel * candidate.pipeline_parallel
+        )
+        assert canonical is not None
+        selected.append(canonical)
+    namespaces = {"uuid" if row[0].startswith("GPU-") else "ordinal" for row in selected}
+    all_ids = [device for row in selected for device in row]
+    if len(namespaces) != 1 or len(set(all_ids)) != len(all_ids):
+        raise DeploymentError(
+            "replica GPU groups must be globally disjoint in one namespace; no duplicate IDs"
+        )
+    if any(type(port) is not int or not 1 <= port <= MAX_HOST_PORT for port in ports):
+        raise DeploymentError("each replica host port must be an integer between 1 and 65535")
+    if len(set(ports)) != len(ports):
+        raise DeploymentError("replica host ports must be distinct")
+    return selected, ports[:]
+
+
+def _compose_service(
+    candidate: Candidate,
+    argv: list[str],
+    env: dict[str, str],
+    image: str,
+    fingerprint: str,
+    devices: list[str] | None,
+    host_port: int | None,
+) -> dict[str, Any]:
+    entry_length = {"vllm": 2, "sglang": 3, "tgi": 1, "ollama": 2}[candidate.backend]
+    reservation: dict[str, Any] = {"driver": "nvidia"}
+    if devices is None:
+        reservation["count"] = candidate.gpus_total
+    else:
+        reservation["device_ids"] = devices
+    reservation["capabilities"] = ["gpu"]
+    published_port = host_port if host_port is not None else _HOST_PORTS[candidate.backend]
+    service: dict[str, Any] = {
+        "image": image,
+        "entrypoint": argv[:entry_length],
+        "ports": [f"127.0.0.1:{published_port}:{_PORTS[candidate.backend]}"],
+        "restart": "unless-stopped",
+        "init": True,
+        "labels": {"org.chimeraforge.plan-fingerprint": fingerprint},
+        "deploy": {"resources": {"reservations": {"devices": [reservation]}}},
+    }
+    if argv[entry_length:]:
+        service["command"] = argv[entry_length:]
+    if env:
+        service["environment"] = env
+    if candidate.backend == "ollama":
+        service["volumes"] = [
+            "ollama-models:/root/.ollama",
+            "./Modelfile:/etc/chimeraforge/Modelfile:ro",
+        ]
+    else:
+        service["shm_size"] = "1gb"
+    return service
+
+
 def export_deployment(
     artifact: PlanArtifact,
     *,
@@ -429,6 +518,8 @@ def export_deployment(
     output_path: str | Path | None = None,
     gpu_devices: list[str] | None = None,
     host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
 ) -> DeploymentExport:
     """Render a supported saved candidate; refused assumptions never become placeholders."""
     if format not in FORMATS:
@@ -437,6 +528,11 @@ def export_deployment(
         raise DeploymentError("image override applies only to Compose format")
     if executable is not None and format not in ("systemd", "launchd"):
         raise DeploymentError("executable override applies only to systemd or launchd format")
+    if replica_gpu_devices is not None or replica_host_ports is not None:
+        if format != "compose":
+            raise DeploymentError("replica layout options apply only to Compose format")
+        if gpu_devices is not None or host_port is not None:
+            raise DeploymentError("singular device/port options cannot mix with replica matrices")
     if gpu_devices is not None and format not in ("compose", "systemd"):
         raise DeploymentError("GPU device selection applies only to Compose or systemd format")
     if host_port is not None:
@@ -454,6 +550,7 @@ def export_deployment(
     inputs = data["inputs"]
     inputs["kv_quant"] = inputs["kv_quant"].lower()
     _validate_fidelity(candidate, spec, inputs, data["result"]["platform"], format)
+    layout = _replica_layout(candidate, replica_gpu_devices, replica_host_ports)
     devices = _device_selection(gpu_devices, candidate.gpus_total)
     identifier, identity_notes = _model_identity(candidate, spec, model)
     fingerprint = data["fingerprint"]
@@ -466,6 +563,14 @@ def export_deployment(
             if format == "compose"
             else "CUDA_VISIBLE_DEVICES requests application device ordering; device availability, "
             "hardware and topology are not verified."
+        )
+    if layout is not None:
+        notes.append(
+            "Homogeneous saved serving settings are rendered as independent named services; "
+            "a router, scaler and observed independent GPU capacity are not provided or verified. "
+            "Target each loopback endpoint explicitly. Device availability/model/topology and "
+            "CUDA rank mapping are unverified; host ordinals are not copied into "
+            "container CUDA visibility."
         )
     provisioning = []
     files = {}
@@ -507,35 +612,31 @@ def export_deployment(
         notes += engine_notes
     if format == "compose":
         pinned_image = _image(image)
-        entry_length = {"vllm": 2, "sglang": 3, "tgi": 1, "ollama": 2}[candidate.backend]
-        reservation: dict[str, Any] = {"driver": "nvidia"}
-        if devices is None:
-            reservation["count"] = candidate.gpus_total
+        services = {}
+        if layout is None:
+            services["inference"] = _compose_service(
+                candidate,
+                argv,
+                env,
+                pinned_image,
+                fingerprint,
+                devices,
+                host_port,
+            )
         else:
-            reservation["device_ids"] = devices
-        reservation["capabilities"] = ["gpu"]
-        published_port = host_port if host_port is not None else _HOST_PORTS[candidate.backend]
-        service: dict[str, Any] = {
-            "image": pinned_image,
-            "entrypoint": argv[:entry_length],
-            "ports": [f"127.0.0.1:{published_port}:{_PORTS[candidate.backend]}"],
-            "restart": "unless-stopped",
-            "init": True,
-            "labels": {"org.chimeraforge.plan-fingerprint": fingerprint},
-            "deploy": {"resources": {"reservations": {"devices": [reservation]}}},
-        }
-        if argv[entry_length:]:
-            service["command"] = argv[entry_length:]
-        if env:
-            service["environment"] = env
-        if candidate.backend == "ollama":
-            service["volumes"] = [
-                "ollama-models:/root/.ollama",
-                "./Modelfile:/etc/chimeraforge/Modelfile:ro",
-            ]
-        else:
-            service["shm_size"] = "1gb"
-        config: dict[str, Any] = {"services": {"inference": service}}
+            groups, ports = layout
+            for index, (group, port) in enumerate(zip(groups, ports), 1):
+                service = _compose_service(
+                    candidate, argv, env, pinned_image, fingerprint, group, port
+                )
+                service["labels"].update(
+                    {
+                        "org.chimeraforge.replica-index": str(index),
+                        "org.chimeraforge.replica-count": str(candidate.n_agents),
+                    }
+                )
+                services[f"inference-{index}"] = service
+        config: dict[str, Any] = {"services": services}
         if candidate.backend == "ollama":
             config["volumes"] = {"ollama-models": {}}
         # JSON is a YAML subset, avoiding an optional runtime PyYAML dependency.

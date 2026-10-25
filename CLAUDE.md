@@ -57,7 +57,17 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.73.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.74.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Homogeneous Compose fleets (since 0.74.0): direct
+`export_deployment(..., replica_gpu_devices=GROUPS, replica_host_ports=PORTS)`
+and repeatable `deploy --replica-devices GROUP --replica-port PORT` render the
+ORIGINAL online Linux CUDA vLLM/SGLang candidate as `inference-1..N`. N<=16,
+TP x PP<=64 per replica; total GPUs=N x TP x PP may exceed 64. Every replica needs
+disjoint canonical IDs and a distinct loopback host port. Singular/matrix options
+cannot mix. Preserve each replica's model/revision/context/quant/batch/native
+controls; no one-agent substitution, router/scaler or physical capacity claim.
+See [multi-replica deployment](docs/deployment.md#homogeneous-compose-replicas).
 
 Deployment placement (since 0.73.0): direct
 `deploy.export_deployment(..., gpu_devices=["7", "3"], host_port=9001)` and

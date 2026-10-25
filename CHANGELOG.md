@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.74.0] - 2026-10-24
+
+### Homogeneous multi-replica Compose export
+
+- `deploy.export_deployment` accepts `replica_gpu_devices` and `replica_host_ports`; repeat `deploy --replica-devices GROUP --replica-port PORT` for each original selected replica. Online Linux CUDA vLLM/SGLang fleets render as `inference-1` through `inference-N`, preserving the original model/revision, quantization, context, TP/PP and per-replica batch without fabricating a one-agent candidate.
+- Every native replica needs an explicit disjoint ordered GPU group and distinct loopback host port. Cardinality, aliases, namespace mixing, incomplete layouts, unsupported formats/backends/modes and mixing singular/matrix options refuse before output. Native population is bounded by `MAX_REPLICAS=16`; the 64-GPU export admission limit applies per replica, while the exact grand total is N x TP x PP and may exceed 64.
+- Default and explicit single-replica exports retain exact prior content and metadata. Native checkpoint/quant/KV/platform/offload/LoRA/recurrent-state fidelity gates remain enforced. Compose host ordinals are not copied into container CUDA visibility.
+- The installed CPU consumer and actual Compose parser exercise a real native three-replica candidate. Homogeneity describes saved serving settings, not verified physical GPU models or independent capacity. No router, scaler, device/topology/weight verification or engine startup is supplied; native batch-mode fleets remain outside this export scope.
+
+### Release qualification
+
+- Released independently from PR #130. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/39890220637); the publishing workflow separately validates and attests the exact versioned distributions before publication.
+
 ## [0.73.0] - 2026-10-24
 
 ### Explicit deployment devices and Compose host ports

@@ -287,6 +287,11 @@ The saved candidate's model and TP x PP geometry remain unchanged. See
 Default exports retain their count/port behavior. Hardware studies, available
 since 0.72.0, model alternatives without observing host placement.
 
+Since **Chimeraforge 0.74.0**, this API also accepts `replica_gpu_devices` and
+`replica_host_ports` for original multi-replica online vLLM/SGLang Compose plans.
+The exporter preserves original N, total GPU accounting and per-replica batch;
+see [the complete replica contract](deployment.md#homogeneous-compose-replicas).
+
 ## Checkpoint identity
 
 This feature is available in Chimeraforge 0.57.0. Install `pip install "chimeraforge==0.57.0"`. The introduced implementation passed [hosted source acceptance](https://github.com/Sahil170595/Chimeraforge/actions/runs/37953617963); each release separately qualifies its versioned artifacts.
