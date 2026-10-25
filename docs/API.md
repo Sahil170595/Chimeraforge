@@ -3,7 +3,10 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.71.0.
+This document covers Chimeraforge 0.72.0.
+Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
+alternatives under held model/input facts; see
+[the complete study contract](planning-api.md#frozen-context-sensitivity).
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
