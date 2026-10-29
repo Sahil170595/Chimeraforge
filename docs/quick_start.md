@@ -1,5 +1,12 @@
 # Quick Start Guide
 
+**Original-fleet scheduled trace (since 0.79.0):** `trace-fleet` and async
+`api.replay_fleet_trace` retain the original saved fleet and all routed rows
+under one native schedule, concurrency limit and deadline. Execution, SLOs,
+configuration and cooperative cleanup remain separate; see [complete CLI/API
+examples and receiving limits](fleet-trace.md). Protocol and native CPU
+acceptance do not qualify GPU execution or physical capacity.
+
 **Runtime secure monitoring (since 0.78.0):** standalone, saved-plan and declared-
 fleet monitoring support verified HTTPS, named-environment bearer and optional
 client certificates for metrics and all metadata. Settings stay runtime-only
@@ -23,7 +30,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.78.0 includes native streaming trace observations and
+Chimeraforge 0.79.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,

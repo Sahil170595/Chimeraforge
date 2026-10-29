@@ -23,6 +23,19 @@ are counted separately from SLOs; proxy/keylog sentinels and joined owned handle
 bound these fixture claims. This is protocol acceptance without real inference,
 customer credentials, GPU execution or physical capacity qualification.
 
+Chimeraforge 0.79.0 adds a focused typed original-fleet
+producer/strict-receiver/CLI boundary. Each installed wheel/rebuilt-sdist profile
+exercises complete and mTLS/bearer vLLM/SGLang protocol controls, actual short-token
+mismatch and required-preflight refusal, with one original six-row population
+and all three declared slots. These fixtures are one owned listener with three
+paths, without inference or physical independence claims. The existing CPU job
+reuses its single pinned download/import and initialized ordinary writable model
+store, closes the first daemon group, then starts three native daemon groups.
+It invokes the actual installed fleet API and CLI with the same six-row workload
+(two protocol invocations), retaining CPU-versus-modeled-GPU mismatches and
+unavailable startup diagnostics. All groups, children, listeners and clients
+must close; no extra scientific workload, GPU or capacity threshold is added.
+
 `uv.lock` contains the universal dependency resolution and distribution hashes.
 PR/release jobs refuse a stale lock. Build tooling is included in the lock and
 distributions are built without a second isolated, live dependency resolution.

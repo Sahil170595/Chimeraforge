@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**29 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.78.0.
+**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.79.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-29).** [Chimeraforge 0.78.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.78.0) adds runtime HTTPS and authenticated monitoring. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-29).** [Chimeraforge 0.79.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.79.0) adds original-fleet scheduled trace replay and strict receiving. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.78.0"
+pip install "chimeraforge[mcp]==0.79.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -715,7 +715,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.78.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.79.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -889,6 +889,28 @@ including unpaired receipts, is retained. Exit `0` is a conditional policy pass,
 remains the default `--kind benchmark`. See the [trace policy/API contract](docs/trace-regression-gate.md)
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
+
+### `trace-fleet`
+
+**Available since 0.79.0.** Replay one original saved fleet with an
+explicit direct endpoint and route map. All rows share one client schedule,
+concurrency semaphore and deadline; each declared member remains visible,
+including members assigned no requests.
+
+```bash
+chimeraforge trace-fleet requests.json --from-plan saved.json --candidate-index 0 \
+  --endpoint replica-1=http://host1:8000 --endpoint replica-2=http://host2:8000 \
+  --endpoint replica-3=http://host3:8000 --routes routes.json --concurrency 3 \
+  --out fleet-trace.json --json
+```
+
+The example requires an original N3 candidate and a route for every request.
+Output caps must equal the saved decode length. Complete execution exits 0,
+incomplete execution or known configuration/token mismatch exits 1, and invalid
+input exits 2; native SLO outcomes remain separate. URL declarations and metadata
+do not establish physical independence, GPU execution or capacity. See the
+[full original-fleet trace contract](docs/fleet-trace.md), including verified
+HTTPS for vLLM/SGLang and the strict receiving API. Use Chimeraforge 0.79.0 or later.
 
 ### `trace-campaign` -- frozen serial replay populations (since 0.64.0)
 

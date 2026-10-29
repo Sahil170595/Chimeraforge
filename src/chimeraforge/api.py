@@ -21,6 +21,9 @@ from chimeraforge.bench.plan_trace import PlanTraceReplay
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
 from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
+from chimeraforge.bench.fleet_trace_receipt import load_fleet_trace as load_fleet_trace
+from chimeraforge.bench.fleet_trace_types import FleetTraceReplay as FleetTraceReplay
+from chimeraforge.bench.fleet_trace_types import TraceRoute as TraceRoute
 from chimeraforge.bench.trace_campaign import (
     DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
     DEFAULT_REPLICATES,
@@ -615,6 +618,40 @@ async def replay_plan_trace(
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
         stop_event=stop_event,
+    )
+
+
+async def replay_fleet_trace(
+    saved: PlanArtifact | PlanBundle | str | Path,
+    requests: list[TraceRequest] | str | Path,
+    endpoints: tuple[FleetEndpoint, ...],
+    routes: list[TraceRoute] | str | Path,
+    *,
+    candidate_index: int = 0,
+    model: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    cleanup_timeout: float = 2,
+    stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> FleetTraceReplay:
+    """Replay every original member through one native client schedule and owner."""
+    from chimeraforge.bench.fleet_trace import replay_fleet_trace as replay
+
+    return await replay(
+        saved,
+        requests,
+        endpoints,
+        routes,
+        candidate_index=candidate_index,
+        model=model,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        cleanup_timeout=cleanup_timeout,
+        stop_event=stop_event,
+        connections=connections,
     )
 
 

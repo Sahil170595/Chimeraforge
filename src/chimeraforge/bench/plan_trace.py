@@ -175,11 +175,17 @@ def _prepare(
     )
 
 
-def _bindings(prepared: _PreparedPlanTrace, native: dict) -> dict:
+def _bindings(
+    prepared: _PreparedPlanTrace, native: dict, *, replica_scope: str = "endpoint_topology"
+) -> dict:
     before, after = native["serving_before"] or {}, native["serving_after"] or {}
     phases = {
-        "before": serving_binding(prepared.data, prepared.candidate, before, before),
-        "after": serving_binding(prepared.data, prepared.candidate, after, after),
+        "before": serving_binding(
+            prepared.data, prepared.candidate, before, before, replica_scope=replica_scope
+        ),
+        "after": serving_binding(
+            prepared.data, prepared.candidate, after, after, replica_scope=replica_scope
+        ),
     }
     summary = {}
     for name, prior in phases["before"].items():
@@ -202,7 +208,7 @@ def _bindings(prepared: _PreparedPlanTrace, native: dict) -> dict:
     ):
         values = [row["native"][field_name] for row in native["requests"]]
         known_mismatch = any(value is not None and value != expected for value in values)
-        complete = all(
+        complete = bool(native["requests"]) and all(
             row["state"] == "completed" and value is not None
             for row, value in zip(native["requests"], values)
         )
@@ -222,6 +228,8 @@ def _slo(prepared: _PreparedPlanTrace, native: dict, complete: bool) -> dict:
     state = (
         "not_requested"
         if not any(value is not None for value in targets.values())
+        else "unavailable"
+        if not native["requests"]
         else "breach"
         if outcomes["breach"]
         else "incomplete"

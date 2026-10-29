@@ -9,9 +9,11 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Chimeraforge **0.79.0** adds [original-fleet active trace replay](fleet-trace.md), with one native schedule, full original member coverage, per-ID secure connections and a strict receiving API.
+
 Chimeraforge **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
 
-Public CLI: **0.78.0**. The released features below are included in this version.
+Public CLI: **0.79.0**. The released features below are included in this version.
 
 Chimeraforge **0.77.0** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
@@ -56,8 +58,8 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-29 commands in Chimeraforge 0.78.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
-`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
+30 commands in Chimeraforge 0.79.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
+`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
 compares saved traces; `gate --kind trace-campaign` compares whole campaigns.
