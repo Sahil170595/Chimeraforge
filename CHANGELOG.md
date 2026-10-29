@@ -5,6 +5,20 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.78.0] - 2026-10-29
+
+### Runtime HTTPS and authenticated monitoring
+
+- Runtime-only `MonitorConnection` and named-environment CLI options supply verified HTTPS, private CA replacement, bearer authentication and optional client certificates to standalone, saved-plan and complete declared-fleet monitoring. The same origin-bound policy covers metrics and all before/after vLLM/SGLang metadata, including both actual fleet transport pools; redirects are refused.
+- Prepare all secure fleet settings before contact. Explicit mappings (including empty mappings) require HTTPS for every original endpoint; credentials are assigned per ID without implicit broadcast. Secrets, environment names and certificate paths stay outside saved requests and reports; secure failures use categorical diagnostics. Explicit trust bypasses HTTPX proxy/CA discovery and implicit SSL key logging without mutating process environment.
+- Both CLI boundaries protect every explicit TLS file and saved-plan input against Prometheus output path/file-identity aliases before connection preparation or network contact.
+- Keep native evidence, budgets, failure priorities, anonymous defaults and owned cleanup. Real owned CPU TLS/auth/mTLS fixtures exercise source and installed CLI/API; they do not qualify physical servers, GPUs, running weights or capacity. Declare the already locked `certifi` as a direct core dependency without changing external package versions.
+
+### Qualification
+
+- Make the trace generation-timeout fixture give readiness a separate bounded allowance while retaining the real 20 ms native generation timeout. Controlled delayed-metadata and removed-generation-timeout negative cases preserve partial rows, semaphore queue ordering and owned cleanup. This corrects a demonstrated fixture timing assumption; production trace behavior is unchanged.
+- Make TLS 1.2 the explicit protocol floor in the owned CPU TLS fixture after a CodeQL finding about its implicit floor. Supported Python versions already default to this minimum; application TLS, trust, mTLS and cleanup behavior are unchanged.
+
 ## [0.77.0] - 2026-10-28
 
 ### Queried inventory and saved memory arithmetic

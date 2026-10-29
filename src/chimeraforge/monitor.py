@@ -13,6 +13,7 @@ from typing import Callable
 from urllib.parse import urlsplit, urlunsplit
 
 from chimeraforge.workload import ENGINE_METRICS, parse_prometheus
+from chimeraforge.monitor_connection import MonitorConnection, admit_connection
 
 PERCENTILE_NUMERATOR = 95
 PERCENTILE_DENOMINATOR = 100
@@ -445,13 +446,14 @@ def evaluate_window(
     )
 
 
-def _fetch(url: str, timeout: float) -> str:
+def _fetch(url: str, timeout: float, connection: MonitorConnection | None = None) -> str:
     import httpx
 
     deadline = time.monotonic() + timeout
     payload = bytearray()
     try:
-        with httpx.stream("GET", url, timeout=timeout) as response:
+        kwargs = connection._client_kwargs() if connection is not None else {}
+        with httpx.stream("GET", url, timeout=timeout, **kwargs) as response:
             response.raise_for_status()
             for chunk in response.iter_bytes():
                 if time.monotonic() > deadline:
@@ -460,6 +462,8 @@ def _fetch(url: str, timeout: float) -> str:
                 if len(payload) > MAX_METRICS_BYTES:
                     raise MonitorError("metrics response exceeds the monitoring size limit")
     except httpx.HTTPError as exc:
+        if connection is not None:
+            raise MonitorError("secure metrics observation unavailable") from None
         raise MonitorError(f"could not scrape metrics endpoint: {exc}") from exc
     try:
         return payload.decode("utf-8")
@@ -473,9 +477,11 @@ def run_monitor(
     stop_event: threading.Event | None = None,
     on_window: Callable[[MonitorWindow], None] | None = None,
     _on_scrape: Callable[[], None] | None = None,
+    connection: MonitorConnection | None = None,
 ) -> MonitorReport:
     """Observe a finite number of windows in the caller; cancellation cannot pass."""
     request.validate()
+    admit_connection(connection, request.url)
     stop = stop_event if stop_event is not None else threading.Event()
     windows: list[MonitorWindow] = []
     cancelled = False
@@ -483,7 +489,11 @@ def run_monitor(
         if stop.is_set():
             return MonitorReport(request.backend, request.model, "unknown", cancelled=True)
         url = _metrics_url(request.url)
-        first = _fetch(url, request.timeout)
+        first = (
+            _fetch(url, request.timeout, connection)
+            if connection is not None
+            else _fetch(url, request.timeout)
+        )
         start = time.perf_counter()
         if _on_scrape:
             _on_scrape()
@@ -491,7 +501,11 @@ def run_monitor(
             if stop.wait(request.interval):
                 cancelled = True
                 break
-            second = _fetch(url, request.timeout)
+            second = (
+                _fetch(url, request.timeout, connection)
+                if connection is not None
+                else _fetch(url, request.timeout)
+            )
             end = time.perf_counter()
             if stop.is_set():
                 cancelled = True

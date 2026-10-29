@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Sequence
+from collections.abc import Awaitable, Sequence, Mapping
 from dataclasses import dataclass
 import logging
 import math
@@ -36,6 +36,11 @@ from chimeraforge.fleet_monitor_types import (
     FleetSlot,
 )
 from chimeraforge.monitor import MAX_METRICS_BYTES, MonitorRequest, evaluate_window
+from chimeraforge.monitor_connection import (
+    MonitorConnection,
+    MonitorConnectionError,
+    admit_connection,
+)
 from chimeraforge.monitor_binding import assemble_binding
 from chimeraforge.plan_check import identity
 
@@ -297,6 +302,7 @@ async def monitor_fleet(
     *,
     candidate_index: int = 0,
     stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
 ) -> FleetMonitorReport:
     if stop_event is not None and not isinstance(stop_event, asyncio.Event):
         raise FleetMonitorError("stop_event must be an asyncio.Event or None")
@@ -320,6 +326,31 @@ async def monitor_fleet(
             value.validate()
     except ValueError:
         raise FleetMonitorError("invalid fleet histogram targets or request controls") from None
+    prepared: dict[str, MonitorConnection] = {}
+    if connections is not None:
+        if not isinstance(connections, Mapping) or len(connections) > len(endpoints):
+            raise MonitorConnectionError("invalid fleet monitor connection mapping")
+        ids = {endpoint.id for endpoint in endpoints}
+        snapshot = {}
+        for number, key in enumerate(connections):
+            if (
+                number >= len(endpoints)
+                or type(key) is not str
+                or key not in ids
+                or key in snapshot
+            ):
+                raise MonitorConnectionError("invalid fleet monitor connection mapping")
+            snapshot[key] = connections[key]
+        for endpoint in endpoints:
+            connection = snapshot.get(endpoint.id)
+            if endpoint.id in snapshot:
+                if type(connection) is not MonitorConnection:
+                    raise MonitorConnectionError("invalid fleet monitor connection mapping")
+            else:
+                connection = MonitorConnection(endpoint.url)
+            admit_connection(connection, endpoint.url)
+            assert connection is not None
+            prepared[endpoint.id] = connection
     loop = asyncio.get_running_loop()
     budget = SharedBudget(
         loop.time() + request.observation_seconds,
@@ -334,19 +365,26 @@ async def monitor_fleet(
     cancelled = bool(stop_event and stop_event.is_set())
     try:
         for endpoint, value in zip(endpoints, effective):
-            metrics_pool = OwnedPool(budget, MAX_METRICS_BYTES, request.timeout)
-            metadata_pool = OwnedPool(budget, serving.MAX_METADATA_BYTES, request.timeout)
+            connection = prepared.get(endpoint.id)
+            options = {"connection": connection} if connection is not None else {}
+            metrics_pool = OwnedPool(budget, MAX_METRICS_BYTES, request.timeout, **options)
+            metadata_pool = OwnedPool(
+                budget, serving.MAX_METADATA_BYTES, request.timeout, **options
+            )
             row = _Resources(
                 FleetSlot(endpoint.id, endpoint.url), value, metrics_pool, metadata_pool
             )
             resources.append(row)
             row.client = httpx.AsyncClient(
-                transport=BorrowedTransport(metrics_pool), timeout=request.timeout, trust_env=False
+                transport=BorrowedTransport(metrics_pool),
+                timeout=request.timeout,
+                **(connection._client_kwargs() if connection is not None else {"trust_env": False}),
             )
             row.backend = get_backend(
                 candidate["backend"],
                 base_url=endpoint.url.removesuffix("/metrics"),
                 transport=BorrowedTransport(metadata_pool),
+                **options,
             )
         if not cancelled:
             tasks = [asyncio.create_task(_worker(row, request)) for row in resources]
