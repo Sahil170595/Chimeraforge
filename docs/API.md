@@ -3,9 +3,9 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers released Chimeraforge 0.76.0 and the explicitly marked unreleased 0.77.0 source candidate.
+This document covers Chimeraforge 0.77.0.
 
-Unreleased 0.77.0 adds async `api.check_inventory(saved, *, candidate_index=0, gpu_devices=None, replica_gpu_devices=None, timeout=10)` and frozen `InventoryCheck`, `InventoryBaseline`, `InventoryDevice`, `InventoryObservation`, `InventorySlot` types. It compares the full original ordered selector population and reported free memory with the saved per-GPU modeled batch-one baseline. Invalid input raises `InventoryCheckError`; unknown observations remain explicit. See [exact CLI/API examples, outcomes and limits](inventory-check.md). Every result has `deployment_ready: null`.
+Chimeraforge 0.77.0 adds async `api.check_inventory(saved, *, candidate_index=0, gpu_devices=None, replica_gpu_devices=None, timeout=10)` and frozen `InventoryCheck`, `InventoryBaseline`, `InventoryDevice`, `InventoryObservation`, `InventorySlot` types. It compares the full original ordered selector population and reported free memory with the saved per-GPU modeled batch-one baseline. Invalid input raises `InventoryCheckError`; unknown observations remain explicit. See [exact CLI/API examples, outcomes and limits](inventory-check.md). Every result has `deployment_ready: null`.
 Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
 alternatives under held model/input facts; see
 [the complete study contract](planning-api.md#frozen-context-sensitivity).

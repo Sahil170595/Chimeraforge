@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**29 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes the unreleased 0.77.0 source candidate; the public installation remains 0.76.0.
+**29 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.77.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,13 +67,13 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-24).** [Chimeraforge 0.76.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.76.0) adds passive declared-fleet monitoring. The released workflows below are available in this version; the inventory checker is separately marked unreleased. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-28).** [Chimeraforge 0.77.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.77.0) adds queried inventory and saved per-GPU batch-one memory arithmetic. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.76.0"
+pip install "chimeraforge[mcp]==0.77.0"
 ```
 
-**Unreleased 0.77.0 source candidate:** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md). Install from the candidate source to use it; the public 0.76.0 package does not include this command.
+**Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
 
 ## Quickstart
 
@@ -600,8 +600,7 @@ Observes existing traffic through two-scrape histogram windows. Reports P95 buck
 
 ### `inventory-check` -- compare queried selectors and saved B1 memory
 
-**Unreleased 0.77.0 source candidate.** The public 0.76.0 installation does not
-include this command. Check every original ordered selector against one bounded
+**Inventory arithmetic (since 0.77.0).** Check every original ordered selector against one bounded
 NVIDIA inventory view and compare reported free memory with the saved per-GPU
 modeled batch-one baseline:
 
@@ -704,7 +703,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.76.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.77.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

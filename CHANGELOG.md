@@ -5,9 +5,9 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.77.0] - 2026-10-28
 
-### Queried inventory and saved memory arithmetic (0.77.0 candidate)
+### Queried inventory and saved memory arithmetic
 
 - `inventory-check` and typed async `api.check_inventory` retain every original ordered replica/TP/PP selector, resolve one strict bounded NVIDIA inventory observation, and compare each reported free-memory value with the saved per-GPU modeled batch-one baseline. The exact rounding interval is independent of caller Decimal settings; it bounds serialization rounding, not model error or runtime demand.
 - Complete known selector absence or baseline shortfall returns 5; unavailable, malformed, duplicate or incomplete observations return 4. Invalid source/options/selection return 1 before contact. Unsupported valid saved fidelity/basis retains all slots with unknown evidence without probing or reconstructing a model.
