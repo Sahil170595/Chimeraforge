@@ -1,5 +1,18 @@
 # Quick Start Guide
 
+**Runtime secure monitoring (since 0.78.0):** standalone, saved-plan and declared-
+fleet monitoring support verified HTTPS, named-environment bearer and optional
+client certificates for metrics and all metadata. Settings stay runtime-only
+and per endpoint. See [complete CLI/API and trust limits](secure-monitoring.md);
+CPU TLS protocol fixtures do not qualify a running inference deployment.
+
+**Queried inventory and saved arithmetic (since 0.77.0):** `inventory-check` and
+async `api.check_inventory` retain every original ordered GPU selector and compare
+reported free memory with the saved per-GPU batch-one baseline. Every result keeps
+`deployment_ready: null`; UUID/MIG observations do not establish physical
+independence, allocation or runtime fit. See [complete CLI/API examples and
+exit statuses](inventory-check.md).
+
 **Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
 adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
 declarations for the original saved replica count. Shared budgets, retained
@@ -10,7 +23,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.76.0 includes native streaming trace observations and
+Chimeraforge 0.78.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,

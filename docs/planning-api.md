@@ -568,6 +568,6 @@ or failed/partial replay, and new CLI commands use 2 for malformed input/options
 or output errors. Receipt output guards refuse source/contribution overwrites and
 quarantine writes before execution. URL credentials/query values are redacted.
 
-## Runtime secure connections (unreleased 0.78.0)
+## Runtime secure connections (since 0.78.0)
 
-`run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); public installation remains 0.76.0.
+`run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); available since Chimeraforge 0.78.0.
