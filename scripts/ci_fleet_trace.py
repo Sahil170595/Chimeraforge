@@ -126,6 +126,7 @@ def server(
     listener.block_on_close = True
     if paths:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         context.load_cert_chain(paths["server"], paths["server_key"])
         context.verify_mode = ssl.CERT_REQUIRED
         context.load_verify_locations(cafile=paths["ca"])

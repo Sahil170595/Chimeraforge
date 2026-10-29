@@ -1,7 +1,6 @@
 # Queried inventory and saved baseline arithmetic
 
-**Unreleased 0.77.0 source candidate.** The public installation is 0.76.0 and
-does not include `inventory-check`. This operation checks an inventory view and
+Available since **Chimeraforge 0.77.0**. This operation checks an inventory view and
 saved arithmetic. Every report has `deployment_ready: null`.
 
 ```bash

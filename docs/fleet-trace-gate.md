@@ -1,6 +1,6 @@
 # Original-fleet regression gate
 
-**Unreleased 0.80.0 source candidate.** Public installation remains 0.76.0.
+Available since **Chimeraforge 0.80.0**.
 This gate consumes one complete [original-fleet trace](fleet-trace.md) per arm.
 It does not execute requests or create independent replications.
 
