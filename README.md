@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**28 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.76.0.
+**29 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.77.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,11 +67,13 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-24).** [Chimeraforge 0.76.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.76.0) adds passive declared-fleet monitoring. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-28).** [Chimeraforge 0.77.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.77.0) adds queried inventory and saved per-GPU batch-one memory arithmetic. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.76.0"
+pip install "chimeraforge[mcp]==0.77.0"
 ```
+
+**Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
 
 ## Quickstart
 
@@ -596,6 +598,30 @@ chimeraforge monitor --from-plan plan.json --candidate-index "$CANDIDATE_INDEX" 
 
 Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. `--from-plan plan.json --candidate-index 0` binds the saved candidate and target sources to passive serving metadata. Known identity/configuration disagreements exit 5 separately from native SLO outcomes; unavailable required endpoint identity exits 4. GPU geometry, fleet topology, workload and immutable weights remain explicitly unverified when unavailable. Independent plan-binding and native SLO Prometheus gauges are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
 
+### `inventory-check` -- compare queried selectors and saved B1 memory
+
+**Inventory arithmetic (since 0.77.0).** Check every original ordered selector against one bounded
+NVIDIA inventory view and compare reported free memory with the saved per-GPU
+modeled batch-one baseline:
+
+```bash
+# When saved candidate 0 has N=3, TP=2 and PP=1, retain all six selectors:
+chimeraforge inventory-check --plan fleet.json --candidate-index 0 \
+  --replica-devices 7,3 --replica-devices 9,2 --replica-devices 8,4 --json
+
+# A saved single-replica TP=2 candidate instead uses repeated singular selectors:
+chimeraforge inventory-check --plan single.json --gpu-device 7 --gpu-device 3 --json
+```
+
+Exit 0 means only complete queried mapping and reported-free-versus-saved-baseline
+arithmetic; 5 means a complete view establishes selector absence or shortfall;
+4 means unavailable/incomplete evidence or overlap; malformed declarations exit 1
+before contact. Every report retains `deployment_ready: null`. Total memory is
+diagnostic and cannot replace unavailable free. MIG Enabled/Disabled/N/A remain raw
+diagnostics, with no physical independence, pooled capacity, allocation or runtime
+peak claim. The saved effective batch is reported separately from the B1 baseline.
+See the [complete CLI/API contract and exact interval](docs/inventory-check.md).
+
 ### `doctor` -- check this machine (read-only)
 
 ```bash
@@ -677,7 +703,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.76.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.77.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
