@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from pathlib import Path
 import threading
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
@@ -51,6 +51,7 @@ from chimeraforge.inventory_types import (
     InventoryObservation as InventoryObservation,
     InventorySlot as InventorySlot,
 )
+from chimeraforge.kubernetes_options import KubernetesOptions as KubernetesOptions
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
@@ -60,6 +61,9 @@ from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
 from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inputs
+
+if TYPE_CHECKING:
+    from chimeraforge.deployment_verify import DeploymentVerification
 
 SCHEMA_VERSION = 2
 MAX_PLAN_BYTES = 8 * 1024 * 1024
@@ -137,6 +141,38 @@ def gate_traces(
     from chimeraforge.bench.trace_gate import gate_traces as apply_gate
 
     return apply_gate(baseline_receipts, candidate_receipts, policy=policy)
+
+
+def verify_deployment(
+    saved: PlanArtifact | str | Path,
+    config_path: str | Path,
+    *,
+    image: str,
+    format: str = "compose",
+    kubernetes: KubernetesOptions | None = None,
+    model: str | None = None,
+    candidate_index: int = 0,
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+) -> DeploymentVerification:
+    """Compare bounded generated declarations with independently supplied original intent."""
+    from chimeraforge.deployment_verify import verify_deployment as verify
+
+    return verify(
+        saved,
+        config_path,
+        image=image,
+        format=format,
+        kubernetes=kubernetes,
+        model=model,
+        candidate_index=candidate_index,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+    )
 
 
 def gate_fleet_traces(

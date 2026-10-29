@@ -57,7 +57,13 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.80.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.81.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Kubernetes declarations (since 0.81.0): `deploy --format kubernetes`, typed
+`api.KubernetesOptions` and `api.verify_deployment` preserve every original online
+Linux CUDA vLLM/SGLang member and independently verify intent. A required pinned
+hosted kind job qualifies strict server dry-run admission, not scheduling, image
+execution or GPUs. See [Kubernetes deployment](docs/kubernetes-deployment.md).
 
 Original-fleet regression gate (since 0.80.0): `api.gate_fleet_traces`, `FleetTraceGatePolicy` and `gate --kind fleet-trace` compare one complete original fleet per arm. Closed source/population/routes policy, every-member eligibility and native global math retain inconclusive evidence ahead of known breaches. Bounded protected JSON/JUnit writes share one finalized decision. See [fleet gates](docs/fleet-trace-gate.md).
 

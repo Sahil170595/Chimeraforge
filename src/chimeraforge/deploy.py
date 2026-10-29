@@ -22,8 +22,9 @@ from chimeraforge.planner.launch import (
     VLLM_KV_CACHE_DTYPE,
 )
 from chimeraforge.planner.resolver import ModelSpec, SOURCE_HF, SOURCE_OLLAMA
+from chimeraforge.kubernetes_options import KubernetesOptions
 
-FORMATS = ("compose", "systemd", "launchd", "modelfile")
+FORMATS = ("compose", "systemd", "launchd", "modelfile", "kubernetes")
 MAX_EXPORT_GPUS_PER_REPLICA = 64
 MAX_GPU_IDENTIFIER_CHARS = 40
 MAX_HOST_PORT = 65535
@@ -183,7 +184,7 @@ def _validate_fidelity(
     if type(candidate.n_agents) is not int or not 1 <= candidate.n_agents <= MAX_REPLICAS:
         raise DeploymentError(f"replica population must be between 1 and {MAX_REPLICAS}")
     if candidate.n_agents > 1 and (
-        format != "compose"
+        format not in ("compose", "kubernetes")
         or candidate.backend not in ("vllm", "sglang")
         or candidate.mode != PLAN_MODE_ONLINE
         or inputs["mode"] != PLAN_MODE_ONLINE
@@ -531,12 +532,17 @@ def export_deployment(
     host_port: int | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
     replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
 ) -> DeploymentExport:
     """Render a supported saved candidate; refused assumptions never become placeholders."""
     if format not in FORMATS:
         raise DeploymentError(f"format must be one of {', '.join(FORMATS)}")
-    if image is not None and format != "compose":
+    if image is not None and format not in ("compose", "kubernetes"):
         raise DeploymentError("image override applies only to Compose format")
+    if kubernetes is not None and format != "kubernetes":
+        raise DeploymentError("Kubernetes options apply only to Kubernetes format")
+    if format == "kubernetes" and (type(candidate_index) is not int or candidate_index < 0):
+        raise DeploymentError("Kubernetes candidate selection requires a nonnegative integer")
     if executable is not None and format not in ("systemd", "launchd"):
         raise DeploymentError("executable override applies only to systemd or launchd format")
     if replica_gpu_devices is not None or replica_host_ports is not None:
@@ -560,7 +566,43 @@ def export_deployment(
     data = artifact.to_dict()
     inputs = data["inputs"]
     inputs["kv_quant"] = inputs["kv_quant"].lower()
+    if format == "kubernetes" and (
+        candidate.backend not in ("vllm", "sglang")
+        or candidate.mode != PLAN_MODE_ONLINE
+        or inputs["mode"] != PLAN_MODE_ONLINE
+        or data["result"]["platform"] != "linux"
+        or candidate.platform != "linux-cuda"
+    ):
+        raise DeploymentError("Kubernetes export requires online Linux CUDA vLLM/SGLang")
     _validate_fidelity(candidate, spec, inputs, data["result"]["platform"], format)
+    if format == "kubernetes":
+        from chimeraforge.kubernetes_options import admit_options
+        from chimeraforge.kubernetes_export import render
+
+        options = admit_options(kubernetes, data["fingerprint"], candidate_index)
+        identifier, identity_notes = _model_identity(candidate, spec, model)
+        argv, engine_notes = _hf_argv(candidate, spec, identifier, inputs, "0.0.0.0")
+        content = render(
+            candidate, argv, _image(image), data["fingerprint"], candidate_index, options
+        )
+        return DeploymentExport(
+            format,
+            candidate.backend,
+            content,
+            [
+                *candidate.warnings,
+                *identity_notes,
+                *engine_notes,
+                "Kubernetes declarations only: scheduler labels, GPU requests and memory emptyDir "
+                "do not verify plugin/driver availability, fit, image/model access, "
+                "physical identities, executed argv, readiness, independent capacity or SLOs. "
+                "Each logical member may be replaced.",
+            ],
+            [
+                "Review namespace, image access, node labels and GPU plugin "
+                "before applying explicitly."
+            ],
+        )
     layout = _replica_layout(candidate, replica_gpu_devices, replica_host_ports)
     devices = _device_selection(gpu_devices, candidate.gpus_total)
     identifier, identity_notes = _model_identity(candidate, spec, model)

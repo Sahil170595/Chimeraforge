@@ -1,5 +1,11 @@
 # Quick Start Guide
 
+**Kubernetes declarations (since 0.81.0):** `deploy --format kubernetes` exports
+every supported original member as bounded JSON, and `deploy-verify --format
+kubernetes` checks independently supplied intent. See [CLI/API examples and
+fidelity limits](kubernetes-deployment.md). Hosted server dry-run qualifies API
+admission, without scheduling, inference-image execution or GPU/fit claims.
+
 **Original-fleet regression decisions (since 0.80.0):** `gate --kind fleet-trace`
 and `api.gate_fleet_traces` compare one complete fleet per arm under a closed
 policy, preserving member evidence and native global metrics. Inconclusive
@@ -37,7 +43,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.80.0 includes native streaming trace observations and
+Chimeraforge 0.81.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,

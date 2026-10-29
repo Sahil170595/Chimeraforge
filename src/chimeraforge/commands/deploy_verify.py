@@ -1,4 +1,4 @@
-"""Read-only verification of a JSON Compose declaration against independent intent."""
+"""Read-only verification of native JSON declarations against independent intent."""
 
 from __future__ import annotations
 
@@ -10,8 +10,9 @@ import typer
 
 def deploy_verify(
     plan: Path = typer.Option(..., "--plan", help="Original independently supplied saved plan."),
-    config: Path = typer.Option(..., "--config", help="Existing generated JSON Compose file."),
+    config: Path = typer.Option(..., "--config", help="Existing generated JSON declaration."),
     image: str = typer.Option(..., "--image", help="Independent expected image tag/digest."),
+    format: str = typer.Option("compose", "--format", help="compose (default) or kubernetes."),
     model: str | None = typer.Option(None, "--model", help="Expected concrete serving identity."),
     candidate_index: int = typer.Option(0, "--candidate-index", help="Saved candidate index."),
     gpu_device: list[str] | None = typer.Option(
@@ -26,10 +27,19 @@ def deploy_verify(
     replica_port: list[int] | None = typer.Option(
         None, "--replica-port", help="Expected host port per replica."
     ),
+    namespace: str | None = typer.Option(
+        None, "--namespace", help="Expected Kubernetes namespace."
+    ),
+    name_prefix: str | None = typer.Option(
+        None, "--name-prefix", help="Expected Kubernetes object prefix."
+    ),
+    node_selector: list[str] | None = typer.Option(
+        None, "--node-selector", help="Expected Kubernetes key=value; repeat."
+    ),
     output_json: bool = typer.Option(False, "--json", help="Print a value-redacted JSON receipt."),
 ) -> None:
     """Compare current-renderer declarations; no interpolation, Docker or GPU calls."""
-    from chimeraforge.commands.deploy import _replica_groups
+    from chimeraforge.commands.deploy import _kubernetes_options, _replica_groups
     from chimeraforge.deploy import DeploymentError
     from chimeraforge.deployment_verify import DeploymentVerificationError, verify_deployment
 
@@ -38,6 +48,8 @@ def deploy_verify(
             plan,
             config,
             image=image,
+            format=format,
+            kubernetes=_kubernetes_options(namespace, name_prefix, node_selector),
             model=model,
             candidate_index=candidate_index,
             gpu_devices=gpu_device,

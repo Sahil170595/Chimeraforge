@@ -3,7 +3,9 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.80.0.
+This document covers Chimeraforge 0.81.0.
+
+Chimeraforge 0.81.0 adds typed `api.KubernetesOptions(namespace="default", name_prefix=None, node_selector={})` and lazy sync `api.verify_deployment(saved, config_path, *, image, format="compose", kubernetes=None, model=None, candidate_index=0, gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. The direct `chimeraforge.deploy.export_deployment(..., format="kubernetes", kubernetes=options)` preserves every original supported online Linux CUDA vLLM/SGLang member in bounded JSON; export remains a direct module API. Explicit Kubernetes verification uses independently supplied namespace/prefix/selectors/image/selection and preserves native match0/drift5/invalid1. Default Compose report shape stays unchanged. See [complete signatures, examples, fidelity and API-admission proof limits](kubernetes-deployment.md).
 
 Chimeraforge 0.80.0 adds closed `api.FleetTraceGatePolicy`, sync `api.gate_fleet_traces(baseline, candidate, *, policy)` and `api.write_fleet_trace_gate(decision, *, out=None, junit=None)`. One whole fleet per arm retains every member/row, strict source and ordered-population commitments, native global arithmetic and separate evidence blockers. Bounded JSON/JUnit output protects held inputs and both destinations. See [full original-fleet regression policy and output contract](fleet-trace-gate.md).
 
@@ -30,7 +32,7 @@ Chimeraforge 0.75.0 adds the separate typed direct module API
 `chimeraforge.deployment_verify.verify_deployment` and `deploy-verify` CLI. It
 checks generated JSON Compose/required companion bytes against independent saved
 plan and render intent. See [full signatures, examples and outcomes](deployment-verification.md).
-It is not a `chimeraforge.api` re-export or a runtime/source-authentication check.
+In released 0.75.0/0.76.0 it is not a `chimeraforge.api` re-export. Chimeraforge 0.81.0 adds that lazy public entry point; neither version is a runtime/source-authentication check.
 
 Chimeraforge 0.76.0 adds typed `FleetEndpoint`,
 `FleetMonitorRequest`, `FleetMonitorReport` and async

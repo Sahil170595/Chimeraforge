@@ -83,11 +83,11 @@ verify_deployment(
 ) -> DeploymentVerification
 ```
 
-This is a separate `chimeraforge.deployment_verify` API, not a `chimeraforge.api`
+The direct `chimeraforge.deployment_verify` API is also exposed by the lazy `chimeraforge.api`
 re-export. `DeploymentVerification`, `DeploymentChange` and `DeploymentCompanion`
 are frozen typed results; change/companion collections are tuples. Invalid inputs
 raise `DeploymentVerificationError` with sanitized public diagnostics. The function
-does not save a receipt or change the source/config/companions. It has no format,
+does not save a receipt or change the source/config/companions. It has no
 executable, output-path or write option. Exporter `output_path` only affects
 unpersisted provisioning instructions, which are intentionally not compared.
 
@@ -161,3 +161,7 @@ of the remaining actual input.
 A match means consistency with this current renderer and supplied intent. It does
 not establish source authenticity, image/registry state, running model/weights,
 GPU existence/model/order/topology, engine startup, serving capacity or performance.
+
+## Kubernetes intent (since 0.81.0)
+
+Use explicit `format="kubernetes"` (CLI `--format kubernetes`) with independently supplied `KubernetesOptions`, image, selection and optional model intent. Default `format="compose"` and its report shape stay unchanged. The bounded receiver admits Deployment/Service JSON Lists and redacts drift values; it never infers desired intent from actual configuration. See [full examples, source/alias bounds and hosted API-admission limits](kubernetes-deployment.md).

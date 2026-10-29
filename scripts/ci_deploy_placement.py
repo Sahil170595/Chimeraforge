@@ -161,6 +161,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
     inventory = accept_inventory(cwd, env, saved, index)
     from ci_fleet_trace import accept as accept_fleet_trace
     from ci_fleet_trace_gate import accept as accept_fleet_gate
+    from ci_kubernetes_export import accept as accept_kubernetes
 
     return {
         "scope": "offline homogeneous serving declaration",
@@ -186,6 +187,7 @@ def _accept_fleet(cwd: Path, env: dict, checkpoint: dict) -> dict:
         "inventory_arithmetic": inventory,
         "original_fleet_trace": accept_fleet_trace(cwd, env, saved),
         "fleet_trace_gate": accept_fleet_gate(cwd, env, saved),
+        "kubernetes": accept_kubernetes(cwd, env, saved, replicas=3),
     }
 
 
@@ -193,6 +195,7 @@ def accept(cwd: Path, env: dict, checkout: Path, checkpoint: dict) -> dict:
     from ci_installed_acceptance import assert_installed_origin, run_cli
     from chimeraforge import api
     from chimeraforge.deploy import export_deployment
+    from ci_kubernetes_export import accept as accept_kubernetes
 
     assert_installed_origin(api.__file__, checkout)
     saved = cwd / "placement-plan.json"
@@ -337,4 +340,5 @@ def accept(cwd: Path, env: dict, checkout: Path, checkpoint: dict) -> dict:
         "cuda_rank_mapping": "unverified",
         "topology": "unverified",
         "homogeneous_fleet": _accept_fleet(cwd, env, checkpoint),
+        "kubernetes": accept_kubernetes(cwd, env, saved, replicas=1),
     }

@@ -146,3 +146,9 @@ existing CPU scorer consumer bundles its already-produced plan/receipt without
 more inference. That CPU evidence remains ineligible for a modeled GPU
 prediction. Compact summaries omit original private fields; preserved bundle
 files are private handoff content, with no automatic upload.
+
+## Kubernetes server admission (since 0.81.0)
+
+The dedicated required Ubuntu `kubernetes-admission` job installs the built wheel outside checkout and uses exact checksum-pinned kind/kubectl and a digest-pinned node image. It validates all native N1/N3 vLLM/SGLang objects using strict server-side dry-run, rejects malformed GPU resources/unknown fields, and distinguishes API-valid drift with the independent verifier. It owns a private kubeconfig/context, cluster and any newly created labelled bridge; partial startup still triggers named cleanup and process-group joins. Existing networks are preserved and no prune is used. Only normal kind system workloads persist temporarily; no inference object is created. The publish workflow calls this same CI workflow, so this job also gates future releases.
+
+Installed original-wheel/rebuilt-sdist consumers additionally run the offline CLI/API contract. [Regenerate the source record](../validation/2026-10-25-kubernetes-export/README.md). Native dry-run is API admission evidence, not image existence, executed argv, scheduling, GPU/plugin, model, inference or capacity qualification.

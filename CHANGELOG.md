@@ -5,6 +5,14 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.81.0] - 2026-10-29
+
+### Kubernetes declarations and independent intent
+
+- Add deterministic bounded JSON Kubernetes export with typed namespace/prefix/node selectors: all original N online Linux CUDA vLLM/SGLang members, each with one Deployment and ClusterIP Service, native TP/PP/quant/checkpoint/cache/batch fidelity and explicit GPU resource requests. Encode literal dollars once for native Kubernetes argv expansion; preserve legacy export defaults and bytes.
+- Add explicit Kubernetes intent to `api.verify_deployment` and `deploy-verify`, retaining match 0, redacted drift 5 and invalid 1. Protect source/config identities and bounded JSON admission; expected intent is never recovered from the manifest.
+- Extend original-wheel/rebuilt-sdist CLI/API consumers and add a required pinned hosted kind strict server-dry-run job with invalid-resource controls, independently detected admitted drift and owned cluster/process/network cleanup. This qualifies API admission only, with no feature workload persistence or image, scheduling, inference, GPU, readiness or capacity claim.
+
 ## [0.80.0] - 2026-10-29
 
 ### Original-fleet regression decisions

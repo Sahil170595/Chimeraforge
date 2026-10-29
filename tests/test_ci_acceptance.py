@@ -65,6 +65,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     load_script("ci_inventory_check")
     load_script("ci_fleet_trace")
     load_script("ci_fleet_trace_gate")
+    load_script("ci_kubernetes_export")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
     observation = checkpoint.seed(live=False)
@@ -86,6 +87,9 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert receipt["scope"] == "offline declaration only"
     assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
     fleet = receipt["homogeneous_fleet"]
+    assert len(receipt["kubernetes"]["controls"]) == len(fleet["kubernetes"]["controls"]) == 2
+    assert all(row["objects"] == 2 for row in receipt["kubernetes"]["controls"])
+    assert all(row["objects"] == 6 for row in fleet["kubernetes"]["controls"])
     assert fleet["replicas"] == 3 and fleet["gpus_total"] == 6
     assert fleet["service_names"] == ["inference-1", "inference-2", "inference-3"]
     assert fleet["source_plan_bytes_unchanged"] and fleet["router"] == "not provided"

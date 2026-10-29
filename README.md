@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.80.0.
+**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.81.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-29).** [Chimeraforge 0.80.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.80.0) adds original-fleet regression decisions and protected JSON/JUnit outputs. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-29).** [Chimeraforge 0.81.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.81.0) adds Kubernetes declarations and independent intent verification. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.80.0"
+pip install "chimeraforge[mcp]==0.81.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -459,6 +459,26 @@ steps. Native units require an explicit installed executable path. See
 [supported templates and config validation](docs/deployment.md). Config acceptance
 does not establish GPU execution or prediction accuracy.
 
+**Kubernetes (since 0.81.0):** preserve all original online Linux CUDA
+vLLM/SGLang members as individual Deployments and ClusterIP Services. Select a
+supported saved candidate and supply independent image and scheduler intent:
+
+```bash
+chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --format kubernetes --image vllm/vllm-openai:v0.30.0 \
+  --namespace default --name-prefix inference \
+  --node-selector operator.example/accelerator=declared --out inference.json
+chimeraforge deploy-verify --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --format kubernetes --config inference.json --image vllm/vllm-openai:v0.30.0 \
+  --namespace default --name-prefix inference \
+  --node-selector operator.example/accelerator=declared --json
+```
+
+Typed `api.KubernetesOptions` and `api.verify_deployment` expose the same contract.
+GPU resources and logical member selectors are declarations; API admission does
+not prove scheduling, running engines or GPUs. Available since Chimeraforge 0.81.0.
+See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernetes-deployment.md).
+
 ### `deploy-verify` -- check offline declaration drift
 
 **Offline deployment verification (since 0.75.0).** Keep the
@@ -715,7 +735,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.80.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.81.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
