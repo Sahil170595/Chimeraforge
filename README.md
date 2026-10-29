@@ -67,7 +67,7 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-28).** [Chimeraforge 0.78.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.78.0) adds runtime HTTPS and authenticated monitoring. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-10-29).** [Chimeraforge 0.78.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.78.0) adds runtime HTTPS and authenticated monitoring. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
 pip install "chimeraforge[mcp]==0.78.0"
