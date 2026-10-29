@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Qualification
 
 - Make the trace generation-timeout fixture give readiness a separate bounded allowance while retaining the real 20 ms native generation timeout. Controlled delayed-metadata and removed-generation-timeout negative cases preserve partial rows, semaphore queue ordering and owned cleanup. This corrects a demonstrated fixture timing assumption; production trace behavior is unchanged.
+- Make TLS 1.2 the explicit protocol floor in the owned CPU TLS fixture after a CodeQL finding about its implicit floor. Supported Python versions already default to this minimum; application TLS, trust, mTLS and cleanup behavior are unchanged.
 
 ## [0.77.0] - 2026-10-28
 
