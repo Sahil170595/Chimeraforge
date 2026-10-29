@@ -1,6 +1,6 @@
 # Original-fleet scheduled trace
 
-Unreleased **0.79.0 source candidate**. Public installation remains 0.76.0.
+Available since **Chimeraforge 0.79.0**.
 `trace-fleet` and async `api.replay_fleet_trace` replay a held private workload
 against every declared member of one original saved homogeneous candidate.
 They do not export, resize or replace that candidate, route production traffic,

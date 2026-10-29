@@ -1,7 +1,6 @@
 # Kubernetes declarations and independent verification
 
-This is an **unreleased 0.81.0 source feature**. Public installation remains
-0.76.0; install this candidate source to use these options.
+Available since **Chimeraforge 0.81.0**.
 
 Export the original online Linux CUDA vLLM or SGLang candidate as one JSON
 `v1 List`. It contains one `replicas: 1` Deployment and one ClusterIP Service

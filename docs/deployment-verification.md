@@ -162,6 +162,6 @@ A match means consistency with this current renderer and supplied intent. It doe
 not establish source authenticity, image/registry state, running model/weights,
 GPU existence/model/order/topology, engine startup, serving capacity or performance.
 
-## Kubernetes intent (unreleased 0.81.0)
+## Kubernetes intent (since 0.81.0)
 
 Use explicit `format="kubernetes"` (CLI `--format kubernetes`) with independently supplied `KubernetesOptions`, image, selection and optional model intent. Default `format="compose"` and its report shape stay unchanged. The bounded receiver admits Deployment/Service JSON Lists and redacts drift values; it never infers desired intent from actual configuration. See [full examples, source/alias bounds and hosted API-admission limits](kubernetes-deployment.md).

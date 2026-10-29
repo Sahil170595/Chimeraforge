@@ -1,7 +1,6 @@
 # Runtime HTTPS and authenticated monitoring
 
-This is an **unreleased 0.78.0 source feature**, stacked on the unreleased 0.77.0
-inventory checker. The public installation remains **0.76.0**. These settings
+Available since **Chimeraforge 0.78.0**. These runtime-only settings
 apply to existing `monitor`, saved-plan monitoring and `monitor-fleet`; no new
 command, traffic generator or serving process is created.
 

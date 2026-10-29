@@ -57,21 +57,21 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.81.0 (unreleased candidate; public installation 0.76.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.81.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
 
-Kubernetes declarations (unreleased 0.81.0): `deploy --format kubernetes`, typed
+Kubernetes declarations (since 0.81.0): `deploy --format kubernetes`, typed
 `api.KubernetesOptions` and `api.verify_deployment` preserve every original online
 Linux CUDA vLLM/SGLang member and independently verify intent. A required pinned
 hosted kind job qualifies strict server dry-run admission, not scheduling, image
 execution or GPUs. See [Kubernetes deployment](docs/kubernetes-deployment.md).
 
-Original-fleet regression gate (unreleased 0.80.0): `api.gate_fleet_traces`, `FleetTraceGatePolicy` and `gate --kind fleet-trace` compare one complete original fleet per arm. Closed source/population/routes policy, every-member eligibility and native global math retain inconclusive evidence ahead of known breaches. Bounded protected JSON/JUnit writes share one finalized decision. See [fleet gates](docs/fleet-trace-gate.md).
+Original-fleet regression gate (since 0.80.0): `api.gate_fleet_traces`, `FleetTraceGatePolicy` and `gate --kind fleet-trace` compare one complete original fleet per arm. Closed source/population/routes policy, every-member eligibility and native global math retain inconclusive evidence ahead of known breaches. Bounded protected JSON/JUnit writes share one finalized decision. See [fleet gates](docs/fleet-trace-gate.md).
 
-Original fleet trace (unreleased 0.79.0): `trace-fleet` and async `api.replay_fleet_trace` retain the original candidate and all routed rows under one shared schedule/concurrency/deadline. Per-member metadata uses declared-member scope without rewriting N. Strict `api.load_fleet_trace` rederives slot/global facts; SLOs, configuration, execution and cleanup remain distinct. See [fleet trace](docs/fleet-trace.md).
+Original fleet trace (since 0.79.0): `trace-fleet` and async `api.replay_fleet_trace` retain the original candidate and all routed rows under one shared schedule/concurrency/deadline. Per-member metadata uses declared-member scope without rewriting N. Strict `api.load_fleet_trace` rederives slot/global facts; SLOs, configuration, execution and cleanup remain distinct. See [fleet trace](docs/fleet-trace.md).
 
-Secure monitoring (unreleased 0.78.0): runtime-only `MonitorConnection` supplies verified HTTPS, explicit private CA trust, environment-sourced bearer and optional unencrypted client keys to standalone/saved/fleet metrics and all metadata. Explicit fleet mappings, including `{}`, require HTTPS for every original slot; credentials stay per ID and outside persisted requests/reports. Anonymous defaults remain available. CPU TLS fixtures do not qualify a real inference deployment. See [secure monitoring](docs/secure-monitoring.md).
+Secure monitoring (since 0.78.0): runtime-only `MonitorConnection` supplies verified HTTPS, explicit private CA trust, environment-sourced bearer and optional unencrypted client keys to standalone/saved/fleet metrics and all metadata. Explicit fleet mappings, including `{}`, require HTTPS for every original slot; credentials stay per ID and outside persisted requests/reports. Anonymous defaults remain available. CPU TLS fixtures do not qualify a real inference deployment. See [secure monitoring](docs/secure-monitoring.md).
 
-Inventory arithmetic (unreleased 0.77.0): `inventory-check` and async `api.check_inventory` preserve every original N*TP*PP selector and compare one bounded strict native NVIDIA inventory view with the saved per-GPU batch-one baseline. Exact bounded rational comparisons do not inherit caller Decimal settings. Malformed input1, unknown4, complete known missing/shortfall5, arithmetic-only pass0; deployment_ready is always null. MIG Enabled/Disabled/N/A are raw diagnostics, with no physical independence, allocation or runtime-peak claim. See [the inventory contract](docs/inventory-check.md).
+Inventory arithmetic (since 0.77.0): `inventory-check` and async `api.check_inventory` preserve every original N*TP*PP selector and compare one bounded strict native NVIDIA inventory view with the saved per-GPU batch-one baseline. Exact bounded rational comparisons do not inherit caller Decimal settings. Malformed input1, unknown4, complete known missing/shortfall5, arithmetic-only pass0; deployment_ready is always null. MIG Enabled/Disabled/N/A are raw diagnostics, with no physical independence, allocation or runtime-peak claim. See [the inventory contract](docs/inventory-check.md).
 
 Passive fleet monitoring (since 0.76.0): typed async
 `api.monitor_fleet` and `monitor-fleet` require one declared direct endpoint per

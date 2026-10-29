@@ -5,15 +5,17 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.81.0] - 2026-10-29
 
-### Kubernetes declarations and independent intent (0.81.0 candidate)
+### Kubernetes declarations and independent intent
 
 - Add deterministic bounded JSON Kubernetes export with typed namespace/prefix/node selectors: all original N online Linux CUDA vLLM/SGLang members, each with one Deployment and ClusterIP Service, native TP/PP/quant/checkpoint/cache/batch fidelity and explicit GPU resource requests. Encode literal dollars once for native Kubernetes argv expansion; preserve legacy export defaults and bytes.
 - Add explicit Kubernetes intent to `api.verify_deployment` and `deploy-verify`, retaining match 0, redacted drift 5 and invalid 1. Protect source/config identities and bounded JSON admission; expected intent is never recovered from the manifest.
 - Extend original-wheel/rebuilt-sdist CLI/API consumers and add a required pinned hosted kind strict server-dry-run job with invalid-resource controls, independently detected admitted drift and owned cluster/process/network cleanup. This qualifies API admission only, with no feature workload persistence or image, scheduling, inference, GPU, readiness or capacity claim.
 
-### Original-fleet regression decisions (0.80.0 candidate)
+## [0.80.0] - 2026-10-29
+
+### Original-fleet regression decisions
 
 - Add closed `FleetTraceGatePolicy`, sync `api.gate_fleet_traces` and `gate --kind fleet-trace`: one whole original fleet per arm, with exact source/selection, ordered work/routes and common client controls. Require every original member to contribute eligible before/after identity, binding and cache evidence.
 - Reuse native full-row/common-horizon regression math, strict threshold comparisons and observed-condition/cache semantics. Retain adverse and inactive members; any evidence blocker returns 3 before known regression 1, preserving available arithmetic. Label-invariant semantic-copy checks include original N and the member multiset without claiming independent executions or authenticated inputs.
@@ -21,13 +23,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Write bounded decision JSON and escaped JUnit from one finalized result, checking both payloads and destinations before per-file atomic replacements. JUnit separates population/metric cases, errors for inconclusive evidence and failures for eligible regressions; two outputs are not a transaction.
 - Exercise actual API/CLI/JUnit pass/regression/inconclusive controls in existing installed wheel/rebuilt-sdist consumers. Consume the existing unchanged native CPU fleet API/CLI reports as adverse gate evidence without additional inference or forced GPU/capacity qualification.
 
-### Original-fleet scheduled trace (0.79.0 candidate)
+## [0.79.0] - 2026-10-29
+
+### Original-fleet scheduled trace
 
 - Add typed async `api.replay_fleet_trace`, frozen `TraceRoute`/`FleetTraceReplay`, `trace-fleet` and strict `api.load_fleet_trace`. Hold the original plan, workload and closed one-to-one routes before contact; require exactly the original N direct endpoints without changing model, TP/PP, batch, output caps or saved targets.
 - Use one native row population, schedule, generation semaphore and deadline across members. Whole preflight/before-metadata admission precedes generation; retain failed, partial, unstarted and zero-assigned members. Member metadata compares one declared member without rewriting original N or conflating data parallelism.
 - Own generation/phase tasks, join-only aggregates and clients through a shared final cooperative cleanup allowance and repeated caller cancellation. Timed-out generation keeps its global semaphore lease until its owned child stops; every client close is attempted even after allowance exhaustion.
 - Recompute strict receiving schema, native row projections, route/slot references, common-horizon goodput and saved bindings. Empty members cannot vacuously pass token/latency/SLO checks. Execution completion, known mismatch, native SLO and cleanup are separate; fingerprints are integrity checks, not origin or physical authentication.
 - Inherit per-ID verified HTTPS for vLLM/SGLang; refuse opted-secure Ollama before contact. CLI output admission protects every saved/workload/routes/TLS input by path and file identity. Controlled CPU protocol acceptance and the bounded pinned three-daemon native CPU canary do not qualify GPU execution, physical independence, prediction accuracy or capacity.
+
+### Qualification
+
+- Make TLS 1.2 the explicit protocol floor in the separate owned fleet-trace mTLS fixture, matching the monitoring fixture policy. Supported Python versions already default to this minimum; application TLS, trust and cleanup behavior are unchanged.
+
+## [0.78.0] - 2026-10-29
 
 ### Runtime HTTPS and authenticated monitoring
 
@@ -36,7 +46,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Both CLI boundaries protect every explicit TLS file and saved-plan input against Prometheus output path/file-identity aliases before connection preparation or network contact.
 - Keep native evidence, budgets, failure priorities, anonymous defaults and owned cleanup. Real owned CPU TLS/auth/mTLS fixtures exercise source and installed CLI/API; they do not qualify physical servers, GPUs, running weights or capacity. Declare the already locked `certifi` as a direct core dependency without changing external package versions.
 
-### Queried inventory and saved memory arithmetic (0.77.0 candidate)
+### Qualification
+
+- Make the trace generation-timeout fixture give readiness a separate bounded allowance while retaining the real 20 ms native generation timeout. Controlled delayed-metadata and removed-generation-timeout negative cases preserve partial rows, semaphore queue ordering and owned cleanup. This corrects a demonstrated fixture timing assumption; production trace behavior is unchanged.
+- Make TLS 1.2 the explicit protocol floor in the owned CPU TLS fixture after a CodeQL finding about its implicit floor. Supported Python versions already default to this minimum; application TLS, trust, mTLS and cleanup behavior are unchanged.
+
+## [0.77.0] - 2026-10-28
+
+### Queried inventory and saved memory arithmetic
 
 - `inventory-check` and typed async `api.check_inventory` retain every original ordered replica/TP/PP selector, resolve one strict bounded NVIDIA inventory observation, and compare each reported free-memory value with the saved per-GPU modeled batch-one baseline. The exact rounding interval is independent of caller Decimal settings; it bounds serialization rounding, not model error or runtime demand.
 - Complete known selector absence or baseline shortfall returns 5; unavailable, malformed, duplicate or incomplete observations return 4. Invalid source/options/selection return 1 before contact. Unsupported valid saved fidelity/basis retains all slots with unknown evidence without probing or reconstructing a model.

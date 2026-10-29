@@ -14,7 +14,7 @@ registry bootstrap boundary. The
 independent validation corpus/error-band
 tests remain part of the full suite.
 
-The unreleased 0.78.0 candidate adds a focused typed runtime monitoring-connection
+Chimeraforge 0.78.0 adds a focused typed runtime monitoring-connection
 boundary and real owned CPU HTTPS fixtures. Every installed wheel/rebuilt-sdist
 profile exercises both vLLM/SGLang metadata protocols, standalone/saved/all-three
 replica CLI/API, explicit private trust, bearer and mTLS, negative trust/auth
@@ -23,14 +23,14 @@ are counted separately from SLOs; proxy/keylog sentinels and joined owned handle
 bound these fixture claims. This is protocol acceptance without real inference,
 customer credentials, GPU execution or physical capacity qualification.
 
-The unreleased 0.80.0 candidate adds a typed closed fleet-gate lane and actual
+Chimeraforge 0.80.0 adds a typed closed fleet-gate lane and actual
 installed API/CLI/JSON/JUnit pass, regression and inconclusive synthetic controls.
 The existing native CPU job consumes its unchanged original-fleet API/CLI receipts
 as adverse gate evidence (3), retaining CPU/GPU mismatch and unknown cache facts
 without additional inference. [Regenerate the source controls](../validation/2026-10-25-fleet-trace-gate/README.md)
 separately from exact-head hosted installed/native qualification.
 
-The unreleased 0.79.0 candidate adds a focused typed original-fleet
+Chimeraforge 0.79.0 adds a focused typed original-fleet
 producer/strict-receiver/CLI boundary. Each installed wheel/rebuilt-sdist profile
 exercises complete and mTLS/bearer vLLM/SGLang protocol controls, actual short-token
 mismatch and required-preflight refusal, with one original six-row population
@@ -147,7 +147,7 @@ more inference. That CPU evidence remains ineligible for a modeled GPU
 prediction. Compact summaries omit original private fields; preserved bundle
 files are private handoff content, with no automatic upload.
 
-## Kubernetes server admission (0.81.0 candidate)
+## Kubernetes server admission (since 0.81.0)
 
 The dedicated required Ubuntu `kubernetes-admission` job installs the built wheel outside checkout and uses exact checksum-pinned kind/kubectl and a digest-pinned node image. It validates all native N1/N3 vLLM/SGLang objects using strict server-side dry-run, rejects malformed GPU resources/unknown fields, and distinguishes API-valid drift with the independent verifier. It owns a private kubeconfig/context, cluster and any newly created labelled bridge; partial startup still triggers named cleanup and process-group joins. Existing networks are preserved and no prune is used. Only normal kind system workloads persist temporarily; no inference object is created. The publish workflow calls this same CI workflow, so this job also gates future releases.
 
