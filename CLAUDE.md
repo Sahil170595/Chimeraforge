@@ -57,7 +57,9 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.79.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.80.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Original-fleet regression gate (since 0.80.0): `api.gate_fleet_traces`, `FleetTraceGatePolicy` and `gate --kind fleet-trace` compare one complete original fleet per arm. Closed source/population/routes policy, every-member eligibility and native global math retain inconclusive evidence ahead of known breaches. Bounded protected JSON/JUnit writes share one finalized decision. See [fleet gates](docs/fleet-trace-gate.md).
 
 Original fleet trace (since 0.79.0): `trace-fleet` and async `api.replay_fleet_trace` retain the original candidate and all routed rows under one shared schedule/concurrency/deadline. Per-member metadata uses declared-member scope without rewriting N. Strict `api.load_fleet_trace` rederives slot/global facts; SLOs, configuration, execution and cleanup remain distinct. See [fleet trace](docs/fleet-trace.md).
 

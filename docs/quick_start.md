@@ -1,5 +1,12 @@
 # Quick Start Guide
 
+**Original-fleet regression decisions (since 0.80.0):** `gate --kind fleet-trace`
+and `api.gate_fleet_traces` compare one complete fleet per arm under a closed
+policy, preserving member evidence and native global metrics. Inconclusive
+evidence takes precedence over known regression; see [CLI/API and protected
+JSON/JUnit outputs](fleet-trace-gate.md). This is not physical independence
+or GPU/scientific qualification.
+
 **Original-fleet scheduled trace (since 0.79.0):** `trace-fleet` and async
 `api.replay_fleet_trace` retain the original saved fleet and all routed rows
 under one native schedule, concurrency limit and deadline. Execution, SLOs,
@@ -30,7 +37,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.79.0 includes native streaming trace observations and
+Chimeraforge 0.80.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
