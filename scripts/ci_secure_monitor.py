@@ -568,6 +568,7 @@ def server(
     listener.daemon_threads = False
     listener.block_on_close = True
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     identity = "wrong_host" if wrong_host else "server"
     context.load_cert_chain(paths[identity], paths[identity + "_key"])
     if mtls:

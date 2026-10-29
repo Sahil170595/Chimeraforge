@@ -14,7 +14,7 @@ registry bootstrap boundary. The
 independent validation corpus/error-band
 tests remain part of the full suite.
 
-The unreleased 0.78.0 candidate adds a focused typed runtime monitoring-connection
+Chimeraforge 0.78.0 adds a focused typed runtime monitoring-connection
 boundary and real owned CPU HTTPS fixtures. Every installed wheel/rebuilt-sdist
 profile exercises both vLLM/SGLang metadata protocols, standalone/saved/all-three
 replica CLI/API, explicit private trust, bearer and mTLS, negative trust/auth
@@ -23,7 +23,7 @@ are counted separately from SLOs; proxy/keylog sentinels and joined owned handle
 bound these fixture claims. This is protocol acceptance without real inference,
 customer credentials, GPU execution or physical capacity qualification.
 
-The unreleased 0.79.0 candidate adds a focused typed original-fleet
+Chimeraforge 0.79.0 adds a focused typed original-fleet
 producer/strict-receiver/CLI boundary. Each installed wheel/rebuilt-sdist profile
 exercises complete and mTLS/bearer vLLM/SGLang protocol controls, actual short-token
 mismatch and required-preflight refusal, with one original six-row population

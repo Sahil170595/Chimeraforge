@@ -401,21 +401,91 @@ async def test_real_ollama_incomplete_or_invalid_stream_preserves_partial_count_
 
 
 @pytest.mark.asyncio
-async def test_request_timeout_is_recorded_with_queue_and_partial_coverage(backend):
+async def test_request_timeout_is_recorded_with_queue_and_partial_coverage(backend, monkeypatch):
+    from chimeraforge.bench import trace
+
+    generation_timeout_seconds = 0.02
+    readiness_timeout_seconds = 5
+    trace_timeout_seconds = 1
+    metadata_delay_seconds = 0.1
     backend.gate = asyncio.Event()
+    native_metadata = backend.observe_serving
+    native_generation = backend.generate_observed
+    native_execute = trace._execute
+    metadata_completed, execute_calls, first_outputs, cancelled_generations = [], [], [], []
+
+    async def delayed_metadata(model):
+        await asyncio.sleep(metadata_delay_seconds)
+        observed = await native_metadata(model)
+        metadata_completed.append(model)
+        return observed
+
+    async def generation(model, prompt, options, on_first_output):
+        def first_output():
+            first_outputs.append(model)
+            on_first_output()
+
+        try:
+            return await native_generation(model, prompt, options, first_output)
+        except asyncio.CancelledError:
+            cancelled_generations.append(model)
+            raise
+
+    async def execute_with_generation_timeout(
+        adapter,
+        backend_name,
+        model,
+        workload,
+        rows,
+        origin,
+        concurrency,
+        request_timeout,
+        trace_timeout,
+        stop_event,
+    ):
+        # Readiness has its own fixture allowance; the native generation timer stays real.
+        assert request_timeout == readiness_timeout_seconds
+        assert trace_timeout == trace_timeout_seconds
+        assert metadata_completed == ["served"]
+        execute_calls.append(request_timeout)
+        return await native_execute(
+            adapter,
+            backend_name,
+            model,
+            workload,
+            rows,
+            origin,
+            concurrency,
+            generation_timeout_seconds,
+            trace_timeout,
+            stop_event,
+        )
+
+    monkeypatch.setattr(backend, "observe_serving", delayed_metadata)
+    monkeypatch.setattr(backend, "generate_observed", generation)
+    monkeypatch.setattr(trace, "_execute", execute_with_generation_timeout)
     report = (
         await api.replay_trace(
             requests(),
             model="served",
-            request_timeout=0.02,
-            trace_timeout=1,
+            request_timeout=readiness_timeout_seconds,
+            trace_timeout=trace_timeout_seconds,
             slos=api.TraceSLO(latency_ms=1000),
         )
     ).to_dict()
-    assert report["execution"]["partial"] == 2 and report["execution"]["attempted"] == 2
-    assert all(row["error"]["type"] == "TimeoutError" for row in report["requests"])
-    assert report["requests"][1]["timing"]["client_queue_ms"] > 0
-    assert report["goodput"]["qualified_requests"] == 0 and backend.closed
+    assert report["execution"]["partial"] == 2 and report["execution"]["attempted"] == 2, report
+    assert execute_calls == [readiness_timeout_seconds] and metadata_completed == ["served"] * 2
+    assert first_outputs == cancelled_generations == ["served"] * 2 and len(backend.calls) == 2
+    assert report["error"] is None and report["stop_reason"] is None and report["exit_code"] == 1
+    assert all(
+        row["error"] == {"stage": "generation", "type": "TimeoutError"}
+        for row in report["requests"]
+    )
+    first, second = report["requests"]
+    assert second["times"]["start_s"] >= first["times"]["terminal_s"]
+    assert second["timing"]["client_queue_ms"] > 0 and backend.maximum_active == 1
+    assert report["goodput"]["qualified_requests"] == 0 and backend.closed and backend.active == 0
+    assert report["resource_cleanup"]["state"] == "completed"
 
 
 @pytest.mark.asyncio
