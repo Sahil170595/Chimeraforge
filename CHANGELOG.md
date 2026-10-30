@@ -5,6 +5,16 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.82.0
+
+### Authenticated active measurements
+
+- Add runtime-only keyword-only `connection` settings to saved benchmarks and ordinary/saved-plan traces. Admit exact native vLLM/SGLang adapters and the configured HTTPS origin before discovery, construction or contact; preserve anonymous adapters, native metrics and serialized receipt schemas.
+- Reuse verified private/default CA trust, optional named-environment bearer and client certificates across active preflight, before/after metadata and streaming generation. Add the same secure flags to `bench` and `trace`, including native sweeps and saved-candidate flows.
+- Retain effective TLS inputs privately for output-alias checks. Guard known CLI intent before contact and actual generated benchmark filenames before writing; receipt saves recheck input aliases. The separate ordinary benchmark writer accepts an explicit runtime connection rather than inferring private input paths from serialized results.
+- Categorize standard HTTPX/httpcore message, argument, exception and stack fields before the caller's record factory during secure native owner lifetimes. Preserve nested/concurrent anonymous behavior, caller factory chaining and ownership-aware restoration. Secure backend closure retains its owned close task through repeated caller cancellation. Secure ordinary/saved traces reuse native owned-generation/task joins after a controlled actual-CPython 3.10 executor probe demonstrated legacy repeated-cancellation detachment; anonymous scheduling remains unchanged.
+- Exercise source and installed CLI/API with owned CPU HTTPS/auth/mTLS protocol fixtures, adverse trust/origin/stream cases and input preservation. These fixtures do not qualify actual inference engines, models, GPUs, capacity or performance.
+
 ## [0.81.0] - 2026-10-29
 
 ### Kubernetes declarations and independent intent

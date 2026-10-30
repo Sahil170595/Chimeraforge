@@ -770,6 +770,13 @@ chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --s
 
 Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs a running Ollama.
 
+**Unreleased 0.82.0 source:** authenticated active native vLLM/SGLang measurements
+add `--secure`, `--bearer-env NAME`, `--ca-bundle`, `--client-cert` and
+`--client-key` to `bench` and `trace`, including saved candidates. Public
+installation remains 0.81.0. Runtime credentials stay outside serialized
+measurement schemas; effective TLS inputs are protected against output aliases.
+See [complete CLI/API examples, writer ownership and privacy limits](docs/authenticated-active.md).
+
 ### `bench` -- live inference benchmarking
 
 ```bash

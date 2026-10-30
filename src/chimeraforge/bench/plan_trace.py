@@ -7,9 +7,11 @@ import copy
 from dataclasses import asdict, dataclass, field
 import hashlib
 import json
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from chimeraforge.monitor_connection import MonitorConnection
 from chimeraforge.bench.serving_binding import (
     BACKEND_WRAPPERS,
     bind,
@@ -35,6 +37,8 @@ from chimeraforge.planner.replay import digest
 if TYPE_CHECKING:
     from chimeraforge.api import PlanArtifact
 
+logger = logging.getLogger(__name__)
+
 SLO_INPUTS = {
     "latency_ms": "latency_slo",
     "first_output_ms": "ttft_slo",
@@ -51,20 +55,29 @@ class PlanTraceReplay:
 
     _data: dict
     _protected_paths: tuple[Path, ...] = field(default=(), repr=False)
+    _secure_output: bool = field(default=False, repr=False, compare=False)
 
     def to_dict(self) -> dict:
         return copy.deepcopy(self._data)
 
     @property
     def native_trace(self) -> TraceReplay:
-        return TraceReplay(copy.deepcopy(self._data["native_trace"]), self._protected_paths)
+        return TraceReplay(
+            copy.deepcopy(self._data["native_trace"]), self._protected_paths, self._secure_output
+        )
 
     def save(self, path: str | Path) -> None:
-        from chimeraforge.api import PlanArtifact
+        from chimeraforge.api import PlanArtifact, PlanError
         from chimeraforge.plan_study import protect_output
 
-        protect_output(path, self._protected_paths)
-        PlanArtifact(self.to_dict()).save(path)
+        try:
+            protect_output(path, self._protected_paths)
+            PlanArtifact(self.to_dict()).save(path)
+        except (OSError, PlanError) as exc:
+            if not self._secure_output:
+                raise
+            logger.info("Secure plan trace output refused (%s)", type(exc).__name__)
+            raise PlanError("secure plan trace output unavailable") from None
 
 
 @dataclass(frozen=True)
@@ -260,7 +273,9 @@ def _slo(prepared: _PreparedPlanTrace, native: dict, complete: bool) -> dict:
     }
 
 
-async def _replay_prepared(prepared: _PreparedPlanTrace) -> PlanTraceReplay:
+async def _replay_prepared(
+    prepared: _PreparedPlanTrace, *, connection: MonitorConnection | None = None
+) -> PlanTraceReplay:
     """Execute only held typed rows; never reread or rewrite the native receipt."""
     from chimeraforge import __version__
     from chimeraforge.api import PlanError
@@ -278,6 +293,7 @@ async def _replay_prepared(prepared: _PreparedPlanTrace) -> PlanTraceReplay:
         trace_timeout=prepared.trace_timeout,
         slos=prepared.slos,
         stop_event=prepared.stop_event,
+        **({"connection": connection} if connection is not None else {}),
     )
     if type(result) is not TraceReplay:
         raise PlanError("native plan trace receipt is unavailable")
@@ -358,7 +374,10 @@ async def _replay_prepared(prepared: _PreparedPlanTrace) -> PlanTraceReplay:
         ),
     }
     report["fingerprint"] = digest(report)
-    return PlanTraceReplay(report, prepared.protected_paths)
+    protected = prepared.protected_paths
+    if connection is not None:
+        protected += connection._input_paths()
+    return PlanTraceReplay(report, protected, connection is not None)
 
 
 async def replay_plan_trace(
@@ -372,6 +391,7 @@ async def replay_plan_trace(
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanTraceReplay:
     """Replay one saved candidate with explicit client controls and honest bindings."""
     prepared = _prepare(
@@ -385,4 +405,6 @@ async def replay_plan_trace(
         trace_timeout=trace_timeout,
         stop_event=stop_event,
     )
-    return await _replay_prepared(prepared)
+    return await _replay_prepared(
+        prepared, **({"connection": connection} if connection is not None else {})
+    )

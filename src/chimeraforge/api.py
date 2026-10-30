@@ -637,6 +637,7 @@ async def replay_trace(
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     slos: TraceSLO | None = None,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> TraceReplay:
     """Execute a bounded real workload with queue-inclusive client timing."""
     from chimeraforge.bench.trace import replay
@@ -646,6 +647,7 @@ async def replay_trace(
         model=model,
         backend_name=backend,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
@@ -665,6 +667,7 @@ async def replay_plan_trace(
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanTraceReplay:
     """Preserve a saved candidate beside an unchanged native scheduled replay."""
     from chimeraforge.bench.plan_trace import replay_plan_trace as replay
@@ -675,6 +678,7 @@ async def replay_plan_trace(
         candidate_index=candidate_index,
         model=model,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
@@ -781,6 +785,7 @@ async def benchmark_plan(
     rate: float | None = None,
     concurrency: int | None = None,
     base_url: str | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanBenchmark:
     """Measure a selected saved scenario against an explicitly contacted live endpoint."""
     from chimeraforge.bench.plan import benchmark
@@ -796,6 +801,7 @@ async def benchmark_plan(
         rate=rate,
         concurrency=concurrency,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
     )
 
 
