@@ -113,8 +113,8 @@ def held_json(source: object) -> tuple[dict, bytes, tuple[Path, ...]]:
 
     protected: tuple[Path, ...] = ()
     if type(source) is FleetMonitorReport:
-        raw = source._received_raw if source._received_raw is not None else source.json_bytes()
-        protected = source._protected_paths
+        raw = source._held_bytes if source._held_bytes is not None else source.json_bytes()
+        protected = source._input_paths
     elif isinstance(source, (str, Path)):
         path = Path(source).absolute()
         raw = _read(path, MAX_FLEET_JSON_BYTES)
@@ -140,7 +140,7 @@ def held_json(source: object) -> tuple[dict, bytes, tuple[Path, ...]]:
     )
     if type(data) is not dict:
         fail("root must be an object")
-    if type(source) is FleetMonitorReport and source._received_raw is not None:
+    if type(source) is FleetMonitorReport and source._held_bytes is not None:
         if (
             type(source.slots) is not tuple
             or type(data.get("slots")) is not list

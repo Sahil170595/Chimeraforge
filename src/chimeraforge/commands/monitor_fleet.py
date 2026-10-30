@@ -153,7 +153,7 @@ def monitor_fleet(
         raw = report.json_bytes() if output_json or out is not None else None
         # Admit every requested JSON projection before either per-file publication.
         for path in outputs:
-            protect_output(path, report._protected_paths)
+            protect_output(path, report._input_paths)
         if out is not None:
             from chimeraforge.bench.fleet_gate_output import _write
 

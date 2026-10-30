@@ -354,13 +354,13 @@ def gate_fleet_monitors(
                 source_cache[key] = held_source(saved)
             report = from_held(held, select_plan(source_cache[key], index), index)
             reports[arm] = report
-            paths.extend(report._protected_paths)
+            paths.extend(report._input_paths)
             basis = (
                 "held file bytes"
                 if isinstance(receipt, (str, Path))
                 else (
                     "validated original held bytes"
-                    if type(receipt) is FleetMonitorReport and receipt._received_raw is not None
+                    if type(receipt) is FleetMonitorReport and receipt._held_bytes is not None
                     else "serialized public snapshot bytes"
                 )
             )

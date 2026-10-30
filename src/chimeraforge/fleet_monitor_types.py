@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import InitVar, dataclass, field
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from chimeraforge.monitor import MonitorWindow
 
@@ -76,8 +76,24 @@ class FleetMonitorReport:
     monitor_tool_version: str
     schema_version: int = 2
     effective_controls: dict[str, Any] | None = None
-    _protected_paths: tuple[Path, ...] = field(default=(), repr=False, compare=False)
-    _received_raw: bytes | None = field(default=None, repr=False, compare=False)
+    _protected_paths: InitVar[tuple[Path, ...]] = ()
+    _received_raw: InitVar[bytes | None] = None
+
+    def __post_init__(
+        self, _protected_paths: tuple[Path, ...], _received_raw: bytes | None
+    ) -> None:
+        # InitVars are excluded from fields/asdict; replace retrieves these
+        # same-named instance values before calling this constructor again.
+        object.__setattr__(self, "_protected_paths", _protected_paths)
+        object.__setattr__(self, "_received_raw", _received_raw)
+
+    @property
+    def _input_paths(self) -> tuple[Path, ...]:
+        return cast(tuple[Path, ...], object.__getattribute__(self, "_protected_paths"))
+
+    @property
+    def _held_bytes(self) -> bytes | None:
+        return cast(bytes | None, object.__getattribute__(self, "_received_raw"))
 
     @property
     def exit_code(self) -> int:
@@ -120,7 +136,7 @@ class FleetMonitorReport:
 
         raw = self.json_bytes()
         try:
-            protect_output(path, self._protected_paths)
+            protect_output(path, self._input_paths)
             _write(Path(path), raw)
         except (PlanError, OSError) as exc:
             LOG.info("fleet JSON output refused (%s)", type(exc).__name__)

@@ -15,6 +15,10 @@ bindings. Its new `effective_controls` version1 records canonical endpoints,
 requested windows/interval/timeout/concurrency, observation/cleanup allowances,
 HTTP request/body limits and resolved targets with their source labels. Runtime
 connections, tokens, environment names, TLS paths and guards are not serialized.
+Runtime input guards and received-byte snapshots stay outside dataclass fields
+and standard `asdict` data; ordinary copies and `dataclasses.replace` retain
+those private guards. The export limit applies to the library methods below,
+not arbitrary caller-side dataclass traversal.
 
 ```python
 from pathlib import Path

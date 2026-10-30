@@ -332,8 +332,6 @@ def test_rich_native_python_projection_preserves_old_asdict_container_types(moni
     )
     report.slots[0].observations[0].update(rich)
     expected = asdict(report)
-    expected.pop("_protected_paths")
-    expected.pop("_received_raw")
     public = public_projection(report)
     expected.update(
         {name: public[name] for name in ("declared_coverage", "exit_code", "outcome", "limits")}
@@ -359,8 +357,6 @@ def test_in_limit_compact_legacy_loads_whole_typed_report_even_if_pretty_export_
     def compact(chars):
         report = assembled_report(monitor_source, version_chars=chars)
         data = asdict(replace(report, schema_version=1, effective_controls=None))
-        data.pop("_protected_paths")
-        data.pop("_received_raw")
         data.pop("effective_controls")
         data.update(
             {
@@ -532,3 +528,43 @@ def test_untouched_admitted_integer_real_spelling_keeps_typed_interoperability(m
         policy=policy_for(baseline, loaded),
     )
     assert gate.exit_code == 0
+
+
+@pytest.mark.parametrize("role", ["native", "loaded"])
+def test_dataclass_copy_keeps_runtime_guards_outside_public_data(monitor_source, tmp_path, role):
+    from copy import copy
+    from dataclasses import asdict, fields, replace
+
+    saved, indices = monitor_source
+    private = tmp_path / "private-ca-input.pem"
+    private.write_bytes(b"owned input identity, not a real certificate")
+    native = replace(
+        assembled_report(monitor_source, version_chars=32), _protected_paths=(private,)
+    )
+    report = (
+        native
+        if role == "native"
+        else api.load_fleet_monitor(native, saved, candidate_index=indices["vllm"])
+    )
+    copied = replace(report)
+    public = asdict(copied)
+    encoded = json.dumps(public)
+    names = {field.name for field in fields(copied)}
+    assert names.isdisjoint({"_protected_paths", "_received_raw"})
+    assert "_protected_paths" not in public and "_received_raw" not in public
+    assert json.dumps(str(private.resolve())) not in encoded
+    assert copied.json_bytes() == report.json_bytes()
+    shallow = copy(report)
+    assert shallow._input_paths == copied._input_paths == (private,)
+    assert shallow._held_bytes is copied._held_bytes is report._held_bytes
+    with pytest.raises(api.FleetMonitorError, match="cannot publish"):
+        copied.save(private)
+    with pytest.raises(api.FleetMonitorError, match="cannot publish"):
+        shallow.save(private)
+    assert private.read_bytes() == b"owned input identity, not a real certificate"
+    if role == "loaded":
+        copied.budget["requests"] = float(copied.budget["requests"])
+        with pytest.raises(api.PlanError, match="changed"):
+            api.load_fleet_monitor(copied, saved, candidate_index=indices["vllm"])
+        with pytest.raises(api.PlanError, match="changed"):
+            api.load_fleet_monitor(shallow, saved, candidate_index=indices["vllm"])
