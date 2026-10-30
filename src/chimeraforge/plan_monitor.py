@@ -57,7 +57,9 @@ async def _observe(
             base_url=url,
             **({"connection": connection} if connection is not None else {}),
         )
-        async with backend_lifecycle(backend, _cleanup=cleanup):
+        async with backend_lifecycle(
+            backend, _cleanup=cleanup, **({"_secure": True} if connection is not None else {})
+        ):
             return await serving.observe_backend(backend, request.model)
 
     task = asyncio.create_task(operation())

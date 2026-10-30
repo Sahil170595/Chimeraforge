@@ -5,6 +5,26 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.83.0
+
+### Whole-original-fleet passive SLO acceptance
+
+- Add strict saved fleet-monitor receiving against the actual original plan and selection. Retain every native member/window/metadata prefix and native verdict; schema2 records effective requested controls, while recognizable bounded schema1 evidence keeps missing controls unavailable.
+- Add `FleetMonitorGatePolicy`, `api.gate_fleet_monitors` and `gate --kind fleet-monitor` with explicit original plans, all-member/window/metric commitments and complete JSON/JUnit. Incomplete or ineligible evidence takes precedence over candidate native SLO breach; bucket bounds remain separate from confidence intervals or relative improvements.
+- Bound exact public JSON traversal/materialization to 8 MiB before recursive copies or output. Reuse admitted bytes at file/stdout sinks and refuse oversize without truncation or premature paired publication. Typed reports retain native mismatch/breach priority; text/Prometheus-only operation remains available.
+- Keep runtime input guards and held-wire snapshots outside public dataclass fields and `asdict`, while preserving copy/replace input protection and current-state validation.
+- Extend source and installed original-wheel/rebuilt-sdist consumers with owned CPU HTTPS fixtures for both native engines, pass/breach/inconclusive gates, complete cases, input protection and actual raw stdout byte parity. These protocol fixtures do not qualify engines, GPUs, traffic authenticity or performance.
+
+## [Unreleased] - 0.82.0
+
+### Authenticated active measurements
+
+- Add runtime-only keyword-only `connection` settings to saved benchmarks and ordinary/saved-plan traces. Admit exact native vLLM/SGLang adapters and the configured HTTPS origin before discovery, construction or contact; preserve anonymous adapters, native metrics and serialized receipt schemas.
+- Reuse verified private/default CA trust, optional named-environment bearer and client certificates across active preflight, before/after metadata and streaming generation. Add the same secure flags to `bench` and `trace`, including native sweeps and saved-candidate flows.
+- Retain effective TLS inputs privately for output-alias checks. Guard known CLI intent before contact and actual generated benchmark filenames before writing; receipt saves recheck input aliases. The separate ordinary benchmark writer accepts an explicit runtime connection rather than inferring private input paths from serialized results.
+- Categorize standard HTTPX/httpcore message, argument, exception and stack fields before the caller's record factory during secure native owner lifetimes. Preserve nested/concurrent anonymous behavior, caller factory chaining and ownership-aware restoration. Secure backend closure retains its owned close task through repeated caller cancellation. Secure ordinary/saved traces reuse native owned-generation/task joins after a controlled actual-CPython 3.10 executor probe demonstrated legacy repeated-cancellation detachment; anonymous scheduling remains unchanged.
+- Exercise source and installed CLI/API with owned CPU HTTPS/auth/mTLS protocol fixtures, adverse trust/origin/stream cases and input preservation. These fixtures do not qualify actual inference engines, models, GPUs, capacity or performance.
+
 ## [0.81.0] - 2026-10-29
 
 ### Kubernetes declarations and independent intent

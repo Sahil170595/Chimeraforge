@@ -43,6 +43,12 @@ from chimeraforge.monitor_connection import MonitorConnection as MonitorConnecti
 from chimeraforge.monitor_connection import MonitorConnectionError as MonitorConnectionError
 from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
+from chimeraforge.fleet_monitor_types import FleetMonitorError as FleetMonitorError
+from chimeraforge.fleet_monitor_types import FleetMonitorExportError as FleetMonitorExportError
+from chimeraforge.fleet_monitor_gate_types import (
+    FleetMonitorGate as FleetMonitorGate,
+    FleetMonitorGatePolicy as FleetMonitorGatePolicy,
+)
 from chimeraforge.inventory_types import (
     InventoryCheckError as InventoryCheckError,
     InventoryCheck as InventoryCheck,
@@ -637,6 +643,7 @@ async def replay_trace(
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     slos: TraceSLO | None = None,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> TraceReplay:
     """Execute a bounded real workload with queue-inclusive client timing."""
     from chimeraforge.bench.trace import replay
@@ -646,6 +653,7 @@ async def replay_trace(
         model=model,
         backend_name=backend,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
@@ -665,6 +673,7 @@ async def replay_plan_trace(
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanTraceReplay:
     """Preserve a saved candidate beside an unchanged native scheduled replay."""
     from chimeraforge.bench.plan_trace import replay_plan_trace as replay
@@ -675,6 +684,7 @@ async def replay_plan_trace(
         candidate_index=candidate_index,
         model=model,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
@@ -781,6 +791,7 @@ async def benchmark_plan(
     rate: float | None = None,
     concurrency: int | None = None,
     base_url: str | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanBenchmark:
     """Measure a selected saved scenario against an explicitly contacted live endpoint."""
     from chimeraforge.bench.plan import benchmark
@@ -796,6 +807,7 @@ async def benchmark_plan(
         rate=rate,
         concurrency=concurrency,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
     )
 
 
@@ -859,6 +871,49 @@ async def monitor_fleet(
         stop_event=stop_event,
         connections=connections,
     )
+
+
+def load_fleet_monitor(
+    source: FleetMonitorReport | dict | str | Path,
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+) -> FleetMonitorReport:
+    """Strictly receive all native members against the actual original saved plan."""
+    from chimeraforge.fleet_monitor_receipt import load_fleet_monitor as receive
+
+    return receive(source, saved, candidate_index=candidate_index)
+
+
+def gate_fleet_monitors(
+    baseline: FleetMonitorReport | dict | str | Path,
+    candidate: FleetMonitorReport | dict | str | Path,
+    *,
+    baseline_plan: PlanArtifact | str | Path,
+    candidate_plan: PlanArtifact | str | Path,
+    policy: FleetMonitorGatePolicy | dict | str | Path,
+) -> FleetMonitorGate:
+    """Whole-original-fleet eligibility precedes candidate native SLO acceptance."""
+    from chimeraforge.fleet_monitor_gate import gate_fleet_monitors as apply_gate
+
+    return apply_gate(
+        baseline,
+        candidate,
+        baseline_plan=baseline_plan,
+        candidate_plan=candidate_plan,
+        policy=policy,
+    )
+
+
+def write_fleet_monitor_gate(
+    result: FleetMonitorGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    from chimeraforge.fleet_monitor_gate_output import write_fleet_monitor_gate as write
+
+    write(result, out=out, junit=junit)
 
 
 def sign_contribution(

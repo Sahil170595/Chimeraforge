@@ -49,7 +49,9 @@ def identity_message(engine: str, base_url: str, why: str) -> str:
     return f"a service answers at {base_url} but did not identify as {engine} ({why})"
 
 
-async def fetch_json_field(client: httpx.AsyncClient, url: str, field: str) -> str | None:
+async def fetch_json_field(
+    client: httpx.AsyncClient, url: str, field: str, *, secure: bool = False
+) -> str | None:
     """GET ``url`` and return the JSON body's ``field`` as a string, else None.
 
     Anything short of a 200 JSON object carrying a non-empty ``field`` is None,
@@ -58,14 +60,20 @@ async def fetch_json_field(client: httpx.AsyncClient, url: str, field: str) -> s
     try:
         resp = await client.get(url, timeout=IDENTITY_TIMEOUT_S)
     except httpx.HTTPError as exc:
-        logger.debug("identity probe %s failed: %s", url, exc)
+        if secure:
+            logger.debug("secure identity probe failed (%s)", error_category(exc))
+        else:
+            logger.debug("identity probe %s failed: %s", url, exc)
         return None
     if resp.status_code != 200:
         return None
     try:
         data = resp.json()
     except ValueError:
-        logger.debug("identity probe %s: body is not JSON", url)
+        if secure:
+            logger.debug("secure identity response is not JSON")
+        else:
+            logger.debug("identity probe %s: body is not JSON", url)
         return None
     value = data.get(field) if isinstance(data, dict) else None
     return str(value) if value else None
@@ -162,7 +170,7 @@ class Backend(ABC):
 
 @asynccontextmanager
 async def backend_lifecycle(
-    backend: Backend, *, _cleanup: dict | None = None
+    backend: Backend, *, _cleanup: dict | None = None, _secure: bool = False
 ) -> AsyncIterator[Backend]:
     """Close an adapter on success, error, or cancellation without hiding the original failure."""
     failed = False
@@ -174,11 +182,24 @@ async def backend_lifecycle(
     finally:
         if _cleanup is not None:
             _cleanup["state"] = "started"
+        cancelled = False
         try:
             # Keep the existing optional-close protocol used by doctor and legacy adapters.
             close = getattr(backend, "close", None)
             if close is not None:
-                await close()
+                if not _secure:
+                    await close()
+                else:
+                    child = asyncio.create_task(close())
+                    joined = asyncio.gather(child, return_exceptions=True)
+                    while True:
+                        try:
+                            outcomes = await asyncio.shield(joined)
+                            break
+                        except asyncio.CancelledError:
+                            cancelled = True
+                    if isinstance(outcomes[0], BaseException):
+                        raise outcomes[0]
             if _cleanup is not None:
                 _cleanup["state"] = "completed"
         except asyncio.CancelledError:
@@ -191,5 +212,7 @@ async def backend_lifecycle(
             name = getattr(backend, "name", type(backend).__name__)
             category = error_category(exc)
             logger.warning("Backend '%s' cleanup failed (%s)", name, category)
-            if not failed:
+            if not failed and not cancelled:
                 raise RuntimeError(f"Backend '{name}' cleanup failed ({category})") from None
+        if cancelled:
+            raise asyncio.CancelledError
