@@ -57,7 +57,13 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.81.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.82.0 (unreleased source; public 0.81.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Authenticated active measurements (unreleased 0.82.0): runtime-only keyword-only
+`connection` reaches saved benchmarks and ordinary/saved traces through exact
+native vLLM/SGLang factory admission. `bench`/`trace` reuse secure CLI flags;
+private TLS input guards and scoped pre-factory SDK diagnostics preserve public
+serialized schemas. See `docs/authenticated-active.md`.
 
 Kubernetes declarations (since 0.81.0): `deploy --format kubernetes`, typed
 `api.KubernetesOptions` and `api.verify_deployment` preserve every original online
@@ -263,8 +269,8 @@ pytest tests/ -v
 # `ruff check src/` also sweeps the legacy src/python/banterhearts tree, which
 # has never been clean and is not gated, so it fails with ~100 pre-existing
 # errors that have nothing to do with your change.
-ruff check src/chimeraforge/
-ruff format --check src/chimeraforge/
+uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_planner_properties.py
+uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_planner_properties.py
 
 # Rust agents
 cd src/rust/demo_agent && cargo build --release

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
+import logging
+from dataclasses import dataclass, field
 import math
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -14,21 +15,35 @@ if TYPE_CHECKING:
 from chimeraforge.bench.serving_binding import BACKEND_WRAPPERS, bind, serving_binding
 from chimeraforge.plan_check import identity
 from chimeraforge.planner.replay import digest, json_value
+from chimeraforge.monitor_connection import MonitorConnection
 
+
+logger = logging.getLogger(__name__)
 MAX_BENCHMARK_REQUESTS = 1000
 
 
 @dataclass(frozen=True)
 class PlanBenchmark:
     _data: dict
+    _protected_paths: tuple[Path, ...] = field(default=(), repr=False)
+    _secure_output: bool = field(default=False, repr=False, compare=False)
 
     def to_dict(self) -> dict:
         return copy.deepcopy(self._data)
 
     def save(self, path: str | Path) -> None:
-        from chimeraforge.api import PlanArtifact
+        from chimeraforge.api import PlanArtifact, PlanError
+        from chimeraforge.plan_study import protect_output
 
-        PlanArtifact(self.to_dict()).save(path)
+        try:
+            if self._protected_paths:
+                protect_output(path, self._protected_paths)
+            PlanArtifact(self.to_dict()).save(path)
+        except (OSError, PlanError) as exc:
+            if not self._secure_output:
+                raise
+            logger.info("Secure benchmark output refused (%s)", type(exc).__name__)
+            raise PlanError("secure benchmark output unavailable") from None
 
 
 def binding(data: dict, candidate: dict, execution: dict, served_model: str) -> dict:
@@ -230,11 +245,15 @@ async def benchmark(
     rate: float | None = None,
     concurrency: int | None = None,
     base_url: str | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanBenchmark:
     from chimeraforge.api import PlanArtifact, PlanError, artifact_from_dict, load_plan
     from chimeraforge.bench import runner
     from chimeraforge.bench.metrics import result_to_dict, now_iso
 
+    protected: tuple[Path, ...] = ()
+    if connection is not None and isinstance(saved, (str, Path)):
+        protected = (Path(saved).resolve(),)
     artifact = (
         artifact_from_dict(saved.to_dict()) if isinstance(saved, PlanArtifact) else load_plan(saved)
     )
@@ -283,6 +302,7 @@ async def benchmark(
         options=options,
         concurrency=concurrency,
         _evidence=execution,
+        **({"connection": connection} if connection is not None else {}),
     )
     measurement = json_value(result_to_dict(result))
     from chimeraforge.bench.serving import sanitize_message
@@ -312,4 +332,6 @@ async def benchmark(
     }
     report = json_value(report)
     report["fingerprint"] = digest(report)
-    return PlanBenchmark(report)
+    if connection is not None:
+        protected += connection._input_paths()
+    return PlanBenchmark(report, protected, connection is not None)

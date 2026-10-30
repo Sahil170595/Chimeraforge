@@ -24,9 +24,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
-      - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
-      - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
+      - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_planner_properties.py
+      - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_planner_properties.py
       - run: uv run --no-sync mypy
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/transport_logging.py scripts/ci_secure_active.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/monitor_connection.py src/chimeraforge/commands/monitor.py scripts/ci_secure_monitor.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/inventory_types.py src/chimeraforge/inventory_numbers.py src/chimeraforge/inventory_process.py src/chimeraforge/inventory_check.py src/chimeraforge/commands/inventory_check.py scripts/ci_inventory_check.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/plan_study.py src/chimeraforge/commands/study.py scripts/ci_plan_study.py

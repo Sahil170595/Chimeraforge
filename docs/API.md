@@ -3,7 +3,14 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.81.0.
+This document covers public Chimeraforge 0.81.0 and the unreleased 0.82.0 source candidate.
+
+Unreleased 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
+to async `benchmark_plan`, `replay_trace` and `replay_plan_trace`, and to direct
+`chimeraforge.bench.runner.run_benchmark` / `save_results`. The setting is runtime-only;
+serialized settings/native receipts remain unchanged. Exact native vLLM/SGLang
+HTTPS admission, CLI flags, effective TLS input guards and writer ownership are
+documented in [authenticated active measurements](authenticated-active.md).
 
 Chimeraforge 0.81.0 adds typed `api.KubernetesOptions(namespace="default", name_prefix=None, node_selector={})` and lazy sync `api.verify_deployment(saved, config_path, *, image, format="compose", kubernetes=None, model=None, candidate_index=0, gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. The direct `chimeraforge.deploy.export_deployment(..., format="kubernetes", kubernetes=options)` preserves every original supported online Linux CUDA vLLM/SGLang member in bounded JSON; export remains a direct module API. Explicit Kubernetes verification uses independently supplied namespace/prefix/selectors/image/selection and preserves native match0/drift5/invalid1. Default Compose report shape stays unchanged. See [complete signatures, examples, fidelity and API-admission proof limits](kubernetes-deployment.md).
 
@@ -195,18 +202,18 @@ Live inference benchmarking against Ollama, vLLM, or TGI backends.
 
 ```python
 import asyncio
-from chimeraforge.bench import run_benchmark, get_backend, save_results
+from pathlib import Path
+from chimeraforge.bench import run_benchmark, save_results
 
-backend = get_backend("ollama")
 result = asyncio.run(run_benchmark(
     model="llama3.2-3b",
-    backend=backend,
+    backend_name="ollama",
     runs=5,
     workload="single",
     context_length=2048,
 ))
 print(f"Throughput: {result.aggregate.throughput_tps.mean:.1f} tok/s")
-save_results([result], output_dir="./results")
+save_results([result], output_dir=Path("./results"))
 ```
 
 ### Key types
