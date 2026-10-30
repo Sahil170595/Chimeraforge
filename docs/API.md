@@ -3,7 +3,16 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers public Chimeraforge 0.81.0 and the unreleased 0.82.0 source candidate.
+This document covers public Chimeraforge 0.81.0 and the unreleased 0.83.0 source candidate.
+
+Unreleased 0.83.0 adds `api.load_fleet_monitor(source, saved, *, candidate_index=0)`,
+`FleetMonitorGatePolicy(original_replicas, endpoint_ids, windows, metrics, baseline,
+candidate, schema_version=1)`, `api.gate_fleet_monitors(baseline, candidate, *,
+baseline_plan, candidate_plan, policy)` and
+`api.write_fleet_monitor_gate(decision, *, out=None, junit=None)`. Native reports
+add effective controls and bounded `json_bytes()` / `save(path)`; full typed
+reports retain native outcomes while oversized exports refuse. See the
+[complete receiving, policy, CLI/JUnit and byte-bound contract](fleet-monitor-gate.md).
 
 Unreleased 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
 to async `benchmark_plan`, `replay_trace` and `replay_plan_trace`, and to direct

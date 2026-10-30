@@ -57,7 +57,14 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.82.0 (unreleased source; public 0.81.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.83.0 (unreleased source; public 0.81.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Whole-original-fleet passive gates (unreleased 0.83.0): `api.load_fleet_monitor`
+validates complete native reports against actual saved plans; `api.gate_fleet_monitors`
+and `gate --kind fleet-monitor` retain every declared case and publish bounded
+JSON/JUnit. Schema2 records effective requested controls. Exact 8 MiB JSON export
+refuses without truncation; native typed verdicts and text/Prometheus-only paths
+remain distinct. See [passive fleet gates](docs/fleet-monitor-gate.md).
 
 Authenticated active measurements (unreleased 0.82.0): runtime-only keyword-only
 `connection` reaches saved benchmarks and ordinary/saved traces through exact
@@ -269,8 +276,11 @@ pytest tests/ -v
 # `ruff check src/` also sweeps the legacy src/python/banterhearts tree, which
 # has never been clean and is not gated, so it fails with ~100 pre-existing
 # errors that have nothing to do with your change.
-uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_planner_properties.py
-uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_planner_properties.py
+uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_planner_properties.py
+uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_planner_properties.py
+
+# Native fleet producer/receiving/gate lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_monitor_json.py src/chimeraforge/fleet_monitor_receipt.py src/chimeraforge/fleet_monitor_gate_types.py src/chimeraforge/fleet_monitor_gate.py src/chimeraforge/fleet_monitor_gate_output.py scripts/ci_fleet_monitor_gate.py src/chimeraforge/fleet_monitor_types.py src/chimeraforge/fleet_monitor_transport.py src/chimeraforge/fleet_monitor_output.py src/chimeraforge/fleet_monitor.py src/chimeraforge/monitor_binding.py src/chimeraforge/plan_monitor.py src/chimeraforge/commands/monitor_fleet.py scripts/ci_monitor_fleet.py
 
 # Rust agents
 cd src/rust/demo_agent && cargo build --release

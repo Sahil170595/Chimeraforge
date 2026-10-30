@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
+import logging
+from pathlib import Path
 from typing import Any
 
 from chimeraforge.monitor import MonitorWindow
@@ -17,10 +19,15 @@ MAX_URL_CHARS = 2048
 MAX_ID_CHARS = 64
 MAX_MODEL_CHARS = 4096
 DEFAULT_BODY_BYTES = 8 * 1024 * 1024
+LOG = logging.getLogger(__name__)
 
 
 class FleetMonitorError(ValueError):
     """Invalid or unsupported fleet-monitor admission, before observation begins."""
+
+
+class FleetMonitorExportError(FleetMonitorError):
+    """The complete native report cannot fit the supported JSON export profile."""
 
 
 @dataclass(frozen=True)
@@ -67,7 +74,10 @@ class FleetMonitorReport:
     cleanup: dict[str, Any]
     cancelled: bool
     monitor_tool_version: str
-    schema_version: int = 1
+    schema_version: int = 2
+    effective_controls: dict[str, Any] | None = None
+    _protected_paths: tuple[Path, ...] = field(default=(), repr=False, compare=False)
+    _received_raw: bytes | None = field(default=None, repr=False, compare=False)
 
     @property
     def exit_code(self) -> int:
@@ -94,20 +104,24 @@ class FleetMonitorReport:
         return 0
 
     def to_dict(self) -> dict[str, Any]:
-        data = asdict(self)
-        complete = sum(slot.state == "complete" for slot in self.slots)
-        data["declared_coverage"] = {
-            "expected": len(self.slots),
-            "complete": complete,
-            "state": "complete" if complete == len(self.slots) else "incomplete",
-        }
-        data["exit_code"] = self.exit_code
-        data["outcome"] = {0: "pass", 3: "breach", 4: "unknown", 5: "mismatch"}[self.exit_code]
-        data["limits"] = [
-            "Coverage describes declared URLs, not distinct processes, GPUs or fleet topology.",
-            "No pooled percentiles, capacity, immutable weights or planner accuracy claim.",
-            "Metadata brackets are approximate, not atomic snapshots.",
-            "Accepted body bytes exclude discarded/in-flight chunks and transport buffers.",
-            "Observation and closure deadlines are cooperative, not universal hard-return bounds.",
-        ]
-        return data
+        from chimeraforge.fleet_monitor_json import report_dict
+
+        return report_dict(self)
+
+    def json_bytes(self) -> bytes:
+        from chimeraforge.fleet_monitor_json import encode_public
+
+        return encode_public(self)
+
+    def save(self, path: str | Path) -> None:
+        from chimeraforge.api import PlanError
+        from chimeraforge.bench.fleet_gate_output import _write
+        from chimeraforge.plan_study import protect_output
+
+        raw = self.json_bytes()
+        try:
+            protect_output(path, self._protected_paths)
+            _write(Path(path), raw)
+        except (PlanError, OSError) as exc:
+            LOG.info("fleet JSON output refused (%s)", type(exc).__name__)
+            raise FleetMonitorError("cannot publish fleet monitor JSON output") from None

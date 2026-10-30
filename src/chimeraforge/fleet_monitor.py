@@ -309,6 +309,7 @@ async def monitor_fleet(
         if stop_event is not None and not isinstance(stop_event, asyncio.Event):
             raise FleetMonitorError("stop_event must be an asyncio.Event or None")
         data, candidate = _source(saved, candidate_index)
+        protected_paths = [Path(saved).absolute()] if isinstance(saved, (str, Path)) else []
         endpoints = _admit(request, candidate["n_agents"])
         targets, sources = _targets(data, request)
         effective = [
@@ -460,6 +461,27 @@ async def monitor_fleet(
             cleanup,
             cancelled,
             __version__,
+            effective_controls={
+                "schema_version": 1,
+                "endpoints": [{"id": value.id, "url": value.url} for value in endpoints],
+                **{
+                    name: getattr(request, name)
+                    for name in (
+                        "interval",
+                        "windows",
+                        "timeout",
+                        "observation_seconds",
+                        "cleanup_seconds",
+                        "concurrency",
+                        "max_requests",
+                        "max_body_bytes",
+                    )
+                },
+                "targets": {"ttft_ms": targets["ttft_slo"], "tpot_ms": targets["tpot_slo"]},
+                "target_sources": dict(sources),
+            },
+            _protected_paths=tuple(protected_paths)
+            + tuple(path for connection in prepared.values() for path in connection._input_paths()),
         )
 
 

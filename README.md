@@ -770,7 +770,15 @@ chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --s
 
 Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs a running Ollama.
 
-**Unreleased 0.82.0 source:** authenticated active native vLLM/SGLang measurements
+**Unreleased 0.83.0 source:** [whole-original-fleet passive SLO gates](docs/fleet-monitor-gate.md)
+add strict original-plan receiving, `api.gate_fleet_monitors`, and
+`gate --kind fleet-monitor --baseline-plan ... --candidate-plan ... --junit ...`.
+Every native member/window/prefix remains; effective controls and exact bounded
+JSON export refuse oversize without truncation or premature paired output.
+Incomplete eligibility precedes candidate SLO breach. Public installation remains
+**0.81.0**; bucket bounds are not confidence intervals or pooled performance.
+
+**Unreleased 0.82.0 source, included in 0.83.0:** authenticated active native vLLM/SGLang measurements
 add `--secure`, `--bearer-env NAME`, `--ca-bundle`, `--client-cert` and
 `--client-key` to `bench` and `trace`, including saved candidates. Public
 installation remains 0.81.0. Runtime credentials stay outside serialized

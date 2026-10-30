@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.83.0
+
+### Whole-original-fleet passive SLO acceptance
+
+- Add strict saved fleet-monitor receiving against the actual original plan and selection. Retain every native member/window/metadata prefix and native verdict; schema2 records effective requested controls, while recognizable bounded schema1 evidence keeps missing controls unavailable.
+- Add `FleetMonitorGatePolicy`, `api.gate_fleet_monitors` and `gate --kind fleet-monitor` with explicit original plans, all-member/window/metric commitments and complete JSON/JUnit. Incomplete or ineligible evidence takes precedence over candidate native SLO breach; bucket bounds remain separate from confidence intervals or relative improvements.
+- Bound exact public JSON traversal/materialization to 8 MiB before recursive copies or output. Reuse admitted bytes at file/stdout sinks and refuse oversize without truncation or premature paired publication. Typed reports retain native mismatch/breach priority; text/Prometheus-only operation remains available.
+- Extend source and installed original-wheel/rebuilt-sdist consumers with owned CPU HTTPS fixtures for both native engines, pass/breach/inconclusive gates, complete cases, input protection and actual raw stdout byte parity. These protocol fixtures do not qualify engines, GPUs, traffic authenticity or performance.
+
 ## [Unreleased] - 0.82.0
 
 ### Authenticated active measurements

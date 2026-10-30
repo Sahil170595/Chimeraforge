@@ -257,6 +257,12 @@ def main(argv: list[str] | None = None) -> int:
 
         secure_active_receipt = accept_secure_active(cwd / "secure-active", env, args.checkout)
 
+        from ci_fleet_monitor_gate import accept as accept_fleet_monitor_gate
+
+        passive_gate_receipt = accept_fleet_monitor_gate(
+            cwd / "fleet-monitor-gate", env, cwd / "fleet-plan.json", args.checkout
+        )
+
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
@@ -299,6 +305,7 @@ def main(argv: list[str] | None = None) -> int:
                     "trace_envelope_protocol": envelope_receipt,
                     "native_stream_protocol": native_stream_receipt,
                     "secure_active_protocol": secure_active_receipt,
+                    "fleet_monitor_gate_protocol": passive_gate_receipt,
                     "loaded_module_provenance": {
                         "before": loaded_before,
                         "after": assert_installed_modules(args.checkout),
