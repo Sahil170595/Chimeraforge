@@ -47,7 +47,7 @@ def test_secure_factory_refuses_plugin_before_discovery(monkeypatch):
     assert discovered == []
 
 
-def test_native_secure_monitor_hides_provider_echo_before_prior_factory(monkeypatch, certs):
+def test_native_secure_monitor_hides_provider_echo_before_prior_factory(monkeypatch, caplog, certs):
     canary = "FictionalProviderEcho82"
     prior = logging.getLogRecordFactory()
     observed = []
@@ -64,7 +64,7 @@ def test_native_secure_monitor_hides_provider_echo_before_prior_factory(monkeypa
 
     monkeypatch.setattr(BaseHTTPRequestHandler, "send_response", echo)
     for name in ("httpx", "httpcore"):
-        monkeypatch.setattr(logging.getLogger(name), "level", logging.DEBUG)
+        caplog.set_level(logging.DEBUG, logger=name)
     logging.setLogRecordFactory(record_factory)
     try:
         with fixture.server(certs, token=canary) as (url, calls):
@@ -328,7 +328,7 @@ async def test_secure_identity_exception_never_reaches_project_log(caplog, backe
 
 @pytest.mark.asyncio
 async def test_original_fleet_active_owner_redacts_sdk_before_prior_factory(
-    active_plan, certs, monkeypatch
+    active_plan, certs, monkeypatch, caplog
 ):
     import json
     from chimeraforge import api
@@ -347,7 +347,7 @@ async def test_original_fleet_active_owner_redacts_sdk_before_prior_factory(
         return previous(*args, **kwargs)
 
     for name in ("httpx", "httpcore"):
-        monkeypatch.setattr(logging.getLogger(name), "level", logging.DEBUG)
+        caplog.set_level(logging.DEBUG, logger=name)
     logging.setLogRecordFactory(factory)
     try:
         with wire.server(certs, backend="vllm", token=token, echo=token) as (url, calls):
@@ -374,7 +374,7 @@ async def test_original_fleet_active_owner_redacts_sdk_before_prior_factory(
 
 
 def test_passive_fleet_owner_redacts_sdk_and_closes_both_transport_pools(
-    native_fleet, certs, monkeypatch
+    native_fleet, certs, monkeypatch, caplog
 ):
     import asyncio
     import json
@@ -397,7 +397,7 @@ def test_passive_fleet_owner_redacts_sdk_and_closes_both_transport_pools(
         return previous(*args, **kwargs)
 
     for name in ("httpx", "httpcore"):
-        monkeypatch.setattr(logging.getLogger(name), "level", logging.DEBUG)
+        caplog.set_level(logging.DEBUG, logger=name)
     monkeypatch.setattr(BaseHTTPRequestHandler, "send_response", echo)
     logging.setLogRecordFactory(factory)
     try:

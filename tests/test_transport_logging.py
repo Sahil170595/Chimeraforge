@@ -10,7 +10,7 @@ import pytest
 from chimeraforge.transport_logging import sdk_logging
 
 
-def test_future_sdk_children_are_sanitized_before_existing_factory(monkeypatch):
+def test_future_sdk_children_are_sanitized_before_existing_factory(caplog):
     previous = logging.getLogRecordFactory()
     seen = []
 
@@ -21,7 +21,7 @@ def test_future_sdk_children_are_sanitized_before_existing_factory(monkeypatch):
         return record
 
     logger = logging.getLogger("httpcore.future.native.child")
-    monkeypatch.setattr(logger, "level", logging.DEBUG)
+    caplog.set_level(logging.DEBUG, logger=logger.name)
     logging.setLogRecordFactory(custom)
     try:
         with sdk_logging(True):
@@ -41,7 +41,7 @@ def test_future_sdk_children_are_sanitized_before_existing_factory(monkeypatch):
         logging.setLogRecordFactory(previous)
 
 
-def test_nested_anonymous_scope_and_other_loggers_keep_exact_records(monkeypatch):
+def test_nested_anonymous_scope_and_other_loggers_keep_exact_records(caplog):
     previous = logging.getLogRecordFactory()
     seen = []
 
@@ -51,7 +51,7 @@ def test_nested_anonymous_scope_and_other_loggers_keep_exact_records(monkeypatch
 
     sdk, product = logging.getLogger("httpx.new.child"), logging.getLogger("chimeraforge.progress")
     for logger in (sdk, product):
-        monkeypatch.setattr(logger, "level", logging.INFO)
+        caplog.set_level(logging.INFO, logger=logger.name)
     logging.setLogRecordFactory(custom)
     try:
         with sdk_logging(True):
@@ -72,12 +72,12 @@ def test_nested_anonymous_scope_and_other_loggers_keep_exact_records(monkeypatch
 
 
 @pytest.mark.asyncio
-async def test_overlapping_secure_and_anonymous_owners_restore_only_last_slot(monkeypatch):
+async def test_overlapping_secure_and_anonymous_owners_restore_only_last_slot(caplog):
     previous = logging.getLogRecordFactory()
     seen = []
     entered, release = asyncio.Event(), asyncio.Event()
     logger = logging.getLogger("httpcore.concurrent")
-    monkeypatch.setattr(logger, "level", logging.INFO)
+    caplog.set_level(logging.INFO, logger=logger.name)
 
     def custom(*args, **kwargs):
         seen.append((args[4], args[5]))
@@ -112,11 +112,11 @@ async def test_overlapping_secure_and_anonymous_owners_restore_only_last_slot(mo
         logging.setLogRecordFactory(previous)
 
 
-def test_caller_chaining_an_older_wrapper_does_not_recurse_or_get_overwritten(monkeypatch):
+def test_caller_chaining_an_older_wrapper_does_not_recurse_or_get_overwritten(caplog):
     previous = logging.getLogRecordFactory()
     seen = []
     logger = logging.getLogger("httpx.future")
-    monkeypatch.setattr(logger, "level", logging.INFO)
+    caplog.set_level(logging.INFO, logger=logger.name)
     try:
         with sdk_logging(True):
             older = logging.getLogRecordFactory()
