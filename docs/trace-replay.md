@@ -1,5 +1,9 @@
 # Real request-trace replay
 
+Unreleased 0.82.0 source adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags. Public
+installation remains 0.81.0; existing anonymous defaults and native metrics remain.
+
 Chimeraforge 0.63.0 adds [saved trace regression gates](trace-regression-gate.md)
 through `gate --kind trace`.
 Chimeraforge 0.64.0 adds [serial campaigns](trace-campaign.md) over

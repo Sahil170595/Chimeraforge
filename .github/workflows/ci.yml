@@ -24,21 +24,22 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
-      - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
-      - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_planner_properties.py
+      - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_planner_properties.py
+      - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_planner_properties.py
       - run: uv run --no-sync mypy
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/transport_logging.py scripts/ci_secure_active.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/monitor_connection.py src/chimeraforge/commands/monitor.py scripts/ci_secure_monitor.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/inventory_types.py src/chimeraforge/inventory_numbers.py src/chimeraforge/inventory_process.py src/chimeraforge/inventory_check.py src/chimeraforge/commands/inventory_check.py scripts/ci_inventory_check.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/plan_study.py src/chimeraforge/commands/study.py scripts/ci_plan_study.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/deploy.py src/chimeraforge/commands/deploy.py scripts/ci_deploy_placement.py scripts/ci_installed_acceptance.py src/chimeraforge/deployment_verify.py src/chimeraforge/commands/deploy_verify.py scripts/ci_deployment_verify.py
-      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_monitor_types.py src/chimeraforge/fleet_monitor_transport.py src/chimeraforge/fleet_monitor_output.py src/chimeraforge/fleet_monitor.py src/chimeraforge/monitor_binding.py src/chimeraforge/plan_monitor.py src/chimeraforge/commands/monitor_fleet.py scripts/ci_monitor_fleet.py
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_monitor_json.py src/chimeraforge/fleet_monitor_receipt.py src/chimeraforge/fleet_monitor_gate_types.py src/chimeraforge/fleet_monitor_gate.py src/chimeraforge/fleet_monitor_gate_output.py scripts/ci_fleet_monitor_gate.py src/chimeraforge/fleet_monitor_types.py src/chimeraforge/fleet_monitor_transport.py src/chimeraforge/fleet_monitor_output.py src/chimeraforge/fleet_monitor.py src/chimeraforge/monitor_binding.py src/chimeraforge/plan_monitor.py src/chimeraforge/commands/monitor_fleet.py scripts/ci_monitor_fleet.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/signed_payload.py src/chimeraforge/signed_contribution.py src/chimeraforge/signed_replay.py src/chimeraforge/signed_gate.py src/chimeraforge/signed_gate_inputs.py src/chimeraforge/commands/contribute.py scripts/ci_signed_contribution.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/prediction_score.py src/chimeraforge/commands/score.py src/chimeraforge/prediction_bundle.py src/chimeraforge/prediction_bundle_inputs.py src/chimeraforge/prediction_bundle_publication.py src/chimeraforge/commands/bundle.py scripts/ci_prediction_bundle.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_campaign_inputs.py src/chimeraforge/bench/trace_campaign_gate.py scripts/ci_registry_runtime.py scripts/ci_registry_native_runner.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py
-      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/fleet_trace_types.py src/chimeraforge/bench/fleet_trace_inputs.py src/chimeraforge/bench/fleet_trace_receipt.py src/chimeraforge/bench/fleet_trace.py src/chimeraforge/commands/trace_fleet.py scripts/ci_fleet_trace.py
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/fleet_trace_types.py src/chimeraforge/bench/fleet_trace_inputs.py src/chimeraforge/bench/fleet_trace_receipt.py src/chimeraforge/bench/fleet_trace.py src/chimeraforge/commands/trace_fleet.py scripts/ci_fleet_trace.py src/chimeraforge/bench/fleet_campaign_types.py src/chimeraforge/bench/fleet_campaign.py src/chimeraforge/bench/fleet_campaign_receipt.py src/chimeraforge/bench/fleet_campaign_gate.py src/chimeraforge/bench/fleet_campaign_output.py src/chimeraforge/commands/trace_fleet_campaign.py scripts/ci_fleet_trace_campaign.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/fleet_gate_inputs.py src/chimeraforge/bench/fleet_gate_evidence.py src/chimeraforge/bench/fleet_trace_gate.py src/chimeraforge/bench/fleet_gate_output.py src/chimeraforge/commands/gate.py scripts/ci_fleet_trace_gate.py
-      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/kubernetes_options.py src/chimeraforge/kubernetes_export.py scripts/ci_kubernetes_export.py scripts/ci_kubernetes_admission.py
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/kubernetes_options.py src/chimeraforge/kubernetes_export.py scripts/ci_kubernetes_export.py scripts/ci_kubernetes_admission.py src/chimeraforge/kubernetes_inspection.py src/chimeraforge/kubernetes_inspection_intent.py src/chimeraforge/kubernetes_inspection_process.py src/chimeraforge/kubernetes_inspection_types.py src/chimeraforge/kubernetes_inspection_output.py src/chimeraforge/commands/deploy_inspect.py scripts/ci_kubernetes_inspection.py scripts/ci_kubernetes_inspection_native.py
       - run: uv run --no-sync mypy --follow-imports skip scripts/ci_cpu_runtime_observation.py
       - run: uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/trace_envelope_inputs.py src/chimeraforge/bench/trace_envelope.py src/chimeraforge/commands/trace_envelope.py scripts/ci_trace_envelope.py
 
@@ -97,7 +98,17 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
-      - run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json
+        with:
+          python-version: "3.14"
+      - name: Full line and branch coverage
+        env:
+          COVERAGE_CORE: sysmon
+          COVERAGE_DEBUG: core
+          COVERAGE_DEBUG_FILE: ${{ runner.temp }}/chimeraforge-coverage-core.log
+        run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json
+      - name: Show actual coverage core
+        if: always()
+        run: cat "$RUNNER_TEMP/chimeraforge-coverage-core.log"
       - name: Enforce line and branch ratchets
         run: uv run --no-sync python scripts/check_coverage.py coverage.json --summary "$GITHUB_STEP_SUMMARY"
 
@@ -259,7 +270,7 @@ jobs:
         run: |
           uv sync --locked --all-extras --no-install-project
           uv pip install --python "$UV_PROJECT_ENVIRONMENT/bin/python" --no-deps dist/*.whl
-      - name: Native pinned kind server admission and owned cleanup
+      - name: Native pinned kind admission, read-only inspection and owned cleanup
         env:
           UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/chimeraforge-kubernetes
         run: |

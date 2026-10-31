@@ -14,6 +14,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from chimeraforge.workload import ENGINE_METRICS, parse_prometheus
 from chimeraforge.monitor_connection import MonitorConnection, admit_connection
+from chimeraforge.transport_logging import sdk_logging
 
 PERCENTILE_NUMERATOR = 95
 PERCENTILE_DENOMINATOR = 100
@@ -358,6 +359,16 @@ def _bounds(first: dict, second: dict, base: str, model: str) -> tuple[int, floa
     return count, lower, upper if math.isfinite(upper) else None
 
 
+def _classify_bounds(lower: float, upper: float | None, target: float | None) -> tuple[str, str]:
+    if target is None:
+        return "unknown", "informational observation; no target supplied"
+    if upper is not None and upper <= target:
+        return "pass", "observed P95 upper bucket bound meets target"
+    if lower >= target:
+        return "breach", "observed P95 exceeds the lower bucket boundary at target"
+    return "unknown", "P95 bucket straddles target; finer buckets are required"
+
+
 def _assessment(
     first: dict,
     second: dict,
@@ -374,14 +385,7 @@ def _assessment(
         count, lower, upper = _bounds(first, second, base, model)
     except _Unknown as exc:
         return MetricAssessment(base, semantics, target, reason=str(exc))
-    if target is None:
-        outcome, reason = "unknown", "informational observation; no target supplied"
-    elif upper is not None and upper <= target:
-        outcome, reason = "pass", "observed P95 upper bucket bound meets target"
-    elif lower >= target:
-        outcome, reason = "breach", "observed P95 exceeds the lower bucket boundary at target"
-    else:
-        outcome, reason = "unknown", "P95 bucket straddles target; finer buckets are required"
+    outcome, reason = _classify_bounds(lower, upper, target)
     return MetricAssessment(
         base, semantics, target, count, lower, upper, outcome, "histogram-bound", reason
     )
@@ -480,58 +484,59 @@ def run_monitor(
     connection: MonitorConnection | None = None,
 ) -> MonitorReport:
     """Observe a finite number of windows in the caller; cancellation cannot pass."""
-    request.validate()
-    admit_connection(connection, request.url)
-    stop = stop_event if stop_event is not None else threading.Event()
-    windows: list[MonitorWindow] = []
-    cancelled = False
-    try:
-        if stop.is_set():
-            return MonitorReport(request.backend, request.model, "unknown", cancelled=True)
-        url = _metrics_url(request.url)
-        first = (
-            _fetch(url, request.timeout, connection)
-            if connection is not None
-            else _fetch(url, request.timeout)
-        )
-        start = time.perf_counter()
-        if _on_scrape:
-            _on_scrape()
-        for _ in range(request.windows):
-            if stop.wait(request.interval):
-                cancelled = True
-                break
-            second = (
+    with sdk_logging(connection is not None):
+        request.validate()
+        admit_connection(connection, request.url)
+        stop = stop_event if stop_event is not None else threading.Event()
+        windows: list[MonitorWindow] = []
+        cancelled = False
+        try:
+            if stop.is_set():
+                return MonitorReport(request.backend, request.model, "unknown", cancelled=True)
+            url = _metrics_url(request.url)
+            first = (
                 _fetch(url, request.timeout, connection)
                 if connection is not None
                 else _fetch(url, request.timeout)
             )
-            end = time.perf_counter()
-            if stop.is_set():
-                cancelled = True
-                break
-            result = evaluate_window(
-                first,
-                second,
-                backend=request.backend,
-                model=request.model,
-                seconds=end - start,
-                ttft_slo=request.ttft_slo,
-                tpot_slo=request.tpot_slo,
-            )
-            windows.append(result)
-            if on_window:
-                on_window(result)
+            start = time.perf_counter()
             if _on_scrape:
                 _on_scrape()
-            if stop.is_set():
-                cancelled = True
-                break
-            first, start = second, end
-    except KeyboardInterrupt:
-        cancelled = True
-    statuses = [x.outcome for x in windows] + (["unknown"] if cancelled else [])
-    return MonitorReport(request.backend, request.model, _outcome(statuses), windows, cancelled)
+            for _ in range(request.windows):
+                if stop.wait(request.interval):
+                    cancelled = True
+                    break
+                second = (
+                    _fetch(url, request.timeout, connection)
+                    if connection is not None
+                    else _fetch(url, request.timeout)
+                )
+                end = time.perf_counter()
+                if stop.is_set():
+                    cancelled = True
+                    break
+                result = evaluate_window(
+                    first,
+                    second,
+                    backend=request.backend,
+                    model=request.model,
+                    seconds=end - start,
+                    ttft_slo=request.ttft_slo,
+                    tpot_slo=request.tpot_slo,
+                )
+                windows.append(result)
+                if on_window:
+                    on_window(result)
+                if _on_scrape:
+                    _on_scrape()
+                if stop.is_set():
+                    cancelled = True
+                    break
+                first, start = second, end
+        except KeyboardInterrupt:
+            cancelled = True
+        statuses = [x.outcome for x in windows] + (["unknown"] if cancelled else [])
+        return MonitorReport(request.backend, request.model, _outcome(statuses), windows, cancelled)
 
 
 def _escape_label(value: str) -> str:
