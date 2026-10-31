@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**32 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased source 0.85.0; public installation remains 0.81.0.
+**32 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased source 0.86.0; public installation remains 0.81.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -1128,6 +1128,22 @@ chimeraforge report --results-dir ./results/ --format markdown --output report.m
 ```
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
+
+Unreleased 0.86.0 adds strict native trace diagnostics while keeping benchmark defaults:
+
+```bash
+chimeraforge report --kind trace --input trace.json --format markdown --output trace.md
+chimeraforge report --kind fleet-trace --input fleet.json --format html --output fleet.html
+chimeraforge report --kind fleet-trace --input fleet.json --format svg --output fleet.svg
+```
+
+All original members/rows, missing states and separate native outcomes remain.
+Client active intervals include server queue, transport and cancellation drain,
+not server service time. The separate client queue is arrival-to-start.
+The closed public projection omits identities/metadata, preserves null versus zero
+and refuses whole over-limit output. Artifact exit0 is not a native performance
+pass. See [API, protected saves, bounds and browser proof limits](docs/trace-diagnostics.md).
+Public installation remains 0.81.0.
 
 ### `serve` -- local planning HTTP API
 

@@ -57,7 +57,14 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.85.0 (unreleased source; public 0.81.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.86.0 (unreleased source; public 0.81.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+
+Trace diagnostics (unreleased 0.86.0): `api.render_trace_report` and existing
+`report --kind trace|fleet-trace --input` strictly hold one native input, retain
+all rows/original members and render static HTML/Markdown/SVG through a closed
+public projection. Protected exact 8 MiB artifacts keep runtime guards outside
+persisted fields. Browser-only dependency group and hosted rendering stay in the
+existing Ubuntu installed job. See [complete contract](docs/trace-diagnostics.md).
 
 Read-only Kubernetes inspection (unreleased 0.85.0): async
 `api.inspect_kubernetes_deployment` and `deploy-inspect` hold original plans and
@@ -293,8 +300,11 @@ pytest tests/ -v
 # `ruff check src/` also sweeps the legacy src/python/banterhearts tree, which
 # has never been clean and is not gated, so it fails with ~100 pre-existing
 # errors that have nothing to do with your change.
-uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_planner_properties.py
-uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_planner_properties.py
+uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py
+uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py
+
+# Native trace diagnostics lane (literal CI command)
+uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py src/chimeraforge/report/trace.py src/chimeraforge/report/trace_inputs.py src/chimeraforge/report/trace_view.py src/chimeraforge/report/trace_formats.py src/chimeraforge/commands/report.py scripts/ci_trace_report.py scripts/ci_trace_report_browser.py
 
 # Native passive fleet lane (literal CI command)
 uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_monitor_json.py src/chimeraforge/fleet_monitor_receipt.py src/chimeraforge/fleet_monitor_gate_types.py src/chimeraforge/fleet_monitor_gate.py src/chimeraforge/fleet_monitor_gate_output.py scripts/ci_fleet_monitor_gate.py src/chimeraforge/fleet_monitor_types.py src/chimeraforge/fleet_monitor_transport.py src/chimeraforge/fleet_monitor_output.py src/chimeraforge/fleet_monitor.py src/chimeraforge/monitor_binding.py src/chimeraforge/plan_monitor.py src/chimeraforge/commands/monitor_fleet.py scripts/ci_monitor_fleet.py

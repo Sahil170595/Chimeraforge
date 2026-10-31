@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.86.0
+
+### Whole native trace diagnostics
+
+- Add `api.render_trace_report` and existing `report --kind trace|fleet-trace --input` for strict ordinary/full original-fleet receipts. Retain every request/member, failed/unstarted/zero-assigned states and separate native execution/configuration/SLO/cleanup outcomes; reject plan/campaign envelopes without implicit unwrapping.
+- Render complete static HTML/inline SVG, standalone SVG and Markdown from generated ordinals, fixed states, finite native timing/count facts and source hashes. Exclude identities, raw diagnostics and metadata; preserve global relative clocks, missing versus zero and native per-request TPOT basis without new quantiles or server-service claims.
+- Count native compact input before eager copies, bound whole rendered UTF-8 output to 8 MiB and reuse exact LF bytes at guarded atomic saves/stdout. Keep private input protection outside public dataclass fields/copy/replace; preserve benchmark report defaults.
+- Extend original/rebuilt installed consumers with actual API/CLI artifacts and raw byte parity. The existing Ubuntu job alone selects a nondefault pinned Playwright browser group for genuine saved-document rendering and two short-lived privacy-safe PNGs. Software/browser diagnostics do not qualify inference engines, GPUs or performance.
+
 ## [Unreleased] - 0.85.0
 
 ### Read-only original Kubernetes inspection
