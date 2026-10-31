@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.85.0
+
+### Read-only original Kubernetes inspection
+
+- Add typed async `api.inspect_kubernetes_deployment` and `deploy-inspect` against held original plans and independent image/namespace/selection intent. Preserve all 2N resources and separate intent from native Deployment controller rollout, including missing, failed and unstarted observations.
+- Reuse pinned native kubectl config projections and an owned enabled DenyAll kuberc; reject selected legacy auth providers before server contact. Bound owned processes, captured streams and observation work, retain cooperative cleanup/cancellation, and keep private config/path state outside persisted dataclass fields.
+- Add complete protected JSON/JUnit publication with 3N+1 cases, whole-export refusal and fail-closed filesystem writes when private-reference inventory is unverified. Keep the exact offline verifier and existing deployment rendering unchanged.
+- Extend installed controlled protocol/owned-process consumers and the existing kind job with a separate genuine-GPU-declaration live fixture, expected matching-intent/pending-rollout4, native adverse/auth/path controls and owned cleanup. No inference, scheduling, GPU readiness or capacity qualification is claimed.
+
 ## [Unreleased] - 0.84.0
 
 ### Serial whole-original-fleet trace campaigns

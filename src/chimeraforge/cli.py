@@ -21,6 +21,7 @@ from chimeraforge.commands.doctor import doctor
 from chimeraforge.commands.gate import gate
 from chimeraforge.commands.deploy import deploy
 from chimeraforge.commands.deploy_verify import deploy_verify
+from chimeraforge.commands.deploy_inspect import deploy_inspect
 from chimeraforge.commands.inventory_check import inventory_check
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
@@ -81,6 +82,7 @@ app.add_typer(bundle_app, name="bundle")
 app.command()(study)
 app.command()(deploy)
 app.command("deploy-verify")(deploy_verify)
+app.command("deploy-inspect")(deploy_inspect)
 app.command("inventory-check")(inventory_check)
 app.command()(suggest)
 app.command()(measure)

@@ -1,0 +1,175 @@
+{
+  "controls": [
+    {
+      "backend": "vllm",
+      "control": "matching_status",
+      "api_exit": 0,
+      "cli_exit": 0,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "intent_drift",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "pending_status",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "missing_service",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "provider",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "wrong_identity",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "malformed_condition",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "generation_width",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "replica_width",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "matching_status",
+      "api_exit": 0,
+      "cli_exit": 0,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "intent_drift",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "pending_status",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "missing_service",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "provider",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "wrong_identity",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "malformed_condition",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "generation_width",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "replica_width",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    }
+  ],
+  "controlled_owned_processes": 364,
+  "protocol_scope": "controlled Python processes/statuses; native kubectl/kind proof separate",
+  "raw_cli_byte_parity": true,
+  "complete_api_cli_junit_files": true,
+  "unverified_inventory_publication_refused": true,
+  "selected_client_input_guard_preserved": true,
+  "source_unchanged": true,
+  "owned_processes_closed": true,
+  "captured_at": "2026-10-31T04:25:13.106499+00:00",
+  "source_profile": "editable source, not installed or native kubectl qualification",
+  "method": "actual API/in-process CLI controlled owned Python protocol and raw missing-tool CLI",
+  "source_sha256": {
+    "src/chimeraforge/kubernetes_inspection.py": "50c864a364e5e6e14638faec1bba743af07ccd15a7f55c709c25185d9d04d7b2",
+    "src/chimeraforge/kubernetes_inspection_process.py": "050817180bda9160bc87bb8445f636dca9ae45bafb3a70a91ef5d110320079db",
+    "src/chimeraforge/kubernetes_inspection_intent.py": "e1eacd5a1f585e0c5877a8e1e5264f7e9fa551e0e3f0542dba4a2783eb44f7b5",
+    "src/chimeraforge/kubernetes_inspection_types.py": "573ed733cd1f6b794fad11137305b767cc2a2b19eea6c3dcd529827f7a88cc80",
+    "src/chimeraforge/kubernetes_inspection_output.py": "342271538b02464258dfa85475ec7b17b7d040d047f3597c4f319e56c37ae597",
+    "src/chimeraforge/commands/deploy_inspect.py": "01713033c6c7c0354e41de4accb13878bb6f8d1264dd81d7313626612ae82ed0",
+    "src/chimeraforge/kubernetes_options.py": "cc2ecc480645a9ad137f63d8a004963f02e3b4b94f1abe9de3998a9ae9a6a680",
+    "src/chimeraforge/kubernetes_export.py": "bd3c7f36bf9551f1c05ca982923bb8748c9c4fa40437b8ab241c9756498d41fe",
+    "src/chimeraforge/api.py": "018fde97b7be5c2996d1cc8acb63c6989da323fdab4e3638ff1f6e9a4f85ae6f",
+    "scripts/ci_kubernetes_inspection.py": "60d1d28d5a577ccd07a8a2cd928cc06b568ddacab781c9971dc1b50360d35598",
+    "scripts/ci_kubernetes_inspection_native.py": "1e21fbf5898db12fbb310f29207234579502fa6e1afc5dc383dfc8aaf257af66",
+    "scripts/ci_kubernetes_admission.py": "5900a63218f8c41984adff71029ecb4a20fe8bc7b22886e178c494bf9afe4a25",
+    "scripts/ci_installed_acceptance.py": "87e0c05ac906776e7e09a221f9c62886038d1ab8e964401a99af77c1c79109f1",
+    "src/chimeraforge/cli.py": "1e006f3723ff97ba74f8077a428639835287e6ab49c8e147d57950a837405908"
+  }
+}

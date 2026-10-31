@@ -66,6 +66,10 @@ from chimeraforge.inventory_types import (
     InventorySlot as InventorySlot,
 )
 from chimeraforge.kubernetes_options import KubernetesOptions as KubernetesOptions
+from chimeraforge.kubernetes_inspection_types import (
+    KubernetesInspection as KubernetesInspection,
+    KubernetesInspectionError as KubernetesInspectionError,
+)
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
@@ -92,6 +96,54 @@ MODEL_OVERRIDE_TYPES = {
 
 class PlanError(ValueError):
     """Invalid request, unavailable planning input, or invalid saved plan."""
+
+
+async def inspect_kubernetes_deployment(
+    saved: PlanArtifact | str | Path,
+    *,
+    image: str,
+    kubeconfig: str | Path,
+    context: str,
+    kubernetes: KubernetesOptions | None = None,
+    candidate_index: int = 0,
+    model: str | None = None,
+    kubectl: str | Path = "kubectl",
+    timeout_s: float = 30,
+    request_timeout_s: float = 10,
+    concurrency: int = 4,
+    cleanup_timeout_s: float = 2,
+    stop_event: asyncio.Event | None = None,
+) -> KubernetesInspection:
+    """GET original named resources with independently supplied declaration intent."""
+    from chimeraforge.kubernetes_inspection import inspect_kubernetes_deployment as inspect
+
+    return await inspect(
+        saved,
+        image=image,
+        kubeconfig=kubeconfig,
+        context=context,
+        kubernetes=kubernetes,
+        candidate_index=candidate_index,
+        model=model,
+        kubectl=kubectl,
+        timeout_s=timeout_s,
+        request_timeout_s=request_timeout_s,
+        concurrency=concurrency,
+        cleanup_timeout_s=cleanup_timeout_s,
+        stop_event=stop_event,
+    )
+
+
+def write_kubernetes_inspection(
+    result: KubernetesInspection,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Preflight complete bounded JSON/JUnit before protected per-file writes."""
+    from chimeraforge.kubernetes_inspection_output import write_kubernetes_inspection as write
+
+    write(result, out=out, junit=junit)
 
 
 def create_prediction_bundle(
