@@ -9,6 +9,12 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Unreleased source **0.84.0** adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
+strict full-population receiving and complete native-comparison JSON/JUnit. K
+executions keep original N/routes/arrivals/global concurrency; all failed and
+unstarted slots remain. It includes the 0.82/0.83 candidates below; public
+installation remains **0.81.0**.
+
 Unreleased source **0.83.0** adds [whole-original-fleet passive SLO gates](fleet-monitor-gate.md),
 strict original-plan receiving, effective producer controls and complete bounded
 JSON/JUnit. It includes the [unreleased 0.82 active-connection candidate](authenticated-active.md).

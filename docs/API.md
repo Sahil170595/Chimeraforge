@@ -3,7 +3,18 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers public Chimeraforge 0.81.0 and the unreleased 0.83.0 source candidate.
+This document covers public Chimeraforge 0.81.0 and the unreleased 0.84.0 source candidate.
+
+Unreleased 0.84.0 adds async `api.replay_fleet_trace_campaign(saved, requests,
+endpoints, routes, *, executions=3, candidate_index=0, model=None, concurrency=1,
+request_timeout=300, trace_timeout=600, cleanup_timeout=2, campaign_timeout=1800,
+stop_event=None, connections=None)`, sync `api.load_fleet_trace_campaign(source)`,
+`FleetTraceCampaignGatePolicy(fleet, expected_executions, campaign_timeout_seconds,
+schema_version=1)`, `api.gate_fleet_trace_campaigns(baseline, candidate, *, policy)`
+and `api.write_fleet_trace_campaign_gate(decision, *, out=None, junit=None)`.
+Typed campaign/decision results retain complete original populations; private
+runtime guards are outside serialized dataclass fields. See the
+[full K-versus-N, receiving, byte-profile, CLI/JUnit and native outcome contract](fleet-trace-campaign.md).
 
 Unreleased 0.83.0 adds `api.load_fleet_monitor(source, saved, *, candidate_index=0)`,
 `FleetMonitorGatePolicy(original_replicas, endpoint_ids, windows, metrics, baseline,

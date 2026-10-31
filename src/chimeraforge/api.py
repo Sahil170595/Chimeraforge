@@ -25,6 +25,14 @@ from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
 from chimeraforge.bench.fleet_trace_receipt import load_fleet_trace as load_fleet_trace
 from chimeraforge.bench.fleet_trace_types import FleetTraceReplay as FleetTraceReplay
 from chimeraforge.bench.fleet_trace_types import TraceRoute as TraceRoute
+from chimeraforge.bench.fleet_campaign_types import FleetTraceCampaign as FleetTraceCampaign
+from chimeraforge.bench.fleet_campaign_types import (
+    FleetTraceCampaignError as FleetTraceCampaignError,
+)
+from chimeraforge.bench.fleet_campaign_types import FleetTraceCampaignGate as FleetTraceCampaignGate
+from chimeraforge.bench.fleet_campaign_types import (
+    FleetTraceCampaignGatePolicy as FleetTraceCampaignGatePolicy,
+)
 from chimeraforge.bench.trace_campaign import (
     DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
     DEFAULT_REPLICATES,
@@ -689,6 +697,75 @@ async def replay_plan_trace(
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
         stop_event=stop_event,
+    )
+
+
+def load_fleet_trace_campaign(source: FleetTraceCampaign | dict | str | Path) -> FleetTraceCampaign:
+    """Validate one held complete fleet campaign, retaining every declared execution."""
+    from chimeraforge.bench.fleet_campaign_receipt import load_fleet_trace_campaign as load
+
+    return load(source)
+
+
+def gate_fleet_trace_campaigns(
+    baseline: FleetTraceCampaign | dict | str | Path,
+    candidate: FleetTraceCampaign | dict | str | Path,
+    *,
+    policy: FleetTraceCampaignGatePolicy | dict | str | Path,
+) -> FleetTraceCampaignGate:
+    """Compare every declared execution through unchanged native fleet conditions/math."""
+    from chimeraforge.bench.fleet_campaign_gate import gate_fleet_trace_campaigns as gate
+
+    return gate(baseline, candidate, policy=policy)
+
+
+def write_fleet_trace_campaign_gate(
+    result: FleetTraceCampaignGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Admit complete JSON/JUnit before protected, separately atomic output writes."""
+    from chimeraforge.bench.fleet_campaign_output import write_fleet_trace_campaign_gate as write
+
+    write(result, out=out, junit=junit)
+
+
+async def replay_fleet_trace_campaign(
+    saved: PlanArtifact | PlanBundle | str | Path,
+    requests: list[TraceRequest] | str | Path,
+    endpoints: tuple[FleetEndpoint, ...],
+    routes: list[TraceRoute] | str | Path,
+    *,
+    executions: int = DEFAULT_REPLICATES,
+    candidate_index: int = 0,
+    model: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    cleanup_timeout: float = 2,
+    campaign_timeout: float = DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
+    stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> FleetTraceCampaign:
+    """Execute K serial original fleets over one held source/workload/route map."""
+    from chimeraforge.bench.fleet_campaign import replay_fleet_trace_campaign as replay
+
+    return await replay(
+        saved,
+        requests,
+        endpoints,
+        routes,
+        executions=executions,
+        candidate_index=candidate_index,
+        model=model,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        cleanup_timeout=cleanup_timeout,
+        campaign_timeout=campaign_timeout,
+        stop_event=stop_event,
+        connections=connections,
     )
 
 

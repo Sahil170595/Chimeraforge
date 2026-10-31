@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 0.84.0
+
+### Serial whole-original-fleet trace campaigns
+
+- Execute K serial native whole-fleet traces from one held original plan/workload/routes/endpoints, preserving original N/TP/PP, every request/cap/route/global schedule and all failed/unstarted slots. Complete configuration mismatch stays separate from execution completeness and does not stop later runs.
+- Add typed async campaign production, strict hold-once saved receiving, explicit K/native policy gates and complete protected JSON/JUnit through API and CLI. Reuse native per-execution eligibility and arithmetic; copied, missing, incomplete or mismatched evidence stays inconclusive before known regressions.
+- Keep native child admission unchanged and record unavailable receipts with unknown completion. Bound new canonical exports to 16 MiB, logical pairs to 32 MiB and policy to 64 KiB without truncation; streamed finite canonical hashing preserves native parity. Private guard state stays outside persisted dataclass fields.
+- Extend installed consumers with real owned CPU HTTPS API/CLI K2 controls for both native engine protocols, mTLS/adverse/alias cases and separate synthetic gate0/1/3. Extend the existing pinned three-member native CPU canary with actual API/CLI K2, retaining CPU-versus-modeled-GPU mismatch/gate3 rather than claiming GPU or performance qualification.
+
 ## [Unreleased] - 0.83.0
 
 ### Whole-original-fleet passive SLO acceptance
