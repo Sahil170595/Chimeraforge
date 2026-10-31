@@ -25,11 +25,17 @@ OWNER_LABEL = "org.chimeraforge.inspection-owner"
 
 @contextmanager
 def no_contact_server(paths: dict[str, Path]) -> Iterator[tuple[str, dict[str, int]]]:
-    counts = {"requests": 0}
+    counts = {"requests": 0, "static_version_requests": 0}
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
             counts["requests"] += 1
+            if (
+                self.command == "GET"
+                and self.path.partition("?")[0] == "/version"
+                and self.headers.get("Authorization") == "Bearer " + PRIVATE
+            ):
+                counts["static_version_requests"] += 1
             body = (
                 b'{"apiVersion":"v1","kind":"Status","status":"Failure",'
                 b'"reason":"NotFound","code":404}'
@@ -228,15 +234,92 @@ def _policy_controls(
                     "contacts": 0,
                 }
             )
+
+        def retain_context(control: str, interface: str, report: dict) -> None:
+            safe = {
+                "control": control,
+                "interface": interface,
+                "exit_code": report["exit_code"],
+                **{name: deepcopy(report[name]) for name in ("preflight", "budget", "cleanup")},
+                "contacts": dict(counter),
+            }
+            assert PRIVATE not in json.dumps(safe)
+            controls.append(safe)
+
         _private_config(
             config, address, [{"name": "static", "user": {}}, oidc], "oidc", ca=str(tls["ca"])
         )
-        selected_static = observe(config=config, selected="static")
-        assert (
-            selected_static._data["preflight"]["private_projection_complete"]
-            and counter["requests"] > 0
+        before = config.read_bytes()
+        counter.update(requests=0, static_version_requests=0)
+        empty_user = observe(config=config, selected="static")
+        retain_context("empty_user_closed_stdin", "api", empty_user.to_dict())
+        assert empty_user.exit_code == 4
+        assert empty_user._data["preflight"]["private_projection_complete"]
+        assert counter["requests"] == 0 and config.read_bytes() == before
+        deny = work / "owned-empty-user-kuberc.json"
+        deny.write_text(
+            json.dumps(
+                {
+                    "apiVersion": "kubectl.config.k8s.io/v1beta1",
+                    "kind": "Preference",
+                    "credentialPluginPolicy": "DenyAll",
+                }
+            ),
+            encoding="utf-8",
         )
-        controls.append({"control": "explicit_context_excludes_unused_provider", "exit_code": 4})
+        private_output = run(
+            [
+                executable,
+                "--kubeconfig",
+                str(config),
+                "--context",
+                "static",
+                "--kuberc",
+                str(deny),
+                "--cache-dir",
+                str(work / "empty-user-cache"),
+                "--request-timeout=10s",
+                "version",
+                "--output=json",
+            ],
+            positive,
+            negative=True,
+        )
+        prompt_seen = private_output.startswith("Please enter Username: ")
+        del private_output
+        controls.append(
+            {
+                "control": "native_empty_user_closed_stdin",
+                "prompt_observed": prompt_seen,
+                "contacts": dict(counter),
+            }
+        )
+        assert prompt_seen and counter["requests"] == 0 and not marker.exists()
+        assert config.read_bytes() == before
+
+        _private_config(
+            config,
+            address,
+            [{"name": "static", "user": {"token": PRIVATE}}, oidc],
+            "oidc",
+            ca=str(tls["ca"]),
+        )
+        before = config.read_bytes()
+        counter.update(requests=0, static_version_requests=0)
+        selected_static = observe(config=config, selected="static")
+        retain_context(
+            "explicit_context_excludes_unused_provider", "api", selected_static.to_dict()
+        )
+        assert selected_static.exit_code == 4
+        assert selected_static._data["preflight"]["private_projection_complete"]
+        assert counter["static_version_requests"] > 0 and counter["requests"] > 0
+        assert config.read_bytes() == before and not marker.exists()
+        counter.update(requests=0, static_version_requests=0)
+        selected_cli = run_cli(code=4, config=config, selected="static")
+        retain_context("explicit_context_excludes_unused_provider", "cli", selected_cli)
+        assert selected_cli["preflight"]["private_projection_complete"]
+        assert counter["static_version_requests"] > 0 and counter["requests"] > 0
+        assert config.read_bytes() == before and not marker.exists()
 
 
 def accept(

@@ -44,6 +44,16 @@ A cluster-free composition regression exercises the actual saved plan, original
 N3 renderer and owned-fixture cleanup; native inspection still requires the
 fresh hosted run.
 
+The [second hosted attempt](https://github.com/Sahil170595/Chimeraforge/actions/runs/41170495376/job/124447275639)
+passed both engines' native inspection and preceding adverse controls, then
+failed an explicit-context fixture that used an empty user as static auth.
+Its exact selected-report reason was not retained. Pinned kubectl source shows
+that an empty user can prompt before transport with closed stdin. The fixture
+now retains that negative, privately checks the native prompt, and uses an
+explicit fictional static bearer for the positive API/CLI context controls.
+Only categorical counts of matching authenticated version GETs are retained;
+fresh hosted execution must establish these outcomes.
+
 The [feature contract](../../docs/kubernetes-inspection.md) states the supported
 profile, bounded export/stream/work claims, independent intent, private guards,
 complete cases, per-file atomicity and cooperative cleanup limits.

@@ -99,3 +99,33 @@ def test_native_inspection_fixture_loads_saved_plan_before_native_render(tmp_pat
     )
     assert receipt["cleanup"] == {"state": "completed", "owned_namespace_deleted": True}
     assert all(case["saved"].read_bytes() == case["source"] for case in cases)
+
+
+def test_owned_tls_counter_requires_selected_static_auth_and_version_get(tmp_path):
+    import ssl
+    from urllib.error import HTTPError
+    from urllib.request import Request, urlopen
+
+    secure = load_script("ci_secure_monitor")
+    native = load_script("ci_kubernetes_inspection_native")
+    paths = secure.certificates(tmp_path / "tls")
+    context = ssl.create_default_context(cafile=str(paths["ca"]))
+    with native.no_contact_server(paths) as (address, counts):
+        cases = [
+            ("GET", "/version?timeout=1s", None, 0),
+            ("GET", "/discovery", "Bearer " + native.PRIVATE, 0),
+            ("POST", "/version", "Bearer " + native.PRIVATE, 0),
+            ("GET", "/version", "Bearer wrong-fixture-token", 0),
+            ("GET", "/version?timeout=1s", "Bearer " + native.PRIVATE, 1),
+        ]
+        for count, (method, path, authorization, matched) in enumerate(cases, 1):
+            headers = {} if authorization is None else {"Authorization": authorization}
+            request = Request(address + path, method=method, headers=headers)
+            with pytest.raises(HTTPError) as error:
+                urlopen(request, context=context, timeout=5)
+            try:
+                assert error.value.code == 404
+                assert counts["requests"] == count
+                assert counts["static_version_requests"] == matched
+            finally:
+                error.value.close()
