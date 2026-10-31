@@ -1,5 +1,9 @@
 # Plan-bound request traces
 
+Unreleased 0.82.0 source adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags. Public
+installation remains 0.81.0; existing anonymous defaults and native metrics remain.
+
 Available since **Chimeraforge 0.68.0**.
 
 `trace --from-plan` replays a private workload while retaining a selected frozen

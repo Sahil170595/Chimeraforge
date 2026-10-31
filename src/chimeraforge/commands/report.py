@@ -8,7 +8,13 @@ from rich.console import Console
 console = Console()
 
 
+def _defaulted(ctx: typer.Context, name: str) -> bool:
+    source = ctx.get_parameter_source(name)
+    return source is not None and source.name == "DEFAULT"
+
+
 def report(
+    ctx: typer.Context,
     results_dir: str = typer.Option(
         None,
         "--results-dir",
@@ -24,7 +30,7 @@ def report(
     fmt: str = typer.Option(
         "markdown",
         "--format",
-        help="Output format: markdown or html.",
+        help="markdown or html; trace modes also support svg.",
     ),
     output: str = typer.Option(
         None,
@@ -42,6 +48,8 @@ def report(
         "--json",
         help="Output report metadata as JSON.",
     ),
+    kind: str = typer.Option("benchmark", "--kind", help="benchmark, trace or fleet-trace."),
+    input_path: list[str] = typer.Option(None, "--input", help="One strict native trace receipt."),
     verbose: bool = typer.Option(
         False,
         "--verbose",
@@ -52,6 +60,39 @@ def report(
     """Generate benchmark reports from result files."""
     import logging
     from pathlib import Path
+
+    if kind != "benchmark":
+        from chimeraforge import api
+
+        legacy_selectors = any(
+            not _defaulted(ctx, name) for name in ("results_dir", "results_files")
+        )
+        if (
+            kind not in {"trace", "fleet-trace"}
+            or not input_path
+            or len(input_path) != 1
+            or legacy_selectors
+            or output_json
+        ):
+            typer.echo(
+                "Trace report requires one --input and no benchmark selectors/--json.", err=True
+            )
+            raise typer.Exit(code=2)
+        try:
+            report_title = "Trace diagnostics" if _defaulted(ctx, "title") else title
+            artifact = api.render_trace_report(
+                input_path[0], kind=kind, format=fmt, title=report_title
+            )
+            if output:
+                artifact.save(output)
+            typer.echo(artifact.content.encode("utf-8"), nl=False)
+        except api.PlanError:
+            typer.echo("Trace report input or output unavailable.", err=True)
+            raise typer.Exit(code=2) from None
+        return
+    if input_path:
+        typer.echo("Benchmark reports use --results-dir or --results-files.", err=True)
+        raise typer.Exit(code=2)
 
     from chimeraforge.report.generator import (
         ReportConfig,

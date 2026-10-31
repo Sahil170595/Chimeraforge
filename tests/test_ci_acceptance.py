@@ -65,6 +65,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     load_script("ci_inventory_check")
     load_script("ci_fleet_trace")
     load_script("ci_fleet_trace_gate")
+    load_script("ci_fleet_trace_campaign")
     load_script("ci_kubernetes_export")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))

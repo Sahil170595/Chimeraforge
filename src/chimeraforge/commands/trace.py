@@ -52,10 +52,31 @@ def trace(
         None, "--out", help="Atomic receipt JSON; cannot replace the workload."
     ),
     json_output: bool = typer.Option(False, "--json"),
+    secure: bool = typer.Option(
+        False, "--secure", help="Require verified HTTPS for this active operation."
+    ),
+    bearer_env: str | None = typer.Option(
+        None, "--bearer-env", help="Read bearer once from this named environment variable."
+    ),
+    ca_bundle: Path | None = typer.Option(
+        None, "--ca-bundle", help="Private PEM CA bundle replacing default roots."
+    ),
+    client_cert: Path | None = typer.Option(
+        None, "--client-cert", help="Client certificate PEM; requires key."
+    ),
+    client_key: Path | None = typer.Option(
+        None, "--client-key", help="Unencrypted client key PEM; requires certificate."
+    ),
 ) -> None:
     """Replay real requests; completion exit 0 does not imply an SLO pass."""
     from chimeraforge import api
     from chimeraforge.plan_study import protect_output
+    from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
+
+    connection = None
+    opted = secure or any(
+        value is not None for value in (bearer_env, ca_bundle, client_cert, client_key)
+    )
 
     async def execute() -> api.TraceReplay | api.PlanTraceReplay:
         stopped = asyncio.Event()
@@ -78,7 +99,9 @@ def trace(
                 )
                 if out is not None:
                     protect_output(out, prepared.protected_paths)
-                return await _replay_prepared(prepared)
+                return await _replay_prepared(
+                    prepared, **({"connection": connection} if connection is not None else {})
+                )
             assert model is not None  # Ordinary mode was admitted before creating the event loop.
             return await api.replay_trace(
                 workload,
@@ -90,11 +113,22 @@ def trace(
                 trace_timeout=trace_timeout,
                 slos=api.TraceSLO(latency_slo, first_output_slo, tpot_slo),
                 stop_event=stopped,
+                **({"connection": connection} if connection is not None else {}),
             )
         finally:
             signal.signal(signal.SIGINT, previous)
 
     try:
+        if opted:
+            if base_url is None:
+                raise MonitorConnectionError("secure trace requires an explicit HTTPS endpoint")
+            connection = MonitorConnection.from_env(
+                base_url,
+                bearer_env=bearer_env,
+                ca_bundle=ca_bundle,
+                client_cert=client_cert,
+                client_key=client_key,
+            )
         if from_plan is None:
             if candidate_index is not None:
                 raise api.PlanError("--candidate-index requires --from-plan")
@@ -106,13 +140,25 @@ def trace(
             if any(value is not None for value in (latency_slo, first_output_slo, tpot_slo)):
                 raise api.PlanError("explicit SLO flags cannot override saved --from-plan inputs")
         if out is not None:
-            protect_output(out, [workload, *([from_plan] if from_plan is not None else [])])
+            protect_output(
+                out,
+                [
+                    workload,
+                    *([from_plan] if from_plan is not None else []),
+                    *(connection._input_paths() if connection is not None else ()),
+                ],
+            )
         receipt = asyncio.run(execute())
         if out is not None:
             receipt.save(out)
         report = receipt.to_dict()
-    except api.PlanError as exc:
-        typer.echo(json.dumps({"error": str(exc)}) if json_output else str(exc))
+    except (api.PlanError, MonitorConnectionError, OSError) as exc:
+        if not opted and isinstance(exc, OSError):
+            raise
+        message = "secure trace input or output unavailable" if opted else str(exc)
+        typer.echo(json.dumps({"error": message}) if json_output else message)
+        if opted:
+            raise typer.Exit(2) from None
         raise typer.Exit(2) from exc
     if json_output:
         typer.echo(json.dumps(report, allow_nan=False))

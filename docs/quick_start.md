@@ -1,5 +1,13 @@
 # Quick Start Guide
 
+Unreleased 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
+`api.render_trace_report` and `report --kind trace|fleet-trace --input`; public
+installation remains 0.81.0.
+
+Unreleased 0.82.0 source adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags. Public
+installation remains 0.81.0; existing anonymous defaults and native metrics remain.
+
 **Kubernetes declarations (since 0.81.0):** `deploy --format kubernetes` exports
 every supported original member as bounded JSON, and `deploy-verify --format
 kubernetes` checks independently supplied intent. See [CLI/API examples and
