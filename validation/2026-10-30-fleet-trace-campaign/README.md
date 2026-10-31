@@ -38,3 +38,22 @@ copies, declared-versus-actual K, protected aliases and private dataclass carrie
 Historical causal RED and failed fixture setup attempts are preserved externally;
 this record does not pretend to replay runtime mutation. Hosted native CPU K2
 campaigns are separate actual evidence and retain configuration mismatch/gate3.
+
+The [first 0.84 hosted coverage attempt](https://github.com/Sahil170595/Chimeraforge/actions/runs/41153230254/job/124394255798)
+on Python 3.12/coverage 7.16.2 timed out at the existing 20-minute job limit,
+with continuous passing progress through 46% and no ratchet result. Bounded
+same-source Windows profiling of
+`test_maximum_k_all_metrics_has_complete_bounded_junit`, using cProfile and
+branch coverage, identified instrumentation cost in streaming JSON traversal
+and complete native validation. These diagnostics concern test instrumentation,
+not inference performance; the local timing/profile receipts remain external
+qualification evidence rather than bundled measurements.
+
+The coverage job now requests Python 3.14 and the locked SDK's supported `sysmon`
+branch core. Its native `COVERAGE_DEBUG=core` startup diagnostic records the actual
+selected core without printing configuration/environment contents. The full test
+population, branch measurement, both coverage ratchets and 20-minute budget stay
+unchanged. [Coverage 7.16.2 documents branch support on 3.14 and its lower-overhead
+monitoring core](https://coverage.readthedocs.io/en/7.16.2/config.html#run-core).
+The new exact-head hosted run must establish completion and both ratchets;
+the timed-out attempt is not a passing coverage result.

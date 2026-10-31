@@ -98,7 +98,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
-      - run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json
+        with:
+          python-version: "3.14"
+      - name: Full line and branch coverage
+        env:
+          COVERAGE_CORE: sysmon
+          COVERAGE_DEBUG: core
+        run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json
       - name: Enforce line and branch ratchets
         run: uv run --no-sync python scripts/check_coverage.py coverage.json --summary "$GITHUB_STEP_SUMMARY"
 
