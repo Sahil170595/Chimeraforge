@@ -389,7 +389,7 @@ def accept(
             )
             manifest = json.loads(
                 deploy.export_deployment(
-                    case["saved"],
+                    api.load_plan(case["saved"]),
                     format="kubernetes",
                     image=case["image"],
                     candidate_index=case["index"],

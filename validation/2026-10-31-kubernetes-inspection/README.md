@@ -37,6 +37,13 @@ tool syntax, genuine GPU-declaration/pending-rollout4, restricted authentication
 credential-policy and legacy-home migration controls remain separate hosted
 kind requirements. Pure status 0 is not a real GPU-ready result.
 
+The [first hosted native attempt](https://github.com/Sahil170595/Chimeraforge/actions/runs/41169303971/job/124443654542)
+stopped before inspection because the fixture passed a saved path to the
+artifact-only renderer. The caller now uses the existing `api.load_plan` seam.
+A cluster-free composition regression exercises the actual saved plan, original
+N3 renderer and owned-fixture cleanup; native inspection still requires the
+fresh hosted run.
+
 The [feature contract](../../docs/kubernetes-inspection.md) states the supported
 profile, bounded export/stream/work claims, independent intent, private guards,
 complete cases, per-file atomicity and cooperative cleanup limits.
