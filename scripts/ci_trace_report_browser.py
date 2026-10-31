@@ -156,9 +156,16 @@ def accept(directory: Path, screenshots: Path, label: str) -> dict:
                             else None
                         )
                         if shot:
-                            raw = page.screenshot(
-                                path=str(screenshots / shot), full_page=True, animations="disabled"
-                            )
+                            if name.endswith(".svg"):
+                                raw = page.locator("svg").screenshot(
+                                    path=str(screenshots / shot), animations="disabled"
+                                )
+                            else:
+                                raw = page.screenshot(
+                                    path=str(screenshots / shot),
+                                    full_page=True,
+                                    animations="disabled",
+                                )
                             assert 0 < len(raw) <= MAX_PNG_BYTES
                         results.append({"document": name, **result})
                     finally:

@@ -59,7 +59,7 @@
   "source_aliases_refused": true,
   "raw_cli_byte_parity": true,
   "scope": "synthetic native statuses and timings; no traffic or browser execution",
-  "captured_at": "2026-10-31T06:47:10.018004+00:00",
+  "captured_at": "2026-10-31T07:22:52.612412+00:00",
   "source_profile": "editable source; installed and browser proofs separate",
   "source_sha256": {
     "src/chimeraforge/report/trace.py": "662364ce0f1b6afb5320d530b3053e0b7bc7b74a337132401c28549b158605d2",
@@ -69,7 +69,7 @@
     "src/chimeraforge/commands/report.py": "c0dd8bcd615c8cc70f94eeccf9df20469e5a9893053157689cbc74e988bbaeac",
     "src/chimeraforge/api.py": "6711073c8d85482e96dcff532d6b71bc7fb97c5d6089e09acf1116de09fb032b",
     "scripts/ci_trace_report.py": "69d59e3103160d20fd31c0838c6cce4f9e4d72a559cc215d33b308c8c63fac10",
-    "scripts/ci_trace_report_browser.py": "3b7d224fda26ef06b24ea418e6ecb56c953a0058cbae6b09dc2e5d2d86a01f25",
+    "scripts/ci_trace_report_browser.py": "efc5850e9786882b2b23e2deeddbdbc0b4078d8674b67748c37bf8282d71eecc",
     "src/chimeraforge/bench/trace.py": "a6ebe54417638152f3f2fa3d3222480ad553d9004761943ee95feb207ab11adc",
     "src/chimeraforge/bench/trace_gate_inputs.py": "6467126bec43cb9834b282449f3e4c5d6e361944752c0c960eb183ebf8912007",
     "src/chimeraforge/bench/gate_inputs.py": "4b51316de3435caac2cc6ce00b3d602f1a7e8724ecfed045cda7e568fb7d3e94",
