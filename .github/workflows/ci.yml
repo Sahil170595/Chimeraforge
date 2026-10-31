@@ -104,7 +104,11 @@ jobs:
         env:
           COVERAGE_CORE: sysmon
           COVERAGE_DEBUG: core
+          COVERAGE_DEBUG_FILE: ${{ runner.temp }}/chimeraforge-coverage-core.log
         run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json
+      - name: Show actual coverage core
+        if: always()
+        run: cat "$RUNNER_TEMP/chimeraforge-coverage-core.log"
       - name: Enforce line and branch ratchets
         run: uv run --no-sync python scripts/check_coverage.py coverage.json --summary "$GITHUB_STEP_SUMMARY"
 
