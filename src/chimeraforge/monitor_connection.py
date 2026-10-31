@@ -73,10 +73,11 @@ def _refuse_password() -> str:
 class MonitorConnection:
     """Prepared, private HTTPS settings; never store this in a request or report."""
 
-    __slots__ = ("__origin", "__context", "__auth")
+    __slots__ = ("__origin", "__context", "__auth", "__inputs")
     __origin: tuple[str, str, int]
     __context: ssl.SSLContext
     __auth: _OriginAuth
+    __inputs: tuple[Path, ...]
 
     def __init__(
         self,
@@ -100,8 +101,10 @@ class MonitorConnection:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             context.verify_mode = ssl.CERT_REQUIRED
             context.check_hostname = True
+            effective_ca = Path(certifi.where() if ca_bundle is None else ca_bundle)
+            inputs: tuple[Path, ...] = (effective_ca.resolve(),)
             if ca_bundle is None:
-                context.load_verify_locations(cafile=certifi.where())
+                context.load_verify_locations(cafile=effective_ca)
             else:
                 raw = _read(Path(ca_bundle), MAX_TLS_FILE_BYTES)
                 context.load_verify_locations(cadata=raw.decode("ascii"))
@@ -109,12 +112,14 @@ class MonitorConnection:
                 # OpenSSL rereads these paths: size/type checks are preflight, not a snapshot.
                 _read(Path(client_cert), MAX_TLS_FILE_BYTES)
                 _read(Path(client_key), MAX_TLS_FILE_BYTES)
+                inputs += (Path(client_cert).resolve(), Path(client_key).resolve())
                 context.load_cert_chain(client_cert, client_key, password=_refuse_password)
         except (OSError, ValueError, TypeError, RuntimeError) as exc:
             logger.info("secure monitor TLS admission failed (%s)", type(exc).__name__)
             raise MonitorConnectionError(
                 "invalid or unavailable monitor TLS configuration"
             ) from None
+        object.__setattr__(self, "_MonitorConnection__inputs", inputs)
         object.__setattr__(self, "_MonitorConnection__origin", origin)
         object.__setattr__(self, "_MonitorConnection__context", context)
         object.__setattr__(self, "_MonitorConnection__auth", _OriginAuth(origin, bearer_token))
@@ -155,6 +160,9 @@ class MonitorConnection:
             client_cert=client_cert,
             client_key=client_key,
         )
+
+    def _input_paths(self) -> tuple[Path, ...]:
+        return self.__inputs
 
     def _admit_url(self, url: str) -> None:
         if _origin(url) != self.__origin:

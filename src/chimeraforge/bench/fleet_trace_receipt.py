@@ -248,6 +248,27 @@ def _held_fleet_trace(
             _fail()
         value = source.to_dict() if isinstance(source, FleetTraceReplay) else source
         data, raw, path = held_json(value, limit)
+        return _fleet_trace_from_held(data, raw, path, protected)
+    except (
+        api.PlanError,
+        ValueError,
+        TypeError,
+        KeyError,
+        AttributeError,
+        OverflowError,
+        RecursionError,
+    ):
+        _fail()
+    raise AssertionError("unreachable")
+
+
+def _fleet_trace_from_held(
+    data: dict, raw: bytes, path: Path | None, protected: tuple[Path, ...] = ()
+) -> dict:
+    """Validate an already held embedded child; raw denotes its declared representation."""
+    from chimeraforge import api
+
+    try:
         if (
             set(data) != ENVELOPE
             or type(data["schema_version"]) is not int
