@@ -54,6 +54,14 @@ explicit fictional static bearer for the positive API/CLI context controls.
 Only categorical counts of matching authenticated version GETs are retained;
 fresh hosted execution must establish these outcomes.
 
+Python 3.13+ strict certificate verification exposed missing extensions in the
+shared ephemeral TLS fixture. CA roots now include noncritical SKI and critical
+certificate/CRL-signing KeyUsage; issued leaves include noncritical AKI from
+their actual issuer key. The owned HTTPS control also requests
+`VERIFY_X509_STRICT` on older Python while retaining certificate and hostname
+verification. [OpenSSL's strict verification requirements](https://docs.openssl.org/3.5/man1/openssl-verification-options/#verification-options)
+describe these fields. No product verification policy is relaxed.
+
 The [feature contract](../../docs/kubernetes-inspection.md) states the supported
 profile, bounded export/stream/work claims, independent intent, private guards,
 complete cases, per-file atomicity and cooperative cleanup limits.

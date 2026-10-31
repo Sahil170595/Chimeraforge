@@ -421,6 +421,10 @@ def certificates(cwd: Path) -> dict[str, Path]:
             .add_extension(x509.BasicConstraints(ca=ca is None, path_length=None), critical=True)
         )
         if ca:
+            builder = builder.add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(ca[0].public_key()),
+                critical=False,
+            )
             purpose = ExtendedKeyUsageOID.CLIENT_AUTH if client else ExtendedKeyUsageOID.SERVER_AUTH
             builder = builder.add_extension(x509.ExtendedKeyUsage([purpose]), critical=False)
             if not client:
@@ -433,6 +437,23 @@ def certificates(cwd: Path) -> dict[str, Path]:
                     ]
                 )
                 builder = builder.add_extension(x509.SubjectAlternativeName(names), critical=False)
+        else:
+            builder = builder.add_extension(
+                x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False
+            ).add_extension(
+                x509.KeyUsage(
+                    digital_signature=False,
+                    content_commitment=False,
+                    key_encipherment=False,
+                    data_encipherment=False,
+                    key_agreement=False,
+                    key_cert_sign=True,
+                    crl_sign=True,
+                    encipher_only=False,
+                    decipher_only=False,
+                ),
+                critical=True,
+            )
         cert = builder.sign(ca[0] if ca else key, hashes.SHA256())
         paths[name] = cwd / (name + ".pem")
         paths[name + "_key"] = cwd / (name + "-key.pem")

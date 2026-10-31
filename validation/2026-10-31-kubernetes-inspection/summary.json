@@ -153,7 +153,7 @@
   "selected_client_input_guard_preserved": true,
   "source_unchanged": true,
   "owned_processes_closed": true,
-  "captured_at": "2026-10-31T05:11:19.563771+00:00",
+  "captured_at": "2026-10-31T05:37:49.287648+00:00",
   "source_profile": "editable source, not installed or native kubectl qualification",
   "method": "actual API/in-process CLI controlled owned Python protocol and raw missing-tool CLI",
   "source_sha256": {
@@ -166,8 +166,9 @@
     "src/chimeraforge/kubernetes_options.py": "cc2ecc480645a9ad137f63d8a004963f02e3b4b94f1abe9de3998a9ae9a6a680",
     "src/chimeraforge/kubernetes_export.py": "bd3c7f36bf9551f1c05ca982923bb8748c9c4fa40437b8ab241c9756498d41fe",
     "src/chimeraforge/api.py": "018fde97b7be5c2996d1cc8acb63c6989da323fdab4e3638ff1f6e9a4f85ae6f",
-    "scripts/ci_kubernetes_inspection.py": "60d1d28d5a577ccd07a8a2cd928cc06b568ddacab781c9971dc1b50360d35598",
+    "scripts/ci_kubernetes_inspection.py": "fd007b4abc78d33542831a14e2ac8f7e3aa38db92840f7d9dc5dd15def377281",
     "scripts/ci_kubernetes_inspection_native.py": "85bb14edb719bf54968db502386ea1d1358ea5e04dcac8ada6f120180819679f",
+    "scripts/ci_secure_monitor.py": "afb8900a2bc26a0d6ea378fb13e0513957c7218fd7fd0fdbc0e006d561baa2ba",
     "scripts/ci_kubernetes_admission.py": "5900a63218f8c41984adff71029ecb4a20fe8bc7b22886e178c494bf9afe4a25",
     "scripts/ci_installed_acceptance.py": "87e0c05ac906776e7e09a221f9c62886038d1ab8e964401a99af77c1c79109f1",
     "src/chimeraforge/cli.py": "1e006f3723ff97ba74f8077a428639835287e6ab49c8e147d57950a837405908"

@@ -110,6 +110,8 @@ def test_owned_tls_counter_requires_selected_static_auth_and_version_get(tmp_pat
     native = load_script("ci_kubernetes_inspection_native")
     paths = secure.certificates(tmp_path / "tls")
     context = ssl.create_default_context(cafile=str(paths["ca"]))
+    context.verify_flags |= ssl.VERIFY_X509_STRICT
+    assert context.check_hostname and context.verify_mode == ssl.CERT_REQUIRED
     with native.no_contact_server(paths) as (address, counts):
         cases = [
             ("GET", "/version?timeout=1s", None, 0),

@@ -32,6 +32,7 @@ SOURCE_FILES = (
     "src/chimeraforge/api.py",
     "scripts/ci_kubernetes_inspection.py",
     "scripts/ci_kubernetes_inspection_native.py",
+    "scripts/ci_secure_monitor.py",
     "scripts/ci_kubernetes_admission.py",
     "scripts/ci_installed_acceptance.py",
     "src/chimeraforge/cli.py",
