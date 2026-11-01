@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.87.0] - UNRELEASED
+
+### Selected-batch inventory memory preflight
+
+- Add opt-in API/CLI `memory_basis="selected-batch"` / `--memory-basis selected-batch`, preserving default B1 report shape, labels and native inventory ownership. Keep all original ordered N x TP x PP slots; compare each device independently against the saved B1 rounding interval plus the saved active-sequence KV increment.
+- Declare compatible calculator use at the actual native producing point and bind full saved model facts, B1, B, context, actual KV element size and degrees. Treat the declaration as structural compatibility, not authenticated code or producer identity; old, foreign, unsupported or inconsistent plans remain selected-batch unknown before contact.
+- Support pure MHA/GQA, PP=1 and whole-head TP division no greater than KV heads. Retain exact fractions beyond the old inventory input's six-decimal domain, including the independent archived Qwen 784 MiB addition and context8193 boundary. Do not resolve today's model or reload/refit the coefficient corpus.
+- Extend original/rebuilt installed consumers with genuine produce/save/load, API/CLI selected comparisons, complete fleets and exact legacy fixture bytes. Selected estimates cover resident active-context components only; idle/prefix pools, workspace, peaks, physical independence and deployment readiness remain unassessed. Public installation remains 0.86.0 while this candidate is unreleased.
+
 ## [0.86.0] - 2026-11-01
 
 ### Whole native trace diagnostics

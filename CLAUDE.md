@@ -57,7 +57,14 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.86.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.87.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Selected-batch inventory (unreleased 0.87.0): opt-in `memory_basis="selected-batch"`
+or `inventory-check --memory-basis selected-batch` uses compatible native producer
+facts, saved B1 and the full-context active-sequence KV increment. Preserve every
+original N*TP*PP slot; unsupported geometry/formulas refuse before inventory
+contact. Default B1 reports/math stay held. No new model/corpus resolution or
+runtime peak/idle-pool/capacity claim. See [contract](docs/inventory-check.md).
 
 Trace diagnostics (since 0.86.0): `api.render_trace_report` and existing
 `report --kind trace|fleet-trace --input` strictly hold one native input, retain

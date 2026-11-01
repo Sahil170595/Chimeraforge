@@ -49,6 +49,11 @@ reported free memory with the saved per-GPU batch-one baseline. Every result kee
 independence, allocation or runtime fit. See [complete CLI/API examples and
 exit statuses](inventory-check.md).
 
+**Unreleased 0.87.0 source:** `--memory-basis selected-batch` (or API
+`memory_basis="selected-batch"`) adds the compatible saved active-sequence KV
+increment at the saved B/context. Older plans keep default B1 behavior and return
+selected-batch unknown without inventory contact. Public installation remains 0.86.0.
+
 **Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
 adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
 declarations for the original saved replica count. Shared budgets, retained

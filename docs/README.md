@@ -9,6 +9,10 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+**Unreleased 0.87.0 source** adds opt-in [selected-batch inventory memory](inventory-check.md):
+saved B1 plus the compatible native active-sequence KV increment, with every
+original device slot retained. Public installation remains **0.86.0**.
+
 Chimeraforge **0.86.0** adds [strict native trace diagnostics](trace-diagnostics.md),
 retaining every ordinary row or original fleet member in complete static
 HTML/Markdown/SVG while preserving benchmark report defaults.

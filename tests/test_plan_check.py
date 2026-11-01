@@ -5,6 +5,7 @@ from dataclasses import asdict, replace
 import datetime as dt
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -17,6 +18,64 @@ def checked(saved, **kwargs):
     from chimeraforge.api import check_plan
 
     return check_plan(saved, **kwargs).to_dict()
+
+
+def test_exact_086_legacy_prediction_comparison_is_unchanged_but_tool_guard_remains():
+    path = Path(__file__).parent / "fixtures/inventory/legacy086-qwen-b8.json"
+    before = path.read_bytes()
+    assert hashlib.sha256(before).hexdigest() == (
+        "33dd39c068be999b66566f336677c489a6af183fc99c3c2d3b0e24035ed57212"
+    )
+    report = checked(load_plan(path))
+    assert report["comparison"]["changed"] is False
+    assert len(report["comparison"]["matched"]) == 19
+    assert all(p["provenance"]["state"] == "unchanged" for p in report["comparison"]["matched"])
+    assert report["exit_code"] == 1
+    assert report["components"]["tool"]["state"] == "changed"
+    assert {
+        k
+        for k, v in report["components"].items()
+        if v["required"] and v["state"] in ("changed", "expired", "unverified")
+    } == {"tool"}
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("change", ["class", "anchor", "number", "unknown", "order", "lost"])
+def test_inventory_annotation_projection_keeps_existing_known_change_guards(change):
+    from chimeraforge.plan_check import compare
+
+    saved = plan(
+        PlanRequest(
+            models=["llama3.2-3b"],
+            hardware="B200 180GB",
+            platform="linux",
+            quality_target=0,
+            budget=1e8,
+            allow_network=False,
+        )
+    )
+    before = saved.to_dict()["result"]["candidates"]
+    after = copy.deepcopy(before)
+    index = next(
+        i for i, row in enumerate(after) if isinstance(row["provenance"]["throughput"], dict)
+    )
+    row = after[index]
+    if change == "class":
+        row["provenance"]["vram"]["class"] = "estimated"
+    elif change == "anchor":
+        assert "ratio" in row["provenance"]["throughput"]
+        row["provenance"]["throughput"]["ratio"] += 0.125
+    elif change == "number":
+        row["vram_gb"] += 0.01
+    elif change == "unknown":
+        row["provenance"]["vram"]["other_anchor"] = "changed"
+    elif change == "order":
+        after.reverse()
+    else:
+        after.clear()
+    comparison = compare(before, after)
+    assert comparison["changed"]
+    assert saved.to_dict()["result"]["candidates"] == before
 
 
 def signed(data):

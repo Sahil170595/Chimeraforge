@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from pathlib import Path
 import threading
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING, Literal
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
@@ -66,6 +66,8 @@ from chimeraforge.inventory_types import (
     InventoryDevice as InventoryDevice,
     InventoryObservation as InventoryObservation,
     InventorySlot as InventorySlot,
+    SelectedBatchBaseline as SelectedBatchBaseline,
+    MemoryBasis as MemoryBasis,
 )
 from chimeraforge.kubernetes_options import KubernetesOptions as KubernetesOptions
 from chimeraforge.kubernetes_inspection_types import (
@@ -971,8 +973,9 @@ async def check_inventory(
     gpu_devices: list[str] | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
     timeout: float = 10.0,
+    memory_basis: Literal["batch-one", "selected-batch"] = "batch-one",
 ) -> InventoryCheck:
-    """Resolve queried selectors and compare reported memory with a saved B1 baseline."""
+    """Compare original selectors with saved B1 or opt-in selected resident memory."""
     from chimeraforge.inventory_check import check_inventory as check
 
     return await check(
@@ -981,6 +984,7 @@ async def check_inventory(
         gpu_devices=gpu_devices,
         replica_gpu_devices=replica_gpu_devices,
         timeout=timeout,
+        memory_basis=memory_basis,
     )
 
 

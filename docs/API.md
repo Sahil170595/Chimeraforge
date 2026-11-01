@@ -3,7 +3,16 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.86.0.
+This document covers unreleased Chimeraforge 0.87.0 source. Public installation
+remains 0.86.0.
+
+The 0.87.0 source adds optional `memory_basis="selected-batch"` to async
+`api.check_inventory`, with frozen `SelectedBatchBaseline` and `MemoryBasis` types.
+The default `"batch-one"` retains its report shape and arithmetic. Selected mode
+uses compatible saved producer facts and the saved B/context, retains every
+original slot, and refuses unsupported geometry before inventory contact. Its
+modeled resident-component estimate is not peak memory, pooled capacity or
+deployment readiness. See [the complete contract](inventory-check.md).
 
 Chimeraforge 0.86.0 adds `api.render_trace_report(source, *, kind="trace",
 format="html", title="Trace diagnostics") -> api.TraceReport`, with public
