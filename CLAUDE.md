@@ -57,7 +57,7 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.88.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.89.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
 Operator serving declarations (unreleased 0.88.0): `serving declare|quote|export|verify`
 uses closed operator-authored settings without PlanRequest/PlanResult/corpus.
@@ -313,8 +313,11 @@ pytest tests/ -v
 # `ruff check src/` also sweeps the legacy src/python/banterhearts tree, which
 # has never been clean and is not gated, so it fails with ~100 pre-existing
 # errors that have nothing to do with your change.
-uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py
-uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py
+uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py tests/test_inventory_selected_batch.py tests/test_serving_declaration.py tests/test_chat*.py
+uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py tests/test_inventory_selected_batch.py tests/test_serving_declaration.py tests/test_chat*.py
+
+# Native chat input/stream/consumer lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/trace_workload.py src/chimeraforge/bench/backends/base.py src/chimeraforge/bench/backends/_native_stream.py src/chimeraforge/bench/backends/_chat_stream.py scripts/ci_chat_trace.py
 
 # Native trace diagnostics lane (literal CI command)
 uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py src/chimeraforge/report/trace.py src/chimeraforge/report/trace_inputs.py src/chimeraforge/report/trace_view.py src/chimeraforge/report/trace_formats.py src/chimeraforge/commands/report.py scripts/ci_trace_report.py scripts/ci_trace_report_browser.py

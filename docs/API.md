@@ -3,8 +3,15 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers unreleased Chimeraforge 0.88.0 source. Public installation
+This document covers unreleased Chimeraforge 0.89.0 source. Public installation
 remains 0.86.0.
+
+The 0.89.0 source adds frozen `ChatMessage(role, content)` and
+`ChatTraceRequest(request_id, messages, max_output_tokens, arrival_offset_s,
+temperature=0.0)`. Existing ordinary/saved/fleet/campaign replay APIs accept typed
+chat rows or explicit private JSON histories, with strict native saved receiving,
+gates and diagnostics. Missing usage is null; the client never infers token counts
+from chunks or flattens roles. See [the complete chat contract](chat-trace-replay.md).
 
 The 0.88.0 source adds `ServingRequest`, `declare_serving(request)`,
 `load_serving_declaration(path)`, `quote_serving(declaration, *, cloud=None,

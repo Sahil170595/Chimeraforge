@@ -15,6 +15,12 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Unreleased 0.89.0 source:** native chat trace replay preserves ordered
+system/user/assistant messages across ordinary, saved-plan, fleet and campaign
+paths. Missing native usage stays unknown; text-only output, private commitments
+and secure ownership remain explicit. Public installation remains **0.86.0**;
+see [chat API/CLI and limits](docs/chat-trace-replay.md).
+
 **Unreleased 0.88.0 source:** `serving declare|quote|export|verify` authors concrete
 operator intent, quotes dated whole instances, and checks native configuration
 without optimizer predictions. Public installation remains **0.86.0**; see the
@@ -30,7 +36,7 @@ Public installation remains **0.86.0**; see the [complete contract](docs/invento
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**33 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.88.0 source; public installation remains 0.86.0.
+**33 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.89.0 source; public installation remains 0.86.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -930,6 +936,12 @@ confidence, GPU accuracy or queue-inclusive SLO attainment. See the complete
 [policy/API contract](docs/regression-gate.md). Benchmark gating is available in 0.61.0.
 
 ### `trace` -- real scheduled requests and joint-target goodput
+
+**Native chat (unreleased 0.89.0 source):** use explicit `mode: "chat"`, ordered
+`messages` role/content pairs and `temperature` in the existing private JSON input.
+The same input works through saved plans, complete fleets, serial campaigns,
+receiving/gates and diagnostics; roles are never flattened into a completion.
+See [full JSON/API/CLI examples and native usage limits](docs/chat-trace-replay.md).
 
 Create a private `workload.json` with an explicit schedule and output caps:
 

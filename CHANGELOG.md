@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.89.0] - UNRELEASED
+
+### Native chat trace replay
+
+- Add frozen typed chat requests and closed private JSON role histories to existing ordinary, saved-plan, whole-fleet and serial campaign replay. Preserve independent rows, original routing/populations, explicit temperature and existing prompt defaults without flattening or synthetic usage.
+- Use native chat SSE/NDJSON on vLLM, SGLang, TGI and Ollama with bounded streaming, role-only first-event handling, optional usage/null counts and a closed plain-text output policy. Ollama sends explicit no-truncate/no-shift controls; reported counts remain provider facts rather than authenticated model consumption.
+- Bind mode, ordered role/content commitments and controls through strict native receipts, campaign/load declarations, gates, copy detection and static diagnostics. Admit expanded receipts to existing native byte profiles before publication, with early refusal when descriptors alone cannot fit. Retain secure TLS/authentication, source aliases, cooperative cancellation and owned-close boundaries.
+- Extend original/rebuilt installed acceptance with actual chat CLI, native plan save/load, whole fleet, privacy, usage-known/unknown and diagnostic receiving; extend the existing hosted pinned CPU Ollama integration. Controlled protocol evidence is separate from engine/GPU/performance qualification. Public installation remains 0.86.0 while this candidate is unreleased.
+
 ## [0.88.0] - UNRELEASED
 
 ### Operator-authored serving declarations

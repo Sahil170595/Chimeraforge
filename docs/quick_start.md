@@ -1,5 +1,9 @@
 # Quick Start Guide
 
+Unreleased **0.89.0 source** adds [native chat trace replay](chat-trace-replay.md)
+through the existing trace command family. Explicit role histories are sent intact;
+missing usage remains unknown. Public installation remains 0.86.0.
+
 Unreleased **0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md)
 through `serving declare|quote|export|verify`. Public installation remains 0.86.0.
 No optimizer, model/corpus lookup or capacity proof is needed to declare intent.

@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 
 def trace_fleet_campaign(
     workload: Path = typer.Argument(
-        ..., help="Private native request JSON; prompts reach endpoints."
+        ..., help="Private native JSON prompts or chat histories sent to endpoints."
     ),
     from_plan: Path = typer.Option(..., "--from-plan"),
     endpoint: list[str] = typer.Option(

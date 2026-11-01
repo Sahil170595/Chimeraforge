@@ -9,6 +9,10 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+**Unreleased 0.89.0 source** adds [native chat trace replay](chat-trace-replay.md):
+ordered text-role histories across ordinary/saved/fleet/campaign paths, explicit
+usage unknowns and complete private commitments. Public installation remains 0.86.0.
+
 **Unreleased 0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md):
 concrete settings, dated whole-instance quotes and native launch/Compose/Kubernetes
 exports/config verification without optimizer evidence or runtime claims.

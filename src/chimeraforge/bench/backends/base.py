@@ -89,6 +89,16 @@ class Backend(ABC):
 
     name: str
 
+    async def chat_observed(
+        self,
+        model: str,
+        messages: list[dict],
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        """Native chat capability only; never flatten roles through text generation."""
+        raise NotImplementedError("native text chat is unavailable")
+
     @abstractmethod
     async def health_check(self) -> tuple[bool, str]:
         """Check if the backend is reachable.

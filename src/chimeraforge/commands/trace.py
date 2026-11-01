@@ -17,7 +17,7 @@ from chimeraforge.bench.trace_workload import (
 
 def trace(
     workload: Path = typer.Argument(
-        ..., help="Private JSON request list; prompts go to the endpoint."
+        ..., help="Private JSON prompts or chat histories sent to the endpoint."
     ),
     model: str | None = typer.Option(
         None, "--model", help="Served model; required without --from-plan."

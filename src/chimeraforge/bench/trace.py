@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceInput, TraceSource
+
 import asyncio
 import copy
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 import logging
 from pathlib import Path
 import time
-from typing import Any, Awaitable, Callable, Coroutine, TypeVar
+from typing import Any, Awaitable, Callable, Coroutine, TypeVar, cast
 
 from chimeraforge.transport_logging import sdk_logging
 from chimeraforge.bench.backends import get_backend
@@ -23,7 +26,8 @@ from chimeraforge.bench.serving_binding import serving_stability
 from chimeraforge.bench.trace_workload import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TRACE_TIMEOUT_SECONDS,
-    TraceRequest,
+    TraceRequest as TraceRequest,
+    ChatTraceRequest,
     TraceSLO,
     descriptor,
     load_workload,
@@ -63,6 +67,10 @@ class TraceReplay:
     _secure_output: bool = field(default=False, repr=False, compare=False)
 
     def to_dict(self) -> dict:
+        from chimeraforge.bench.fleet_trace_types import _admit_receipt
+        from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+        _admit_receipt(self._data, MAX_RECEIPT_BYTES)
         return copy.deepcopy(self._data)
 
     def save(self, path: str | Path) -> None:
@@ -265,7 +273,7 @@ async def _execute(
     backend: Backend,
     backend_name: str,
     model: str,
-    requests: list[TraceRequest],
+    requests: list[TraceInput],
     rows: list[dict],
     origin: float,
     concurrency: int,
@@ -278,7 +286,7 @@ async def _execute(
 ) -> str | None:
     semaphore = asyncio.Semaphore(concurrency)
 
-    async def one(request: TraceRequest, row: dict) -> None:
+    async def one(request: TraceInput, row: dict) -> None:
         times = row["times"]
         active_generation = False
         try:
@@ -300,7 +308,11 @@ async def _execute(
                         times["first_output_s"] = observed
 
                 cap = request.max_output_tokens
-                options = {"num_predict": cap} if backend_name == "ollama" else {"max_tokens": cap}
+                options: dict = (
+                    {"num_predict": cap} if backend_name == "ollama" else {"max_tokens": cap}
+                )
+                if isinstance(request, ChatTraceRequest):
+                    options["temperature"] = request.temperature
                 selected_backend = backends[request.request_id] if backends is not None else backend
                 capability = getattr(selected_backend, "generate_observed", None)
 
@@ -308,12 +320,22 @@ async def _execute(
                     nonlocal active_generation
                     active_generation = True
                     try:
+                        if isinstance(request, ChatTraceRequest):
+                            return await selected_backend.chat_observed(
+                                model,
+                                [asdict(message) for message in request.messages],
+                                options,
+                                first_output,
+                            )
                         if capability is None:
                             metrics = await selected_backend.generate(
                                 model, request.prompt, options
                             )
                             return GenerationObservation(asdict(metrics))
-                        return await capability(model, request.prompt, options, first_output)
+                        return cast(
+                            GenerationObservation,
+                            await capability(model, request.prompt, options, first_output),
+                        )
                     finally:
                         active_generation = False
 
@@ -364,7 +386,7 @@ async def _execute(
             await asyncio.gather(finished, return_exceptions=True)
 
 
-def _initial_rows(requests: list[TraceRequest]) -> list[dict]:
+def _initial_rows(requests: Sequence[TraceInput]) -> list[dict]:
     return [
         {
             "descriptor": descriptor(request),
@@ -383,7 +405,7 @@ def _initial_rows(requests: list[TraceRequest]) -> list[dict]:
 
 
 def _report(
-    requests: list[TraceRequest],
+    requests: Sequence[TraceInput],
     rows: list[dict],
     *,
     workload: dict,
@@ -499,7 +521,7 @@ def _report(
 
 
 async def replay(
-    source: list[TraceRequest] | str | Path,
+    source: TraceSource,
     *,
     model: str,
     backend_name: str = "ollama",
@@ -621,4 +643,8 @@ async def replay(
         )
         if connection is not None:
             protected += connection._input_paths()
+        from chimeraforge.bench.fleet_trace_types import _admit_receipt
+        from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+        _admit_receipt(report, MAX_RECEIPT_BYTES)
         return TraceReplay(report, protected, connection is not None)

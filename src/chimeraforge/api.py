@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceSource
+
 import copy
 import asyncio
 import hashlib
@@ -21,7 +23,11 @@ from chimeraforge.bench.plan_trace import PlanTraceReplay
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
 from chimeraforge.bench.fleet_gate_inputs import FleetTraceGatePolicy as FleetTraceGatePolicy
-from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
+from chimeraforge.bench.trace import TraceReplay, TraceRequest as TraceRequest, TraceSLO
+from chimeraforge.bench.trace_workload import (
+    ChatMessage as ChatMessage,
+    ChatTraceRequest as ChatTraceRequest,
+)
 from chimeraforge.bench.fleet_trace_receipt import load_fleet_trace as load_fleet_trace
 from chimeraforge.bench.fleet_trace_types import FleetTraceReplay as FleetTraceReplay
 from chimeraforge.bench.fleet_trace_types import TraceRoute as TraceRoute
@@ -772,7 +778,7 @@ def study_plan(
 
 
 async def replay_trace(
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     model: str,
     backend: str = "ollama",
@@ -803,7 +809,7 @@ async def replay_trace(
 
 async def replay_plan_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     candidate_index: int = 0,
     model: str | None = None,
@@ -864,7 +870,7 @@ def write_fleet_trace_campaign_gate(
 
 async def replay_fleet_trace_campaign(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,
@@ -902,7 +908,7 @@ async def replay_fleet_trace_campaign(
 
 async def replay_fleet_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,
@@ -935,7 +941,7 @@ async def replay_fleet_trace(
 
 
 async def replay_trace_campaign(
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     model: str,
     backend: str = "ollama",

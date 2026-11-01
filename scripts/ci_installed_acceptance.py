@@ -295,6 +295,9 @@ def main(argv: list[str] | None = None) -> int:
         from ci_serving_declaration import accept as accept_serving_declaration
 
         serving_receipt = accept_serving_declaration(cwd, env)
+        from ci_chat_trace import accept as accept_chat_trace
+
+        chat_trace_receipt = accept_chat_trace(cwd, env)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -338,6 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                     "prediction_score_protocol": score_receipt,
                     "prediction_bundle_protocol": prediction_bundle_receipt,
                     "serving_declaration_protocol": serving_receipt,
+                    "native_chat_trace_protocol": chat_trace_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",
