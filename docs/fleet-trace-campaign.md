@@ -1,7 +1,7 @@
 # Whole-original-fleet trace campaigns
 
-**Unreleased 0.84.0 source**, including the 0.82 and 0.83 candidates. Public
-installation remains **0.81.0**. A campaign performs K serial executions of the
+Available since **Chimeraforge 0.84.0**, including the released authenticated
+active and passive fleet workflows. A campaign performs K serial executions of the
 same saved original N-member fleet. K is not N: each execution retains every
 original member, request, route, cap, arrival offset and one global concurrency
 limit. There are no retries, warmups, N1 replans or survivor subsets.

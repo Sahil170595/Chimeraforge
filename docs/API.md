@@ -3,9 +3,9 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers public Chimeraforge 0.81.0 and the unreleased 0.84.0 source candidate.
+This document covers Chimeraforge 0.84.0.
 
-Unreleased 0.84.0 adds async `api.replay_fleet_trace_campaign(saved, requests,
+Chimeraforge 0.84.0 adds async `api.replay_fleet_trace_campaign(saved, requests,
 endpoints, routes, *, executions=3, candidate_index=0, model=None, concurrency=1,
 request_timeout=300, trace_timeout=600, cleanup_timeout=2, campaign_timeout=1800,
 stop_event=None, connections=None)`, sync `api.load_fleet_trace_campaign(source)`,
@@ -16,7 +16,7 @@ Typed campaign/decision results retain complete original populations; private
 runtime guards are outside serialized dataclass fields. See the
 [full K-versus-N, receiving, byte-profile, CLI/JUnit and native outcome contract](fleet-trace-campaign.md).
 
-Unreleased 0.83.0 adds `api.load_fleet_monitor(source, saved, *, candidate_index=0)`,
+Chimeraforge 0.83.0 adds `api.load_fleet_monitor(source, saved, *, candidate_index=0)`,
 `FleetMonitorGatePolicy(original_replicas, endpoint_ids, windows, metrics, baseline,
 candidate, schema_version=1)`, `api.gate_fleet_monitors(baseline, candidate, *,
 baseline_plan, candidate_plan, policy)` and
@@ -25,7 +25,7 @@ add effective controls and bounded `json_bytes()` / `save(path)`; full typed
 reports retain native outcomes while oversized exports refuse. See the
 [complete receiving, policy, CLI/JUnit and byte-bound contract](fleet-monitor-gate.md).
 
-Unreleased 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
+Chimeraforge 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
 to async `benchmark_plan`, `replay_trace` and `replay_plan_trace`, and to direct
 `chimeraforge.bench.runner.run_benchmark` / `save_results`. The setting is runtime-only;
 serialized settings/native receipts remain unchanged. Exact native vLLM/SGLang

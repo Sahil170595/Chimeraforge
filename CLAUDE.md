@@ -57,9 +57,9 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.84.0 (unreleased source; public 0.81.0) | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.84.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
-Whole-original-fleet campaigns (unreleased 0.84.0): async
+Whole-original-fleet campaigns (since 0.84.0): async
 `api.replay_fleet_trace_campaign`, strict `api.load_fleet_trace_campaign`,
 `FleetTraceCampaignGatePolicy`, `api.gate_fleet_trace_campaigns` and
 `api.write_fleet_trace_campaign_gate`; CLI `trace-fleet-campaign` and
@@ -68,14 +68,14 @@ native global schedule/C per execution; failed/unstarted slots and known native
 mismatches remain. Native child limits stay unchanged, with explicit outer
 16MiB/pair32MiB/policy64KiB profiles. See [the full contract](docs/fleet-trace-campaign.md).
 
-Whole-original-fleet passive gates (unreleased 0.83.0): `api.load_fleet_monitor`
+Whole-original-fleet passive gates (since 0.83.0): `api.load_fleet_monitor`
 validates complete native reports against actual saved plans; `api.gate_fleet_monitors`
 and `gate --kind fleet-monitor` retain every declared case and publish bounded
 JSON/JUnit. Schema2 records effective requested controls. Exact 8 MiB JSON export
 refuses without truncation; native typed verdicts and text/Prometheus-only paths
 remain distinct. See [passive fleet gates](docs/fleet-monitor-gate.md).
 
-Authenticated active measurements (unreleased 0.82.0): runtime-only keyword-only
+Authenticated active measurements (since 0.82.0): runtime-only keyword-only
 `connection` reaches saved benchmarks and ordinary/saved traces through exact
 native vLLM/SGLang factory admission. `bench`/`trace` reuse secure CLI flags;
 private TLS input guards and scoped pre-factory SDK diagnostics preserve public
@@ -381,7 +381,7 @@ resources/prompts/                    # Legacy banter_prompts.txt (not used in b
 ## Code Conventions
 
 ### Python
-- **Style:** PEP 8 via ruff (line-length: 100, target: py310)
+- **Style:** PEP 8 via ruff (line-length: 100, target: py311)
 - **Type hints:** Required on function signatures; use `from __future__ import annotations`
 - **Docstrings:** Google-style with Args, Returns, Raises
 - **Data containers:** `@dataclass` everywhere (configs, metrics, results, SLOs, GPU specs)

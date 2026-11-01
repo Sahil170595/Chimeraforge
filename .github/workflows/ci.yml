@@ -27,7 +27,7 @@ jobs:
       - run: uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_planner_properties.py
       - run: uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_planner_properties.py
       - run: uv run --no-sync mypy
-      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/transport_logging.py scripts/ci_secure_active.py
+      - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/transport_logging.py scripts/ci_secure_active.py scripts/ci_dependency_audit.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/monitor_connection.py src/chimeraforge/commands/monitor.py scripts/ci_secure_monitor.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/inventory_types.py src/chimeraforge/inventory_numbers.py src/chimeraforge/inventory_process.py src/chimeraforge/inventory_check.py src/chimeraforge/commands/inventory_check.py scripts/ci_inventory_check.py
       - run: uv run --no-sync mypy --follow-imports silent src/chimeraforge/plan_study.py src/chimeraforge/commands/study.py scripts/ci_plan_study.py
@@ -68,10 +68,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
         include:
           - os: windows-latest
-            python-version: "3.10"
+            python-version: "3.11"
           - os: windows-latest
             python-version: "3.14"
           - os: macos-latest
@@ -92,7 +92,7 @@ jobs:
 
   coverage:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -105,7 +105,7 @@ jobs:
           COVERAGE_CORE: sysmon
           COVERAGE_DEBUG: core
           COVERAGE_DEBUG_FILE: ${{ runner.temp }}/chimeraforge-coverage-core.log
-        run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json
+        run: uv run --no-sync pytest tests/ -q --cov=chimeraforge --cov-branch --cov-report=term:skip-covered --cov-report=json --durations=20
       - name: Show actual coverage core
         if: always()
         run: cat "$RUNNER_TEMP/chimeraforge-coverage-core.log"
@@ -285,8 +285,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-ci
-      - run: uv export --locked --all-extras --no-emit-project --output-file "$RUNNER_TEMP/requirements.txt" > /dev/null
-      - run: uv run --no-sync pip-audit -r "$RUNNER_TEMP/requirements.txt" --disable-pip --no-deps --cache-dir "$RUNNER_TEMP/pip-audit"
+      - run: uv run --no-sync python scripts/ci_dependency_audit.py
 
   consumer-action:
     needs: build
