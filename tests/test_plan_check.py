@@ -20,23 +20,48 @@ def checked(saved, **kwargs):
     return check_plan(saved, **kwargs).to_dict()
 
 
-def test_exact_086_legacy_prediction_comparison_is_unchanged_but_tool_guard_remains():
+@pytest.mark.parametrize("line_endings", ["lf", "crlf"])
+def test_exact_086_legacy_prediction_comparison_is_unchanged_but_tool_guard_remains(
+    monkeypatch, line_endings
+):
+    from chimeraforge.planner import models
+    from chimeraforge.planner.models import load_bundled_models
+    from chimeraforge.planner.replay import digest
+
+    corpus_path = Path(models.__file__).parent / "data/fitted_models.json"
+    corpus_bytes = corpus_path.read_bytes().replace(b"\r\n", b"\n")
+    if line_endings == "crlf":
+        corpus_bytes = corpus_bytes.replace(b"\n", b"\r\n")
+    read_bytes = Path.read_bytes
+    monkeypatch.setattr(
+        Path, "read_bytes", lambda path: corpus_bytes if path == corpus_path else read_bytes(path)
+    )
     path = Path(__file__).parent / "fixtures/inventory/legacy086-qwen-b8.json"
     before = path.read_bytes()
     assert hashlib.sha256(before).hexdigest() == (
         "33dd39c068be999b66566f336677c489a6af183fc99c3c2d3b0e24035ed57212"
     )
-    report = checked(load_plan(path))
+    legacy = load_plan(path)
+    saved_corpus = legacy.to_dict()["result"]["replay_context"]["corpus"]
+    consumed_models = load_bundled_models()
+    consumed_corpus = {"sha256": digest(consumed_models), "input": consumed_models._input_receipt}
+    assert saved_corpus["sha256"] == consumed_corpus["sha256"]
+    assert saved_corpus["input"]["kind"] == consumed_corpus["input"]["kind"] == "bundled"
+    corpus_state = "unchanged" if saved_corpus == consumed_corpus else "changed"
+    report = checked(legacy)
     assert report["comparison"]["changed"] is False
     assert len(report["comparison"]["matched"]) == 19
     assert all(p["provenance"]["state"] == "unchanged" for p in report["comparison"]["matched"])
     assert report["exit_code"] == 1
     assert report["components"]["tool"]["state"] == "changed"
+    corpus = report["components"]["corpus"]
+    assert corpus["before"] == saved_corpus and corpus["after"] == consumed_corpus
+    assert corpus["required"] is True and corpus["state"] == corpus_state
     assert {
         k
         for k, v in report["components"].items()
         if v["required"] and v["state"] in ("changed", "expired", "unverified")
-    } == {"tool"}
+    } == {"tool"} | ({"corpus"} if corpus_state == "changed" else set())
     assert path.read_bytes() == before
 
 

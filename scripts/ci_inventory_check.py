@@ -23,6 +23,7 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
 
     outcomes = {}
     native_absence = None
+    consumed_corpus = None
     original_command = inventory_process.COMMAND
     saved_paths = {}
     source_root = Path(__file__).resolve().parents[1]
@@ -60,6 +61,11 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
                     allow_network=False,
                 )
             )
+            produced_corpus = artifact.to_dict()["result"]["replay_context"]["corpus"]
+            if consumed_corpus is None:
+                consumed_corpus = produced_corpus
+            else:
+                assert consumed_corpus == produced_corpus
             index = next(
                 i
                 for i, row in enumerate(artifact.to_dict()["result"]["candidates"])
@@ -193,14 +199,47 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
         )
         assert unknown.exit_code == 4 and unknown.observation.state == "not_started"
         assert len(unknown.slots) == 2 and legacy_path.read_bytes() == legacy_raw
+        saved_corpus = legacy.to_dict()["result"]["replay_context"]["corpus"]
+        assert consumed_corpus is not None
         legacy_check = api.check_plan(legacy).to_dict()
-        assert legacy_check["comparison"]["changed"] is False
-        assert legacy_check["exit_code"] == 1
-        assert {
+        checked_corpus = legacy_check["components"]["corpus"]
+        actual_failures = {
             key
             for key, value in legacy_check["components"].items()
             if value["required"] and value["state"] in ("changed", "expired", "unverified")
-        } == {"tool"}
+        }
+        legacy_receipts = {
+            "exit_code": legacy_check["exit_code"],
+            "prediction_changed": legacy_check["comparison"]["changed"],
+            "tool_state": legacy_check["components"]["tool"]["state"],
+            "corpus_state": checked_corpus["state"],
+            "required_failures": sorted(actual_failures),
+            "saved_coefficient_sha256": saved_corpus["sha256"],
+            "consumed_coefficient_sha256": consumed_corpus["sha256"],
+            "saved_input_sha256": saved_corpus["input"]["sha256"],
+            "consumed_input_sha256": consumed_corpus["input"]["sha256"],
+        }
+        print(json.dumps({"legacy_corpus_check": legacy_receipts}), file=sys.stderr, flush=True)
+        assert saved_corpus["sha256"] == consumed_corpus["sha256"], (
+            "Legacy coefficient corpus differs"
+        )
+        assert saved_corpus["input"]["kind"] == consumed_corpus["input"]["kind"] == "bundled"
+        corpus_state = "unchanged" if saved_corpus == consumed_corpus else "changed"
+        assert legacy_check["comparison"]["changed"] is False, "Legacy predictions changed"
+        assert len(legacy_check["comparison"]["matched"]) == 19
+        assert legacy_check["exit_code"] == 1
+        assert legacy_check["components"]["tool"]["state"] == "changed"
+        assert checked_corpus["before"] == saved_corpus
+        assert checked_corpus["after"] == consumed_corpus
+        assert checked_corpus["required"] is True and checked_corpus["state"] == corpus_state
+        expected_failures = {"tool"} | ({"corpus"} if corpus_state == "changed" else set())
+        assert actual_failures == expected_failures
+        assert all(row["state"] != "changed" for row in legacy_check["resolution_view"].values())
+        assert all(
+            row["state"] != "changed"
+            for view in legacy_check["checkpoint_view"].values()
+            for row in view.values()
+        )
     finally:
         inventory_process.COMMAND = original_command
     assert all(path.read_bytes() == original for path, original in saved_paths.items())
@@ -215,6 +254,7 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
         "legacy_exact_sha256": legacy_sha,
         "legacy_default_parity_and_selected_refusal": True,
         "legacy_prediction_equivalence_with_tool_change_retained": True,
+        "legacy_receipts": legacy_receipts,
         "archived_config_raw_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
         "archived_config_lf_normalized_sha256": hashlib.sha256(
             archive.read_bytes().replace(b"\r\n", b"\n")
