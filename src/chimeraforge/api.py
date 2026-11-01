@@ -45,6 +45,8 @@ from chimeraforge.bench.trace_workload import (
 from chimeraforge.contribution_review import ContributionReceipt
 from chimeraforge.signed_contribution import SignedContribution, SignedContributionReceipt
 
+from chimeraforge.report.trace import TraceReport as TraceReport
+
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.monitor_connection import MonitorConnection as MonitorConnection
@@ -1131,3 +1133,12 @@ async def replay_contribution(
         rate=rate,
         concurrency=concurrency,
     )
+
+
+def render_trace_report(
+    source: object, *, kind: str = "trace", format: str = "html", title: str = "Trace diagnostics"
+) -> TraceReport:
+    """Render strict native ordinary/full-fleet diagnostics without changing outcomes."""
+    from chimeraforge.report.trace import render_trace_report as render
+
+    return render(source, kind=kind, format=format, title=title)

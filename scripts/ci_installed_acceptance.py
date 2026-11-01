@@ -92,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-version", required=True)
     parser.add_argument("--checkout", required=True, type=Path)
     parser.add_argument("--plan-handoff", type=Path)
+    parser.add_argument("--trace-report-handoff", type=Path)
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="chimeraforge-installed-") as work:
         cwd = Path(work).resolve()
@@ -273,6 +274,12 @@ def main(argv: list[str] | None = None) -> int:
             cwd / "kubernetes-inspection", env, cwd / "fleet-plan.json", args.checkout
         )
 
+        from ci_trace_report import accept as accept_trace_report
+
+        trace_report_receipt = accept_trace_report(
+            cwd / "trace-reports", env, cwd / "fleet-plan.json", handoff=args.trace_report_handoff
+        )
+
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
@@ -318,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
                     "fleet_monitor_gate_protocol": passive_gate_receipt,
                     "fleet_trace_campaign_protocol": fleet_campaign_receipt,
                     "kubernetes_inspection_protocol": inspection_receipt,
+                    "trace_report_protocol": trace_report_receipt,
                     "loaded_module_provenance": {
                         "before": loaded_before,
                         "after": assert_installed_modules(args.checkout),

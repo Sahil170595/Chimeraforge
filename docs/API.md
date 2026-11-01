@@ -3,7 +3,14 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.85.0.
+This document covers Chimeraforge 0.86.0.
+
+Chimeraforge 0.86.0 adds `api.render_trace_report(source, *, kind="trace",
+format="html", title="Trace diagnostics") -> api.TraceReport`, with public
+`content`, `kind`, `format` and protected `.save(path)`. Strict ordinary/full-fleet
+inputs retain every row/member; static HTML, Markdown and SVG use a closed
+presentation. No campaign unwrap, new gate/math or performance qualification.
+See [complete CLI/API, timing, bounds and browser proof limits](trace-diagnostics.md).
 
 Chimeraforge 0.85.0 adds async `api.inspect_kubernetes_deployment(saved, *, image,
 kubeconfig, context, kubernetes=None, candidate_index=0, model=None,

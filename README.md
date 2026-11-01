@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**32 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.85.0.
+**32 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.86.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-11-01).** [Chimeraforge 0.85.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.85.0) adds read-only original Kubernetes inspection with independent intent, separate native Deployment rollout and complete protected JSON/JUnit. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-11-01).** [Chimeraforge 0.86.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.86.0) adds strict native ordinary/fleet trace diagnostics in complete static HTML, Markdown and SVG while preserving benchmark report defaults. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.85.0"
+pip install "chimeraforge[mcp]==0.86.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -524,7 +524,7 @@ remain; oversized exports refuse without truncation. Native exec credentials
 are denied and selected legacy auth providers are unsupported. Incomplete private
 file inventory permits bounded stdout but refuses filesystem publication.
 See [the pinned profile, API, guards, budgets and hosted proof limits](docs/kubernetes-inspection.md).
-Available in Chimeraforge 0.85.0.
+Available in Chimeraforge 0.86.0.
 
 ### `suggest` -- discover & rank models
 
@@ -756,7 +756,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.85.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.86.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -1128,6 +1128,22 @@ chimeraforge report --results-dir ./results/ --format markdown --output report.m
 ```
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
+
+Chimeraforge 0.86.0 adds strict native trace diagnostics while keeping benchmark defaults:
+
+```bash
+chimeraforge report --kind trace --input trace.json --format markdown --output trace.md
+chimeraforge report --kind fleet-trace --input fleet.json --format html --output fleet.html
+chimeraforge report --kind fleet-trace --input fleet.json --format svg --output fleet.svg
+```
+
+All original members/rows, missing states and separate native outcomes remain.
+Client active intervals include server queue, transport and cancellation drain,
+not server service time. The separate client queue is arrival-to-start.
+The closed public projection omits identities/metadata, preserves null versus zero
+and refuses whole over-limit output. Artifact exit0 is not a native performance
+pass. See [API, protected saves, bounds and browser proof limits](docs/trace-diagnostics.md).
+Available in Chimeraforge 0.86.0.
 
 ### `serve` -- local planning HTTP API
 
