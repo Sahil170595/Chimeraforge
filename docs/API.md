@@ -3,8 +3,17 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers unreleased Chimeraforge 0.87.0 source. Public installation
+This document covers unreleased Chimeraforge 0.88.0 source. Public installation
 remains 0.86.0.
+
+The 0.88.0 source adds `ServingRequest`, `declare_serving(request)`,
+`load_serving_declaration(path)`, `quote_serving(declaration, *, cloud=None,
+instance=None, region=None)`, `export_serving_declaration(declaration, *, format,
+...)` and `verify_serving_declaration(declaration, config_path, *,
+format="compose", ...)`. Saved operator intent is not a predictive PlanArtifact.
+Dated whole-instance arithmetic, explicit export layouts and native config
+verification preserve unknown feasibility/readiness. See [complete typed fields,
+serialization, examples and limits](serving-declaration.md).
 
 The 0.87.0 source adds optional `memory_basis="selected-batch"` to async
 `api.check_inventory`, with frozen `SelectedBatchBaseline` and `MemoryBasis` types.

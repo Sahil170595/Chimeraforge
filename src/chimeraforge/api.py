@@ -70,6 +70,14 @@ from chimeraforge.inventory_types import (
     MemoryBasis as MemoryBasis,
 )
 from chimeraforge.kubernetes_options import KubernetesOptions as KubernetesOptions
+from chimeraforge.serving_declaration import (
+    ServingRequest as ServingRequest,
+    ServingDeclaration as ServingDeclaration,
+    ServingDeclarationError as ServingDeclarationError,
+    declare_serving as declare_serving,
+    load_serving_declaration as load_serving_declaration,
+)
+from chimeraforge.serving_quote import ServingQuote as ServingQuote
 from chimeraforge.kubernetes_inspection_types import (
     KubernetesInspection as KubernetesInspection,
     KubernetesInspectionError as KubernetesInspectionError,
@@ -86,6 +94,8 @@ from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inp
 
 if TYPE_CHECKING:
     from chimeraforge.deployment_verify import DeploymentVerification
+    from chimeraforge.deploy import DeploymentExport
+    from chimeraforge.serving_export import ServingVerification
 
 SCHEMA_VERSION = 2
 MAX_PLAN_BYTES = 8 * 1024 * 1024
@@ -533,6 +543,8 @@ def snapshot(request: PlanRequest, result: PlanResult) -> PlanArtifact:
 
 def plan(request: PlanRequest) -> PlanArtifact:
     """Plan with the same search as CLI/MCP, through a strict public boundary."""
+    if not isinstance(request, PlanRequest):
+        raise PlanError("optimizer requires a PlanRequest, not a serving declaration")
     try:
         request.validate()
         return snapshot(request, run_plan(**asdict(request)))
@@ -685,6 +697,69 @@ def check_plan(
     if type(allow_network) is not bool or (hf_token is not None and type(hf_token) is not str):
         raise PlanError("invalid check network options")
     return check(artifact, allow_network=allow_network, hf_token=hf_token)
+
+
+def quote_serving(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    cloud: str | None = None,
+    instance: str | None = None,
+    region: str | None = None,
+) -> ServingQuote:
+    """Quote dated whole instances without predicting capacity or assigning hosts."""
+    from chimeraforge.serving_quote import quote_serving as quote
+
+    return quote(declaration, cloud=cloud, instance=instance, region=region)
+
+
+def export_serving_declaration(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    format: str,
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
+) -> DeploymentExport:
+    """Render concrete operator intent through native config-only projections."""
+    from chimeraforge.serving_export import export_serving_declaration as export
+
+    return export(
+        declaration,
+        format=format,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+        kubernetes=kubernetes,
+    )
+
+
+def verify_serving_declaration(
+    declaration: ServingDeclaration | str | Path,
+    config_path: str | Path,
+    *,
+    format: str = "compose",
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
+) -> ServingVerification:
+    """Compare configuration with held original operator intent using the native verifier."""
+    from chimeraforge.serving_export import verify_serving_declaration as verify
+
+    return verify(
+        declaration,
+        config_path,
+        format=format,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+        kubernetes=kubernetes,
+    )
 
 
 def study_plan(

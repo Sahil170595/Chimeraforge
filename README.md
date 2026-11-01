@@ -15,6 +15,11 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Unreleased 0.88.0 source:** `serving declare|quote|export|verify` authors concrete
+operator intent, quotes dated whole instances, and checks native configuration
+without optimizer predictions. Public installation remains **0.86.0**; see the
+[complete serving contract](docs/serving-declaration.md).
+
 **Unreleased 0.87.0 source:** `inventory-check --memory-basis selected-batch` and
 `api.check_inventory(..., memory_basis="selected-batch")` add compatible saved
 active-sequence KV components to the saved B1 interval without replanning. This
@@ -25,7 +30,7 @@ Public installation remains **0.86.0**; see the [complete contract](docs/invento
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**32 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.86.0.
+**33 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.88.0 source; public installation remains 0.86.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -416,6 +421,49 @@ identity excludes price and source metadata. Unknown prices and infeasible cases
 remain explicit. Non-reference timing retains native extrapolation labels while
 valid model-quality evidence remains measured. These are modeled alternatives,
 without probing this host, running inference or attesting hardware/weights.
+
+### `serving` -- operator-authored serving intent
+
+**Unreleased 0.88.0 source.** Declare concrete settings without a predictive plan,
+model/corpus lookup or capacity claim. The example revision is an operator claim;
+the image is an explicit mutable tag, not verified runtime compatibility.
+
+```bash
+chimeraforge serving declare --model Qwen/Qwen2.5-1.5B-Instruct \
+  --revision 00112233445566778899aabbccddeeff00112233 \
+  --backend vllm --image vllm/vllm-openai:v0.30.0 \
+  --replicas 3 --tp 2 --pp 2 --context 8192 --batch 8 \
+  --out operator.serving.json --json
+chimeraforge serving quote --declaration operator.serving.json \
+  --cloud aws --instance p5.48xlarge --region us-east-1 --json
+chimeraforge serving export --declaration operator.serving.json --format compose \
+  --replica-devices 0,1,2,3 --replica-port 9001 \
+  --replica-devices 4,5,6,7 --replica-port 9002 \
+  --replica-devices 8,9,10,11 --replica-port 9003 \
+  --out operator.serving.compose.json --json
+chimeraforge serving verify --declaration operator.serving.json --format compose \
+  --replica-devices 0,1,2,3 --replica-port 9001 \
+  --replica-devices 4,5,6,7 --replica-port 9002 \
+  --replica-devices 8,9,10,11 --replica-port 9003 \
+  --config operator.serving.compose.json --json
+```
+
+N=3, TP=2, PP=2 means twelve logical slots. The exact 8-GPU offer quotes two
+**whole** billed instances, without assigning hosts. Launch/Compose maps describe
+one host namespace with twelve distinct IDs; they cannot be copied onto each
+quoted 8-GPU instance. `--format launch` returns three independent entrypoints;
+`--format kubernetes --namespace operators --name-prefix serving` produces three
+Deployments and three Services, without physical host/device mappings.
+
+Declaration settings also include `--dtype FP16|BF16 --kv-quant fp16|q8`,
+`--prefix-caching` and vLLM-only `--max-num-batched-tokens`. SGLang BF16 with
+requested fp16 KV refuses. Quote target flags are all-or-none; absent/unknown
+offers retain null costs and native dated sources/age travel with known prices.
+Single-replica host bindings use `--gpu-device`/`--host-port`; Kubernetes also
+accepts repeated `--node-selector key=value`. Match is 0, config drift 5, invalid
+input 1 and native usage 2. No throughput, quality, memory feasibility, placement,
+engine execution or deployment readiness is implied. See [all bounds, Python
+API and fixed argv-reference limits](docs/serving-declaration.md).
 
 ### `deploy` -- export serving configuration
 

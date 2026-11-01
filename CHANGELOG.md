@@ -5,6 +5,16 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.88.0] - UNRELEASED
+
+### Operator-authored serving declarations
+
+- Add typed `ServingRequest` and closed save/load declaration API plus actual `serving declare|quote|export|verify` CLI. Author concrete model/revision/backend/image, N/TP/PP/context/B and bounded native settings without inventing PlanRequest, PlanResult, model geometry or consumed-corpus evidence.
+- Reuse dated native whole-instance billing with exact provider/instance/region, sources, age and explicit unknowns. N3/TP2/PP2 has 12 logical slots; an 8-GPU offer bills two whole instances, without assigning replicas to hosts or predicting capacity/SLO/token cost.
+- Share native argv and config projections for per-replica launch entries, explicit one-host Compose layouts and all 2N Kubernetes objects. Bind declaration identity, keep old optimizer exports/defaults, and compare native configs through the existing bounded verifier.
+- Admit typed/private data before copying/encoding and preserve schema/fingerprint validation. Revision/image fields remain operator claims, with fixed-reference flag spelling but unknown image/model/runtime compatibility. Keep all feasibility, quality, throughput, memory and deployment-readiness predictions null.
+- Extend original/rebuilt installed acceptance with the real CLI save/load/quote/export/verify arc, all three formats, altered controls, source aliases, conflicting layouts and optimizer-misuse refusals. Public installation remains 0.86.0 while this source candidate is unreleased.
+
 ## [0.87.0] - UNRELEASED
 
 ### Selected-batch inventory memory preflight

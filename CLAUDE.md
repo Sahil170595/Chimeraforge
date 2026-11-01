@@ -57,7 +57,13 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.87.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.88.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Operator serving declarations (unreleased 0.88.0): `serving declare|quote|export|verify`
+uses closed operator-authored settings without PlanRequest/PlanResult/corpus.
+Reuse native whole-instance quote arithmetic and shared argv/config projections;
+keep declaration identity distinct from optimizer identity. Quote allocation does
+not place replicas or prove capacity. See [contract](docs/serving-declaration.md).
 
 Selected-batch inventory (unreleased 0.87.0): opt-in `memory_basis="selected-batch"`
 or `inventory-check --memory-basis selected-batch` uses compatible native producer

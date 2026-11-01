@@ -9,6 +9,10 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+**Unreleased 0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md):
+concrete settings, dated whole-instance quotes and native launch/Compose/Kubernetes
+exports/config verification without optimizer evidence or runtime claims.
+
 **Unreleased 0.87.0 source** adds opt-in [selected-batch inventory memory](inventory-check.md):
 saved B1 plus the compatible native active-sequence KV increment, with every
 original device slot retained. Public installation remains **0.86.0**.

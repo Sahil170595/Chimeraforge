@@ -65,7 +65,7 @@ def run_cli(
 ) -> str:
     """Invoke the installed module with checkout and PYTHONPATH isolation."""
     result = subprocess.run(
-        [sys.executable, "-I", "-m", "chimeraforge", *arguments],
+        [sys.executable, "-I", "-B", "-m", "chimeraforge", *arguments],
         cwd=cwd,
         env=env,
         text=True,
@@ -292,6 +292,9 @@ def main(argv: list[str] | None = None) -> int:
         from ci_prediction_bundle import accept as accept_prediction_bundle
 
         prediction_bundle_receipt = accept_prediction_bundle(cwd, env, args.checkout, snapshot_path)
+        from ci_serving_declaration import accept as accept_serving_declaration
+
+        serving_receipt = accept_serving_declaration(cwd, env)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -334,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
                     "signed_native_gate_protocol": signed_gate_receipt,
                     "prediction_score_protocol": score_receipt,
                     "prediction_bundle_protocol": prediction_bundle_receipt,
+                    "serving_declaration_protocol": serving_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

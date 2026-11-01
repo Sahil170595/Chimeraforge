@@ -1,5 +1,9 @@
 # Quick Start Guide
 
+Unreleased **0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md)
+through `serving declare|quote|export|verify`. Public installation remains 0.86.0.
+No optimizer, model/corpus lookup or capacity proof is needed to declare intent.
+
 Chimeraforge 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
 `api.render_trace_report` and `report --kind trace|fleet-trace --input`.
 
