@@ -9,6 +9,12 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Chimeraforge **0.84.0** adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
+strict full-population receiving and complete native-comparison JSON/JUnit. K
+executions keep original N/routes/arrivals/global concurrency; all failed and
+unstarted slots remain. Earlier authenticated active measurements and passive
+fleet gates remain available.
+
 Chimeraforge **0.83.0** adds [whole-original-fleet passive SLO gates](fleet-monitor-gate.md),
 strict original-plan receiving, effective producer controls and complete bounded
 JSON/JUnit. It includes [authenticated active measurements](authenticated-active.md),
@@ -24,7 +30,7 @@ Chimeraforge **0.79.0** adds [original-fleet active trace replay](fleet-trace.md
 
 Chimeraforge **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
 
-Public CLI: **0.83.0**. The released features below are included in this version.
+Public CLI: **0.84.0**. The released features below are included in this version.
 
 Chimeraforge **0.77.0** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
@@ -69,8 +75,8 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-30 commands in Chimeraforge 0.83.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
-`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
+31 commands in Chimeraforge 0.84.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `inventory-check`, `suggest`, `measure`,
+`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-fleet-campaign`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
 compares saved traces; `gate --kind trace-campaign` compares whole campaigns;

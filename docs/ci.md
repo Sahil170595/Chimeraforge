@@ -75,6 +75,13 @@ anchors, assertion failures and no setup/collection errors. Hypothesis checks us
 independent unit and statistical derivations rather than shared implementation
 constants.
 
+The coverage job uses Python 3.14 and the pinned SDK's branch-capable SysMon
+core (`COVERAGE_CORE=sysmon`). Native core diagnostics are written to an owned
+`RUNNER_TEMP` file and printed after pytest, including on failure; pytest capture
+must not hide which collector actually ran. The original
+[0.84 coverage timeout](https://github.com/Sahil170595/Chimeraforge/actions/runs/41153230254/job/124394255798)
+and its bounded qualification are retained in the historical validation record.
+
 The complete coverage job has a 30-minute budget and reports the 20 slowest
 test durations with `--durations=20`. This follows the
 [0.82 release run](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861),

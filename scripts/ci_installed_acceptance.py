@@ -262,6 +262,11 @@ def main(argv: list[str] | None = None) -> int:
         passive_gate_receipt = accept_fleet_monitor_gate(
             cwd / "fleet-monitor-gate", env, cwd / "fleet-plan.json", args.checkout
         )
+        from ci_fleet_trace_campaign import accept as accept_fleet_campaign
+
+        fleet_campaign_receipt = accept_fleet_campaign(
+            cwd / "fleet-campaign", env, cwd / "fleet-plan.json", args.checkout
+        )
 
         from ci_signed_contribution import accept as accept_signed
 
@@ -306,6 +311,7 @@ def main(argv: list[str] | None = None) -> int:
                     "native_stream_protocol": native_stream_receipt,
                     "secure_active_protocol": secure_active_receipt,
                     "fleet_monitor_gate_protocol": passive_gate_receipt,
+                    "fleet_trace_campaign_protocol": fleet_campaign_receipt,
                     "loaded_module_provenance": {
                         "before": loaded_before,
                         "after": assert_installed_modules(args.checkout),
