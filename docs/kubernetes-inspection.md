@@ -1,7 +1,7 @@
-# Read-only Kubernetes inspection (unreleased 0.85.0)
+# Read-only Kubernetes inspection (since 0.85.0)
 
-Public installation remains 0.81.0. This source candidate depends on the
-unreleased 0.82, 0.83 and 0.84 candidates. Keep the original saved plan, candidate
+Available in Chimeraforge 0.85.0, including the released active and passive
+measurement workflows. Keep the original saved plan, candidate
 index, concrete model override (when required), image and Kubernetes options
 independently from the cluster being inspected.
 

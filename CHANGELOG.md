@@ -5,7 +5,7 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 0.85.0
+## [0.85.0] - 2026-11-01
 
 ### Read-only original Kubernetes inspection
 
@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add complete protected JSON/JUnit publication with 3N+1 cases, whole-export refusal and fail-closed filesystem writes when private-reference inventory is unverified. Keep the exact offline verifier and existing deployment rendering unchanged.
 - Extend installed controlled protocol/owned-process consumers and the existing kind job with a separate genuine-GPU-declaration live fixture, expected matching-intent/pending-rollout4, native adverse/auth/path controls and owned cleanup. No inference, scheduling, GPU readiness or capacity qualification is claimed.
 
-## [Unreleased] - 0.84.0
+## [0.84.0] - 2026-11-01
 
 ### Serial whole-original-fleet trace campaigns
 
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep native child admission unchanged and record unavailable receipts with unknown completion. Bound new canonical exports to 16 MiB, logical pairs to 32 MiB and policy to 64 KiB without truncation; streamed finite canonical hashing preserves native parity. Private guard state stays outside persisted dataclass fields.
 - Extend installed consumers with real owned CPU HTTPS API/CLI K2 controls for both native engine protocols, mTLS/adverse/alias cases and separate synthetic gate0/1/3. Extend the existing pinned three-member native CPU canary with actual API/CLI K2, retaining CPU-versus-modeled-GPU mismatch/gate3 rather than claiming GPU or performance qualification.
 
-## [Unreleased] - 0.83.0
+## [0.83.0] - 2026-11-01
 
 ### Whole-original-fleet passive SLO acceptance
 
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keep runtime input guards and held-wire snapshots outside public dataclass fields and `asdict`, while preserving copy/replace input protection and current-state validation.
 - Extend source and installed original-wheel/rebuilt-sdist consumers with owned CPU HTTPS fixtures for both native engines, pass/breach/inconclusive gates, complete cases, input protection and actual raw stdout byte parity. These protocol fixtures do not qualify engines, GPUs, traffic authenticity or performance.
 
-## [Unreleased] - 0.82.0
+## [0.82.0] - 2026-10-31
 
 ### Authenticated active measurements
 
@@ -42,6 +42,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retain effective TLS inputs privately for output-alias checks. Guard known CLI intent before contact and actual generated benchmark filenames before writing; receipt saves recheck input aliases. The separate ordinary benchmark writer accepts an explicit runtime connection rather than inferring private input paths from serialized results.
 - Categorize standard HTTPX/httpcore message, argument, exception and stack fields before the caller's record factory during secure native owner lifetimes. Preserve nested/concurrent anonymous behavior, caller factory chaining and ownership-aware restoration. Secure backend closure retains its owned close task through repeated caller cancellation. Secure ordinary/saved traces reuse native owned-generation/task joins after a controlled actual-CPython 3.10 executor probe demonstrated legacy repeated-cancellation detachment; anonymous scheduling remains unchanged.
 - Exercise source and installed CLI/API with owned CPU HTTPS/auth/mTLS protocol fixtures, adverse trust/origin/stream cases and input preservation. These fixtures do not qualify actual inference engines, models, GPUs, capacity or performance.
+
+### Supported dependency baseline
+
+- Require Python 3.11 or later and unmarked `filelock>=4.2.1,<5` for eval/dev. The former Python 3.10 branch selected filelock 3.20.3; current advisories cover that version, and the patched release requires Python 3.11. Withdraw the unsupported unaffected-API claim and align the advertised interpreter, typing/lint targets and hosted matrix.
+- Audit every versioned registry pair in the universal lock together with installed external packages. Separate conflicting versions into the minimum number of exact-pin batches and run the native strict pip-audit CLI for each, without marker-based omission or advisory suppression.
+
+### Coverage qualification budget
+
+- Give the existing complete branch-coverage job 30 minutes and report its 20 slowest test durations. The [0.82 release coverage job](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861) reported 5,334 passing tests and 2 skips but exceeded its 20-minute budget before ratchet qualification. Preserve all tests, branch/report options and coverage floors; the cancelled run is not a full CI pass.
 
 ## [0.81.0] - 2026-10-29
 
