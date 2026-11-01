@@ -1,7 +1,7 @@
 # Authenticated active benchmarks and traces
 
-This complete feature is an **unreleased 0.82.0 source candidate**. Public
-installation remains Chimeraforge 0.81.0. The candidate extends the existing
+Available since **Chimeraforge 0.82.0**. Install the versioned package with
+`pip install "chimeraforge==0.86.0"`. This feature extends the existing
 runtime-only `api.MonitorConnection` boundary to active native vLLM/SGLang paths;
 it does not start an engine, fetch weights or validate physical hardware.
 

@@ -1,6 +1,6 @@
-# Trace diagnostics (unreleased 0.86.0)
+# Trace diagnostics (since 0.86.0)
 
-Public installation remains **0.81.0**. The unreleased source adds descriptive
+Chimeraforge **0.86.0** adds descriptive
 reports for one strict ordinary trace or one complete original-fleet trace.
 Benchmark report defaults and output remain unchanged.
 

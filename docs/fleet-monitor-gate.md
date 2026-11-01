@@ -1,7 +1,7 @@
 # Whole-original-fleet passive SLO acceptance
 
-**Unreleased 0.83.0 source**, including the 0.82 active-connection candidate.
-Public installation remains **0.81.0**. This workflow generates no inference
+Available since **Chimeraforge 0.83.0**, including authenticated active
+measurements introduced in 0.82.0. This workflow generates no inference
 traffic. It evaluates saved native histogram assessments, not raw scrapes or a
 new percentile estimate. P95 bucket bounds are **not confidence intervals**.
 

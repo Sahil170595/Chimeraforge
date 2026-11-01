@@ -1,12 +1,20 @@
 # Quick Start Guide
 
-Unreleased 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
-`api.render_trace_report` and `report --kind trace|fleet-trace --input`; public
-installation remains 0.81.0.
+Chimeraforge 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
+`api.render_trace_report` and `report --kind trace|fleet-trace --input`.
 
-Unreleased 0.82.0 source adds [authenticated active benchmarks and traces](authenticated-active.md)
-with runtime-only `connection` settings and matching CLI secure flags. Public
-installation remains 0.81.0; existing anonymous defaults and native metrics remain.
+Chimeraforge 0.85.0 adds [read-only original Kubernetes inspection](kubernetes-inspection.md),
+with independent intent, separate native rollout and complete protected JSON/JUnit.
+
+Chimeraforge 0.84.0 adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
+with strict complete receiving and bounded native-comparison JSON/JUnit.
+
+Chimeraforge 0.83.0 adds [whole-original-fleet passive SLO gates](fleet-monitor-gate.md),
+with strict saved receiving, effective controls and complete bounded JSON/JUnit.
+
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
 
 **Kubernetes declarations (since 0.81.0):** `deploy --format kubernetes` exports
 every supported original member as bounded JSON, and `deploy-verify --format
@@ -51,7 +59,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.81.0 includes native streaming trace observations and
+Chimeraforge 0.86.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
@@ -87,7 +95,7 @@ means current-renderer consistency, not source authenticity or running GPU proof
 ### 1. Install Prerequisites
 
 ```bash
-# Python 3.10+
+# Python 3.11+
 python --version
 
 # Rust 1.70+ (optional, for Rust agents)

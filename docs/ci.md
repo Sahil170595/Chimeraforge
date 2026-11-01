@@ -5,7 +5,7 @@ credential, paid model API or production service is required.
 
 `CI required` fails unless every prerequisite succeeded, including cancelled or
 unexpectedly skipped jobs. It runs on pull requests, main pushes and merge groups.
-The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
+The Python matrix covers Linux 3.11–3.14 and Windows/macOS portability. Ruff checks
 the shipped package and CI helpers; mypy enforces metrics, planner constants,
 signed contributions/replay/native gates, prediction scoring, campaign receipt validation/gates,
 plan-bound trace replay/CLI, finite load-envelope assessment, private prediction
@@ -44,7 +44,12 @@ unavailable startup diagnostics. All groups, children, listeners and clients
 must close; no extra scientific workload, GPU or capacity threshold is added.
 
 `uv.lock` contains the universal dependency resolution and distribution hashes.
-PR/release jobs refuse a stale lock. Build tooling is included in the lock and
+PR/release jobs refuse a stale lock. The dependency gate audits installed external
+packages AND every versioned registry pair in this lock, including versions for
+other supported interpreters/platforms. Deterministic exact-pin batches keep one
+version per package name for the native strict pip-audit CLI; every batch is
+attempted and any finding or unavailable lookup fails the command. This is
+current advisory coverage, not a claim that packages cannot be compromised. Build tooling is included in the lock and
 distributions are built without a second isolated, live dependency resolution.
 Dependabot updates the uv lock and immutable Action references. The separate daily
 `Dependency drift` workflow deliberately resolves supported ranges against the
@@ -69,6 +74,21 @@ Focused mutation testing requires a passing unmutated baseline, exact mutation
 anchors, assertion failures and no setup/collection errors. Hypothesis checks use
 independent unit and statistical derivations rather than shared implementation
 constants.
+
+The coverage job uses Python 3.14 and the pinned SDK's branch-capable SysMon
+core (`COVERAGE_CORE=sysmon`). Native core diagnostics are written to an owned
+`RUNNER_TEMP` file and printed after pytest, including on failure; pytest capture
+must not hide which collector actually ran. The original
+[0.84 coverage timeout](https://github.com/Sahil170595/Chimeraforge/actions/runs/41153230254/job/124394255798)
+and its bounded qualification are retained in the historical validation record.
+
+The complete coverage job has a 30-minute budget and reports the 20 slowest
+test durations with `--durations=20`. This follows the
+[0.82 release run](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861),
+which reported 5,334 passing tests and 2 skips at 1,200.69 seconds, then hit the
+20-minute job limit before the ratchet step ran. That cancelled run is not a
+coverage/whole-CI pass. The full test population, branch instrumentation, JSON
+report and all line/branch ratchets remain unchanged.
 
 Coverage is measured with branches enabled. The first baseline on main source
 `9a72f7050442c7786ad3f4ce93b11faee81861f1`, using CPython 3.12.13 on Windows,
