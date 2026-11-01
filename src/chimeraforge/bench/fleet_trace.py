@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from chimeraforge.transport_logging import sdk_logging
 from chimeraforge.bench import trace
 from chimeraforge.bench.backends.base import Backend
 from chimeraforge.bench.fleet_trace_inputs import _PreparedFleetTrace, prepare, prepare_connections
@@ -139,104 +140,106 @@ async def _close(resources: list[dict], owner: trace._TraceOwnership, allowance:
 async def _replay_prepared(
     prepared: _PreparedFleetTrace, connections: Mapping[str, MonitorConnection] | None = None
 ) -> FleetTraceReplay:
-    from chimeraforge.api import PlanError
+    with sdk_logging(connections is not None):
+        from chimeraforge.api import PlanError
 
-    secure = prepare_connections(prepared, connections)
-    plan = prepared.plan
-    stopped = plan.stop_event if plan.stop_event is not None else asyncio.Event()
-    owner = trace._TraceOwnership()
-    resources: list[dict] = [
-        {"backend": None, "before": None, "after": None, "error": None} for _ in prepared.endpoints
-    ]
-    rows = trace._initial_rows(list(plan.requests))
-    cancelled = False
-    configuration_error = False
-    origin, elapsed, stop_reason, error = None, 0.0, None, None
-    stage = "preflight"
-    try:
-        for endpoint, resource in zip(prepared.endpoints, resources):
-            kwargs: dict[str, object] = {"base_url": endpoint.url}
-            if endpoint.id in secure:
-                kwargs["connection"] = secure[endpoint.id]
-            try:
-                resource["backend"] = trace.get_backend(plan.backend, **kwargs)
-            except (ValueError, TypeError):
-                configuration_error = True
-                raise
-        await _phase(prepared, resources, owner, stopped, before=True)
-        stage = "scheduled_replay"
-        origin = trace._clock()
-        by_id = {
-            endpoint.id: resource["backend"]
-            for endpoint, resource in zip(prepared.endpoints, resources)
-        }
-        dispatch = {route.request_id: by_id[route.endpoint_id] for route in prepared.routes}
-        stop_reason = await trace._execute(
-            resources[0]["backend"],
-            plan.backend,
-            plan.served_model,
+        secure = prepare_connections(prepared, connections)
+        plan = prepared.plan
+        stopped = plan.stop_event if plan.stop_event is not None else asyncio.Event()
+        owner = trace._TraceOwnership()
+        resources: list[dict] = [
+            {"backend": None, "before": None, "after": None, "error": None}
+            for _ in prepared.endpoints
+        ]
+        rows = trace._initial_rows(list(plan.requests))
+        cancelled = False
+        configuration_error = False
+        origin, elapsed, stop_reason, error = None, 0.0, None, None
+        stage = "preflight"
+        try:
+            for endpoint, resource in zip(prepared.endpoints, resources):
+                kwargs: dict[str, object] = {"base_url": endpoint.url}
+                if endpoint.id in secure:
+                    kwargs["connection"] = secure[endpoint.id]
+                try:
+                    resource["backend"] = trace.get_backend(plan.backend, **kwargs)
+                except (ValueError, TypeError):
+                    configuration_error = True
+                    raise
+            await _phase(prepared, resources, owner, stopped, before=True)
+            stage = "scheduled_replay"
+            origin = trace._clock()
+            by_id = {
+                endpoint.id: resource["backend"]
+                for endpoint, resource in zip(prepared.endpoints, resources)
+            }
+            dispatch = {route.request_id: by_id[route.endpoint_id] for route in prepared.routes}
+            stop_reason = await trace._execute(
+                resources[0]["backend"],
+                plan.backend,
+                plan.served_model,
+                list(plan.requests),
+                rows,
+                origin,
+                plan.concurrency,
+                plan.request_timeout,
+                plan.trace_timeout,
+                stopped,
+                backends=dispatch,
+                ownership=owner,
+            )
+            elapsed = trace._clock() - origin
+            if stop_reason is None:
+                stage = "metadata_after"
+                await _phase(prepared, resources, owner, stopped, before=False)
+        except asyncio.CancelledError:
+            cancelled = True
+        except trace._TraceStopped:
+            stop_reason = "cancelled"
+        except Exception as exc:
+            error = trace._error(exc, stage)
+        finally:
+            closer = asyncio.create_task(_close(resources, owner, prepared.cleanup_timeout))
+            while True:
+                try:
+                    cleanup = await asyncio.shield(closer)
+                    break
+                except asyncio.CancelledError:
+                    cancelled = True
+        if cancelled:
+            raise asyncio.CancelledError
+        if configuration_error:
+            raise PlanError("fleet backend configuration is unavailable")
+        if cleanup["state"] != "completed":
+            error = trace._error(RuntimeError(), "cleanup")
+        if origin is not None:
+            # Retain late terminals from cooperative cancellation in the common horizon.
+            elapsed = max(elapsed, *(row["times"]["terminal_s"] or 0.0 for row in rows))
+        native = trace._report(
             list(plan.requests),
             rows,
-            origin,
-            plan.concurrency,
-            plan.request_timeout,
-            plan.trace_timeout,
-            stopped,
-            backends=dispatch,
-            ownership=owner,
+            workload=plan.workload,
+            targets=plan.slos,
+            model=plan.served_model,
+            backend_name=plan.backend,
+            base_url=None,
+            concurrency=plan.concurrency,
+            request_timeout=plan.request_timeout,
+            trace_timeout=plan.trace_timeout,
+            cleanup={"state": cleanup["state"]},
+            observation={},
+            stop_reason=stop_reason,
+            error=error,
+            elapsed=elapsed,
+            origin=origin,
         )
-        elapsed = trace._clock() - origin
-        if stop_reason is None:
-            stage = "metadata_after"
-            await _phase(prepared, resources, owner, stopped, before=False)
-    except asyncio.CancelledError:
-        cancelled = True
-    except trace._TraceStopped:
-        stop_reason = "cancelled"
-    except Exception as exc:
-        error = trace._error(exc, stage)
-    finally:
-        closer = asyncio.create_task(_close(resources, owner, prepared.cleanup_timeout))
-        while True:
-            try:
-                cleanup = await asyncio.shield(closer)
-                break
-            except asyncio.CancelledError:
-                cancelled = True
-    if cancelled:
-        raise asyncio.CancelledError
-    if configuration_error:
-        raise PlanError("fleet backend configuration is unavailable")
-    if cleanup["state"] != "completed":
-        error = trace._error(RuntimeError(), "cleanup")
-    if origin is not None:
-        # Retain late terminals from cooperative cancellation in the common horizon.
-        elapsed = max(elapsed, *(row["times"]["terminal_s"] or 0.0 for row in rows))
-    native = trace._report(
-        list(plan.requests),
-        rows,
-        workload=plan.workload,
-        targets=plan.slos,
-        model=plan.served_model,
-        backend_name=plan.backend,
-        base_url=None,
-        concurrency=plan.concurrency,
-        request_timeout=plan.request_timeout,
-        trace_timeout=plan.trace_timeout,
-        cleanup={"state": cleanup["state"]},
-        observation={},
-        stop_reason=stop_reason,
-        error=error,
-        elapsed=elapsed,
-        origin=origin,
-    )
-    for row, route in zip(native["requests"], prepared.routes):
-        row["endpoint_id"] = route.endpoint_id
-    native["fingerprint"] = digest(
-        {key: value for key, value in native.items() if key != "fingerprint"}
-    )
-    report = make_report(prepared, native, resources, cleanup)
-    return FleetTraceReplay(report, prepared.protected_paths)
+        for row, route in zip(native["requests"], prepared.routes):
+            row["endpoint_id"] = route.endpoint_id
+        native["fingerprint"] = digest(
+            {key: value for key, value in native.items() if key != "fingerprint"}
+        )
+        report = make_report(prepared, native, resources, cleanup)
+        return FleetTraceReplay(report, prepared.protected_paths)
 
 
 async def replay_fleet_trace(

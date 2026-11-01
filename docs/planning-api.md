@@ -1,5 +1,9 @@
 # Saved plans and the Python API
 
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
+
 ```python
 from chimeraforge.api import PlanRequest, plan, load_plan, check_plan
 

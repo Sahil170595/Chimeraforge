@@ -15,6 +15,7 @@ from typing import Any, TYPE_CHECKING
 import httpx
 
 from chimeraforge import __version__
+from chimeraforge.transport_logging import sdk_logging
 from chimeraforge.bench import serving
 from chimeraforge.bench.backends import get_backend
 from chimeraforge.bench.backends.base import Backend
@@ -304,156 +305,162 @@ async def monitor_fleet(
     stop_event: asyncio.Event | None = None,
     connections: Mapping[str, MonitorConnection] | None = None,
 ) -> FleetMonitorReport:
-    if stop_event is not None and not isinstance(stop_event, asyncio.Event):
-        raise FleetMonitorError("stop_event must be an asyncio.Event or None")
-    data, candidate = _source(saved, candidate_index)
-    endpoints = _admit(request, candidate["n_agents"])
-    targets, sources = _targets(data, request)
-    effective = [
-        MonitorRequest(
-            candidate["backend"],
-            endpoint.url,
-            candidate["model"],
-            interval=request.interval,
-            windows=request.windows,
-            timeout=request.timeout,
-            **targets,
-        )
-        for endpoint in endpoints
-    ]
-    try:
-        for value in effective:
-            value.validate()
-    except ValueError:
-        raise FleetMonitorError("invalid fleet histogram targets or request controls") from None
-    prepared: dict[str, MonitorConnection] = {}
-    if connections is not None:
-        if not isinstance(connections, Mapping) or len(connections) > len(endpoints):
-            raise MonitorConnectionError("invalid fleet monitor connection mapping")
-        ids = {endpoint.id for endpoint in endpoints}
-        snapshot = {}
-        for number, key in enumerate(connections):
-            if (
-                number >= len(endpoints)
-                or type(key) is not str
-                or key not in ids
-                or key in snapshot
-            ):
-                raise MonitorConnectionError("invalid fleet monitor connection mapping")
-            snapshot[key] = connections[key]
-        for endpoint in endpoints:
-            connection = snapshot.get(endpoint.id)
-            if endpoint.id in snapshot:
-                if type(connection) is not MonitorConnection:
-                    raise MonitorConnectionError("invalid fleet monitor connection mapping")
-            else:
-                connection = MonitorConnection(endpoint.url)
-            admit_connection(connection, endpoint.url)
-            assert connection is not None
-            prepared[endpoint.id] = connection
-    loop = asyncio.get_running_loop()
-    budget = SharedBudget(
-        loop.time() + request.observation_seconds,
-        request.max_requests,
-        request.max_body_bytes,
-        request.concurrency,
-    )
-    resources: list[_Resources] = []
-    tasks: list[asyncio.Task[None]] = []
-    direct_cancel = False
-    setup_failed = False
-    cancelled = bool(stop_event and stop_event.is_set())
-    try:
-        for endpoint, value in zip(endpoints, effective):
-            connection = prepared.get(endpoint.id)
-            options = {"connection": connection} if connection is not None else {}
-            metrics_pool = OwnedPool(budget, MAX_METRICS_BYTES, request.timeout, **options)
-            metadata_pool = OwnedPool(
-                budget, serving.MAX_METADATA_BYTES, request.timeout, **options
-            )
-            row = _Resources(
-                FleetSlot(endpoint.id, endpoint.url), value, metrics_pool, metadata_pool
-            )
-            resources.append(row)
-            row.client = httpx.AsyncClient(
-                transport=BorrowedTransport(metrics_pool),
-                timeout=request.timeout,
-                **(connection._client_kwargs() if connection is not None else {"trust_env": False}),
-            )
-            row.backend = get_backend(
+    with sdk_logging(connections is not None):
+        if stop_event is not None and not isinstance(stop_event, asyncio.Event):
+            raise FleetMonitorError("stop_event must be an asyncio.Event or None")
+        data, candidate = _source(saved, candidate_index)
+        endpoints = _admit(request, candidate["n_agents"])
+        targets, sources = _targets(data, request)
+        effective = [
+            MonitorRequest(
                 candidate["backend"],
-                base_url=endpoint.url.removesuffix("/metrics"),
-                transport=BorrowedTransport(metadata_pool),
-                **options,
+                endpoint.url,
+                candidate["model"],
+                interval=request.interval,
+                windows=request.windows,
+                timeout=request.timeout,
+                **targets,
             )
-        if not cancelled:
-            tasks = [asyncio.create_task(_worker(row, request)) for row in resources]
-        while tasks and any(not task.done() for task in tasks):
-            if stop_event and stop_event.is_set():
-                cancelled = True
-                break
-            if budget.termination is not None:
-                break
-            remaining = budget.deadline - loop.time()
-            if remaining <= 0:
-                budget.termination = "observation_deadline"
-                break
-            await asyncio.wait(
-                [task for task in tasks if not task.done()], timeout=min(POLL_SECONDS, remaining)
-            )
-    except asyncio.CancelledError:
-        direct_cancel = True
-    except Exception as exc:
-        setup_failed = True
-        logger.warning("fleet observation setup/coordination failed (%s)", type(exc).__name__)
-    finally:
-        if (
-            not cancelled
-            and not direct_cancel
-            and not setup_failed
-            and loop.time() >= budget.deadline
-            and budget.termination is None
-        ):
-            budget.termination = "observation_deadline"
-        closer = asyncio.create_task(_cleanup(tasks, resources, request.cleanup_seconds))
-        while True:
-            try:
-                cleanup = await asyncio.shield(closer)
-                break
-            except asyncio.CancelledError:
-                direct_cancel = True
-    if direct_cancel:
-        raise asyncio.CancelledError
-    if setup_failed:
-        raise FleetMonitorError(
-            "fleet observation resources could not be initialized or coordinated"
-        ) from None
-    for row in resources:
-        row.slot.binding = assemble_binding(
-            data,
-            candidate,
-            candidate_index,
-            row.effective,
-            sources,
-            row.slot.observations,
-            retain_prefix=True,
+            for endpoint in endpoints
+        ]
+        try:
+            for value in effective:
+                value.validate()
+        except ValueError:
+            raise FleetMonitorError("invalid fleet histogram targets or request controls") from None
+        prepared: dict[str, MonitorConnection] = {}
+        if connections is not None:
+            if not isinstance(connections, Mapping) or len(connections) > len(endpoints):
+                raise MonitorConnectionError("invalid fleet monitor connection mapping")
+            ids = {endpoint.id for endpoint in endpoints}
+            snapshot = {}
+            for number, key in enumerate(connections):
+                if (
+                    number >= len(endpoints)
+                    or type(key) is not str
+                    or key not in ids
+                    or key in snapshot
+                ):
+                    raise MonitorConnectionError("invalid fleet monitor connection mapping")
+                snapshot[key] = connections[key]
+            for endpoint in endpoints:
+                connection = snapshot.get(endpoint.id)
+                if endpoint.id in snapshot:
+                    if type(connection) is not MonitorConnection:
+                        raise MonitorConnectionError("invalid fleet monitor connection mapping")
+                else:
+                    connection = MonitorConnection(endpoint.url)
+                admit_connection(connection, endpoint.url)
+                assert connection is not None
+                prepared[endpoint.id] = connection
+        loop = asyncio.get_running_loop()
+        budget = SharedBudget(
+            loop.time() + request.observation_seconds,
+            request.max_requests,
+            request.max_body_bytes,
+            request.concurrency,
         )
-    return FleetMonitorReport(
-        candidate["backend"],
-        candidate["model"],
-        tuple(row.slot for row in resources),
-        {
-            "fingerprint": data["fingerprint"],
-            "candidate_index": candidate_index,
-            "identity": identity(candidate),
-            "tool_version": data["tool"]["version"],
-        },
-        sources,
-        budget.to_dict(),
-        cleanup,
-        cancelled,
-        __version__,
-    )
+        resources: list[_Resources] = []
+        tasks: list[asyncio.Task[None]] = []
+        direct_cancel = False
+        setup_failed = False
+        cancelled = bool(stop_event and stop_event.is_set())
+        try:
+            for endpoint, value in zip(endpoints, effective):
+                connection = prepared.get(endpoint.id)
+                options = {"connection": connection} if connection is not None else {}
+                metrics_pool = OwnedPool(budget, MAX_METRICS_BYTES, request.timeout, **options)
+                metadata_pool = OwnedPool(
+                    budget, serving.MAX_METADATA_BYTES, request.timeout, **options
+                )
+                row = _Resources(
+                    FleetSlot(endpoint.id, endpoint.url), value, metrics_pool, metadata_pool
+                )
+                resources.append(row)
+                row.client = httpx.AsyncClient(
+                    transport=BorrowedTransport(metrics_pool),
+                    timeout=request.timeout,
+                    **(
+                        connection._client_kwargs()
+                        if connection is not None
+                        else {"trust_env": False}
+                    ),
+                )
+                row.backend = get_backend(
+                    candidate["backend"],
+                    base_url=endpoint.url.removesuffix("/metrics"),
+                    transport=BorrowedTransport(metadata_pool),
+                    **options,
+                )
+            if not cancelled:
+                tasks = [asyncio.create_task(_worker(row, request)) for row in resources]
+            while tasks and any(not task.done() for task in tasks):
+                if stop_event and stop_event.is_set():
+                    cancelled = True
+                    break
+                if budget.termination is not None:
+                    break
+                remaining = budget.deadline - loop.time()
+                if remaining <= 0:
+                    budget.termination = "observation_deadline"
+                    break
+                await asyncio.wait(
+                    [task for task in tasks if not task.done()],
+                    timeout=min(POLL_SECONDS, remaining),
+                )
+        except asyncio.CancelledError:
+            direct_cancel = True
+        except Exception as exc:
+            setup_failed = True
+            logger.warning("fleet observation setup/coordination failed (%s)", type(exc).__name__)
+        finally:
+            if (
+                not cancelled
+                and not direct_cancel
+                and not setup_failed
+                and loop.time() >= budget.deadline
+                and budget.termination is None
+            ):
+                budget.termination = "observation_deadline"
+            closer = asyncio.create_task(_cleanup(tasks, resources, request.cleanup_seconds))
+            while True:
+                try:
+                    cleanup = await asyncio.shield(closer)
+                    break
+                except asyncio.CancelledError:
+                    direct_cancel = True
+        if direct_cancel:
+            raise asyncio.CancelledError
+        if setup_failed:
+            raise FleetMonitorError(
+                "fleet observation resources could not be initialized or coordinated"
+            ) from None
+        for row in resources:
+            row.slot.binding = assemble_binding(
+                data,
+                candidate,
+                candidate_index,
+                row.effective,
+                sources,
+                row.slot.observations,
+                retain_prefix=True,
+            )
+        return FleetMonitorReport(
+            candidate["backend"],
+            candidate["model"],
+            tuple(row.slot for row in resources),
+            {
+                "fingerprint": data["fingerprint"],
+                "candidate_index": candidate_index,
+                "identity": identity(candidate),
+                "tool_version": data["tool"]["version"],
+            },
+            sources,
+            budget.to_dict(),
+            cleanup,
+            cancelled,
+            __version__,
+        )
 
 
 from chimeraforge.fleet_monitor_output import prometheus_text, write_prometheus  # noqa: E402,F401

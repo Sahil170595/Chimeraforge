@@ -76,6 +76,11 @@ class SGLangBackend(Backend):
         if self._client and not self._client.is_closed:
             await self._client.aclose()
 
+    def _refusal(self, message: str) -> tuple[bool, str]:
+        return False, (
+            "secure backend preflight unavailable" if self._connection is not None else message
+        )
+
     async def health_check(self) -> tuple[bool, str]:
         """GET /health, then the server-info version: running means SGLang named
         itself. A bare 200 on /health is also what any other web app returns."""
@@ -83,17 +88,19 @@ class SGLangBackend(Backend):
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/health", timeout=PROBE_TIMEOUT_S)
             if resp.status_code != 200:
-                return False, f"SGLang returned status {resp.status_code}"
+                return self._refusal(f"SGLang returned status {resp.status_code}")
             version = await self.get_version()
             if not version:
-                return False, identity_message(
-                    "SGLang", self.base_url, "no version from /server_info or /get_server_info"
+                return self._refusal(
+                    identity_message(
+                        "SGLang", self.base_url, "no version from /server_info or /get_server_info"
+                    )
                 )
             return True, f"SGLang {version} is running"
         except httpx.ConnectError:
-            return False, f"SGLang not running at {self.base_url}"
+            return self._refusal(f"SGLang not running at {self.base_url}")
         except httpx.TimeoutException:
-            return False, f"SGLang timed out at {self.base_url}"
+            return self._refusal(f"SGLang timed out at {self.base_url}")
 
     async def check_model(self, model: str) -> tuple[bool, str]:
         """GET /v1/models and check that *model* is the served id."""
@@ -101,12 +108,12 @@ class SGLangBackend(Backend):
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/v1/models", timeout=MODEL_LIST_TIMEOUT_S)
             if resp.status_code != 200:
-                return False, f"Cannot list models (status {resp.status_code})"
+                return self._refusal(f"Cannot list models (status {resp.status_code})")
             try:
                 data = resp.json()
             except ValueError:
                 logger.debug("SGLang model-list response is not JSON")
-                return False, "SGLang model-list response is malformed"
+                return self._refusal("SGLang model-list response is malformed")
             rows = data.get("data") if isinstance(data, dict) else None
             if not isinstance(rows, list) or any(
                 not isinstance(row, dict)
@@ -114,21 +121,21 @@ class SGLangBackend(Backend):
                 or not row["id"].strip()
                 for row in rows
             ):
-                return False, "SGLang model-list response is malformed"
+                return self._refusal("SGLang model-list response is malformed")
             model_ids = [row["id"] for row in rows]
             if model in model_ids:
                 return True, ""
-            return False, (
+            return self._refusal(
                 f"Model '{model}' not found. SGLang is serving: "
                 f"{', '.join(model_ids) or 'none'} (pass that id, or relaunch with "
                 "--served-model-name)"
             )
         except httpx.ConnectError:
-            return False, f"SGLang not running at {self.base_url}"
+            return self._refusal(f"SGLang not running at {self.base_url}")
         except httpx.TimeoutException:
-            return False, f"SGLang timed out at {self.base_url}"
+            return self._refusal(f"SGLang timed out at {self.base_url}")
         except httpx.HTTPError as exc:
-            return False, f"SGLang model check failed at {self.base_url}: {exc}"
+            return self._refusal(f"SGLang model check failed at {self.base_url}: {exc}")
 
     async def generate(
         self,
@@ -170,7 +177,9 @@ class SGLangBackend(Backend):
         """Read the version from the server-info endpoint, trying both names."""
         client = await self._get_client()
         for path in VERSION_ENDPOINTS:
-            version = await fetch_json_field(client, f"{self.base_url}{path}", "version")
+            version = await fetch_json_field(
+                client, f"{self.base_url}{path}", "version", secure=self._connection is not None
+            )
             if version:
                 return version
         return None

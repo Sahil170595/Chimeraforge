@@ -1,5 +1,9 @@
 # Runtime HTTPS and authenticated monitoring
 
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
+
 Available since **Chimeraforge 0.78.0**. These runtime-only settings
 apply to existing `monitor`, saved-plan monitoring and `monitor-fleet`; no new
 command, traffic generator or serving process is created.

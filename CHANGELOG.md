@@ -5,6 +5,25 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.82.0] - 2026-10-31
+
+### Authenticated active measurements
+
+- Add runtime-only keyword-only `connection` settings to saved benchmarks and ordinary/saved-plan traces. Admit exact native vLLM/SGLang adapters and the configured HTTPS origin before discovery, construction or contact; preserve anonymous adapters, native metrics and serialized receipt schemas.
+- Reuse verified private/default CA trust, optional named-environment bearer and client certificates across active preflight, before/after metadata and streaming generation. Add the same secure flags to `bench` and `trace`, including native sweeps and saved-candidate flows.
+- Retain effective TLS inputs privately for output-alias checks. Guard known CLI intent before contact and actual generated benchmark filenames before writing; receipt saves recheck input aliases. The separate ordinary benchmark writer accepts an explicit runtime connection rather than inferring private input paths from serialized results.
+- Categorize standard HTTPX/httpcore message, argument, exception and stack fields before the caller's record factory during secure native owner lifetimes. Preserve nested/concurrent anonymous behavior, caller factory chaining and ownership-aware restoration. Secure backend closure retains its owned close task through repeated caller cancellation. Secure ordinary/saved traces reuse native owned-generation/task joins after a controlled actual-CPython 3.10 executor probe demonstrated legacy repeated-cancellation detachment; anonymous scheduling remains unchanged.
+- Exercise source and installed CLI/API with owned CPU HTTPS/auth/mTLS protocol fixtures, adverse trust/origin/stream cases and input preservation. These fixtures do not qualify actual inference engines, models, GPUs, capacity or performance.
+
+### Supported dependency baseline
+
+- Require Python 3.11 or later and unmarked `filelock>=4.2.1,<5` for eval/dev. The former Python 3.10 branch selected filelock 3.20.3; current advisories cover that version, and the patched release requires Python 3.11. Withdraw the unsupported unaffected-API claim and align the advertised interpreter, typing/lint targets and hosted matrix.
+- Audit every versioned registry pair in the universal lock together with installed external packages. Separate conflicting versions into the minimum number of exact-pin batches and run the native strict pip-audit CLI for each, without marker-based omission or advisory suppression.
+
+### Coverage qualification budget
+
+- Give the existing complete branch-coverage job 30 minutes and report its 20 slowest test durations. The [0.82 release coverage job](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861) reported 5,334 passing tests and 2 skips but exceeded its 20-minute budget before ratchet qualification. Preserve all tests, branch/report options and coverage floors; the cancelled run is not a full CI pass.
+
 ## [0.81.0] - 2026-10-29
 
 ### Kubernetes declarations and independent intent

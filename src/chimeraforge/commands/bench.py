@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
 from chimeraforge.planner.constants import QUANT_LEVELS
@@ -101,9 +103,25 @@ def bench(
     concurrency: int = typer.Option(
         None, "--concurrency", help="Applied batch/server concurrency."
     ),
+    secure: bool = typer.Option(
+        False, "--secure", help="Require verified HTTPS for this active operation."
+    ),
+    bearer_env: str | None = typer.Option(
+        None, "--bearer-env", help="Read bearer once from this named environment variable."
+    ),
+    ca_bundle: Path | None = typer.Option(
+        None, "--ca-bundle", help="Private PEM CA bundle replacing default roots."
+    ),
+    client_cert: Path | None = typer.Option(
+        None, "--client-cert", help="Client certificate PEM; requires key."
+    ),
+    client_key: Path | None = typer.Option(
+        None, "--client-key", help="Unencrypted client key PEM; requires certificate."
+    ),
 ) -> None:
     """Run LLM inference benchmarks against a live backend."""
     import asyncio
+    import json as json_mod
     import logging
     from pathlib import Path
 
@@ -114,6 +132,33 @@ def bench(
     from chimeraforge.commands._deps import require_extra
 
     require_extra("bench", "httpx")  # backends import httpx at module load
+
+    from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
+    from chimeraforge.plan_study import protect_output
+
+    connection = None
+    opted = secure or any(
+        value is not None for value in (bearer_env, ca_bundle, client_cert, client_key)
+    )
+    if opted:
+        try:
+            if list_backends or not base_url:
+                raise MonitorConnectionError("secure benchmark requires an explicit HTTPS endpoint")
+            connection = MonitorConnection.from_env(
+                base_url,
+                bearer_env=bearer_env,
+                ca_bundle=ca_bundle,
+                client_cert=client_cert,
+                client_key=client_key,
+            )
+        except MonitorConnectionError as exc:
+            if output_json:
+                import json
+
+                typer.echo(json.dumps({"error": str(exc)}))
+            else:
+                console.print(str(exc), markup=False)
+            raise typer.Exit(1) from None
 
     if plan_path:
         from chimeraforge.commands.bench_plan import run_saved
@@ -136,6 +181,7 @@ def bench(
             all_quants=all_quants,
             context=context,
             list_backends=list_backends,
+            **({"connection": connection} if connection is not None else {}),
         )
         return
     if candidate_index or prompt is not None or concurrency is not None:
@@ -214,6 +260,20 @@ def bench(
         except ImportError:
             out_path = Path.home() / ".chimeraforge" / "results"
 
+    if connection is not None:
+        try:
+            protect_output(out_path, connection._input_paths())
+        except (ValueError, OSError) as exc:
+            logging.getLogger(__name__).info(
+                "Secure benchmark directory refused (%s)", type(exc).__name__
+            )
+            typer.echo(
+                json_mod.dumps({"error": "secure benchmark output unavailable"})
+                if output_json
+                else "secure benchmark output unavailable"
+            )
+            raise typer.Exit(1) from None
+
     async def _run() -> None:
         import json as json_mod
 
@@ -235,6 +295,7 @@ def bench(
                         workload=workload,
                         rate=rate,
                         base_url=base_url,
+                        **({"connection": connection} if connection is not None else {}),
                     )
                 elif ctx_lengths:
                     progress.add_task("Running context sweep...", total=None)
@@ -247,6 +308,7 @@ def bench(
                         workload=workload,
                         rate=rate,
                         base_url=base_url,
+                        **({"connection": connection} if connection is not None else {}),
                     )
                 else:
                     progress.add_task(
@@ -261,14 +323,32 @@ def bench(
                         runs=runs,
                         rate=rate,
                         base_url=base_url,
+                        **({"connection": connection} if connection is not None else {}),
                     )
                     results = [result]
             except (RuntimeError, ValueError) as exc:
                 # RuntimeError: health/model pre-flight failure; ValueError: unknown backend
                 progress.stop()
-                console.print(Panel(str(exc), title="ERROR", border_style="red"))
+                message = "secure benchmark failed" if connection is not None else str(exc)
+                if connection is not None and output_json:
+                    typer.echo(json_mod.dumps({"error": message}))
+                else:
+                    console.print(Panel(message, title="ERROR", border_style="red"))
                 raise typer.Exit(code=1)
 
+        if connection is not None:
+            try:
+                saved_path = _save_results(results, out_path, connection=connection)
+            except (ValueError, OSError) as exc:
+                logging.getLogger(__name__).info(
+                    "Secure benchmark save refused (%s)", type(exc).__name__
+                )
+                typer.echo(
+                    json_mod.dumps({"error": "secure benchmark output unavailable"})
+                    if output_json
+                    else "secure benchmark output unavailable"
+                )
+                raise typer.Exit(1) from None
         if output_json:
             data = [result_to_dict(r) for r in results]
             # highlight=False + soft_wrap: emit valid JSON for `--json | jq`; Rich
@@ -328,7 +408,8 @@ def bench(
                         console.print(f"  [yellow]Warning:[/] {w}")
 
         # Save results
-        saved_path = _save_results(results, out_path)
+        if connection is None:
+            saved_path = _save_results(results, out_path)
         diagnostics = Console(stderr=True) if output_json else console
         diagnostics.print(f"\n[green]Results saved to:[/] {saved_path}")
 
