@@ -1,5 +1,9 @@
 # Passive declared-fleet monitoring
 
+Chimeraforge **0.83.0** adds [strict saved receiving and passive SLO gates](fleet-monitor-gate.md),
+effective requested controls and bounded full JSON export with `--out`.
+The monitoring behavior below remains available.
+
 Available since **Chimeraforge 0.76.0**. The existing single-endpoint `monitor`
 remains available, including monitoring an
 endpoint selected from a multi-replica plan; it does not establish whole-fleet

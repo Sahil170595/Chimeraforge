@@ -43,6 +43,12 @@ from chimeraforge.monitor_connection import MonitorConnection as MonitorConnecti
 from chimeraforge.monitor_connection import MonitorConnectionError as MonitorConnectionError
 from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
+from chimeraforge.fleet_monitor_types import FleetMonitorError as FleetMonitorError
+from chimeraforge.fleet_monitor_types import FleetMonitorExportError as FleetMonitorExportError
+from chimeraforge.fleet_monitor_gate_types import (
+    FleetMonitorGate as FleetMonitorGate,
+    FleetMonitorGatePolicy as FleetMonitorGatePolicy,
+)
 from chimeraforge.inventory_types import (
     InventoryCheckError as InventoryCheckError,
     InventoryCheck as InventoryCheck,
@@ -865,6 +871,49 @@ async def monitor_fleet(
         stop_event=stop_event,
         connections=connections,
     )
+
+
+def load_fleet_monitor(
+    source: FleetMonitorReport | dict | str | Path,
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+) -> FleetMonitorReport:
+    """Strictly receive all native members against the actual original saved plan."""
+    from chimeraforge.fleet_monitor_receipt import load_fleet_monitor as receive
+
+    return receive(source, saved, candidate_index=candidate_index)
+
+
+def gate_fleet_monitors(
+    baseline: FleetMonitorReport | dict | str | Path,
+    candidate: FleetMonitorReport | dict | str | Path,
+    *,
+    baseline_plan: PlanArtifact | str | Path,
+    candidate_plan: PlanArtifact | str | Path,
+    policy: FleetMonitorGatePolicy | dict | str | Path,
+) -> FleetMonitorGate:
+    """Whole-original-fleet eligibility precedes candidate native SLO acceptance."""
+    from chimeraforge.fleet_monitor_gate import gate_fleet_monitors as apply_gate
+
+    return apply_gate(
+        baseline,
+        candidate,
+        baseline_plan=baseline_plan,
+        candidate_plan=candidate_plan,
+        policy=policy,
+    )
+
+
+def write_fleet_monitor_gate(
+    result: FleetMonitorGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    from chimeraforge.fleet_monitor_gate_output import write_fleet_monitor_gate as write
+
+    write(result, out=out, junit=junit)
 
 
 def sign_contribution(

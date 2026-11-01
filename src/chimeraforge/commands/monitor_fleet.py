@@ -9,7 +9,7 @@ import signal
 
 import typer
 
-from chimeraforge.fleet_monitor_types import FleetMonitorReport
+from chimeraforge.fleet_monitor_types import FleetMonitorExportError, FleetMonitorReport
 
 
 def monitor_fleet(
@@ -33,6 +33,7 @@ def monitor_fleet(
     max_requests: int = typer.Option(256, "--max-requests"),
     max_body_bytes: int = typer.Option(8 * 1024 * 1024, "--max-body-bytes"),
     output_json: bool = typer.Option(False, "--json"),
+    out: Path | None = typer.Option(None, "--out", help="Bounded complete JSON receipt."),
     prometheus: Path | None = typer.Option(None, "--prometheus"),
     secure: bool = typer.Option(
         False, "--secure", help="Verified HTTPS for every declared endpoint."
@@ -79,6 +80,7 @@ def monitor_fleet(
         finally:
             signal.signal(signal.SIGINT, previous)
 
+    report = None
     try:
         if len(endpoint) > MAX_ENDPOINTS:
             raise FleetMonitorError("at most 16 endpoint declarations are admitted")
@@ -88,8 +90,9 @@ def monitor_fleet(
                 raise FleetMonitorError("endpoint must be bounded ID=URL")
             name, url = declaration.split("=", 1)
             values.append(FleetEndpoint(name, url))
-        if prometheus is not None:
-            protect_output(prometheus, (from_plan,))
+        outputs = [path for path in (out, prometheus) if path is not None]
+        for position, path in enumerate(outputs):
+            protect_output(path, (from_plan, *outputs[:position], *outputs[position + 1 :]))
         request = FleetMonitorRequest(
             tuple(values),
             interval,
@@ -125,9 +128,9 @@ def monitor_fleet(
                     if name not in settings or not setting or field in settings[name]:
                         raise FleetMonitorError("invalid fleet secure configuration")
                     settings[name][field] = setting
-            if prometheus is not None:
+            for path in outputs:
                 protect_output(
-                    prometheus,
+                    path,
                     tuple(
                         Path(setting)
                         for configuration in settings.values()
@@ -139,9 +142,36 @@ def monitor_fleet(
                 value.id: MonitorConnection.from_env(value.url, **settings[value.id])
                 for value in values
             }
+            for path in outputs:
+                protect_output(
+                    path,
+                    tuple(
+                        p for connection in connections.values() for p in connection._input_paths()
+                    ),
+                )
         report = asyncio.run(operation(request))
+        raw = report.json_bytes() if output_json or out is not None else None
+        # Admit every requested JSON projection before either per-file publication.
+        for path in outputs:
+            protect_output(path, report._input_paths)
+        if out is not None:
+            from chimeraforge.bench.fleet_gate_output import _write
+
+            assert raw is not None
+            _write(out, raw)
         if prometheus is not None:
             write_prometheus(report, prometheus)
+    except FleetMonitorExportError:
+        native_code = report.exit_code if report is not None else 4
+        code = native_code if native_code in (3, 5) else 4
+        diagnostic = {
+            "kind": "chimeraforge.fleet-monitor-export-error",
+            "error": "complete fleet JSON exceeds the 8 MiB export limit",
+            "producer_declared_native_exit_code": native_code,
+            "exit_code": code,
+        }
+        typer.echo(json.dumps(diagnostic) if output_json else diagnostic["error"])
+        raise typer.Exit(code) from None
     except (FleetMonitorError, PlanError, OSError, ValueError, RuntimeError):
         if output_json:
             typer.echo(
@@ -151,12 +181,13 @@ def monitor_fleet(
             typer.echo("Error: invalid, unsupported or unavailable fleet observation", err=True)
         raise typer.Exit(1) from None
     if output_json:
-        typer.echo(json.dumps(report.to_dict(), indent=2, allow_nan=False))
+        assert raw is not None
+        typer.echo(raw, nl=False)
     else:
-        data = report.to_dict()
+        outcome = {0: "pass", 3: "breach", 4: "unknown", 5: "mismatch"}[report.exit_code]
         typer.echo(
-            f"Declared fleet: {data['outcome']}; "
-            f"{data['declared_coverage']['complete']}/{len(report.slots)} complete"
+            f"Declared fleet: {outcome}; "
+            f"{sum(slot.state == 'complete' for slot in report.slots)}/{len(report.slots)} complete"
         )
         for slot in report.slots:
             typer.echo(

@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.82.0.
+**30 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.83.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-31).** [Chimeraforge 0.82.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.82.0) adds authenticated active benchmarks and ordinary/saved-plan traces through the existing runtime-only secure connection boundary. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-11-01).** [Chimeraforge 0.83.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.83.0) adds strict saved fleet-monitor receiving, effective producer controls and whole-original-fleet passive SLO gates with complete bounded JSON/JUnit. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.82.0"
+pip install "chimeraforge[mcp]==0.83.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -735,7 +735,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.82.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.83.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -769,6 +769,14 @@ chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --s
 ```
 
 Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs a running Ollama.
+
+**Whole-original-fleet passive SLO gates (since 0.83.0):** [whole-original-fleet passive SLO gates](docs/fleet-monitor-gate.md)
+add strict original-plan receiving, `api.gate_fleet_monitors`, and
+`gate --kind fleet-monitor --baseline-plan ... --candidate-plan ... --junit ...`.
+Every native member/window/prefix remains; effective controls and exact bounded
+JSON export refuse oversize without truncation or premature paired output.
+Incomplete eligibility precedes candidate SLO breach. Bucket bounds are not
+confidence intervals or pooled performance.
 
 **Authenticated active measurements (since 0.82.0):** native vLLM/SGLang paths
 accept `--secure`, `--bearer-env NAME`, `--ca-bundle`, `--client-cert` and
