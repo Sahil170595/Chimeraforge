@@ -75,6 +75,14 @@ anchors, assertion failures and no setup/collection errors. Hypothesis checks us
 independent unit and statistical derivations rather than shared implementation
 constants.
 
+The complete coverage job has a 30-minute budget and reports the 20 slowest
+test durations with `--durations=20`. This follows the
+[0.82 release run](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861),
+which reported 5,334 passing tests and 2 skips at 1,200.69 seconds, then hit the
+20-minute job limit before the ratchet step ran. That cancelled run is not a
+coverage/whole-CI pass. The full test population, branch instrumentation, JSON
+report and all line/branch ratchets remain unchanged.
+
 Coverage is measured with branches enabled. The first baseline on main source
 `9a72f7050442c7786ad3f4ce93b11faee81861f1`, using CPython 3.12.13 on Windows,
 was 89.1058% lines and 82.7088% branches (2,792 passing tests). The global floors

@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require Python 3.11 or later and unmarked `filelock>=4.2.1,<5` for eval/dev. The former Python 3.10 branch selected filelock 3.20.3; current advisories cover that version, and the patched release requires Python 3.11. Withdraw the unsupported unaffected-API claim and align the advertised interpreter, typing/lint targets and hosted matrix.
 - Audit every versioned registry pair in the universal lock together with installed external packages. Separate conflicting versions into the minimum number of exact-pin batches and run the native strict pip-audit CLI for each, without marker-based omission or advisory suppression.
 
+### Coverage qualification budget
+
+- Give the existing complete branch-coverage job 30 minutes and report its 20 slowest test durations. The [0.82 release coverage job](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861) reported 5,334 passing tests and 2 skips but exceeded its 20-minute budget before ratchet qualification. Preserve all tests, branch/report options and coverage floors; the cancelled run is not a full CI pass.
+
 ## [0.81.0] - 2026-10-29
 
 ### Kubernetes declarations and independent intent
