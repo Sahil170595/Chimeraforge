@@ -3,9 +3,9 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers public Chimeraforge 0.81.0 and the unreleased 0.82.0 source candidate.
+This document covers Chimeraforge 0.82.0.
 
-Unreleased 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
+Chimeraforge 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
 to async `benchmark_plan`, `replay_trace` and `replay_plan_trace`, and to direct
 `chimeraforge.bench.runner.run_benchmark` / `save_results`. The setting is runtime-only;
 serialized settings/native receipts remain unchanged. Exact native vLLM/SGLang
