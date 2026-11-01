@@ -267,6 +267,11 @@ def main(argv: list[str] | None = None) -> int:
         fleet_campaign_receipt = accept_fleet_campaign(
             cwd / "fleet-campaign", env, cwd / "fleet-plan.json", args.checkout
         )
+        from ci_kubernetes_inspection import accept as accept_kubernetes_inspection
+
+        inspection_receipt = accept_kubernetes_inspection(
+            cwd / "kubernetes-inspection", env, cwd / "fleet-plan.json", args.checkout
+        )
 
         from ci_signed_contribution import accept as accept_signed
 
@@ -312,6 +317,7 @@ def main(argv: list[str] | None = None) -> int:
                     "secure_active_protocol": secure_active_receipt,
                     "fleet_monitor_gate_protocol": passive_gate_receipt,
                     "fleet_trace_campaign_protocol": fleet_campaign_receipt,
+                    "kubernetes_inspection_protocol": inspection_receipt,
                     "loaded_module_provenance": {
                         "before": loaded_before,
                         "after": assert_installed_modules(args.checkout),

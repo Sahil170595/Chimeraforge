@@ -1,0 +1,126 @@
+{
+  "controls": [
+    {
+      "backend": "vllm",
+      "control": "matching_status",
+      "api_exit": 0,
+      "cli_exit": 0,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "intent_drift",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "pending_status",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "missing_service",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "provider",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "vllm",
+      "control": "wrong_identity",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "matching_status",
+      "api_exit": 0,
+      "cli_exit": 0,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "intent_drift",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "pending_status",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "missing_service",
+      "api_exit": 5,
+      "cli_exit": 5,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "provider",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    },
+    {
+      "backend": "sglang",
+      "control": "wrong_identity",
+      "api_exit": 4,
+      "cli_exit": 4,
+      "resources": 6,
+      "junit_cases": 10
+    }
+  ],
+  "controlled_owned_processes": 232,
+  "protocol_scope": "controlled Python processes/statuses; native kubectl/kind proof separate",
+  "raw_cli_byte_parity": true,
+  "complete_api_cli_junit_files": true,
+  "unverified_inventory_publication_refused": true,
+  "source_unchanged": true,
+  "owned_processes_closed": true,
+  "captured_at": "2026-10-31T03:48:38.627247+00:00",
+  "source_profile": "editable source, not installed or native kubectl qualification",
+  "method": "actual API/in-process CLI controlled owned Python protocol and raw missing-tool CLI",
+  "source_sha256": {
+    "src/chimeraforge/kubernetes_inspection.py": "f7fe8da1b3821189bde772755185aa99e99c4b81f0ede84cfcbbdac9487e2bac",
+    "src/chimeraforge/kubernetes_inspection_process.py": "050817180bda9160bc87bb8445f636dca9ae45bafb3a70a91ef5d110320079db",
+    "src/chimeraforge/kubernetes_inspection_intent.py": "aacd6705ba6bb7e85394509b26af9538f4e0c36dac41af15dd3065df2c720782",
+    "src/chimeraforge/kubernetes_inspection_types.py": "573ed733cd1f6b794fad11137305b767cc2a2b19eea6c3dcd529827f7a88cc80",
+    "src/chimeraforge/kubernetes_inspection_output.py": "342271538b02464258dfa85475ec7b17b7d040d047f3597c4f319e56c37ae597",
+    "src/chimeraforge/commands/deploy_inspect.py": "77e07b8f01b33c278d4029aeab85f1676d52f15fc46a89f9260cae1e2eff1e9e",
+    "src/chimeraforge/kubernetes_options.py": "cc2ecc480645a9ad137f63d8a004963f02e3b4b94f1abe9de3998a9ae9a6a680",
+    "src/chimeraforge/kubernetes_export.py": "bd3c7f36bf9551f1c05ca982923bb8748c9c4fa40437b8ab241c9756498d41fe",
+    "src/chimeraforge/api.py": "018fde97b7be5c2996d1cc8acb63c6989da323fdab4e3638ff1f6e9a4f85ae6f",
+    "scripts/ci_kubernetes_inspection.py": "3d66da1d8cbbd98ba9cf9929b41905c3ab70669a2812a214c6ac69e09f4fe94e",
+    "scripts/ci_kubernetes_inspection_native.py": "1e21fbf5898db12fbb310f29207234579502fa6e1afc5dc383dfc8aaf257af66",
+    "scripts/ci_kubernetes_admission.py": "5900a63218f8c41984adff71029ecb4a20fe8bc7b22886e178c494bf9afe4a25",
+    "scripts/ci_installed_acceptance.py": "87e0c05ac906776e7e09a221f9c62886038d1ab8e964401a99af77c1c79109f1",
+    "src/chimeraforge/cli.py": "1e006f3723ff97ba74f8077a428639835287e6ab49c8e147d57950a837405908"
+  }
+}

@@ -1,5 +1,8 @@
 # Quick Start Guide
 
+Chimeraforge 0.85.0 adds [read-only original Kubernetes inspection](kubernetes-inspection.md),
+with independent intent, separate native rollout and complete protected JSON/JUnit.
+
 Chimeraforge 0.84.0 adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
 with strict complete receiving and bounded native-comparison JSON/JUnit.
 
@@ -53,7 +56,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.84.0 includes native streaming trace observations and
+Chimeraforge 0.85.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,

@@ -1,4 +1,4 @@
-"""Pinned hosted CPU API admission; never persists an inference workload."""
+"""Pinned owned CPU API admission and separate read-only live-fixture inspection."""
 
 from __future__ import annotations
 
@@ -37,7 +37,14 @@ def download(url: str, path: Path, digest: str) -> None:
     path.chmod(0o700)
 
 
-def run(argv: list[str], env: dict, *, timeout: float = 60, negative: bool = False) -> str:
+def run(
+    argv: list[str],
+    env: dict,
+    *,
+    timeout: float = 60,
+    negative: bool = False,
+    expected_code: int | None = None,
+) -> str:
     from ci_cpu_fleet import close_groups
 
     with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
@@ -64,6 +71,12 @@ def run(argv: list[str], env: dict, *, timeout: float = 60, negative: bool = Fal
         stderr.seek(0)
         out, err = stdout.read(MAX_COMMAND_BYTES + 1), stderr.read(MAX_COMMAND_BYTES + 1)
         assert len(out) <= MAX_COMMAND_BYTES and len(err) <= MAX_COMMAND_BYTES
+        if expected_code is not None:
+            assert process.returncode == expected_code, (
+                "native_fixture_cli_exit",
+                process.returncode,
+            )
+            return out.decode("utf-8", errors="strict")
         if negative:
             assert process.returncode != 0, "negative server validation unexpectedly succeeded"
             return (out + err).decode("utf-8", errors="strict")
@@ -515,8 +528,9 @@ def main() -> int:
         "version": __version__,
         "origin": api.__file__,
         "scope": (
-            "CPU API dry-run only; no inference-image pull, kubelet argv execution, scheduling, "
-            "plugin, GPU, inference or capacity qualification"
+            "CPU API dry-run, then GET-only inspection of a separate owned live fixture. "
+            "GPU declarations remain unscheduled/pending. No inference-image pull, "
+            "kubelet argv execution, scheduling, GPU, inference or capacity qualification."
         ),
     }
     failure: BaseException | None = None
@@ -540,13 +554,22 @@ def main() -> int:
             )
             assert KIND_VERSION in run([str(kind), "version"], env)
             cases = fixtures(work, env)
+
+            def qualify(kube: list[str], private: dict) -> None:
+                from ci_kubernetes_inspection_native import accept as inspect_native
+
+                accept(kube, private, cases, work, receipt)
+                proof: dict = {}
+                receipt["native_read_only_inspection"] = proof
+                inspect_native(kube, private, cases, work, run, proof)
+
             owned_cluster(
                 work,
                 env,
                 str(kind),
                 str(kubectl),
                 receipt,
-                lambda kube, private: accept(kube, private, cases, work, receipt),
+                qualify,
             )
     except BaseException as exc:
         failure = exc

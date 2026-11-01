@@ -19,7 +19,7 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**31 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.84.0.
+**32 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes Chimeraforge 0.85.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -67,10 +67,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-11-01).** [Chimeraforge 0.84.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.84.0) adds serial whole-original-fleet trace campaigns, strict saved receiving and complete bounded native-comparison JSON/JUnit. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-11-01).** [Chimeraforge 0.85.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.85.0) adds read-only original Kubernetes inspection with independent intent, separate native Deployment rollout and complete protected JSON/JUnit. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.84.0"
+pip install "chimeraforge[mcp]==0.85.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -505,6 +505,27 @@ omit actual values and unknown key names. This is not source authenticity,
 image/registry truth, running weights, an atomic snapshot or GPU execution proof.
 See [full API/fleet examples, bounds and receipt semantics](docs/deployment-verification.md).
 
+### `deploy-inspect` -- read-only Kubernetes intent and rollout
+
+Chimeraforge 0.85.0 inspects every original Deployment/Service using an explicit
+runtime kubeconfig/context and independently supplied render intent:
+
+```bash
+chimeraforge deploy-inspect --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --image vllm/vllm-openai:v0.30.0 --kubeconfig /private/cluster.conf \
+  --context operator-selected --namespace serving --name-prefix original \
+  --out inspection.json --junit inspection.xml --json
+```
+
+Matching declarations do not mean rollout is complete. Outcomes are 0 intent and
+native controller completion, 5 known missing/drift, 4 unavailable/pending,
+1 invalid intent and 2 usage/output refusal. All 2N resources and 3N+1 JUnit cases
+remain; oversized exports refuse without truncation. Native exec credentials
+are denied and selected legacy auth providers are unsupported. Incomplete private
+file inventory permits bounded stdout but refuses filesystem publication.
+See [the pinned profile, API, guards, budgets and hosted proof limits](docs/kubernetes-inspection.md).
+Available in Chimeraforge 0.85.0.
+
 ### `suggest` -- discover & rank models
 
 ```bash
@@ -735,7 +756,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.84.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.85.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -769,6 +790,13 @@ chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --s
 ```
 
 Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs a running Ollama.
+
+**Read-only original Kubernetes inspection (since 0.85.0):** [read-only original Kubernetes inspection](docs/kubernetes-inspection.md)
+adds async `api.inspect_kubernetes_deployment`, `deploy-inspect` and complete
+protected JSON/JUnit. It retains original resources and separates intent drift
+from controller rollout, with bounded native processes and private runtime
+credential-path guards. Earlier authenticated active measurements and whole-fleet
+trace/monitor workflows remain available.
 
 **Whole-original-fleet trace campaigns (since 0.84.0):** [whole-original-fleet trace campaigns](docs/fleet-trace-campaign.md)
 add `trace-fleet-campaign`, `api.replay_fleet_trace_campaign`, strict complete

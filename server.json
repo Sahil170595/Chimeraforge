@@ -7,12 +7,12 @@
     "url": "https://github.com/Sahil170595/Chimeraforge",
     "source": "github"
   },
-  "version": "0.84.0",
+  "version": "0.85.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "chimeraforge",
-      "version": "0.84.0",
+      "version": "0.85.0",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
@@ -21,7 +21,7 @@
         {
           "type": "named",
           "name": "--with",
-          "value": "chimeraforge[mcp]==0.84.0",
+          "value": "chimeraforge[mcp]==0.85.0",
           "description": "Install the same released ChimeraForge version with its MCP server extra"
         }
       ],

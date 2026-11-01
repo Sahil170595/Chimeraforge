@@ -3,7 +3,18 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.84.0.
+This document covers Chimeraforge 0.85.0.
+
+Chimeraforge 0.85.0 adds async `api.inspect_kubernetes_deployment(saved, *, image,
+kubeconfig, context, kubernetes=None, candidate_index=0, model=None,
+kubectl="kubectl", timeout_s=30, request_timeout_s=10, concurrency=4,
+cleanup_timeout_s=2, stop_event=None) -> api.KubernetesInspection` and
+`api.write_kubernetes_inspection(result, *, out=None, junit=None)`. Independent
+render intent remains separate from runtime credentials and actual controller
+rollout. Whole typed outcomes remain available when bounded JSON/JUnit refuse;
+private input identities and verified-inventory state stay outside dataclass
+fields/asdict. See the [complete GET-only profile, native budgets, outcomes and
+qualification limits](kubernetes-inspection.md).
 
 Chimeraforge 0.84.0 adds async `api.replay_fleet_trace_campaign(saved, requests,
 endpoints, routes, *, executions=3, candidate_index=0, model=None, concurrency=1,
