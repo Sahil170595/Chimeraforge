@@ -1223,7 +1223,7 @@ async def replay_contribution(
 def render_trace_report(
     source: object, *, kind: str = "trace", format: str = "html", title: str = "Trace diagnostics"
 ) -> TraceReport:
-    """Render strict native ordinary/full-fleet diagnostics without changing outcomes."""
+    """Render strict native trace or whole-campaign diagnostics without changing outcomes."""
     from chimeraforge.report.trace import render_trace_report as render
 
     return render(source, kind=kind, format=format, title=title)

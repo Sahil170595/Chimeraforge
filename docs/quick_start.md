@@ -1,5 +1,8 @@
 # Quick Start Guide
 
+Unreleased **0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md).
+Public installation remains **0.86.0**.
+
 Unreleased **0.89.0 source** adds [native chat trace replay](chat-trace-replay.md)
 through the existing trace command family. Explicit role histories are sent intact;
 missing usage remains unknown. Public installation remains 0.86.0.

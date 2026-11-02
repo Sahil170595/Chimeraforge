@@ -26,7 +26,10 @@ def number(value: object) -> str:
 
 
 def summary(view: dict) -> Iterator[str]:
-    yield f"Kind: {view['kind']}; native exit: {view['exit_code']}; execution: {view['execution']}"
+    yield (
+        f"Kind: {view['kind']}; native exit: {number(view['exit_code'])}; "
+        f"execution: {view['execution']}"
+    )
     yield (
         f"Configuration: {view['configuration']}; cleanup: {view['cleanup']}; "
         f"clock: {view['clock']}"
@@ -37,15 +40,15 @@ def summary(view: dict) -> Iterator[str]:
         else "Ordinary endpoint scope; no original-fleet declaration"
     )
     yield scope + "; global concurrency: " + str(view["concurrency"])
-    yield "Population: " + "; ".join(f"{k}={v}" for k, v in view["counts"].items())
-    yield "Native joint SLO: " + "; ".join(f"{k}={v}" for k, v in view["joint"].items())
+    yield "Population: " + "; ".join(f"{k}={number(v)}" for k, v in view["counts"].items())
+    yield "Native joint SLO: " + "; ".join(f"{k}={number(v)}" for k, v in view["joint"].items())
     yield "Targets (ms; TPOT ms/token): " + "; ".join(
         f"{k}={number(v)}" for k, v in view["targets"].items()
     )
     yield "Goodput: " + "; ".join(f"{k}={number(v)}" for k, v in view["goodput"].items())
-    yield f"Source SHA256: {view['sha256']}"
-    yield f"Fingerprint: {view['fingerprint']}"
-    yield f"Source representation: {view['byte_basis']}; {view['size_bytes']} bytes"
+    yield f"Source SHA256: {number(view['sha256'])}"
+    yield f"Fingerprint: {number(view['fingerprint'])}"
+    yield f"Source representation: {view['byte_basis']}; {number(view['size_bytes'])} bytes"
 
 
 def _row_lines(row: dict) -> list[str]:
@@ -61,16 +64,19 @@ def _row_lines(row: dict) -> list[str]:
 
 
 def _member_lines(member: dict) -> list[str]:
-    binding = "/".join(str(member["bindings"][k]) for k in ("matched", "mismatch", "unavailable"))
+    binding = "/".join(
+        number(member["bindings"][k]) for k in ("matched", "mismatch", "unavailable")
+    )
+    assigned = "declared rows" if member.get("declared_only") else "assigned rows"
     line = (
         f"Member {member['ordinal']}: {member['state']}; "
-        f"assigned rows={len(member['rows'])}; latency={member['latency']}; "
+        f"{assigned}={len(member['rows'])}; latency={member['latency']}; "
         f"SLO={member['slo']}; binding matched/mismatch/unavailable={binding}"
     )
     return textwrap.wrap(line, width=TEXT_WRAP_CHARS)
 
 
-def svg(view: dict, title: str) -> Iterator[str]:
+def layout(view: dict, title: str) -> dict:
     title_lines = textwrap.wrap(title, width=TITLE_WRAP_CHARS) or [title]
     summary_lines = [
         piece for line in summary(view) for piece in textwrap.wrap(line, width=TEXT_WRAP_CHARS)
@@ -94,12 +100,42 @@ def svg(view: dict, title: str) -> Iterator[str]:
     legend_y = summary_y + len(summary_lines) * 18 + 16
     content_y = legend_y + len(legend_lines) * 20 + 12
     height = content_y + sum(member_heights) + sum(row_heights) + 60
+    return {
+        "title_lines": title_lines,
+        "summary_lines": summary_lines,
+        "legend_lines": legend_lines,
+        "member_lines": member_lines,
+        "row_lines": row_lines,
+        "member_heights": member_heights,
+        "row_heights": row_heights,
+        "summary_y": summary_y,
+        "legend_y": legend_y,
+        "content_y": content_y,
+        "height": height,
+    }
+
+
+def svg(view: dict, title: str, *, prefix: str = "", y: int | None = None) -> Iterator[str]:
+    measured = layout(view, title)
+    title_lines, summary_lines, legend_lines = (
+        measured[key] for key in ("title_lines", "summary_lines", "legend_lines")
+    )
+    member_lines, row_lines, member_heights, row_heights = (
+        measured[key] for key in ("member_lines", "row_lines", "member_heights", "row_heights")
+    )
+    summary_y, legend_y, content_y, height = (
+        measured[key] for key in ("summary_y", "legend_y", "content_y", "height")
+    )
+    title_id = escape(prefix + "report-title")
+    geometry = "" if y is None else f'x="0" y="{y}" width="{WIDTH}" height="{height}" '
+    style = "width:100%;height:auto;" if y is None else ""
     yield (
         '<svg xmlns="http://www.w3.org/2000/svg" '
-        f'viewBox="0 0 {WIDTH} {height}" role="img" aria-labelledby="report-title" '
-        'style="width:100%;height:auto;background:#fff;color:#142536">\n'
+        + geometry
+        + f'viewBox="0 0 {WIDTH} {height}" role="img" aria-labelledby="{title_id}" '
+        + f'style="{style}background:#fff;color:#142536">\n'
     )
-    yield f'<title id="report-title">{escape(title)}</title>\n'
+    yield f'<title id="{title_id}">{escape(title)}</title>\n'
     yield (
         "<style>text{font-family:monospace;font-size:11px;fill:#142536}"
         ".heading{font-size:21px;font-weight:bold}.state{font-size:13px;font-weight:bold}"
@@ -170,8 +206,8 @@ def markdown_text(value: str) -> str:
     return text.encode("ascii", "xmlcharrefreplace").decode("ascii")
 
 
-def markdown(view: dict, title: str) -> Iterator[str]:
-    yield f"# {markdown_text(title)}\n\n"
+def markdown(view: dict, title: str, *, level: int = 1) -> Iterator[str]:
+    yield f"{'#' * level} {markdown_text(title)}\n\n"
     yield "\n\n".join(summary(view)) + "\n\n"
     yield (
         "Client active interval includes transport/server queue and drain; "
@@ -190,7 +226,7 @@ def markdown(view: dict, title: str) -> Iterator[str]:
             ", ".join(map(str, m["rows"])) or "none",
             m["latency"],
             m["slo"],
-            "/".join(str(m["bindings"][k]) for k in ("matched", "mismatch", "unavailable")),
+            "/".join(number(m["bindings"][k]) for k in ("matched", "mismatch", "unavailable")),
         ]
         yield "| " + " | ".join(map(str, cells)) + " |\n"
     yield (

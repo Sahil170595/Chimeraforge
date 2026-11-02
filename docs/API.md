@@ -3,7 +3,7 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers unreleased Chimeraforge 0.89.0 source. Public installation
+This document covers unreleased Chimeraforge 0.90.0 source. Public installation
 remains 0.86.0.
 
 The 0.89.0 source adds frozen `ChatMessage(role, content)` and
@@ -431,3 +431,10 @@ for the full API (Tokio + reqwest streaming).
 ---
 
 **Last Updated**: March 2026
+
+## Whole-campaign diagnostics (unreleased 0.90.0)
+
+`api.render_trace_report(source, kind="trace-campaign" | "fleet-trace-campaign",
+format="html" | "svg" | "markdown", title="Trace diagnostics")` returns the same
+`TraceReport`. It holds every native execution/member/row and marks absent
+observations unavailable. See [full API/CLI, privacy and bounds](campaign-diagnostics.md).

@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.90.0] - UNRELEASED
+
+### Whole-campaign diagnostics
+
+- Extend the existing static API/report CLI to complete native serial and original-fleet campaigns in HTML, SVG and Markdown. Retain all K executions, each original N/member/row, failed/incomplete/missing slots and known-zero versus unavailable observations.
+- Reuse strict whole-campaign receiving and native child projections without pooled percentiles, rewritten gate math, favorable selection, optimizer execution or backend contact. Bind embedded-child representation labels and public source fingerprints honestly.
+- Preserve native input/output profiles, protected aliases, private-data exclusion, escaped text and native measured panel geometry with unique IDs. Refuse a complete oversized document before publication without truncation.
+- Extend the original/rebuilt installed consumer and hosted-only browser flow with complete saved campaign documents and two narrow synthetic campaign PNGs for visual review. Source/protocol, installed and browser evidence remain separate; public installation remains 0.86.0.
+
 ## [0.89.0] - UNRELEASED
 
 ### Native chat trace replay

@@ -1,4 +1,4 @@
-"""Privacy-scoped static diagnostics for strict ordinary and whole-fleet traces."""
+"""Privacy-scoped static diagnostics for strict traces and whole native campaigns."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from chimeraforge.report.trace_view import projection
 MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 MAX_TITLE_CHARS = 200
 MAX_TITLE_BYTES = 1024
-KINDS = {"trace", "fleet-trace"}
+KINDS = {"trace", "fleet-trace", "trace-campaign", "fleet-trace-campaign"}
 FORMATS = {"html", "markdown", "svg"}
 LOG = logging.getLogger(__name__)
 
@@ -91,10 +91,21 @@ def render_trace_report(
             raise ValueError
     except (ValueError, UnicodeError):
         raise PlanError("trace report title is outside its public profile") from None
-    held = hold(source, kind)
-    view = projection(held, kind)
+    campaign = kind in {"trace-campaign", "fleet-trace-campaign"}
+    if campaign:
+        from chimeraforge.report.campaign_inputs import hold as hold_campaign
+        from chimeraforge.report.campaign_view import projection as campaign_projection
+        from chimeraforge.report.campaign_formats import chunks as campaign_chunks
+
+        held = hold_campaign(source, kind)
+        view = campaign_projection(held, kind)
+        stream = campaign_chunks(view, title, format)
+    else:
+        held = hold(source, kind)
+        view = projection(held, kind)
+        stream = chunks(view, title, format)
     output = bytearray()
-    for chunk in chunks(view, title, format):
+    for chunk in stream:
         raw = chunk.encode("utf-8")
         if len(raw) > MAX_OUTPUT_BYTES - len(output):
             raise PlanError("complete trace report exceeds its output profile")

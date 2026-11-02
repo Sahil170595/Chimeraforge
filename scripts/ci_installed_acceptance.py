@@ -280,6 +280,15 @@ def main(argv: list[str] | None = None) -> int:
             cwd / "trace-reports", env, cwd / "fleet-plan.json", handoff=args.trace_report_handoff
         )
 
+        from ci_campaign_report import accept as accept_campaign_report
+
+        campaign_report_receipt = accept_campaign_report(
+            cwd / "campaign-reports",
+            env,
+            cwd / "fleet-plan.json",
+            handoff=args.trace_report_handoff,
+        )
+
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
@@ -332,6 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                     "fleet_trace_campaign_protocol": fleet_campaign_receipt,
                     "kubernetes_inspection_protocol": inspection_receipt,
                     "trace_report_protocol": trace_report_receipt,
+                    "campaign_report_protocol": campaign_report_receipt,
                     "loaded_module_provenance": {
                         "before": loaded_before,
                         "after": assert_installed_modules(args.checkout),

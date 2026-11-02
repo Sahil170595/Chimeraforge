@@ -9,6 +9,9 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+**Unreleased 0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md):
+all K/original N, native states/unknowns and complete static HTML/SVG/Markdown.
+
 **Unreleased 0.89.0 source** adds [native chat trace replay](chat-trace-replay.md):
 ordered text-role histories across ordinary/saved/fleet/campaign paths, explicit
 usage unknowns and complete private commitments. Public installation remains 0.86.0.
