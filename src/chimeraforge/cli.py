@@ -27,6 +27,7 @@ from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
 from chimeraforge.commands.monitor import monitor
 from chimeraforge.commands.monitor_fleet import monitor_fleet
+from chimeraforge.commands.monitor_fleet_exporter import monitor_fleet_exporter
 from chimeraforge.commands.trace_fleet import trace_fleet
 from chimeraforge.commands.trace_fleet_campaign import trace_fleet_campaign
 from chimeraforge.commands.measure import measure
@@ -103,6 +104,7 @@ app.command()(report)
 app.command()(workload)
 app.command()(monitor)
 app.command("monitor-fleet")(monitor_fleet)
+app.command("monitor-fleet-exporter")(monitor_fleet_exporter)
 app.command("trace-fleet")(trace_fleet)
 app.command("trace-fleet-campaign")(trace_fleet_campaign)
 app.command()(doctor)

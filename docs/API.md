@@ -3,8 +3,14 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers unreleased Chimeraforge 0.90.0 source. Public installation
+This document covers unreleased Chimeraforge 0.91.0 source. Public installation
 remains 0.86.0.
+
+The 0.91.0 source adds typed `FleetExporterConfig` and frozen
+`FleetExporterSnapshot`; async `serve_fleet_exporter` holds native saved intent
+and yields an owned loopback cached-gauge service. `snapshot()` performs no
+backend I/O; context exit or `aclose()` joins the listener and poll task.
+See [the complete exporter contract](fleet-exporter.md).
 
 The 0.89.0 source adds frozen `ChatMessage(role, content)` and
 `ChatTraceRequest(request_id, messages, max_output_tokens, arrival_offset_s,

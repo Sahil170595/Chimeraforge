@@ -1,5 +1,9 @@
 # Quick Start Guide
 
+Unreleased **0.91.0 source** adds [continuous fleet export](fleet-exporter.md)
+through `monitor-fleet-exporter` and `api.serve_fleet_exporter`. Scrapes only read
+cached bytes; qualification and lifecycle remain separate. Public install is 0.86.0.
+
 Unreleased **0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md).
 Public installation remains **0.86.0**.
 

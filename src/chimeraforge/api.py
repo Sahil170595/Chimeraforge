@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import types
+from contextlib import AbstractAsyncContextManager
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
@@ -61,6 +62,12 @@ from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
 from chimeraforge.fleet_monitor_types import FleetMonitorError as FleetMonitorError
 from chimeraforge.fleet_monitor_types import FleetMonitorExportError as FleetMonitorExportError
+from chimeraforge.fleet_exporter_types import (
+    FleetExporterConfig as FleetExporterConfig,
+    FleetExporterSnapshot as FleetExporterSnapshot,
+    FleetExporterError as FleetExporterError,
+)
+from chimeraforge.fleet_exporter import FleetExporter as FleetExporter
 from chimeraforge.fleet_monitor_gate_types import (
     FleetMonitorGate as FleetMonitorGate,
     FleetMonitorGatePolicy as FleetMonitorGatePolicy,
@@ -1086,6 +1093,22 @@ async def monitor_fleet(
         candidate_index=candidate_index,
         stop_event=stop_event,
         connections=connections,
+    )
+
+
+def serve_fleet_exporter(
+    saved: PlanArtifact | str | Path,
+    request: FleetMonitorRequest,
+    *,
+    config: FleetExporterConfig = FleetExporterConfig(),
+    candidate_index: int = 0,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> AbstractAsyncContextManager[FleetExporter]:
+    """Own a fixed-config loopback cached exporter; scrapes never poll backends."""
+    from chimeraforge.fleet_exporter import serve_fleet_exporter as serve
+
+    return serve(
+        saved, request, config=config, candidate_index=candidate_index, connections=connections
     )
 
 

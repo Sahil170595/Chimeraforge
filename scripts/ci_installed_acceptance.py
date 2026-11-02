@@ -263,6 +263,11 @@ def main(argv: list[str] | None = None) -> int:
         passive_gate_receipt = accept_fleet_monitor_gate(
             cwd / "fleet-monitor-gate", env, cwd / "fleet-plan.json", args.checkout
         )
+        from ci_fleet_exporter import accept as accept_fleet_exporter
+
+        exporter_receipt = accept_fleet_exporter(
+            cwd / "fleet-exporter", env, cwd / "fleet-plan.json"
+        )
         from ci_fleet_trace_campaign import accept as accept_fleet_campaign
 
         fleet_campaign_receipt = accept_fleet_campaign(
@@ -338,6 +343,7 @@ def main(argv: list[str] | None = None) -> int:
                     "native_stream_protocol": native_stream_receipt,
                     "secure_active_protocol": secure_active_receipt,
                     "fleet_monitor_gate_protocol": passive_gate_receipt,
+                    "fleet_exporter_protocol": exporter_receipt,
                     "fleet_trace_campaign_protocol": fleet_campaign_receipt,
                     "kubernetes_inspection_protocol": inspection_receipt,
                     "trace_report_protocol": trace_report_receipt,

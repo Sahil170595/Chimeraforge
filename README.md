@@ -15,6 +15,11 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Unreleased 0.91.0 source:** `monitor-fleet-exporter` / `api.serve_fleet_exporter`
+serve cached native fleet gauges on loopback, with all-N freshness/failure views
+and owned shutdown. Scrapes make no backend calls. Public installation remains
+**0.86.0**; see [continuous fleet export](docs/fleet-exporter.md).
+
 **Unreleased 0.90.0 source:** `report --kind trace-campaign` / `--kind fleet-trace-campaign`
 and `api.render_trace_report` render whole native campaigns as HTML/SVG/Markdown,
 retaining every execution, original member and unknown fact. Public installation
@@ -41,7 +46,7 @@ Public installation remains **0.86.0**; see the [complete contract](docs/invento
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**33 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.90.0 source; public installation remains 0.86.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.91.0 source; public installation remains 0.86.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -666,6 +671,23 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 - **GDDR consumer cards:** decode is **under**-predicted by a median of **-36%**.
 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
+
+### `monitor-fleet-exporter` -- continuously serve cached native gauges
+
+The unreleased 0.91.0 source adds a loopback service with one sequential native
+window per poll. Install the source with `python -m pip install -e ".[exporter]"`.
+Repeat `--endpoint ID=URL` for every original saved member; supply
+`--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
+`--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`
+sets native sampling and cache freshness. `--listen-port 9400` exposes GET/HEAD
+`http://127.0.0.1:9400/metrics`; scrapes never contact a backend.
+
+`--run-seconds 30` is an optional finite diagnostic; default service lifetime is
+continuous. Clean shutdown0 is separate from native qualification. Prior PASS
+metrics disappear after a new failure or TTL expiry; unknown numeric values are
+omitted. Native samples and outcomes remain gauges, not cumulative traffic.
+Outbound TLS/auth/mTLS settings are reused; public labels are ordinal/configured.
+See the [full API, CLI, lifecycle and evidence limits](docs/fleet-exporter.md).
 
 ### `monitor-fleet` -- observe every declared saved replica
 

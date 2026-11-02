@@ -5,6 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.91.0] - UNRELEASED
+
+### Continuous fixed-config fleet exporter
+
+- Add typed async service ownership and actual `monitor-fleet-exporter` CLI, with a declared supported optional ASGI stack, prebound loopback listener and one sequential finite native poll worker.
+- Serve immutable cached native gauges without backend contact on scrapes; retain every original member, native qualification, unknown numeric omission, monotonic expiry and immediate failure/reset/mismatch replacement of old PASS views.
+- Hold saved-plan/request and opted-secure TLS/auth/mTLS settings; preserve anonymous native defaults and observed-window-only reset limits. Safe ordinal/configured-model labels omit private endpoint/model/operator labels.
+- Extend original/rebuilt installed acceptance with real API/HTTP/OS CLI and CPU mTLS controls, invalid late-input refusal and joined shutdown. Controlled protocol evidence remains separate from engines, physical deployment and current hosted acceptance. Public installation remains 0.86.0.
+
 ## [0.90.0] - UNRELEASED
 
 ### Whole-campaign diagnostics
