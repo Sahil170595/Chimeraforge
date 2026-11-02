@@ -7,6 +7,8 @@ from dataclasses import replace
 
 import httpx
 import pytest
+from click import unstyle
+import typer.rich_utils
 from typer.testing import CliRunner
 
 from chimeraforge import api
@@ -62,8 +64,14 @@ async def test_native_exporter_cached_scrapes_and_joined_shutdown(native_fleet):
         assert len(calls) == after
 
 
-def test_exporter_cli_has_explicit_continuous_controls():
-    result = CliRunner().invoke(app, ["monitor-fleet-exporter", "--help"])
+@pytest.mark.parametrize("force_terminal", [False, True], ids=["plain", "forced-color"])
+def test_exporter_cli_has_explicit_continuous_controls(monkeypatch, force_terminal):
+    monkeypatch.setattr(typer.rich_utils, "FORCE_TERMINAL", force_terminal)
+    monkeypatch.setenv("TERM", "xterm-256color")
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    result = CliRunner().invoke(app, ["monitor-fleet-exporter", "--help"], color=force_terminal)
     assert result.exit_code == 0, result.output
-    assert "--poll-seconds" in result.output and "--stale-after-seconds" in result.output
-    assert "--run-seconds" in result.output
+    assert ("\x1b[" in result.output) is force_terminal
+    output = unstyle(result.output)
+    assert "--poll-seconds" in output and "--stale-after-seconds" in output
+    assert "--run-seconds" in output
