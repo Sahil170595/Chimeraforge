@@ -38,8 +38,12 @@ def inspect_campaigns(
                     assert page.locator("[data-execution]").count() == count
                     assert page.locator("[data-row]").count() == count * rows
                     assert page.locator("[data-member]").count() == count * members
-                    outer = page.locator("svg").first
-                    assert outer.locator(":scope > title").text_content() == title
+                    outer = page.locator('svg[aria-labelledby="campaign-title"]')
+                    assert outer.count() == 1
+                    assert (
+                        page.locator('svg[aria-labelledby="campaign-title"] > title').text_content()
+                        == title
+                    )
                     assert page.locator("[id]").evaluate_all(
                         "els=>new Set(els.map(e=>e.id)).size===els.length"
                     )

@@ -81,3 +81,15 @@ full A execution passed 5,901 with 8 skips and observed the intended Trickle and
 three one-byte accepts. That does not establish the cause of the first failure or
 classify it as a flake. Both executions and their limitations remain preserved.
 The helper successor receives a separate ordinary frozen full source execution.
+
+The C helper successor uses the unique named outer SVG and a document-level
+direct-title selector, preserving the exact title and all population, privacy,
+geometry, timeout and PNG checks. The current B hosted Linux installed job
+125028930663 passed installed API acceptance, then timed out at the chained
+`:scope > title` locator. Its log does not identify the failing filename. Pinned
+Playwright 1.64.1 source explains a standalone SVG root scope-expansion gap; the
+retained HTML/SVG documents contain the expected title. No renderer, test, SDK or
+environment bytes change. `functional-c.json` is a fresh current source aggregate;
+A/B records remain exact historical evidence. Offline structural controls do not
+establish browser success: fresh hosted original/rebuilt browser checks and actual
+PNG views remain required.
