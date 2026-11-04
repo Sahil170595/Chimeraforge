@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 import subprocess
@@ -21,7 +22,15 @@ def interpreter(venv: Path) -> Path:
     return venv / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
 
 
-def accept(wheel: Path, root: Path, temp: Path, requirements: Path, version: str) -> None:
+def accept(
+    wheel: Path,
+    root: Path,
+    temp: Path,
+    requirements: Path,
+    version: str,
+    *,
+    report_handoff: Path | None = None,
+) -> None:
     """Install locked dependencies and the candidate into a separate clean environment."""
     run("uv", "venv", "--python", sys.executable, temp)
     python = interpreter(temp)
@@ -36,6 +45,7 @@ def accept(wheel: Path, root: Path, temp: Path, requirements: Path, version: str
         root,
         "--plan-handoff",
         root / "plan-handoff",
+        *(["--trace-report-handoff", report_handoff] if report_handoff is not None else []),
         cwd=temp,
     )
     run(
@@ -50,6 +60,9 @@ def accept(wheel: Path, root: Path, temp: Path, requirements: Path, version: str
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--browser-screenshots", type=Path)
+    args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"][
         "version"
@@ -72,7 +85,12 @@ def main() -> int:
             "--quiet",
             cwd=root,
         )
-        accept(wheels[0], root, temp / "wheel-venv", requirements, version)
+        handoff = temp / "original-report-documents" if args.browser_screenshots else None
+        accept(wheels[0], root, temp / "wheel-venv", requirements, version, report_handoff=handoff)
+        if handoff is not None:
+            from ci_trace_report_browser import accept as browse
+
+            browse(handoff, args.browser_screenshots, "original")
         source = temp / "sdist"
         source.mkdir()
         with tarfile.open(sdists[0]) as archive:
@@ -95,7 +113,19 @@ def main() -> int:
         rebuilt_wheels = list(rebuilt.glob("*.whl"))
         if len(rebuilt_wheels) != 1:
             raise RuntimeError("sdist did not produce exactly one wheel")
-        accept(rebuilt_wheels[0], root, temp / "sdist-venv", requirements, version)
+        handoff = temp / "rebuilt-report-documents" if args.browser_screenshots else None
+        accept(
+            rebuilt_wheels[0],
+            root,
+            temp / "sdist-venv",
+            requirements,
+            version,
+            report_handoff=handoff,
+        )
+        if handoff is not None:
+            from ci_trace_report_browser import accept as browse
+
+            browse(handoff, args.browser_screenshots, "rebuilt")
         print(
             json.dumps(
                 {

@@ -25,7 +25,7 @@ STREAM_GAP_SECONDS = 0.03
 FIXTURE_JOIN_SECONDS = 5
 
 
-def packets(output_tokens: int = OUTPUT_CAP) -> tuple[bytes, bytes]:
+def packets(output_tokens: int = OUTPUT_CAP, *, chat: bool = False) -> tuple[bytes, bytes]:
     def event(value: dict) -> bytes:
         return ("data: " + json.dumps(value) + "\n\n").encode()
 
@@ -44,6 +44,21 @@ def packets(output_tokens: int = OUTPUT_CAP) -> tuple[bytes, bytes]:
             ]
         }
     )
+    if chat:
+        first = event(
+            {
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {"role": "assistant", "content": "fixture"},
+                        "finish_reason": None,
+                    }
+                ]
+            }
+        )
+        final = event(
+            {"choices": [{"index": 0, "delta": {"content": " tail"}, "finish_reason": "length"}]}
+        )
     final += event(
         {
             "choices": [],
@@ -70,6 +85,7 @@ def server(
     malformed: bool = False,
     echo: str | None = None,
     release: threading.Event | None = None,
+    chat: bool = False,
 ) -> Iterator[tuple[str, list[dict[str, Any]]]]:
     calls: list[dict[str, Any]] = []
 
@@ -150,10 +166,13 @@ def server(
             request = json.loads(self.rfile.read(size))
             if not self.admitted():
                 return
-            assert self.path == "/v1/completions"
+            assert self.path == ("/v1/chat/completions" if chat else "/v1/completions")
             assert request["model"] == MODEL and request["max_tokens"] == cap
             assert request["stream"] is True
-            first, final = packets(cap)
+            if chat:
+                assert request["messages"] and "prompt" not in request
+                assert not {"echo", "return_token_ids", "return_prompt_token_ids"} & set(request)
+            first, final = packets(cap, chat=chat)
             if malformed:
                 first, final = b"data: not-json\n\n", b"data: [DONE]\n\n"
             self.send_response(200, echo)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from typing import cast
 
 import typer
 
@@ -23,9 +24,14 @@ def inventory_check(
     timeout: float = typer.Option(
         10.0, "--timeout", help="Native observation seconds, at most 60."
     ),
+    memory_basis: str = typer.Option(
+        "batch-one",
+        "--memory-basis",
+        help="batch-one (default) or selected-batch modeled resident components.",
+    ),
     output_json: bool = typer.Option(False, "--json"),
 ) -> None:
-    """Compare reported inventory with saved B1 memory; no deployment-readiness result."""
+    """Compare reported inventory with saved resident memory; no deployment readiness."""
     from chimeraforge import api
     from chimeraforge.commands.deploy import _replica_groups
     from chimeraforge.deploy import DeploymentError
@@ -38,29 +44,57 @@ def inventory_check(
                 gpu_devices=gpu_device,
                 replica_gpu_devices=_replica_groups(replica_devices),
                 timeout=timeout,
+                memory_basis=cast(api.MemoryBasis, memory_basis),
             )
         )
     except (api.InventoryCheckError, DeploymentError) as exc:
+        error = (
+            "Invalid inventory memory basis; choose batch-one or selected-batch."
+            if memory_basis not in ("batch-one", "selected-batch")
+            else "Invalid saved inventory source or selector declarations."
+        )
         typer.echo(
             json.dumps(
                 {
                     "outcome": "invalid",
                     "exit_code": 1,
-                    "error": "Invalid saved inventory source or selector declarations.",
+                    "error": error,
                 }
             )
             if output_json
-            else "Invalid saved inventory source or selector declarations."
+            else error
         )
         raise typer.Exit(1) from exc
     if output_json:
         typer.echo(json.dumps(report.to_dict(), allow_nan=False))
     else:
         typer.echo(f"Inventory arithmetic {report.outcome}; deployment readiness is unassessed.")
-        typer.echo(
-            f"Saved B1 baseline: {report.baseline.lower_gib}..{report.baseline.upper_gib} "
-            "GiB per entry."
-        )
+        if isinstance(report.baseline, api.SelectedBatchBaseline):
+            baseline = report.baseline
+            selected = (
+                f"{baseline.selected_lower_gib}..{baseline.selected_upper_gib} "
+                f"GiB per entry ({baseline.status})"
+                if baseline.status == "estimated"
+                else f"unavailable ({baseline.reason})"
+            )
+            typer.echo(
+                f"Selected batch B={baseline.saved_effective_batch}, "
+                f"context={baseline.saved_context_length}: {selected}."
+            )
+            typer.echo(
+                f"Original saved B1: {baseline.saved_batch1.lower_gib}.."
+                f"{baseline.saved_batch1.upper_gib} GiB per entry."
+            )
+            typer.echo(
+                "Selected increment uses full saved context per active sequence; unassessed: "
+                + ", ".join(baseline.unassessed_residency)
+                + "."
+            )
+        else:
+            typer.echo(
+                f"Saved B1 baseline: {report.baseline.lower_gib}.."
+                f"{report.baseline.upper_gib} GiB per entry."
+            )
         for slot in report.slots:
             typer.echo(
                 f"Replica {slot.replica_index} device {slot.device_index}: "

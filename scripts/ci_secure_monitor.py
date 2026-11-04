@@ -421,6 +421,10 @@ def certificates(cwd: Path) -> dict[str, Path]:
             .add_extension(x509.BasicConstraints(ca=ca is None, path_length=None), critical=True)
         )
         if ca:
+            builder = builder.add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(ca[0].public_key()),
+                critical=False,
+            )
             purpose = ExtendedKeyUsageOID.CLIENT_AUTH if client else ExtendedKeyUsageOID.SERVER_AUTH
             builder = builder.add_extension(x509.ExtendedKeyUsage([purpose]), critical=False)
             if not client:
@@ -433,6 +437,23 @@ def certificates(cwd: Path) -> dict[str, Path]:
                     ]
                 )
                 builder = builder.add_extension(x509.SubjectAlternativeName(names), critical=False)
+        else:
+            builder = builder.add_extension(
+                x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False
+            ).add_extension(
+                x509.KeyUsage(
+                    digital_signature=False,
+                    content_commitment=False,
+                    key_encipherment=False,
+                    data_encipherment=False,
+                    key_agreement=False,
+                    key_cert_sign=True,
+                    crl_sign=True,
+                    encipher_only=False,
+                    decipher_only=False,
+                ),
+                critical=True,
+            )
         cert = builder.sign(ca[0] if ca else key, hashes.SHA256())
         paths[name] = cwd / (name + ".pem")
         paths[name + "_key"] = cwd / (name + "-key.pem")
@@ -496,8 +517,10 @@ def server(
     quant: str = "float16",
     deny_metadata: bool = False,
     slow: bool = False,
+    vllm_tpot: bool = False,
 ) -> Iterator[tuple[str, list[dict[str, Any]]]]:
     """Observe authorized route counts only; never retain headers or credential values."""
+    assert not vllm_tpot or backend == "vllm"
     calls: list[dict[str, Any]] = []
     counts: dict[str, int] = {}
 
@@ -531,6 +554,11 @@ def server(
                 count = counts.get(prefix, 0)
                 counts[prefix] = count + 1
                 code, body = 200, histogram(backend, model, 100 + count * 20, slow=slow)
+                if vllm_tpot:
+                    body += body.replace(
+                        b"vllm:time_to_first_token_seconds",
+                        b"vllm:request_time_per_output_token_seconds",
+                    )
             else:
                 data: dict[str, Any]
                 if route == "version":
