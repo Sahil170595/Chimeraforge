@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceSource
+
 import asyncio
 from collections.abc import Mapping
 from pathlib import Path
@@ -14,7 +16,7 @@ from chimeraforge.bench.fleet_trace_inputs import _PreparedFleetTrace, prepare, 
 from chimeraforge.bench.fleet_trace_receipt import make_report
 from chimeraforge.bench.fleet_trace_types import FleetTraceReplay, TraceRoute
 from chimeraforge.bench.serving import observe_backend
-from chimeraforge.bench.trace_workload import TraceRequest
+from chimeraforge.bench.trace_workload import TraceRequest as TraceRequest
 from chimeraforge.fleet_monitor_types import FleetEndpoint
 from chimeraforge.monitor_connection import MonitorConnection
 from chimeraforge.planner.replay import digest
@@ -244,7 +246,7 @@ async def _replay_prepared(
 
 async def replay_fleet_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,

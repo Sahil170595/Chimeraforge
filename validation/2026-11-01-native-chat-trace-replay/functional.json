@@ -1,0 +1,132 @@
+{
+  "scope": "Actual native adapters/OSCLI against controlled HTTP; no engine inference.",
+  "profiles": [
+    {
+      "backend": "vllm",
+      "usage_present": true,
+      "completed": 2
+    },
+    {
+      "backend": "vllm",
+      "usage_present": false,
+      "completed": 2
+    },
+    {
+      "backend": "sglang",
+      "usage_present": true,
+      "completed": 2
+    },
+    {
+      "backend": "sglang",
+      "usage_present": false,
+      "completed": 2
+    },
+    {
+      "backend": "tgi",
+      "usage_present": true,
+      "completed": 2
+    },
+    {
+      "backend": "tgi",
+      "usage_present": false,
+      "completed": 2
+    },
+    {
+      "backend": "ollama",
+      "usage_present": true,
+      "completed": 2
+    },
+    {
+      "backend": "ollama",
+      "usage_present": false,
+      "completed": 2
+    }
+  ],
+  "native_chat_POSTs": 24,
+  "native_plan_save_load_chat_completed": 2,
+  "server_templated_prompt_count_matched": 512,
+  "native_diagnostic_API_CLI_text_equal": true,
+  "fleet": {
+    "members": 3,
+    "rows": 6,
+    "native_completed": 6
+  },
+  "late_invalid_precontact": true,
+  "wire_row_association": true,
+  "per_member_routes_held": true,
+  "source_bytes_held": true,
+  "owned_HTTP_server_thread_joined": true,
+  "owned_CLI_children_joined": true,
+  "private_messages_and_outputs_absent": true,
+  "tool_version": "0.89.0",
+  "recorded_at": "2026-11-01T20:58:59.833918+00:00",
+  "source_hash_basis": "Actual current RAW source files held before and after execution.",
+  "current_source_sha256": {
+    ".github/workflows/ci.yml": "6cb13ce9673685109891b0d926cfa9105fc1fff0a6cea1cec6aa970dd51cc7ae",
+    "pyproject.toml": "1859e7317b738ad0c3ba7ea75708b17620c0bcedcaa8aadb0b049417f3d5ab40",
+    "scripts/ci_chat_trace.py": "6a3d87880e85168c89d97ba0a019cccb6ceabf89ce4133b776451326038cb32a",
+    "scripts/ci_cpu_serving.py": "da2f6718c197112d832afe194260fbd9572132919a2351e9d87a8f4db87206ef",
+    "scripts/ci_installed_acceptance.py": "ff650a50e0fb9b96f9f5a92c958656ff77bae643d41fe5e83de784dc763c123c",
+    "scripts/ci_secure_active.py": "acf7b44237644ee85a3b59c3cda858643b33456bfb4c82b87a612a5fe321abb3",
+    "server.json": "d78f15e4136d7427a94328db7fa1a48e6b894ebcf0e80f70599b0c9b35aae740",
+    "src/chimeraforge/api.py": "de578908783b3d04b419f6b3d403adbcf6e81ba1ed1de745e1e67bb6c329b019",
+    "src/chimeraforge/bench/__init__.py": "e35b64cbe1db18f8cbf2a881b732161da02f00a3b0b1153bd4b3edab107a9982",
+    "src/chimeraforge/bench/backends/__init__.py": "5335b0da3989b149de666b16eed7ddff52de07840c2925933c6bac1bbab1a09c",
+    "src/chimeraforge/bench/backends/_chat_stream.py": "61b741857612af7732c0b109c221c9ba1f7d3d10a9e8d248c205446dd74ba60d",
+    "src/chimeraforge/bench/backends/_native_stream.py": "3f2546d8d8924548d157dcdd1f959730b386cd32d25441697e53fadacab7e5be",
+    "src/chimeraforge/bench/backends/_stream_frames.py": "54ffb4875a7bdf4d464067dde728b9716e529feaac8bc93e4769ab4b7e887d19",
+    "src/chimeraforge/bench/backends/base.py": "7129015ea53e68cd61c50ace3cfd7375b4e56ad820a8ef00a7ca4b297c8f1761",
+    "src/chimeraforge/bench/backends/ollama.py": "cb7f24cfa9b4279b7a71190bbe191196bf2b92c02359127f0f2e064af83f950f",
+    "src/chimeraforge/bench/backends/plugin.py": "754d959982e9b44f65b2733690f92195cd10ed96202b5afd41f4bdd8d87f1ee9",
+    "src/chimeraforge/bench/backends/sglang.py": "0e48aeb9105fcac5285f011b7308cade4639c363a0a9cdecee48f26506c94746",
+    "src/chimeraforge/bench/backends/tgi.py": "8ce55e18b05b06ef9124036e68ce702d2c671c2d8cc52af77d018c447a81f8d7",
+    "src/chimeraforge/bench/backends/vllm.py": "d64e81e1cc165f935cd7a2318f26428cb815518d585ee4d84467a80f89d291e7",
+    "src/chimeraforge/bench/fleet_campaign.py": "0704a78dafe8550f0a9a3a287e7ab906294edf267196fedd2146e3b561ce25e4",
+    "src/chimeraforge/bench/fleet_campaign_gate.py": "307649271c4679af73842578eafc10379c85c9b88d8827cab8e21429c52cdd11",
+    "src/chimeraforge/bench/fleet_campaign_output.py": "0913d39e63d09de79597bb366ddfac8ad393d35ab136f46fb1322a9f819f9017",
+    "src/chimeraforge/bench/fleet_campaign_receipt.py": "7a4941be65831fdbc1c4d59398e9b5f806d124d884eca5c6477789f0f24a7a25",
+    "src/chimeraforge/bench/fleet_campaign_types.py": "29506e2d5ba5753405435f41800c0ac88f2089e6272a7c245c991655b8f3f2b5",
+    "src/chimeraforge/bench/fleet_gate_evidence.py": "ffdd23464a1f362f90023b389b1283ba888860471f9098dc03293abb333bbc87",
+    "src/chimeraforge/bench/fleet_gate_inputs.py": "1180ac0b2ca3be94db206b3e5c629f8f7991ae1cdcd39b8c41cfe8c5197cb97d",
+    "src/chimeraforge/bench/fleet_gate_output.py": "d28e40f945e3ab4f6362f686900fa583d1552513c38bd4daa66abad6e0528b91",
+    "src/chimeraforge/bench/fleet_trace.py": "9e8e1f5832357f606939be4a5fe8252c5ccb7f7054f0c1237267209403aa73aa",
+    "src/chimeraforge/bench/fleet_trace_gate.py": "06fcf23f51641305adc23bc2a67b00e7320a0b2815a4cc843082cfb66015cd43",
+    "src/chimeraforge/bench/fleet_trace_inputs.py": "962c0dcf7b9d415752d6d24c8cab37fa1a7401779829e3b139a857d0869c9138",
+    "src/chimeraforge/bench/fleet_trace_receipt.py": "53a479bcece8732c8e177ce60c7725a26916bb81bffa28914c80a5a0802c718e",
+    "src/chimeraforge/bench/fleet_trace_types.py": "e921891d880b58ee66b10662b7033ef9e4689ab3ece30ef77db2cdb914e7d9b3",
+    "src/chimeraforge/bench/gate.py": "83c94efcf51089339d54abc5527c2ae540de753f81a2b2b3dd22c05a55ab02e2",
+    "src/chimeraforge/bench/gate_inputs.py": "4b51316de3435caac2cc6ce00b3d602f1a7e8724ecfed045cda7e568fb7d3e94",
+    "src/chimeraforge/bench/metrics.py": "630d8e7ce4eb4f02e80d8d495698a03d2e7c9cd5815d2e732b2ed2c22ccf44c4",
+    "src/chimeraforge/bench/plan.py": "c0b64ea859796aceaee68822176a321d57f69ec6fa914e2733f5d782d91a788b",
+    "src/chimeraforge/bench/plan_trace.py": "dfff7266654f57b5717d7dbbcad8258812e338dfe0fd8e598ab68c0161bd3e5a",
+    "src/chimeraforge/bench/profiles.py": "a552acfd1d2a3b5b279af5a264f348c67c628e3f18d34594c192a33d910d45b6",
+    "src/chimeraforge/bench/prompts.py": "a0df0e81d6498c92abd2a4a5366770eb5e6881802109d36005ac605250692ff8",
+    "src/chimeraforge/bench/runner.py": "18bac369a1b5816bca569b69293ad7aa5623d46d5990e399798af3a4bdf72192",
+    "src/chimeraforge/bench/serving.py": "087860e04e2758e867719f7cf5cd59d3f16777497be2ab8ca4e174b98424a80a",
+    "src/chimeraforge/bench/serving_binding.py": "ae748c4a5a29c5fea258dd9285807613a3967e4c031ace872bde4f94595cb230",
+    "src/chimeraforge/bench/trace.py": "a801a6008524e450f7e1c73e06deb4be3a63cd38b3e65a48f4f9c1548ebf65f1",
+    "src/chimeraforge/bench/trace_campaign.py": "6402bb7c776a4976673dc31b5ad77de9b5ae543b8b27447f0c40c9674f73fb5b",
+    "src/chimeraforge/bench/trace_campaign_gate.py": "ffc24e5cccaf626b215b152740a9b63f00baa258b59eaf9c82ba63bc9f03047d",
+    "src/chimeraforge/bench/trace_campaign_inputs.py": "86746f3188fc8a976bafe2b9772796d09bd35a04d0326a2acff1ddcb772e35e0",
+    "src/chimeraforge/bench/trace_envelope.py": "515b10ae673b0d681614681b2d3c2f2bf173b8ea4db4060271d335a0c6ea2128",
+    "src/chimeraforge/bench/trace_envelope_inputs.py": "6e54ad75d0e5eeb78da25eb6996728ee3792c33372ebfe1a0194464ff6a7de78",
+    "src/chimeraforge/bench/trace_gate.py": "07efe1b1e1a8880aa8aec72034961c4688ae47f0690842bc3dd6fc094969293b",
+    "src/chimeraforge/bench/trace_gate_inputs.py": "0602a7e36c716488e005f803b8bc796b87ad940750528b148dc872925b16c04f",
+    "src/chimeraforge/bench/trace_workload.py": "a7dd7b7c42dcc0a6c192af09110476e64412d771dcc9d2c90a3127d7257ee33f",
+    "src/chimeraforge/commands/trace.py": "bc06346ac0739c55d0dddb5d4a092afd3eca8779b6b335560a51ba16c1bf2a7f",
+    "src/chimeraforge/commands/trace_campaign.py": "2337be42bb7284c2fa3ce5b25cb5cd472401edc927790612abd803273e992099",
+    "src/chimeraforge/commands/trace_envelope.py": "61b9377af96451b71a3f0f114e4a692b595ecfb79dd55f0a09e5e125e76cf9a1",
+    "src/chimeraforge/commands/trace_fleet.py": "e134adf83b1bad5daa7d38dcbad5b258226c4886a68035dab5caaa76294bd91b",
+    "src/chimeraforge/commands/trace_fleet_campaign.py": "891e09527a89f0c1beb2c6dbda27c626fd0b790e53761fdaa935686309f88e7d",
+    "tests/test_chat_stream_contract.py": "b981628171537f43c901e7507b70a8bcb2211af8905f1efdf4a8d1f33e7c0747",
+    "tests/test_chat_trace.py": "33b11d33d1f479836d1e0c90de0f7926da5c26150d29087d54e35eed3a2cf46e",
+    "tests/test_chat_trace_admission.py": "62fc7607d661d083d516a9aeba34fc1201e7db18188b28514a1243ddfed21292",
+    "tests/test_chat_trace_commitments.py": "118017368e6c07158bc49900bbffa8ab7aed71293bd22e7fe684ac99c8c54089",
+    "tests/test_chat_trace_flows.py": "35cb014ce00ff11ae7720910ff791659d5342b3bbfd3fe7618fd2bfc19e651c5",
+    "tests/test_chat_trace_ownership.py": "1157ef13978d4ab40597f2b45a4549c377d378d3fab1d070e542cd9d92de41ce",
+    "tests/test_ci_chat_trace.py": "f58b67897133da611f46c0fa838a08651883e2cbd99483572450ca55dee9a540",
+    "uv.lock": "a6d1b8bcdab8387062490b0e119942dad7c59044c0ae95c54fb4a489beaae740"
+  },
+  "actual_inference_engine_executed": false,
+  "source_only": true
+}

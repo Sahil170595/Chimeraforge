@@ -97,6 +97,7 @@ from chimeraforge.planner.cloudprice import (
 )
 from chimeraforge.planner.cloudprice import is_stale as cloud_is_stale
 from chimeraforge.planner.models import PlannerModels
+from chimeraforge.inventory_memory import producing_declaration
 from chimeraforge.planner.platform_support import (
     load_engine_support,
     DEFAULT_PLAN_PLATFORM,
@@ -1532,6 +1533,20 @@ def enumerate_candidates(
                         "modelled, and per-adapter KV fragmentation is not either"
                     )
 
+                memory_formula = producing_declaration(
+                    models.vram,
+                    spec,
+                    arch,
+                    baseline=vram,
+                    batch=best_b,
+                    context=context_length,
+                    kv_quant=kv_quant,
+                    kv_bytes=kv_bytes,
+                    tp=tp,
+                    pp=pp,
+                )
+                if memory_formula is not None and isinstance(provenance["vram"], dict):
+                    provenance["vram"]["memory_formula"] = memory_formula
                 candidates.append(
                     Candidate(
                         model=model,

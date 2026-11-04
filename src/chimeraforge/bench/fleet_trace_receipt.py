@@ -107,11 +107,18 @@ def native_projection(native: dict) -> dict:
         or type(native["requests"]) is not list
     ):
         _fail()
-    projected = copy.deepcopy(native)
-    for row in projected["requests"]:
+    projected = {key: value for key, value in native.items() if key != "requests"}
+    projected["requests"] = []
+    for row in native["requests"]:
         if type(row) is not dict or set(row) != NATIVE_ROW | {"endpoint_id"}:
             _fail()
-        del row["endpoint_id"]
+        projected["requests"].append(
+            {key: value for key, value in row.items() if key != "endpoint_id"}
+        )
+    from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+    _admit_receipt(projected, MAX_RECEIPT_BYTES)
+    projected = copy.deepcopy(projected)
     # This compatibility fingerprint is private validation, not origin authentication.
     projected["fingerprint"] = digest({k: v for k, v in projected.items() if k != "fingerprint"})
     return projected
@@ -234,6 +241,7 @@ def make_report(
     }
     report["fingerprint"] = digest(report)
     _admit_receipt(report)
+    native_projection(native)
     return report
 
 
@@ -248,6 +256,27 @@ def _held_fleet_trace(
             _fail()
         value = source.to_dict() if isinstance(source, FleetTraceReplay) else source
         data, raw, path = held_json(value, limit)
+        return _fleet_trace_from_held(data, raw, path, protected)
+    except (
+        api.PlanError,
+        ValueError,
+        TypeError,
+        KeyError,
+        AttributeError,
+        OverflowError,
+        RecursionError,
+    ):
+        _fail()
+    raise AssertionError("unreachable")
+
+
+def _fleet_trace_from_held(
+    data: dict, raw: bytes, path: Path | None, protected: tuple[Path, ...] = ()
+) -> dict:
+    """Validate an already held embedded child; raw denotes its declared representation."""
+    from chimeraforge import api
+
+    try:
         if (
             set(data) != ENVELOPE
             or type(data["schema_version"]) is not int

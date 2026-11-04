@@ -450,6 +450,11 @@ def accept(work: Path, binary: Path, store: Path, parent_env: dict) -> dict:
         from ci_fleet_trace_gate import accept_native as accept_native_gate
 
         receipt["fleet_trace_gate"] = accept_native_gate(directory, environments[0], direct, cli)
+        from ci_fleet_trace_campaign import accept_native as accept_native_campaign
+
+        receipt["fleet_trace_campaign"] = accept_native_campaign(
+            directory, environments[0], source, request_path, route_path, endpoints, index
+        )
         for index, (client, log) in enumerate(zip(clients, logs)):
             error, loaded = None, None
             try:

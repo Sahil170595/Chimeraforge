@@ -1,5 +1,32 @@
 # Quick Start Guide
 
+Unreleased **0.91.0 source** adds [continuous fleet export](fleet-exporter.md)
+through `monitor-fleet-exporter` and `api.serve_fleet_exporter`. Scrapes only read
+cached bytes; qualification and lifecycle remain separate. Public install is 0.86.0.
+
+Unreleased **0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md).
+Public installation remains **0.86.0**.
+
+Unreleased **0.89.0 source** adds [native chat trace replay](chat-trace-replay.md)
+through the existing trace command family. Explicit role histories are sent intact;
+missing usage remains unknown. Public installation remains 0.86.0.
+
+Unreleased **0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md)
+through `serving declare|quote|export|verify`. Public installation remains 0.86.0.
+No optimizer, model/corpus lookup or capacity proof is needed to declare intent.
+
+Chimeraforge 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
+`api.render_trace_report` and `report --kind trace|fleet-trace --input`.
+
+Chimeraforge 0.85.0 adds [read-only original Kubernetes inspection](kubernetes-inspection.md),
+with independent intent, separate native rollout and complete protected JSON/JUnit.
+
+Chimeraforge 0.84.0 adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
+with strict complete receiving and bounded native-comparison JSON/JUnit.
+
+Chimeraforge 0.83.0 adds [whole-original-fleet passive SLO gates](fleet-monitor-gate.md),
+with strict saved receiving, effective controls and complete bounded JSON/JUnit.
+
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
 Existing anonymous defaults and native metrics remain.
@@ -37,6 +64,11 @@ reported free memory with the saved per-GPU batch-one baseline. Every result kee
 independence, allocation or runtime fit. See [complete CLI/API examples and
 exit statuses](inventory-check.md).
 
+**Unreleased 0.87.0 source:** `--memory-basis selected-batch` (or API
+`memory_basis="selected-batch"`) adds the compatible saved active-sequence KV
+increment at the saved B/context. Older plans keep default B1 behavior and return
+selected-batch unknown without inventory contact. Public installation remains 0.86.0.
+
 **Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
 adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
 declarations for the original saved replica count. Shared budgets, retained
@@ -47,7 +79,7 @@ retains its behavior.
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.82.0 includes native streaming trace observations and
+Chimeraforge 0.86.0 includes native streaming trace observations and
 [queue-inclusive trace gates](trace-regression-gate.md),
 [serial trace campaigns](trace-campaign.md),
 [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,

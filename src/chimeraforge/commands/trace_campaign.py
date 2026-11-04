@@ -20,7 +20,9 @@ from chimeraforge.bench.trace_workload import (
 
 
 def trace_campaign(
-    workload: Path = typer.Argument(..., help="Private JSON workload; prompts go to the endpoint."),
+    workload: Path = typer.Argument(
+        ..., help="Private JSON prompts or chat histories sent to the endpoint."
+    ),
     model: str = typer.Option(..., "--model", help="Actually served model name."),
     backend: str = typer.Option("ollama", "--backend"),
     base_url: str | None = typer.Option(None, "--base-url"),

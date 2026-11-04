@@ -31,6 +31,13 @@ def gate_fleet_traces(
 ) -> RegressionGate:
     chosen, policy_path = policy_from(policy)
     arms = hold_pair(baseline, candidate)
+    return _gate_held_fleets(arms, chosen, policy_path)
+
+
+def _gate_held_fleets(
+    arms: dict[str, dict], chosen: FleetTraceGatePolicy, policy_path: Path | None = None
+) -> RegressionGate:
+    """Compare already held native fleets without reopening campaign inputs."""
     blockers, populations, works = [], {}, {}
     for arm in ARMS:
         loaded = arms[arm]

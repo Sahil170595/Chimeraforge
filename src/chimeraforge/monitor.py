@@ -359,6 +359,16 @@ def _bounds(first: dict, second: dict, base: str, model: str) -> tuple[int, floa
     return count, lower, upper if math.isfinite(upper) else None
 
 
+def _classify_bounds(lower: float, upper: float | None, target: float | None) -> tuple[str, str]:
+    if target is None:
+        return "unknown", "informational observation; no target supplied"
+    if upper is not None and upper <= target:
+        return "pass", "observed P95 upper bucket bound meets target"
+    if lower >= target:
+        return "breach", "observed P95 exceeds the lower bucket boundary at target"
+    return "unknown", "P95 bucket straddles target; finer buckets are required"
+
+
 def _assessment(
     first: dict,
     second: dict,
@@ -375,14 +385,7 @@ def _assessment(
         count, lower, upper = _bounds(first, second, base, model)
     except _Unknown as exc:
         return MetricAssessment(base, semantics, target, reason=str(exc))
-    if target is None:
-        outcome, reason = "unknown", "informational observation; no target supplied"
-    elif upper is not None and upper <= target:
-        outcome, reason = "pass", "observed P95 upper bucket bound meets target"
-    elif lower >= target:
-        outcome, reason = "breach", "observed P95 exceeds the lower bucket boundary at target"
-    else:
-        outcome, reason = "unknown", "P95 bucket straddles target; finer buckets are required"
+    outcome, reason = _classify_bounds(lower, upper, target)
     return MetricAssessment(
         base, semantics, target, count, lower, upper, outcome, "histogram-bound", reason
     )
