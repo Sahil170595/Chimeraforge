@@ -1,0 +1,67 @@
+{
+  "captured_at": "2026-10-25T18:01:28.039623+00:00",
+  "version": "0.80.0",
+  "evidence": "source API/CLI/JUnit synthetic controls; hosted installed/native acceptance is separate",
+  "result": {
+    "synthetic": true,
+    "controls": [
+      {
+        "case": "pass",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "junit_tests": 2,
+        "junit_failures": 0,
+        "junit_errors": 0,
+        "known_breaches": [],
+        "original_replicas": 3,
+        "rows_per_arm": 6,
+        "blockers": []
+      },
+      {
+        "case": "regression",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "junit_tests": 2,
+        "junit_failures": 1,
+        "junit_errors": 0,
+        "known_breaches": [
+          "latency_p95_ms"
+        ],
+        "original_replicas": 3,
+        "rows_per_arm": 6,
+        "blockers": []
+      },
+      {
+        "case": "inconclusive",
+        "api_exit": 3,
+        "cli_exit": 3,
+        "junit_tests": 2,
+        "junit_failures": 0,
+        "junit_errors": 2,
+        "known_breaches": [
+          "latency_p95_ms"
+        ],
+        "original_replicas": 3,
+        "rows_per_arm": 6,
+        "blockers": [
+          "member:0:condition:version",
+          "member:1:condition:version",
+          "member:2:condition:version"
+        ]
+      }
+    ],
+    "input_bytes_unchanged": true,
+    "scope": "offline synthetic metadata/timing/ownership, genuine native original plan; not independent inference or GPU qualification"
+  },
+  "source_sha256": {
+    "scripts/ci_fleet_trace_gate.py": "fda55c76ee50a15b11908eabf33904c2fc8a0ba49caa9db2935a8683d5b21986",
+    "src/chimeraforge/bench/fleet_gate_evidence.py": "96a1682901bf4af5be981f5d898ab5e5bd3700a21928676433cec098bbbd58a7",
+    "src/chimeraforge/bench/fleet_gate_inputs.py": "cedec1d207094aa715a5f6b54bf2ac1594722beecdfccbdc96d1ec28878e5574",
+    "src/chimeraforge/bench/fleet_gate_output.py": "293f07f9b7463bc492db88216733b3ade599ae033d822ec3f0827bb341cf189d",
+    "src/chimeraforge/bench/fleet_trace_gate.py": "0224f843ecacd68a36fb265f75098d24b42c7f98a96878ca166e1bc7a6a8be2e",
+    "src/chimeraforge/bench/fleet_trace_receipt.py": "0fc7d3089588b54910fe1919900a7b302ab0c3d4b98fd5e00ab30c0757906855",
+    "src/chimeraforge/bench/trace_gate.py": "b41d3ce643450cadf3d5e621c40745d0812522df086934b10db67e9cc13a84f1",
+    "src/chimeraforge/api.py": "4b9bc217da9bb313982b0d2aa408e0838cba703f85e8fb62e0cc99be3f0a7757",
+    "src/chimeraforge/commands/gate.py": "79fdbad4759e4fd60e05761ac854f8d8d70c20cc3dfd34ffb9817b19fb054339"
+  }
+}

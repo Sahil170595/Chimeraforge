@@ -305,6 +305,15 @@ def identity(row):
     return {name: row[name] for name in IDENTITY_FIELDS}
 
 
+def _prediction_provenance(value: dict) -> dict:
+    """Retain prediction anchors; inventory compatibility is a separate check."""
+    projected = dict(value)
+    vram = projected.get("vram")
+    if isinstance(vram, dict):
+        projected["vram"] = {key: item for key, item in vram.items() if key != "memory_formula"}
+    return projected
+
+
 def compare(before: list[dict], after: list[dict]) -> dict:
     old = {tuple(identity(row).values()): (i, row) for i, row in enumerate(before)}
     new = {tuple(identity(row).values()): (i, row) for i, row in enumerate(after)}
@@ -333,7 +342,19 @@ def compare(before: list[dict], after: list[dict]) -> dict:
                 "before_rank": i,
                 "after_rank": j,
                 "deltas": deltas,
-                "provenance": component(row["provenance"], current["provenance"]),
+                "provenance": component(
+                    _prediction_provenance(row["provenance"]),
+                    _prediction_provenance(current["provenance"]),
+                    detail=(
+                        "Prediction-provenance view excludes inventory-only "
+                        "vram.memory_formula; selected-batch inventory validates it separately."
+                    )
+                    if any(
+                        isinstance(p.get("vram"), dict) and "memory_formula" in p["vram"]
+                        for p in (row["provenance"], current["provenance"])
+                    )
+                    else None,
+                ),
             }
         )
     same_order = list(old) == list(new)

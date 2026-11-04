@@ -55,9 +55,9 @@ class NativeTiming:
             callback()
 
     def observation(
-        self, output: int, prompt: int | None, cache: int | None, end: float
+        self, output: int | None, prompt: int | None, cache: int | None, end: float
     ) -> GenerationObservation:
-        if output > self.output_cap:
+        if output is not None and output > self.output_cap:
             refuse("final native count exceeds requested output cap")
         if self.ids_present and self.output_ids != output:
             refuse("native token coverage disagrees with final count")
@@ -66,18 +66,25 @@ class NativeTiming:
             self.ids_present
             and not self.ids_missing
             and self.first_batch == 1
+            and output is not None
             and output >= 2
             and self.first_native is not None
             and self.last_native is not None
             and self.last_native > self.first_native
         ):
             interval = self.last_native - self.first_native
-        tpot = interval * MILLISECONDS_PER_SECOND / (output - 1) if interval is not None else None
+        tpot = (
+            interval * MILLISECONDS_PER_SECOND / (output - 1)
+            if interval is not None and output is not None
+            else None
+        )
         native = {
             "tokens_generated": output,
             "prompt_tokens": prompt,
             "cached_prompt_tokens": cache,
-            "throughput_tps": (output - 1) / interval if interval is not None else None,
+            "throughput_tps": (output - 1) / interval
+            if interval is not None and output is not None
+            else None,
             "ttft_ms": (self.first_visible - self.start) * MILLISECONDS_PER_SECOND
             if self.first_visible is not None
             else None,

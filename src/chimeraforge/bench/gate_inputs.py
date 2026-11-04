@@ -259,23 +259,28 @@ def validate_population(measurement: dict, execution: dict | None) -> list[RunMe
         before, after = [
             safe_observation(execution[key]) for key in ("serving_before", "serving_after")
         ]
-        engine = after.get("backend")
-        if before.get("backend") == engine:
-            for row in rows:
-                supported = (
-                    (engine == "ollama" and row.ttft_basis == "server-prefill-duration")
-                    or engine in ("vllm", "tgi", "sglang")
-                    and row.ttft_basis == "client-stream-first-content"
-                )
-                if (
-                    supported
-                    and row.ttft_ms > 0
-                    and not math.isclose(
-                        row.ttft_ms,
-                        row.prompt_eval_duration_ms,
-                        rel_tol=SERIALIZATION_ROUNDOFF,
-                        abs_tol=SERIALIZATION_ROUNDOFF,
-                    )
-                ):
-                    fail("native TTFT disagrees with its supported prefill alias")
+        validate_native_aliases(rows, before, after)
     return rows
+
+
+def validate_native_aliases(rows: list[RunMetrics], before: dict, after: dict) -> None:
+    """Share native positive-TTFT alias arithmetic without inventing private request fields."""
+    engine = after.get("backend")
+    if before.get("backend") == engine:
+        for row in rows:
+            supported = (
+                (engine == "ollama" and row.ttft_basis == "server-prefill-duration")
+                or engine in ("vllm", "tgi", "sglang")
+                and row.ttft_basis == "client-stream-first-content"
+            )
+            if (
+                supported
+                and row.ttft_ms > 0
+                and not math.isclose(
+                    row.ttft_ms,
+                    row.prompt_eval_duration_ms,
+                    rel_tol=SERIALIZATION_ROUNDOFF,
+                    abs_tol=SERIALIZATION_ROUNDOFF,
+                )
+            ):
+                fail("native TTFT disagrees with its supported prefill alias")

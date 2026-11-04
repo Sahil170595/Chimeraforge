@@ -1,4 +1,4 @@
-"""Frozen-context workload and cost sensitivity study."""
+"""Frozen-context workload, hardware and cost sensitivity study."""
 
 import json
 from pathlib import Path
@@ -9,7 +9,7 @@ import typer
 def study(
     saved: Path = typer.Argument(..., help="Bound saved plan or verified bundle directory."),
     cases: Path = typer.Option(
-        ..., "--cases", help="JSON list of unique name/changes objects, up to 16."
+        ..., "--cases", help="Up to 16 name/changes objects; hardware requires an exact GPU name."
     ),
     out: Path | None = typer.Option(
         None, "--out", help="Optional study JSON; cannot replace input files."

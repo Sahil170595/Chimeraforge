@@ -22,6 +22,108 @@ def load_script(name):
     return module
 
 
+@pytest.mark.parametrize("diagnostic_stream", ["stderr", "stdout"])
+def test_source_protocol_uses_stdout_without_masking_stdout_contamination(
+    tmp_path, monkeypatch, diagnostic_stream
+):
+    import json
+    import typer
+
+    original_echo = typer.echo
+    injected = []
+
+    def echo_with_diagnostic(message=None, *args, **kwargs):
+        original_echo(message, *args, **kwargs)
+        if isinstance(message, str) and message.startswith("{") and not kwargs.get("err"):
+            original_echo("source-protocol-stream-diagnostic", err=diagnostic_stream == "stderr")
+            injected.append(diagnostic_stream)
+
+    monkeypatch.setattr(typer, "echo", echo_with_diagnostic)
+    try:
+        if diagnostic_stream == "stderr":
+            test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(
+                tmp_path, monkeypatch
+            )
+        else:
+            with pytest.raises(json.JSONDecodeError, match="Extra data"):
+                test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(
+                    tmp_path, monkeypatch
+                )
+    finally:
+        assert injected, "controlled diagnostic did not reach an actual CLI JSON response"
+
+
+def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    checkpoint = load_script("ci_checkpoint_identity")
+    script = load_script("ci_deploy_placement")
+    load_script("ci_deployment_verify")
+    load_script("ci_monitor_fleet")
+    load_script("ci_secure_monitor")
+    load_script("ci_inventory_check")
+    load_script("ci_fleet_trace")
+    load_script("ci_fleet_trace_gate")
+    load_script("ci_fleet_trace_campaign")
+    load_script("ci_kubernetes_export")
+    parent = load_script("ci_installed_acceptance")
+    monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
+    observation = checkpoint.seed(live=False)
+    origins = []
+    monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: origins.append(args))
+
+    def source_cli(arguments, cwd, env, expected_code=0):
+        result = CliRunner().invoke(app, arguments, env=env)
+        assert result.exit_code == expected_code, result.output
+        return result.stdout
+
+    monkeypatch.setattr(parent, "run_cli", source_cli)
+    receipt = script.accept(tmp_path, {}, tmp_path / "checkout", observation)
+    assert origins
+    assert receipt["gpus_per_replica"] == 2
+    assert receipt["gpu_devices"] == ["7", "3"]
+    assert receipt["host_port"] == 9001
+    assert receipt["source_plan_bytes_unchanged"]
+    assert receipt["scope"] == "offline declaration only"
+    assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
+    fleet = receipt["homogeneous_fleet"]
+    assert len(receipt["kubernetes"]["controls"]) == len(fleet["kubernetes"]["controls"]) == 2
+    assert all(row["objects"] == 2 for row in receipt["kubernetes"]["controls"])
+    assert all(row["objects"] == 6 for row in fleet["kubernetes"]["controls"])
+    assert fleet["replicas"] == 3 and fleet["gpus_total"] == 6
+    assert fleet["service_names"] == ["inference-1", "inference-2", "inference-3"]
+    assert fleet["source_plan_bytes_unchanged"] and fleet["router"] == "not provided"
+    active = fleet["original_fleet_trace"]
+    gate = fleet["fleet_trace_gate"]
+    assert gate["synthetic"] is True and gate["input_bytes_unchanged"]
+    assert [row["api_exit"] for row in gate["controls"]] == [0, 1, 3]
+    assert [row["cli_exit"] for row in gate["controls"]] == [0, 1, 3]
+    assert len(active["controls"]) == 8 and active["fixture_resources"] == "closed"
+    assert active["original_bytes_unchanged"]
+    assert {row["backend"] for row in active["controls"]} == {"vllm", "sglang"}
+    verification = fleet["deployment_verification"]
+    assert verification["match_exit"] == 0 and verification["drift_exit"] == 5
+    assert verification["invalid_exit"] == 1
+    assert verification["independent_intent_drift_exit"] == 5
+    assert verification["original_plan_and_config_bytes_unchanged"]
+    assert verification["gpu_execution"] == "unverified"
+    monitoring = fleet["passive_monitoring"]
+    assert monitoring["native_replicas"] == 3 and monitoring["complete_declared_slots"] == 3
+    assert monitoring["api_exit"] == monitoring["cli_exit"] == 0
+    assert monitoring["partial_exit"] == 4 and monitoring["source_bytes_unchanged"]
+    assert monitoring["physical_independence"] == "unverified"
+    inventory = fleet["inventory_arithmetic"]
+    assert inventory["source_bytes_unchanged"] and inventory["deployment_ready"] is None
+    assert {key: value["api"]["exit_code"] for key, value in inventory["controls"].items()} == {
+        "complete": 0,
+        "unavailable_free": 4,
+        "shortfall": 5,
+        "malformed": 4,
+        "missing": 5,
+    }
+
+
 def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkeypatch):
     import os
     from typer.testing import CliRunner
@@ -35,7 +137,7 @@ def test_signed_contribution_installed_consumer_source_protocol(tmp_path, monkey
     def source_cli(arguments, cwd, env, expected_code=0):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, dict(os.environ), tmp_path / "checkout")
@@ -55,7 +157,7 @@ def test_native_stream_consumer_protocol_through_public_trace_cli(tmp_path, monk
     def source_cli(arguments, cwd, env, expected_code=0):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     receipt = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -106,7 +208,7 @@ def test_regression_gate_installed_consumer_protocol_through_real_cli(tmp_path, 
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
         assert result.exception is None or isinstance(result.exception, SystemExit)
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -136,7 +238,7 @@ def test_trace_gate_consumer_protocol_through_public_cli(tmp_path, monkeypatch):
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
         assert result.exception is None or isinstance(result.exception, SystemExit)
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -161,7 +263,7 @@ def test_trace_campaign_gate_installed_protocol_through_public_cli(tmp_path, mon
         result = CliRunner().invoke(app, arguments)
         assert result.exit_code == expected_code, result.output
         assert result.exception is None or isinstance(result.exception, SystemExit)
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept(tmp_path, {}, tmp_path / "checkout")
@@ -379,7 +481,7 @@ def test_cpu_acceptance_consumes_native_outcome_through_real_gate_cli(
         result = CliRunner().invoke(app, arguments)
         allowed = expected_code if isinstance(expected_code, tuple) else (expected_code,)
         assert result.exit_code in allowed, result.output
-        return result.output
+        return result.stdout
 
     monkeypatch.setattr(parent, "run_cli", source_cli)
     result = script.accept_cpu(

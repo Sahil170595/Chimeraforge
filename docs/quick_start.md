@@ -1,17 +1,121 @@
 # Quick Start Guide
 
+Unreleased **0.91.0 source** adds [continuous fleet export](fleet-exporter.md)
+through `monitor-fleet-exporter` and `api.serve_fleet_exporter`. Scrapes only read
+cached bytes; qualification and lifecycle remain separate. Public install is 0.86.0.
+
+Unreleased **0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md).
+Public installation remains **0.86.0**.
+
+Unreleased **0.89.0 source** adds [native chat trace replay](chat-trace-replay.md)
+through the existing trace command family. Explicit role histories are sent intact;
+missing usage remains unknown. Public installation remains 0.86.0.
+
+Unreleased **0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md)
+through `serving declare|quote|export|verify`. Public installation remains 0.86.0.
+No optimizer, model/corpus lookup or capacity proof is needed to declare intent.
+
+Chimeraforge 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
+`api.render_trace_report` and `report --kind trace|fleet-trace --input`.
+
+Chimeraforge 0.85.0 adds [read-only original Kubernetes inspection](kubernetes-inspection.md),
+with independent intent, separate native rollout and complete protected JSON/JUnit.
+
+Chimeraforge 0.84.0 adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
+with strict complete receiving and bounded native-comparison JSON/JUnit.
+
+Chimeraforge 0.83.0 adds [whole-original-fleet passive SLO gates](fleet-monitor-gate.md),
+with strict saved receiving, effective controls and complete bounded JSON/JUnit.
+
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
+
+**Kubernetes declarations (since 0.81.0):** `deploy --format kubernetes` exports
+every supported original member as bounded JSON, and `deploy-verify --format
+kubernetes` checks independently supplied intent. See [CLI/API examples and
+fidelity limits](kubernetes-deployment.md). Hosted server dry-run qualifies API
+admission, without scheduling, inference-image execution or GPU/fit claims.
+
+**Original-fleet regression decisions (since 0.80.0):** `gate --kind fleet-trace`
+and `api.gate_fleet_traces` compare one complete fleet per arm under a closed
+policy, preserving member evidence and native global metrics. Inconclusive
+evidence takes precedence over known regression; see [CLI/API and protected
+JSON/JUnit outputs](fleet-trace-gate.md). This is not physical independence
+or GPU/scientific qualification.
+
+**Original-fleet scheduled trace (since 0.79.0):** `trace-fleet` and async
+`api.replay_fleet_trace` retain the original saved fleet and all routed rows
+under one native schedule, concurrency limit and deadline. Execution, SLOs,
+configuration and cooperative cleanup remain separate; see [complete CLI/API
+examples and receiving limits](fleet-trace.md). Protocol and native CPU
+acceptance do not qualify GPU execution or physical capacity.
+
+**Runtime secure monitoring (since 0.78.0):** standalone, saved-plan and declared-
+fleet monitoring support verified HTTPS, named-environment bearer and optional
+client certificates for metrics and all metadata. Settings stay runtime-only
+and per endpoint. See [complete CLI/API and trust limits](secure-monitoring.md);
+CPU TLS protocol fixtures do not qualify a running inference deployment.
+
+**Queried inventory and saved arithmetic (since 0.77.0):** `inventory-check` and
+async `api.check_inventory` retain every original ordered GPU selector and compare
+reported free memory with the saved per-GPU batch-one baseline. Every result keeps
+`deployment_ready: null`; UUID/MIG observations do not establish physical
+independence, allocation or runtime fit. See [complete CLI/API examples and
+exit statuses](inventory-check.md).
+
+**Unreleased 0.87.0 source:** `--memory-basis selected-batch` (or API
+`memory_basis="selected-batch"`) adds the compatible saved active-sequence KV
+increment at the saved B/context. Older plans keep default B1 behavior and return
+selected-batch unknown without inventory contact. Public installation remains 0.86.0.
+
+**Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
+adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL
+declarations for the original saved replica count. Shared budgets, retained
+partial windows/metadata, required identity and cleanup qualify declared coverage
+without GPU or physical-independence claims. Existing endpoint-only `monitor`
+retains its behavior.
+
 Get up and running with Chimeraforge (the Banterhearts benchmarking breakout)
 in minutes. Commands assume you are in the repository root.
 
-Chimeraforge 0.66.0 includes native streaming trace observations and [queue-inclusive trace gates](trace-regression-gate.md) plus [serial trace campaigns](trace-campaign.md) and [signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra and [frozen prediction scorecards](prediction-scorecards.md).
+Chimeraforge 0.86.0 includes native streaming trace observations and
+[queue-inclusive trace gates](trace-regression-gate.md),
+[serial trace campaigns](trace-campaign.md),
+[signed contributions and private replay](signed-contribution-v2.md) with the optional `sign` extra,
+[frozen prediction scorecards](prediction-scorecards.md),
+[whole-campaign regression gates](trace-campaign-gates.md),
+[plan-bound request traces](plan-bound-trace.md),
+[observed finite load points](trace-envelope.md),
+[private prediction evidence bundles](prediction-bundles.md), and
+[signed native regression gates](signed-native-gates.md).
 Benchmark gating remains the default.
+
+Since 0.72.0, `study` supports offline hardware alternatives: see
+[the complete case and Python examples](planning-api.md#frozen-context-sensitivity).
+Ordinary cases retain saved hardware; no host probe or measured GPU qualification occurs.
+
+Since 0.73.0, `deploy` supports repeatable `--gpu-device` and
+Compose-only `--host-port`, plus direct `export_deployment` keywords. See
+[complete examples and limits](deployment.md#explicit-device-selection-and-host-ports).
+Default exports retain their GPU count and ports; no GPU placement is verified.
+
+Since 0.74.0, `deploy` supports `--replica-devices GROUP
+--replica-port PORT` for every original online vLLM/SGLang Compose replica. See
+[complete CLI/API examples](deployment.md#homogeneous-compose-replicas); these
+are manually targeted offline declarations, not measured fleet capacity.
+
+Since 0.75.0, `deploy-verify --plan --config --image --json` verifies declarations
+against independently retained saved-plan and full render intent. See
+[complete CLI/API examples and exit statuses](deployment-verification.md). A match
+means current-renderer consistency, not source authenticity or running GPU proof.
 
 ## 5-Minute Setup
 
 ### 1. Install Prerequisites
 
 ```bash
-# Python 3.10+
+# Python 3.11+
 python --version
 
 # Rust 1.70+ (optional, for Rust agents)
