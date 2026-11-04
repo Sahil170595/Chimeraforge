@@ -5,6 +5,154 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.91.0] - UNRELEASED
+
+### Continuous fixed-config fleet exporter
+
+- Add typed async service ownership and actual `monitor-fleet-exporter` CLI, with a declared supported optional ASGI stack, prebound loopback listener and one sequential finite native poll worker.
+- Serve immutable cached native gauges without backend contact on scrapes; retain every original member, native qualification, unknown numeric omission, monotonic expiry and immediate failure/reset/mismatch replacement of old PASS views.
+- Hold saved-plan/request and opted-secure TLS/auth/mTLS settings; preserve anonymous native defaults and observed-window-only reset limits. Safe ordinal/configured-model labels omit private endpoint/model/operator labels.
+- Extend original/rebuilt installed acceptance with real API/HTTP/OS CLI and CPU mTLS controls, invalid late-input refusal and joined shutdown. Controlled protocol evidence remains separate from engines, physical deployment and current hosted acceptance. Public installation remains 0.86.0.
+
+## [0.90.0] - UNRELEASED
+
+### Whole-campaign diagnostics
+
+- Extend the existing static API/report CLI to complete native serial and original-fleet campaigns in HTML, SVG and Markdown. Retain all K executions, each original N/member/row, failed/incomplete/missing slots and known-zero versus unavailable observations.
+- Reuse strict whole-campaign receiving and native child projections without pooled percentiles, rewritten gate math, favorable selection, optimizer execution or backend contact. Bind embedded-child representation labels and public source fingerprints honestly.
+- Preserve native input/output profiles, protected aliases, private-data exclusion, escaped text and native measured panel geometry with unique IDs. Refuse a complete oversized document before publication without truncation.
+- Extend the original/rebuilt installed consumer and hosted-only browser flow with complete saved campaign documents and two narrow synthetic campaign PNGs for visual review. Source/protocol, installed and browser evidence remain separate; public installation remains 0.86.0.
+
+## [0.89.0] - UNRELEASED
+
+### Native chat trace replay
+
+- Add frozen typed chat requests and closed private JSON role histories to existing ordinary, saved-plan, whole-fleet and serial campaign replay. Preserve independent rows, original routing/populations, explicit temperature and existing prompt defaults without flattening or synthetic usage.
+- Use native chat SSE/NDJSON on vLLM, SGLang, TGI and Ollama with bounded streaming, role-only first-event handling, optional usage/null counts and a closed plain-text output policy. Ollama sends explicit no-truncate/no-shift controls; reported counts remain provider facts rather than authenticated model consumption.
+- Bind mode, ordered role/content commitments and controls through strict native receipts, campaign/load declarations, gates, copy detection and static diagnostics. Admit expanded receipts to existing native byte profiles before publication, with early refusal when descriptors alone cannot fit. Retain secure TLS/authentication, source aliases, cooperative cancellation and owned-close boundaries.
+- Extend original/rebuilt installed acceptance with actual chat CLI, native plan save/load, whole fleet, privacy, usage-known/unknown and diagnostic receiving; extend the existing hosted pinned CPU Ollama integration. Controlled protocol evidence is separate from engine/GPU/performance qualification. Public installation remains 0.86.0 while this candidate is unreleased.
+
+## [0.88.0] - UNRELEASED
+
+### Operator-authored serving declarations
+
+- Add typed `ServingRequest` and closed save/load declaration API plus actual `serving declare|quote|export|verify` CLI. Author concrete model/revision/backend/image, N/TP/PP/context/B and bounded native settings without inventing PlanRequest, PlanResult, model geometry or consumed-corpus evidence.
+- Reuse dated native whole-instance billing with exact provider/instance/region, sources, age and explicit unknowns. N3/TP2/PP2 has 12 logical slots; an 8-GPU offer bills two whole instances, without assigning replicas to hosts or predicting capacity/SLO/token cost.
+- Share native argv and config projections for per-replica launch entries, explicit one-host Compose layouts and all 2N Kubernetes objects. Bind declaration identity, keep old optimizer exports/defaults, and compare native configs through the existing bounded verifier.
+- Admit typed/private data before copying/encoding and preserve schema/fingerprint validation. Revision/image fields remain operator claims, with fixed-reference flag spelling but unknown image/model/runtime compatibility. Keep all feasibility, quality, throughput, memory and deployment-readiness predictions null.
+- Extend original/rebuilt installed acceptance with the real CLI save/load/quote/export/verify arc, all three formats, altered controls, source aliases, conflicting layouts and optimizer-misuse refusals. Public installation remains 0.86.0 while this source candidate is unreleased.
+
+## [0.87.0] - UNRELEASED
+
+### Selected-batch inventory memory preflight
+
+- Add opt-in API/CLI `memory_basis="selected-batch"` / `--memory-basis selected-batch`, preserving default B1 report shape, labels and native inventory ownership. Keep all original ordered N x TP x PP slots; compare each device independently against the saved B1 rounding interval plus the saved active-sequence KV increment.
+- Declare compatible calculator use at the actual native producing point and bind full saved model facts, B1, B, context, actual KV element size and degrees. Treat the declaration as structural compatibility, not authenticated code or producer identity; old, foreign, unsupported or inconsistent plans remain selected-batch unknown before contact.
+- Support pure MHA/GQA, PP=1 and whole-head TP division no greater than KV heads. Retain exact fractions beyond the old inventory input's six-decimal domain, including the independent archived Qwen 784 MiB addition and context8193 boundary. Do not resolve today's model or reload/refit the coefficient corpus.
+- Extend original/rebuilt installed consumers with genuine produce/save/load, API/CLI selected comparisons, complete fleets and exact legacy fixture bytes. Selected estimates cover resident active-context components only; idle/prefix pools, workspace, peaks, physical independence and deployment readiness remain unassessed. Public installation remains 0.86.0 while this candidate is unreleased.
+
+## [0.86.0] - 2026-11-01
+
+### Whole native trace diagnostics
+
+- Add `api.render_trace_report` and existing `report --kind trace|fleet-trace --input` for strict ordinary/full original-fleet receipts. Retain every request/member, failed/unstarted/zero-assigned states and separate native execution/configuration/SLO/cleanup outcomes; reject plan/campaign envelopes without implicit unwrapping.
+- Render complete static HTML/inline SVG, standalone SVG and Markdown from generated ordinals, fixed states, finite native timing/count facts and source hashes. Exclude identities, raw diagnostics and metadata; preserve global relative clocks, missing versus zero and native per-request TPOT basis without new quantiles or server-service claims.
+- Count native compact input before eager copies, bound whole rendered UTF-8 output to 8 MiB and reuse exact LF bytes at guarded atomic saves/stdout. Keep private input protection outside public dataclass fields/copy/replace; preserve benchmark report defaults.
+- Extend original/rebuilt installed consumers with actual API/CLI artifacts and raw byte parity. The existing Ubuntu job alone selects a nondefault pinned Playwright browser group for genuine saved-document rendering and two short-lived privacy-safe PNGs. Software/browser diagnostics do not qualify inference engines, GPUs or performance.
+
+## [0.85.0] - 2026-11-01
+
+### Read-only original Kubernetes inspection
+
+- Add typed async `api.inspect_kubernetes_deployment` and `deploy-inspect` against held original plans and independent image/namespace/selection intent. Preserve all 2N resources and separate intent from native Deployment controller rollout, including missing, failed and unstarted observations.
+- Reuse pinned native kubectl config projections and an owned enabled DenyAll kuberc; reject selected legacy auth providers before server contact. Bound owned processes, captured streams and observation work, retain cooperative cleanup/cancellation, and keep private config/path state outside persisted dataclass fields.
+- Add complete protected JSON/JUnit publication with 3N+1 cases, whole-export refusal and fail-closed filesystem writes when private-reference inventory is unverified. Keep the exact offline verifier and existing deployment rendering unchanged.
+- Extend installed controlled protocol/owned-process consumers and the existing kind job with a separate genuine-GPU-declaration live fixture, expected matching-intent/pending-rollout4, native adverse/auth/path controls and owned cleanup. No inference, scheduling, GPU readiness or capacity qualification is claimed.
+
+## [0.84.0] - 2026-11-01
+
+### Serial whole-original-fleet trace campaigns
+
+- Execute K serial native whole-fleet traces from one held original plan/workload/routes/endpoints, preserving original N/TP/PP, every request/cap/route/global schedule and all failed/unstarted slots. Complete configuration mismatch stays separate from execution completeness and does not stop later runs.
+- Add typed async campaign production, strict hold-once saved receiving, explicit K/native policy gates and complete protected JSON/JUnit through API and CLI. Reuse native per-execution eligibility and arithmetic; copied, missing, incomplete or mismatched evidence stays inconclusive before known regressions.
+- Keep native child admission unchanged and record unavailable receipts with unknown completion. Bound new canonical exports to 16 MiB, logical pairs to 32 MiB and policy to 64 KiB without truncation; streamed finite canonical hashing preserves native parity. Private guard state stays outside persisted dataclass fields.
+- Extend installed consumers with real owned CPU HTTPS API/CLI K2 controls for both native engine protocols, mTLS/adverse/alias cases and separate synthetic gate0/1/3. Extend the existing pinned three-member native CPU canary with actual API/CLI K2, retaining CPU-versus-modeled-GPU mismatch/gate3 rather than claiming GPU or performance qualification.
+
+## [0.83.0] - 2026-11-01
+
+### Whole-original-fleet passive SLO acceptance
+
+- Add strict saved fleet-monitor receiving against the actual original plan and selection. Retain every native member/window/metadata prefix and native verdict; schema2 records effective requested controls, while recognizable bounded schema1 evidence keeps missing controls unavailable.
+- Add `FleetMonitorGatePolicy`, `api.gate_fleet_monitors` and `gate --kind fleet-monitor` with explicit original plans, all-member/window/metric commitments and complete JSON/JUnit. Incomplete or ineligible evidence takes precedence over candidate native SLO breach; bucket bounds remain separate from confidence intervals or relative improvements.
+- Bound exact public JSON traversal/materialization to 8 MiB before recursive copies or output. Reuse admitted bytes at file/stdout sinks and refuse oversize without truncation or premature paired publication. Typed reports retain native mismatch/breach priority; text/Prometheus-only operation remains available.
+- Keep runtime input guards and held-wire snapshots outside public dataclass fields and `asdict`, while preserving copy/replace input protection and current-state validation.
+- Extend source and installed original-wheel/rebuilt-sdist consumers with owned CPU HTTPS fixtures for both native engines, pass/breach/inconclusive gates, complete cases, input protection and actual raw stdout byte parity. These protocol fixtures do not qualify engines, GPUs, traffic authenticity or performance.
+
+## [0.82.0] - 2026-10-31
+
+### Authenticated active measurements
+
+- Add runtime-only keyword-only `connection` settings to saved benchmarks and ordinary/saved-plan traces. Admit exact native vLLM/SGLang adapters and the configured HTTPS origin before discovery, construction or contact; preserve anonymous adapters, native metrics and serialized receipt schemas.
+- Reuse verified private/default CA trust, optional named-environment bearer and client certificates across active preflight, before/after metadata and streaming generation. Add the same secure flags to `bench` and `trace`, including native sweeps and saved-candidate flows.
+- Retain effective TLS inputs privately for output-alias checks. Guard known CLI intent before contact and actual generated benchmark filenames before writing; receipt saves recheck input aliases. The separate ordinary benchmark writer accepts an explicit runtime connection rather than inferring private input paths from serialized results.
+- Categorize standard HTTPX/httpcore message, argument, exception and stack fields before the caller's record factory during secure native owner lifetimes. Preserve nested/concurrent anonymous behavior, caller factory chaining and ownership-aware restoration. Secure backend closure retains its owned close task through repeated caller cancellation. Secure ordinary/saved traces reuse native owned-generation/task joins after a controlled actual-CPython 3.10 executor probe demonstrated legacy repeated-cancellation detachment; anonymous scheduling remains unchanged.
+- Exercise source and installed CLI/API with owned CPU HTTPS/auth/mTLS protocol fixtures, adverse trust/origin/stream cases and input preservation. These fixtures do not qualify actual inference engines, models, GPUs, capacity or performance.
+
+### Supported dependency baseline
+
+- Require Python 3.11 or later and unmarked `filelock>=4.2.1,<5` for eval/dev. The former Python 3.10 branch selected filelock 3.20.3; current advisories cover that version, and the patched release requires Python 3.11. Withdraw the unsupported unaffected-API claim and align the advertised interpreter, typing/lint targets and hosted matrix.
+- Audit every versioned registry pair in the universal lock together with installed external packages. Separate conflicting versions into the minimum number of exact-pin batches and run the native strict pip-audit CLI for each, without marker-based omission or advisory suppression.
+
+### Coverage qualification budget
+
+- Give the existing complete branch-coverage job 30 minutes and report its 20 slowest test durations. The [0.82 release coverage job](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861) reported 5,334 passing tests and 2 skips but exceeded its 20-minute budget before ratchet qualification. Preserve all tests, branch/report options and coverage floors; the cancelled run is not a full CI pass.
+
+## [0.81.0] - 2026-10-29
+
+### Kubernetes declarations and independent intent
+
+- Add deterministic bounded JSON Kubernetes export with typed namespace/prefix/node selectors: all original N online Linux CUDA vLLM/SGLang members, each with one Deployment and ClusterIP Service, native TP/PP/quant/checkpoint/cache/batch fidelity and explicit GPU resource requests. Encode literal dollars once for native Kubernetes argv expansion; preserve legacy export defaults and bytes.
+- Add explicit Kubernetes intent to `api.verify_deployment` and `deploy-verify`, retaining match 0, redacted drift 5 and invalid 1. Protect source/config identities and bounded JSON admission; expected intent is never recovered from the manifest.
+- Extend original-wheel/rebuilt-sdist CLI/API consumers and add a required pinned hosted kind strict server-dry-run job with invalid-resource controls, independently detected admitted drift and owned cluster/process/network cleanup. This qualifies API admission only, with no feature workload persistence or image, scheduling, inference, GPU, readiness or capacity claim.
+
+## [0.80.0] - 2026-10-29
+
+### Original-fleet regression decisions
+
+- Add closed `FleetTraceGatePolicy`, sync `api.gate_fleet_traces` and `gate --kind fleet-trace`: one whole original fleet per arm, with exact source/selection, ordered work/routes and common client controls. Require every original member to contribute eligible before/after identity, binding and cache evidence.
+- Reuse native full-row/common-horizon regression math, strict threshold comparisons and observed-condition/cache semantics. Retain adverse and inactive members; any evidence blocker returns 3 before known regression 1, preserving available arithmetic. Label-invariant semantic-copy checks include original N and the member multiset without claiming independent executions or authenticated inputs.
+- Keep the public original-fleet receiver strict while admitting both held receipts under one combined 32 MiB budget, plus a separate bounded policy. Retain outer raw-byte identity separately from native projections and protect typed inherited inputs.
+- Write bounded decision JSON and escaped JUnit from one finalized result, checking both payloads and destinations before per-file atomic replacements. JUnit separates population/metric cases, errors for inconclusive evidence and failures for eligible regressions; two outputs are not a transaction.
+- Exercise actual API/CLI/JUnit pass/regression/inconclusive controls in existing installed wheel/rebuilt-sdist consumers. Consume the existing unchanged native CPU fleet API/CLI reports as adverse gate evidence without additional inference or forced GPU/capacity qualification.
+
+## [0.79.0] - 2026-10-29
+
+### Original-fleet scheduled trace
+
+- Add typed async `api.replay_fleet_trace`, frozen `TraceRoute`/`FleetTraceReplay`, `trace-fleet` and strict `api.load_fleet_trace`. Hold the original plan, workload and closed one-to-one routes before contact; require exactly the original N direct endpoints without changing model, TP/PP, batch, output caps or saved targets.
+- Use one native row population, schedule, generation semaphore and deadline across members. Whole preflight/before-metadata admission precedes generation; retain failed, partial, unstarted and zero-assigned members. Member metadata compares one declared member without rewriting original N or conflating data parallelism.
+- Own generation/phase tasks, join-only aggregates and clients through a shared final cooperative cleanup allowance and repeated caller cancellation. Timed-out generation keeps its global semaphore lease until its owned child stops; every client close is attempted even after allowance exhaustion.
+- Recompute strict receiving schema, native row projections, route/slot references, common-horizon goodput and saved bindings. Empty members cannot vacuously pass token/latency/SLO checks. Execution completion, known mismatch, native SLO and cleanup are separate; fingerprints are integrity checks, not origin or physical authentication.
+- Inherit per-ID verified HTTPS for vLLM/SGLang; refuse opted-secure Ollama before contact. CLI output admission protects every saved/workload/routes/TLS input by path and file identity. Controlled CPU protocol acceptance and the bounded pinned three-daemon native CPU canary do not qualify GPU execution, physical independence, prediction accuracy or capacity.
+
+### Qualification
+
+- Make TLS 1.2 the explicit protocol floor in the separate owned fleet-trace mTLS fixture, matching the monitoring fixture policy. Supported Python versions already default to this minimum; application TLS, trust and cleanup behavior are unchanged.
+
+## [0.78.0] - 2026-10-29
+
+### Runtime HTTPS and authenticated monitoring
+
+- Runtime-only `MonitorConnection` and named-environment CLI options supply verified HTTPS, private CA replacement, bearer authentication and optional client certificates to standalone, saved-plan and complete declared-fleet monitoring. The same origin-bound policy covers metrics and all before/after vLLM/SGLang metadata, including both actual fleet transport pools; redirects are refused.
+- Prepare all secure fleet settings before contact. Explicit mappings (including empty mappings) require HTTPS for every original endpoint; credentials are assigned per ID without implicit broadcast. Secrets, environment names and certificate paths stay outside saved requests and reports; secure failures use categorical diagnostics. Explicit trust bypasses HTTPX proxy/CA discovery and implicit SSL key logging without mutating process environment.
+- Both CLI boundaries protect every explicit TLS file and saved-plan input against Prometheus output path/file-identity aliases before connection preparation or network contact.
+- Keep native evidence, budgets, failure priorities, anonymous defaults and owned cleanup. Real owned CPU TLS/auth/mTLS fixtures exercise source and installed CLI/API; they do not qualify physical servers, GPUs, running weights or capacity. Declare the already locked `certifi` as a direct core dependency without changing external package versions.
+
+### Qualification
+
+- Make the trace generation-timeout fixture give readiness a separate bounded allowance while retaining the real 20 ms native generation timeout. Controlled delayed-metadata and removed-generation-timeout negative cases preserve partial rows, semaphore queue ordering and owned cleanup. This corrects a demonstrated fixture timing assumption; production trace behavior is unchanged.
+- Make TLS 1.2 the explicit protocol floor in the owned CPU TLS fixture after a CodeQL finding about its implicit floor. Supported Python versions already default to this minimum; application TLS, trust, mTLS and cleanup behavior are unchanged.
+
 ## [0.77.0] - 2026-10-28
 
 ### Queried inventory and saved memory arithmetic

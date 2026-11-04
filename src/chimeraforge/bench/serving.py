@@ -347,7 +347,7 @@ async def observe_vllm(client: httpx.AsyncClient, url: str, model: str) -> dict:
             try:
                 result["model_spec"] = asdict(spec_from_hf(model, hf_config, None))
             except (ResolverError, ValueError, TypeError) as exc:
-                logger.debug("vLLM geometry unavailable: %s", exc)
+                logger.debug("vLLM geometry unavailable (%s)", type(exc).__name__)
                 result["limitations"].append("vLLM metadata cannot bind full model geometry")
         result["configuration_sha256"] = digest(
             {

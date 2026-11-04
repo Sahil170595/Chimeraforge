@@ -338,3 +338,7 @@ selected candidate and full rendering options independently; verify generated JS
 Compose plus only required fixed sibling bytes. See [the complete contract,
 CLI/API examples and bounds](deployment-verification.md). This checks consistency
 with the current renderer; it does not validate runtime state or authenticate a producer.
+
+## Kubernetes (since 0.81.0)
+
+`--format kubernetes` preserves every original supported online Linux CUDA vLLM/SGLang member, with independent namespace/prefix/node-selector intent and bounded literal-argv JSON. Host device/port/executable options are refused. See [complete CLI/API examples and server-admission proof limits](kubernetes-deployment.md). Available since Chimeraforge 0.81.0; existing formats keep their defaults.

@@ -1,5 +1,12 @@
 # Real request-trace replay
 
+Unreleased 0.89.0 source adds the separate [native chat JSON/type variant](chat-trace-replay.md)
+to these same replay/receiving paths. Public installation remains 0.86.0.
+
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
+
 Chimeraforge 0.63.0 adds [saved trace regression gates](trace-regression-gate.md)
 through `gate --kind trace`.
 Chimeraforge 0.64.0 adds [serial campaigns](trace-campaign.md) over
@@ -22,7 +29,7 @@ receipt.save("trace.json")
 print(receipt.to_dict()["goodput"])
 ```
 
-The JSON file accepted by the CLI and API is a list of objects with exactly
+Legacy completion JSON accepted by the CLI and API is a list of objects with exactly
 `request_id`, `prompt`, `max_output_tokens` and `arrival_offset_s`. Arrival offsets
 are relative to the replay origin, after preflight and initial metadata. Input
 order is retained in the receipt; arrival offsets need not be sorted.

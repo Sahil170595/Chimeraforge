@@ -1,0 +1,472 @@
+{
+  "captured_at": "2026-10-30T20:47:29.917465+00:00",
+  "evidence": "source CLI/API owned CPU HTTPS protocol fixtures; not installed or physical qualification",
+  "result": {
+    "version": "0.82.0",
+    "positive": [
+      {
+        "backend": "vllm",
+        "mode": "bench",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": false
+      },
+      {
+        "backend": "vllm",
+        "mode": "trace",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "saved-bench",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "saved-trace",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "bench",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": false
+      },
+      {
+        "backend": "vllm",
+        "mode": "trace",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "saved-bench",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "saved-trace",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "trace",
+        "bearer": false,
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "trace",
+        "bearer": false,
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info?config_format=json",
+          "v1/completions",
+          "v1/models",
+          "version"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "bench",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": false
+      },
+      {
+        "backend": "sglang",
+        "mode": "trace",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "saved-bench",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "saved-trace",
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "bench",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": false
+      },
+      {
+        "backend": "sglang",
+        "mode": "trace",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "saved-bench",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "saved-trace",
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "trace",
+        "bearer": false,
+        "mutual_tls": false,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "trace",
+        "bearer": false,
+        "mutual_tls": true,
+        "api": "completed",
+        "cli": "completed",
+        "authorized_routes": [
+          "health",
+          "model_info",
+          "server_info",
+          "v1/completions",
+          "v1/models"
+        ],
+        "before_after_metadata": true
+      }
+    ],
+    "negative": [
+      {
+        "backend": "vllm",
+        "fault": "wrong-ca",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "fault": "wrong-host",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "fault": "wrong-token",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "fault": "missing-client",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "fault": "redirect",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "vllm",
+        "fault": "malformed-sse",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "fault": "wrong-ca",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "fault": "wrong-host",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "fault": "wrong-token",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "fault": "missing-client",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "fault": "redirect",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      },
+      {
+        "backend": "sglang",
+        "fault": "malformed-sse",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "second_origin_contacts": 0
+      }
+    ],
+    "output_aliases": [
+      {
+        "mode": "trace",
+        "input": "ca",
+        "api_refused": true
+      },
+      {
+        "mode": "trace",
+        "input": "client",
+        "api_refused": true
+      },
+      {
+        "mode": "trace",
+        "input": "client_key",
+        "api_refused": true
+      },
+      {
+        "mode": "saved-trace",
+        "input": "ca",
+        "api_refused": true
+      },
+      {
+        "mode": "saved-trace",
+        "input": "client",
+        "api_refused": true
+      },
+      {
+        "mode": "saved-trace",
+        "input": "client_key",
+        "api_refused": true
+      },
+      {
+        "mode": "saved-bench",
+        "input": "ca",
+        "api_refused": true
+      },
+      {
+        "mode": "saved-bench",
+        "input": "client",
+        "api_refused": true
+      },
+      {
+        "mode": "saved-bench",
+        "input": "client_key",
+        "api_refused": true
+      }
+    ],
+    "positive_invocations": 40,
+    "negative_invocations": 24,
+    "source_sha256": "5e3904ecca47c12d0daa794c6447465164ac0511062663aeac6ee781c2eb2df5",
+    "workload_sha256": "db052622b3a4b8fdeb9d72ad30367215bed1fea975d005bd923b9a28331882ac",
+    "source_bytes_unchanged": true,
+    "installed_module_provenance": null,
+    "owned_fixture_listeners_and_handlers_closed": true,
+    "scope": "owned CPU HTTPS protocol fixtures; no actual engine, model, GPU or performance qualification"
+  },
+  "source_sha256": {
+    "scripts/ci_secure_active.py": "47216ae959461aec036fe329b22fab9ff02c8be7c07a96383522ccb14d902dae",
+    "src/chimeraforge/transport_logging.py": "94c09727f17ee3e0a46664e8009b17b83773ea1c556971a8f80d9fd70d3fb7c5",
+    "src/chimeraforge/monitor_connection.py": "6270434324bc9ce3cd6eeb580c06eff2473292ae101fa61ba932a4c9fab6a317",
+    "src/chimeraforge/bench/backends/__init__.py": "5335b0da3989b149de666b16eed7ddff52de07840c2925933c6bac1bbab1a09c",
+    "src/chimeraforge/bench/backends/base.py": "2fc3cc147beb5b15469ef3a3becc9670fa1c924a2b0896b8742a6cbb04579542",
+    "src/chimeraforge/bench/runner.py": "18bac369a1b5816bca569b69293ad7aa5623d46d5990e399798af3a4bdf72192",
+    "src/chimeraforge/bench/plan.py": "c0b64ea859796aceaee68822176a321d57f69ec6fa914e2733f5d782d91a788b",
+    "src/chimeraforge/bench/trace.py": "a6ebe54417638152f3f2fa3d3222480ad553d9004761943ee95feb207ab11adc",
+    "src/chimeraforge/bench/plan_trace.py": "43d43de258dc33eb17d795570e516007c83571767b3f75900dc51546e398cb6f",
+    "src/chimeraforge/api.py": "adc728b1c6eca5a51c8b098c3374c7bd98c800be89a5bf14d1eb80115b96aa5f",
+    "src/chimeraforge/commands/bench.py": "34f5cd2f7a281bc8ac931cf312a77e9b5eca2d00bebecbd0519341ff1f4c51ba",
+    "src/chimeraforge/commands/trace.py": "3fd0cadf296925b06f40b79403a13daefb505244320070093de3ae1c8317b311",
+    "src/chimeraforge/commands/bench_plan.py": "77d39385f7043a5964e1952b0d4184159a6c24c4707f1abf597b01746f69f0e0",
+    "src/chimeraforge/bench/backends/vllm.py": "88ae57866d1d17500bc581fc1f073078fafd11f08895f7814869e43cff7c948d",
+    "src/chimeraforge/bench/backends/sglang.py": "9958c3d9dffffcf0a72364a17df84855c098f244fc019f1f33f890807b1e8416",
+    "src/chimeraforge/monitor.py": "b4550fdaf4fa64707b36028cb5fd30b648f324a57cce24854017c64403195c40",
+    "src/chimeraforge/plan_monitor.py": "dd51f57e7fb6b8bde9d3c45731f00bda5b6c23a00a7b12f6ac855385374a5590",
+    "src/chimeraforge/fleet_monitor.py": "aad3651e20c790bb4441e6fedf00f086ea04e21bb54491c7e9ca6de0d6b9b3a6",
+    "src/chimeraforge/bench/fleet_trace.py": "ad675a94698a6c2bd1ce5ce2b12c6579f58addcb98078e33dbdf63762c109591",
+    "scripts/ci_installed_acceptance.py": "40d2c4f372714aaee922d6c9d8035cbe901900b26c324877a80416fc0d8ec3cc"
+  }
+}

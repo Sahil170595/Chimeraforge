@@ -79,6 +79,7 @@ def assemble_binding(
     observations: list[dict[str, Any]],
     *,
     retain_prefix: bool = False,
+    producer_version: str | None = None,
 ) -> dict[str, Any]:
     comparisons = [
         _comparison(data, candidate, effective, before, after)
@@ -104,7 +105,7 @@ def assemble_binding(
             "identity": identity(candidate),
             "tool_version": data["tool"]["version"],
         },
-        "monitor_tool_version": __version__,
+        "monitor_tool_version": __version__ if producer_version is None else producer_version,
         "endpoint": serving.sanitize_message(effective.url),
         "target_sources": sources,
         "identity": {

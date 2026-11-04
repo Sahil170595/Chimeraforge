@@ -30,6 +30,24 @@ def get_backend(name: str, **kwargs: object) -> Backend:
         ValueError: If backend name is unknown.
     """
     cls = BACKEND_REGISTRY.get(name)
+    connection = kwargs.get("connection")
+    if connection is not None:
+        from chimeraforge.monitor_connection import (
+            MonitorConnection,
+            MonitorConnectionError,
+            admit_connection,
+        )
+
+        if type(connection) is not MonitorConnection:
+            raise MonitorConnectionError("invalid secure backend connection")
+        if not (
+            (name == "vllm" and cls is VLLMBackend) or (name == "sglang" and cls is SGLangBackend)
+        ):
+            raise MonitorConnectionError("secure backend is unsupported")
+        url = kwargs.get("base_url")
+        if not isinstance(url, str):
+            raise MonitorConnectionError("secure backend requires an explicit HTTPS URL")
+        admit_connection(connection, url)
     if cls is not None:
         return cls(**kwargs)
 

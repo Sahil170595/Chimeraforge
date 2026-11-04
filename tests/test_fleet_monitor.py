@@ -17,8 +17,7 @@ from test_monitor_slo import pair
 MODEL = "ci/manual-fleet"
 
 
-@pytest.fixture
-def native_fleet():
+def make_native_fleet(*, tpot_slo=None):
     saved = api.plan(
         api.PlanRequest(
             models=[MODEL],
@@ -28,6 +27,7 @@ def native_fleet():
             tensor_parallel=2,
             request_rate=128,
             latency_slo=10000,
+            tpot_slo=tpot_slo,
             quality_target=0,
             budget=1e8,
             allow_network=False,
@@ -43,6 +43,11 @@ def native_fleet():
     }
     assert set(indices) == {"vllm", "sglang"}
     return saved, indices
+
+
+@pytest.fixture
+def native_fleet():
+    return make_native_fleet()
 
 
 @contextmanager

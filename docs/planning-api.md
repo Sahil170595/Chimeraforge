@@ -1,5 +1,9 @@
 # Saved plans and the Python API
 
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
+
 ```python
 from chimeraforge.api import PlanRequest, plan, load_plan, check_plan
 
@@ -567,3 +571,20 @@ not verify either run. Exit 0 denotes completed operation only, 1 known mismatch
 or failed/partial replay, and new CLI commands use 2 for malformed input/options
 or output errors. Receipt output guards refuse source/contribution overwrites and
 quarantine writes before execution. URL credentials/query values are redacted.
+
+## Runtime secure connections (since 0.78.0)
+
+`run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); available since Chimeraforge 0.78.0.
+
+## Original-fleet active trace (since 0.79.0)
+
+`api.TraceRoute`, `api.FleetTraceReplay`, async `api.replay_fleet_trace(saved, requests, endpoints, routes, ...)` and sync `api.load_fleet_trace(source)` retain the entire original N-member candidate under one native client schedule. Complete CLI/API admission, per-ID runtime HTTPS, cooperative task/client ownership and strict receiving semantics are documented in [original-fleet trace](fleet-trace.md). These APIs are available since Chimeraforge 0.79.0.
+
+
+## Original-fleet regression gate (since 0.80.0)
+
+`api.FleetTraceGatePolicy`, sync `api.gate_fleet_traces(baseline, candidate, *, policy)`
+and `api.write_fleet_trace_gate(decision, *, out=None, junit=None)` compare one whole
+original fleet per arm and write bounded guarded projections. See the complete
+[closed policy, receiving, metric, outcome and output contract](fleet-trace-gate.md).
+These APIs are available since Chimeraforge 0.80.0.

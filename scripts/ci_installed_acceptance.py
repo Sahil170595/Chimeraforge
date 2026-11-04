@@ -33,16 +33,44 @@ def assert_installed_origin(origin: str | Path, checkout: str | Path) -> None:
     )
 
 
+def assert_installed_modules(checkout: str | Path) -> dict[str, object]:
+    """Check every loaded package module, without forcing optional imports."""
+    import chimeraforge
+
+    assert chimeraforge.__file__ is not None
+    assert_installed_origin(chimeraforge.__file__, checkout)
+    package = Path(chimeraforge.__file__).resolve().parent
+    names: list[str] = []
+    for name, module in tuple(sys.modules.items()):
+        if module is None or not (name == "chimeraforge" or name.startswith("chimeraforge.")):
+            continue
+        origin = getattr(module, "__file__", None)
+        paths = [origin] if origin is not None else list(getattr(module, "__path__", ()))
+        assert paths, f"loaded module has no origin: {name}"
+        for value in paths:
+            path = Path(value).resolve()
+            assert path.is_relative_to(package), f"module outside installed package: {name}"
+            assert_installed_origin(path, checkout)
+        names.append(name)
+    return {"count": len(names), "modules": sorted(names)}
+
+
 def run_cli(
-    arguments: list[str], cwd: Path, env: dict, expected_code: int | tuple[int, ...] = 0
+    arguments: list[str],
+    cwd: Path,
+    env: dict,
+    expected_code: int | tuple[int, ...] = 0,
+    *,
+    forbidden: tuple[str, ...] = (),
 ) -> str:
     """Invoke the installed module with checkout and PYTHONPATH isolation."""
     result = subprocess.run(
-        [sys.executable, "-I", "-m", "chimeraforge", *arguments],
+        [sys.executable, "-I", "-B", "-m", "chimeraforge", *arguments],
         cwd=cwd,
         env=env,
         text=True,
         capture_output=True,
+        stdin=subprocess.DEVNULL,
         timeout=CLI_TIMEOUT_SECONDS,
     )
     allowed = expected_code if isinstance(expected_code, tuple) else (expected_code,)
@@ -53,6 +81,9 @@ def run_cli(
         result.stderr,
     )
     assert "Traceback (most recent call last)" not in result.stdout + result.stderr
+    assert all(value not in result.stdout + result.stderr for value in forbidden), (
+        "private fixture value reached CLI output"
+    )
     return result.stdout
 
 
@@ -61,6 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-version", required=True)
     parser.add_argument("--checkout", required=True, type=Path)
     parser.add_argument("--plan-handoff", type=Path)
+    parser.add_argument("--trace-report-handoff", type=Path)
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="chimeraforge-installed-") as work:
         cwd = Path(work).resolve()
@@ -86,6 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         installed = json.loads(result.stdout)
         assert_installed_origin(installed["origin"], args.checkout)
+        loaded_before = assert_installed_modules(args.checkout)
         assert installed["version"] == installed["distribution_version"] == args.expect_version
         assert all(installed["resources"].values()), "empty bundled data resource"
         assert args.expect_version in run_cli(["--version"], cwd, env)
@@ -221,6 +254,46 @@ def main(argv: list[str] | None = None) -> int:
         native_stream_receipt = accept_native_stream(
             cwd, env, args.checkout, plan_path=protocol_plan_path
         )
+        from ci_secure_active import accept as accept_secure_active
+
+        secure_active_receipt = accept_secure_active(cwd / "secure-active", env, args.checkout)
+
+        from ci_fleet_monitor_gate import accept as accept_fleet_monitor_gate
+
+        passive_gate_receipt = accept_fleet_monitor_gate(
+            cwd / "fleet-monitor-gate", env, cwd / "fleet-plan.json", args.checkout
+        )
+        from ci_fleet_exporter import accept as accept_fleet_exporter
+
+        exporter_receipt = accept_fleet_exporter(
+            cwd / "fleet-exporter", env, cwd / "fleet-plan.json"
+        )
+        from ci_fleet_trace_campaign import accept as accept_fleet_campaign
+
+        fleet_campaign_receipt = accept_fleet_campaign(
+            cwd / "fleet-campaign", env, cwd / "fleet-plan.json", args.checkout
+        )
+        from ci_kubernetes_inspection import accept as accept_kubernetes_inspection
+
+        inspection_receipt = accept_kubernetes_inspection(
+            cwd / "kubernetes-inspection", env, cwd / "fleet-plan.json", args.checkout
+        )
+
+        from ci_trace_report import accept as accept_trace_report
+
+        trace_report_receipt = accept_trace_report(
+            cwd / "trace-reports", env, cwd / "fleet-plan.json", handoff=args.trace_report_handoff
+        )
+
+        from ci_campaign_report import accept as accept_campaign_report
+
+        campaign_report_receipt = accept_campaign_report(
+            cwd / "campaign-reports",
+            env,
+            cwd / "fleet-plan.json",
+            handoff=args.trace_report_handoff,
+        )
+
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
@@ -233,6 +306,12 @@ def main(argv: list[str] | None = None) -> int:
         from ci_prediction_bundle import accept as accept_prediction_bundle
 
         prediction_bundle_receipt = accept_prediction_bundle(cwd, env, args.checkout, snapshot_path)
+        from ci_serving_declaration import accept as accept_serving_declaration
+
+        serving_receipt = accept_serving_declaration(cwd, env)
+        from ci_chat_trace import accept as accept_chat_trace
+
+        chat_trace_receipt = accept_chat_trace(cwd, env)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -262,10 +341,23 @@ def main(argv: list[str] | None = None) -> int:
                     "trace_campaign_regression_gate": campaign_gate_receipt,
                     "trace_envelope_protocol": envelope_receipt,
                     "native_stream_protocol": native_stream_receipt,
+                    "secure_active_protocol": secure_active_receipt,
+                    "fleet_monitor_gate_protocol": passive_gate_receipt,
+                    "fleet_exporter_protocol": exporter_receipt,
+                    "fleet_trace_campaign_protocol": fleet_campaign_receipt,
+                    "kubernetes_inspection_protocol": inspection_receipt,
+                    "trace_report_protocol": trace_report_receipt,
+                    "campaign_report_protocol": campaign_report_receipt,
+                    "loaded_module_provenance": {
+                        "before": loaded_before,
+                        "after": assert_installed_modules(args.checkout),
+                    },
                     "signed_contribution_protocol": signed_receipt,
                     "signed_native_gate_protocol": signed_gate_receipt,
                     "prediction_score_protocol": score_receipt,
                     "prediction_bundle_protocol": prediction_bundle_receipt,
+                    "serving_declaration_protocol": serving_receipt,
+                    "native_chat_trace_protocol": chat_trace_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",
