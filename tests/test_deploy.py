@@ -474,7 +474,7 @@ def test_unknown_format_and_candidate_index_have_typed_errors():
     from chimeraforge.deploy import DeploymentError
 
     with pytest.raises(DeploymentError, match="format"):
-        export(artifact(), format="kubernetes")
+        export(artifact(), format="not-a-format")
     with pytest.raises(DeploymentError, match="index"):
         export(artifact(), format="compose", image="example/engine:1.2.3", candidate_index=2)
 

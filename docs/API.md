@@ -3,7 +3,120 @@
 ## Overview
 
 This document covers the public Python API for the `chimeraforge` package.
-This document covers Chimeraforge 0.68.0.
+This document covers unreleased Chimeraforge 0.91.0 source. Public installation
+remains 0.86.0.
+
+The 0.91.0 source adds typed `FleetExporterConfig` and frozen
+`FleetExporterSnapshot`; async `serve_fleet_exporter` holds native saved intent
+and yields an owned loopback cached-gauge service. `snapshot()` performs no
+backend I/O; context exit or `aclose()` joins the listener and poll task.
+See [the complete exporter contract](fleet-exporter.md).
+
+The 0.89.0 source adds frozen `ChatMessage(role, content)` and
+`ChatTraceRequest(request_id, messages, max_output_tokens, arrival_offset_s,
+temperature=0.0)`. Existing ordinary/saved/fleet/campaign replay APIs accept typed
+chat rows or explicit private JSON histories, with strict native saved receiving,
+gates and diagnostics. Missing usage is null; the client never infers token counts
+from chunks or flattens roles. See [the complete chat contract](chat-trace-replay.md).
+
+The 0.88.0 source adds `ServingRequest`, `declare_serving(request)`,
+`load_serving_declaration(path)`, `quote_serving(declaration, *, cloud=None,
+instance=None, region=None)`, `export_serving_declaration(declaration, *, format,
+...)` and `verify_serving_declaration(declaration, config_path, *,
+format="compose", ...)`. Saved operator intent is not a predictive PlanArtifact.
+Dated whole-instance arithmetic, explicit export layouts and native config
+verification preserve unknown feasibility/readiness. See [complete typed fields,
+serialization, examples and limits](serving-declaration.md).
+
+The 0.87.0 source adds optional `memory_basis="selected-batch"` to async
+`api.check_inventory`, with frozen `SelectedBatchBaseline` and `MemoryBasis` types.
+The default `"batch-one"` retains its report shape and arithmetic. Selected mode
+uses compatible saved producer facts and the saved B/context, retains every
+original slot, and refuses unsupported geometry before inventory contact. Its
+modeled resident-component estimate is not peak memory, pooled capacity or
+deployment readiness. See [the complete contract](inventory-check.md).
+
+Chimeraforge 0.86.0 adds `api.render_trace_report(source, *, kind="trace",
+format="html", title="Trace diagnostics") -> api.TraceReport`, with public
+`content`, `kind`, `format` and protected `.save(path)`. Strict ordinary/full-fleet
+inputs retain every row/member; static HTML, Markdown and SVG use a closed
+presentation. No campaign unwrap, new gate/math or performance qualification.
+See [complete CLI/API, timing, bounds and browser proof limits](trace-diagnostics.md).
+
+Chimeraforge 0.85.0 adds async `api.inspect_kubernetes_deployment(saved, *, image,
+kubeconfig, context, kubernetes=None, candidate_index=0, model=None,
+kubectl="kubectl", timeout_s=30, request_timeout_s=10, concurrency=4,
+cleanup_timeout_s=2, stop_event=None) -> api.KubernetesInspection` and
+`api.write_kubernetes_inspection(result, *, out=None, junit=None)`. Independent
+render intent remains separate from runtime credentials and actual controller
+rollout. Whole typed outcomes remain available when bounded JSON/JUnit refuse;
+private input identities and verified-inventory state stay outside dataclass
+fields/asdict. See the [complete GET-only profile, native budgets, outcomes and
+qualification limits](kubernetes-inspection.md).
+
+Chimeraforge 0.84.0 adds async `api.replay_fleet_trace_campaign(saved, requests,
+endpoints, routes, *, executions=3, candidate_index=0, model=None, concurrency=1,
+request_timeout=300, trace_timeout=600, cleanup_timeout=2, campaign_timeout=1800,
+stop_event=None, connections=None)`, sync `api.load_fleet_trace_campaign(source)`,
+`FleetTraceCampaignGatePolicy(fleet, expected_executions, campaign_timeout_seconds,
+schema_version=1)`, `api.gate_fleet_trace_campaigns(baseline, candidate, *, policy)`
+and `api.write_fleet_trace_campaign_gate(decision, *, out=None, junit=None)`.
+Typed campaign/decision results retain complete original populations; private
+runtime guards are outside serialized dataclass fields. See the
+[full K-versus-N, receiving, byte-profile, CLI/JUnit and native outcome contract](fleet-trace-campaign.md).
+
+Chimeraforge 0.83.0 adds `api.load_fleet_monitor(source, saved, *, candidate_index=0)`,
+`FleetMonitorGatePolicy(original_replicas, endpoint_ids, windows, metrics, baseline,
+candidate, schema_version=1)`, `api.gate_fleet_monitors(baseline, candidate, *,
+baseline_plan, candidate_plan, policy)` and
+`api.write_fleet_monitor_gate(decision, *, out=None, junit=None)`. Native reports
+add effective controls and bounded `json_bytes()` / `save(path)`; full typed
+reports retain native outcomes while oversized exports refuse. See the
+[complete receiving, policy, CLI/JUnit and byte-bound contract](fleet-monitor-gate.md).
+
+Chimeraforge 0.82.0 adds keyword-only `connection: MonitorConnection | None = None`
+to async `benchmark_plan`, `replay_trace` and `replay_plan_trace`, and to direct
+`chimeraforge.bench.runner.run_benchmark` / `save_results`. The setting is runtime-only;
+serialized settings/native receipts remain unchanged. Exact native vLLM/SGLang
+HTTPS admission, CLI flags, effective TLS input guards and writer ownership are
+documented in [authenticated active measurements](authenticated-active.md).
+
+Chimeraforge 0.81.0 adds typed `api.KubernetesOptions(namespace="default", name_prefix=None, node_selector={})` and lazy sync `api.verify_deployment(saved, config_path, *, image, format="compose", kubernetes=None, model=None, candidate_index=0, gpu_devices=None, host_port=None, replica_gpu_devices=None, replica_host_ports=None)`. The direct `chimeraforge.deploy.export_deployment(..., format="kubernetes", kubernetes=options)` preserves every original supported online Linux CUDA vLLM/SGLang member in bounded JSON; export remains a direct module API. Explicit Kubernetes verification uses independently supplied namespace/prefix/selectors/image/selection and preserves native match0/drift5/invalid1. Default Compose report shape stays unchanged. See [complete signatures, examples, fidelity and API-admission proof limits](kubernetes-deployment.md).
+
+Chimeraforge 0.80.0 adds closed `api.FleetTraceGatePolicy`, sync `api.gate_fleet_traces(baseline, candidate, *, policy)` and `api.write_fleet_trace_gate(decision, *, out=None, junit=None)`. One whole fleet per arm retains every member/row, strict source and ordered-population commitments, native global arithmetic and separate evidence blockers. Bounded JSON/JUnit output protects held inputs and both destinations. See [full original-fleet regression policy and output contract](fleet-trace-gate.md).
+
+Chimeraforge 0.79.0 adds frozen `api.TraceRoute`, defensive `api.FleetTraceReplay`, async `api.replay_fleet_trace(saved, requests, endpoints, routes, *, candidate_index=0, model=None, concurrency=1, request_timeout=300, trace_timeout=600, cleanup_timeout=2, stop_event=None, connections=None)` and sync strict `api.load_fleet_trace(source)`. Every original member and routed request stays in one native population with separate execution, SLO, configuration and cooperative cleanup facts. See [complete original-fleet examples, receiving schema and limits](fleet-trace.md).
+
+Chimeraforge 0.78.0 adds opaque runtime `api.MonitorConnection` / `MonitorConnectionError`, `run_monitor(..., connection=None)`, `api.monitor_plan(..., connection=None)` and async `api.monitor_fleet(..., connections=None)`. Explicit fleet mappings, including `{}`, opt every original endpoint into verified HTTPS; omitted IDs receive secure anonymous trust, without credential broadcast. The same origin-bound bearer/privateCA/mTLS policy covers metrics and all metadata. These settings stay outside persisted requests/reports. See [constructor, CLI/API examples, trust and lifecycle limits](secure-monitoring.md).
+
+Chimeraforge 0.77.0 adds async `api.check_inventory(saved, *, candidate_index=0, gpu_devices=None, replica_gpu_devices=None, timeout=10)` and frozen `InventoryCheck`, `InventoryBaseline`, `InventoryDevice`, `InventoryObservation`, `InventorySlot` types. It compares the full original ordered selector population and reported free memory with the saved per-GPU modeled batch-one baseline. Invalid input raises `InventoryCheckError`; unknown observations remain explicit. See [exact CLI/API examples, outcomes and limits](inventory-check.md). Every result has `deployment_ready: null`.
+Chimeraforge 0.72.0 extends `PlanScenario` / `study_plan` with exact hardware
+alternatives under held model/input facts; see
+[the complete study contract](planning-api.md#frozen-context-sensitivity).
+Chimeraforge 0.73.0 adds keyword-only `gpu_devices: list[str] | None`
+and `host_port: int | None` to the direct `chimeraforge.deploy.export_deployment`
+API. This is a module API, not an additional `chimeraforge.api` re-export. See
+[the exact placement contract and complete example](deployment.md#explicit-device-selection-and-host-ports).
+
+Chimeraforge 0.74.0 adds keyword-only
+`replica_gpu_devices: list[list[str]] | None` and `replica_host_ports: list[int] | None`
+to the same direct deployment API. They require a complete explicit layout for
+an original online vLLM/SGLang multi-replica Compose candidate. See the
+[full API/CLI contract](deployment.md#homogeneous-compose-replicas).
+
+Chimeraforge 0.75.0 adds the separate typed direct module API
+`chimeraforge.deployment_verify.verify_deployment` and `deploy-verify` CLI. It
+checks generated JSON Compose/required companion bytes against independent saved
+plan and render intent. See [full signatures, examples and outcomes](deployment-verification.md).
+In released 0.75.0/0.76.0 it is not a `chimeraforge.api` re-export. Chimeraforge 0.81.0 adds that lazy public entry point; neither version is a runtime/source-authentication check.
+
+Chimeraforge 0.76.0 adds typed `FleetEndpoint`,
+`FleetMonitorRequest`, `FleetMonitorReport` and async
+`api.monitor_fleet(saved, request, *, candidate_index=0, stop_event=None)`.
+It observes every explicitly declared original replica under shared budgets,
+retaining partial native windows/metadata and separate closure/coverage facts.
+See [complete examples, outcomes and limits](fleet-monitoring.md).
+
 For CLI usage, see the [README](../README.md).
 Chimeraforge 0.63.0's `TraceGatePolicy` / `gate_traces` API is
 documented in [queue-inclusive trace regression gates](trace-regression-gate.md).
@@ -25,6 +138,24 @@ Chimeraforge 0.68.0 adds async `replay_plan_trace` and defensive
 `PlanTraceReplay`, retaining a selected frozen candidate beside its unchanged
 native trace. See [plan-bound traces](plan-bound-trace.md) for exact cap admission,
 before/after bindings, modeled settings and independent SLO outcomes.
+Chimeraforge 0.69.0 adds sync `assess_trace_envelope(cases, campaigns,
+*, policy)` returning a defensive `RegressionGate`. Cases and policy accept held
+JSON objects or paths; campaigns maps declared cell names to `TraceCampaign`,
+JSON objects or paths. Missing cells remain declared, and every supplied campaign
+must match its cell. See [finite load points](trace-envelope.md) for the closed
+schemas, comparability conditions, byte limits and exits.
+Chimeraforge 0.70.0 adds `PredictionBundle`,
+`create_prediction_bundle`, `verify_prediction_bundle` and `score_prediction_bundle`.
+Original policy/receipt bytes remain held alongside the verified original plan
+inputs; scoring uses the existing `PredictionScorecard` algorithm. See
+[private prediction bundles](prediction-bundles.md) for exact signatures,
+inventory, publication behavior and private-content limits.
+
+Chimeraforge 0.71.0 adds sync `gate_signed_contributions(baseline,
+candidate, *, trusted_keys, policy)` returning `SignedContributionReceipt`.
+Only explicitly trusted, valid signed v2 public native facts are compared;
+no private saved-plan bindings are reconstructed. See
+[signed native gates](signed-native-gates.md) for exact types, outcomes and limits.
 
 Install: `pip install chimeraforge[all]`
 
@@ -140,18 +271,18 @@ Live inference benchmarking against Ollama, vLLM, or TGI backends.
 
 ```python
 import asyncio
-from chimeraforge.bench import run_benchmark, get_backend, save_results
+from pathlib import Path
+from chimeraforge.bench import run_benchmark, save_results
 
-backend = get_backend("ollama")
 result = asyncio.run(run_benchmark(
     model="llama3.2-3b",
-    backend=backend,
+    backend_name="ollama",
     runs=5,
     workload="single",
     context_length=2048,
 ))
 print(f"Throughput: {result.aggregate.throughput_tps.mean:.1f} tok/s")
-save_results([result], output_dir="./results")
+save_results([result], output_dir=Path("./results"))
 ```
 
 ### Key types
@@ -306,3 +437,10 @@ for the full API (Tokio + reqwest streaming).
 ---
 
 **Last Updated**: March 2026
+
+## Whole-campaign diagnostics (unreleased 0.90.0)
+
+`api.render_trace_report(source, kind="trace-campaign" | "fleet-trace-campaign",
+format="html" | "svg" | "markdown", title="Trace diagnostics")` returns the same
+`TraceReport`. It holds every native execution/member/row and marks absent
+observations unavailable. See [full API/CLI, privacy and bounds](campaign-diagnostics.md).

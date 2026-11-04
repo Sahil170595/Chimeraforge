@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import logging
+import json
 from collections import Counter
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -16,6 +17,7 @@ from chimeraforge.bench.gate_inputs import (
     MAX_RECEIPT_BYTES,
     MAX_TOTAL_BYTES,
     finite,
+    _finite_float,
     held_json,
     load_receipt,
     sha,
@@ -135,21 +137,51 @@ class _Inputs:
     def json(self, source: object, limit: int) -> tuple[Json, bytes, Path | None]:
         from chimeraforge.api import PlanArtifact
 
+        if type(source) is _HeldJSON:
+            if type(source.raw) is not bytes or not _protected(source.paths):
+                _fail()
+            self.charge(len(source.raw))
+            self.paths.extend(source.paths)
+            return _decode_json(source.raw, limit), source.raw, None
         if isinstance(source, (PlanArtifact, PlanBenchmark)):
             source = source.to_dict()
         if isinstance(source, (str, Path)):
             path = Path(source).absolute()
             raw = self.raw(path, limit)
-            # held_json supplies the shared strict duplicate/nonfinite parser, without I/O.
-            from chimeraforge.api import _unique_object
-            import json
-
-            data = json.loads(raw, object_pairs_hook=_unique_object)
-            data, _, _ = held_json(data, limit)
-            return cast(Json, data), raw, path
+            return _decode_json(raw, limit), raw, path
         data, raw, path = held_json(source, min(limit, MAX_TOTAL_BYTES - self.total))
         self.charge(len(raw))
         return cast(Json, data), raw, path
+
+
+def _protected(paths: object) -> bool:
+    return type(paths) is tuple and all(
+        isinstance(path, Path) and path.is_absolute() for path in paths
+    )
+
+
+@dataclass(frozen=True)
+class _HeldJSON:
+    """Private original-byte snapshot; labels protect outputs without being reopened."""
+
+    raw: bytes = field(repr=False)
+    paths: tuple[Path, ...] = field(default=(), repr=False)
+
+
+def _decode_json(raw: bytes, limit: int) -> Json:
+    from chimeraforge.api import _unique_object
+
+    if type(raw) is not bytes or not 0 < len(raw) <= limit:
+        _fail()
+    data = json.loads(
+        raw,
+        object_pairs_hook=_unique_object,
+        parse_constant=lambda _: _fail(),
+        parse_float=_finite_float,
+    )
+    if type(data) is not dict:
+        _fail()
+    return cast(Json, data)
 
 
 def _source(saved: PlanArtifact | PlanBundle | str | Path, held: _Inputs) -> tuple[Json, Json]:
@@ -204,7 +236,7 @@ def _source(saved: PlanArtifact | PlanBundle | str | Path, held: _Inputs) -> tup
 
 
 def _policy(
-    source: PredictionScorePolicy | Json | str | Path, held: _Inputs, data: Json
+    source: PredictionScorePolicy | Json | str | Path | _HeldJSON, held: _Inputs, data: Json
 ) -> PredictionScorePolicy:
     raw = asdict(source) if type(source) is PredictionScorePolicy else source
     values, _, _ = held.json(raw, MAX_POLICY_BYTES)
@@ -450,9 +482,9 @@ def _row(
 
 def score_predictions(
     saved_plan: PlanArtifact | PlanBundle | str | Path,
-    benchmark_receipts: list[PlanBenchmark | Json | str | Path],
+    benchmark_receipts: list[PlanBenchmark | Json | str | Path | _HeldJSON],
     *,
-    policy: PredictionScorePolicy | Json | str | Path,
+    policy: PredictionScorePolicy | Json | str | Path | _HeldJSON,
 ) -> PredictionScorecard:
     """Score every declared row without planning, inference, corpus replacement or refitting."""
     from chimeraforge.api import PlanError

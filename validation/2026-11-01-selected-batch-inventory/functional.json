@@ -1,0 +1,200 @@
+{
+  "captured_at": "2026-11-01T15:56:15.805491+00:00",
+  "version": "0.87.0",
+  "evidence": "source API and in-process Typer CLI on owned Python subprocess fixtures; no installed-distribution or GPU qualification",
+  "population": {
+    "replicas": 3,
+    "tensor_parallel": 2,
+    "pipeline_parallel": 1,
+    "declared_slots": 6,
+    "ordered_groups": [
+      [
+        "7",
+        "3"
+      ],
+      [
+        "9",
+        "2"
+      ],
+      [
+        "8",
+        "4"
+      ]
+    ]
+  },
+  "baseline": {
+    "saved_gib": "3.57",
+    "lower_gib": "3.565",
+    "upper_gib": "3.575",
+    "basis": "saved_modeled_batch1_per_gpu",
+    "saved_effective_batch": 128,
+    "reason": null
+  },
+  "controls": {
+    "complete": {
+      "api_exit": 0,
+      "cli_exit": 0,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 6,
+        "absent": 0,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    },
+    "unavailable_free": {
+      "api_exit": 4,
+      "cli_exit": 4,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 6,
+        "absent": 0,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    },
+    "shortfall": {
+      "api_exit": 5,
+      "cli_exit": 5,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 6,
+        "absent": 0,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    },
+    "malformed": {
+      "api_exit": 4,
+      "cli_exit": 4,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 0,
+        "absent": 0,
+        "unknown": 6
+      },
+      "deployment_ready": null
+    },
+    "missing": {
+      "api_exit": 5,
+      "cli_exit": 5,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 5,
+        "absent": 1,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    }
+  },
+  "source_bytes_unchanged": true,
+  "selected_batch": {
+    "scope": "Declared archived geometry, genuine native producer/save/load; owned protocol only.",
+    "literal_addition_mib": 784,
+    "controls": {
+      "selected_pass": {
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "selected_shortfall": {
+        "api_exit": 5,
+        "cli_exit": 5,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "overlap": {
+        "api_exit": 4,
+        "cli_exit": 4,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "free_unavailable": {
+        "api_exit": 4,
+        "cli_exit": 4,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "missing": {
+        "api_exit": 5,
+        "cli_exit": 5,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "malformed": {
+        "api_exit": 4,
+        "cli_exit": 4,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "odd_context_pass": {
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_slots": 2,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      },
+      "all_original_six": {
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_slots": 6,
+        "all_slots_retained": true,
+        "owned_children_closed": true
+      }
+    },
+    "hosted_cpu_native_absence": null,
+    "all_saved_bytes_held": true,
+    "legacy_exact_sha256": "33dd39c068be999b66566f336677c489a6af183fc99c3c2d3b0e24035ed57212",
+    "legacy_default_parity_and_selected_refusal": true,
+    "legacy_prediction_equivalence_with_tool_change_retained": true,
+    "archived_config_raw_sha256": "c8452f8fd6e5c77d93c1529d17931008566fdfb88f1eb207b12b5e6ec3236c17",
+    "archived_config_lf_normalized_sha256": "98d2ff8cc47488d08a2b0b3acf4eb99ef210779b42bd48605f6b8e36acdbf670",
+    "deployment_ready": null
+  },
+  "deployment_ready": null,
+  "unassessed": [
+    "physical_identity",
+    "independent_memory_pools",
+    "partition_topology",
+    "cuda_process_visibility",
+    "hardware_equivalence",
+    "engine_compatibility",
+    "runtime_peak",
+    "allocation",
+    "deployment_eligibility"
+  ],
+  "hardware_queries": 0,
+  "source_sha256": {
+    ".github/workflows/ci.yml": "e746c29f8904c234cb7d42d070c0c5bacb76415f31130b6646e98376441ee3b8",
+    "pyproject.toml": "31394457051f261124438c32568f7f3f299a06be7790a195c892c6bd9d920e60",
+    "scripts/ci_inventory_check.py": "5b696b545713d5519a3b3e8efdee4e2643fc80e77c66d19fc5db3dee014ce4da",
+    "server.json": "3d577923ba4e1090fceb572fd076a222ef6be3d7b7e233221c9e32bd2852ce80",
+    "src/chimeraforge/__init__.py": "0eb56fbc3d1e0c6dc087678e69cccd0a78ad64f1879b2e360a5b07a3a7f19a77",
+    "src/chimeraforge/api.py": "dc963f455d7f87ce65ef5507764f72ce49297fc0eb093d1e265ede937241c92b",
+    "src/chimeraforge/commands/inventory_check.py": "3fc0e38652aae98be89f1cb109d52516819e05095db51fa6e2add438522f9106",
+    "src/chimeraforge/inventory_check.py": "70ce3f0cb4673e54772c3a7a221f5de65d40a14cee28545ce83f12f01f781921",
+    "src/chimeraforge/inventory_memory.py": "29453d18d9e050684d8a1093e2925bd800bf0946fb58ac748e196bf7ab72e516",
+    "src/chimeraforge/inventory_numbers.py": "824a7495b5742d999d3b8fa8f82934c2df9221073e1f52422e638bdb99596770",
+    "src/chimeraforge/inventory_process.py": "d39cb1b88a94ab36d2a75c5dbb411b1bbdecc38e8e712b726d3a733a3d5b892c",
+    "src/chimeraforge/inventory_types.py": "c517e57f9350d9348852dabcfc5caf450482e7b97aca13a12ec8566ac96cdd42",
+    "src/chimeraforge/plan_check.py": "436ef7d9082bf859a23168ffab0ac3cede63c61031f0b02ff9cbc6d87984dac6",
+    "src/chimeraforge/planner/engine.py": "4f33672716d73a9353e86fda20b084225c4a094a2604edc3d35027c730764308",
+    "src/chimeraforge/planner/models.py": "6066b6b4f088f26a80c4430f97b7fc1271762db1b746c59845fa80c329e8eb51",
+    "src/chimeraforge/planner/resolver.py": "a5bbd4fe7c1fa7291f2878ad8478817778abd5ed765bbb28e1bc395cfd82a6f4",
+    "tests/fixtures/hybrid_configs/MANIFEST.json": "39fc96fda3a03789c1a34d2f84672e306ca523888d413337e026028972a1786c",
+    "tests/fixtures/hybrid_configs/Qwen_Qwen2.5-1.5B-Instruct.json": "c8452f8fd6e5c77d93c1529d17931008566fdfb88f1eb207b12b5e6ec3236c17",
+    "tests/fixtures/inventory/legacy086-qwen-b8.json": "33dd39c068be999b66566f336677c489a6af183fc99c3c2d3b0e24035ed57212",
+    "tests/test_ci_inventory_selected_batch.py": "fc40acb8491cc5c9c0d358ea326f83b72f32e468987f2b62dc69c1c0cf3a3cf0",
+    "tests/test_inventory_selected_batch.py": "29b5f23b65078b157c14ae20689e6d7a433dc031a5bb62eb02ed0069af2a0590",
+    "tests/test_plan_check.py": "718861ceff8e23b085394172e09d47235c53d6456bb3aa53c8f029c046bfa380",
+    "tests/test_provenance_classes.py": "57826701f9403c2b7d6f61bbe7df31ffcb6092a7844d7fd69c0dd9ee81a9b7cc",
+    "uv.lock": "0b980499d0b061f1132a2f0e891f0d41e98d26d7c9fb047175cfff441028cb18"
+  }
+}

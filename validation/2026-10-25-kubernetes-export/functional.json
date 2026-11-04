@@ -1,0 +1,93 @@
+{
+  "captured_at": "2026-10-25T19:21:59.222449+00:00",
+  "version": "0.81.0",
+  "evidence": "source CLI/API offline controls; hosted installed and kind admission are separate",
+  "result": [
+    {
+      "controls": [
+        {
+          "backend": "vllm",
+          "original_replicas": 1,
+          "tensor_parallel": 2,
+          "pipeline_parallel": 1,
+          "batch_per_replica": 8,
+          "objects": 2,
+          "desired_gpu_total": 2,
+          "image_intent": "vllm/vllm-openai:v0.30.0",
+          "api_exit": 0,
+          "cli_exit": 0,
+          "drift_exit": 5,
+          "source_alias_exit": 1,
+          "cluster_or_image_executed": false
+        },
+        {
+          "backend": "sglang",
+          "original_replicas": 1,
+          "tensor_parallel": 2,
+          "pipeline_parallel": 1,
+          "batch_per_replica": 8,
+          "objects": 2,
+          "desired_gpu_total": 2,
+          "image_intent": "lmsysorg/sglang:v0.5.20",
+          "api_exit": 0,
+          "cli_exit": 0,
+          "drift_exit": 5,
+          "source_alias_exit": 1,
+          "cluster_or_image_executed": false
+        }
+      ],
+      "source_sha256": "f4ebb07d23dffee537f62f9a14ccc5545539d259d905fe4976885275a03f78f5",
+      "source_bytes_unchanged": true,
+      "scope": "offline CLI/API declaration consistency; no API admission, image, scheduling, GPU or inference qualification"
+    },
+    {
+      "controls": [
+        {
+          "backend": "vllm",
+          "original_replicas": 3,
+          "tensor_parallel": 2,
+          "pipeline_parallel": 1,
+          "batch_per_replica": 128,
+          "objects": 6,
+          "desired_gpu_total": 6,
+          "image_intent": "vllm/vllm-openai:v0.30.0",
+          "api_exit": 0,
+          "cli_exit": 0,
+          "drift_exit": 5,
+          "source_alias_exit": 1,
+          "cluster_or_image_executed": false
+        },
+        {
+          "backend": "sglang",
+          "original_replicas": 3,
+          "tensor_parallel": 2,
+          "pipeline_parallel": 1,
+          "batch_per_replica": 128,
+          "objects": 6,
+          "desired_gpu_total": 6,
+          "image_intent": "lmsysorg/sglang:v0.5.20",
+          "api_exit": 0,
+          "cli_exit": 0,
+          "drift_exit": 5,
+          "source_alias_exit": 1,
+          "cluster_or_image_executed": false
+        }
+      ],
+      "source_sha256": "126cffbd80a176d79a112421e0e65c0d9f183bbc08210264658ab5cddf6ef304",
+      "source_bytes_unchanged": true,
+      "scope": "offline CLI/API declaration consistency; no API admission, image, scheduling, GPU or inference qualification"
+    }
+  ],
+  "source_sha256": {
+    "scripts/ci_kubernetes_export.py": "622928ad20c6603da270298391365ee3dd813b6a307142ed65a69368b13fe5bd",
+    "src/chimeraforge/api.py": "b90f6e02896b11d6d2f4d1d72963b5717b5c21e3f20f5beaebd910eb1c308ee6",
+    "src/chimeraforge/deploy.py": "75b0faf1a4ce3eeb219d46a956fcde7a5f3562f12c7a77de7c77f8e1024c47e2",
+    "src/chimeraforge/deployment_verify.py": "02356f3dc63480d09b9479722c650fdd5877794f3d74f1eedfc55669d8c1f572",
+    "src/chimeraforge/kubernetes_options.py": "c591d03c3b208b81c76668d05c5618ba0f121471e4bb440ede025624b66cc6a6",
+    "src/chimeraforge/kubernetes_export.py": "55aa4b4677aec57c4134f6bfa4253cb1053ff71b7d88ef8a50b96c1bebdc5e45",
+    "src/chimeraforge/commands/deploy.py": "d5c46841584ea635b8f6e1d8dc75c0a552a849898759fe204feb63dc86304806",
+    "src/chimeraforge/commands/deploy_verify.py": "4f9bbf0a380b518b89f36b95aceb913c17accc2cc6b6be6372074a692d09f019",
+    "scripts/ci_deploy_placement.py": "85ea1b5b5248014b6e48b9d7d041c74e627227f45763eeef74ed5b6458e6247d",
+    "scripts/ci_kubernetes_admission.py": "a6c35e75e1c90836761ac7807f62503d6f5ea910b56c45c00d24c7d0720f4067"
+  }
+}

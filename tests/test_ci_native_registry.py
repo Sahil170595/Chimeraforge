@@ -597,6 +597,36 @@ def test_real_sdk_application_failure_never_retries(monkeypatch, tmp_path, stage
     assert "private-response-sentinel" not in output.getvalue()
 
 
+def _native_fixture_marker_source():
+    return (
+        "ready=marker.with_suffix('.ready');"
+        "ready.write_text(json.dumps([os.getpid(),descendant.pid]));"
+        "ready.replace(marker)\n"
+    )
+
+
+def test_native_fixture_marker_is_absent_or_complete_during_publication(tmp_path, monkeypatch):
+    marker = tmp_path / "started.json"
+    original_write = Path.write_text
+    writes = []
+
+    def observed_write(path, text, *args, **kwargs):
+        # Expose the real open-before-write interval to the fixture's exists-only reader.
+        path.touch()
+        writes.append(path)
+        if marker.exists():
+            json.loads(marker.read_text(encoding="utf-8"))
+        return original_write(path, text, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "write_text", observed_write)
+    exec(
+        _native_fixture_marker_source(),
+        {"marker": marker, "os": os, "json": json, "descendant": types.SimpleNamespace(pid=123)},
+    )
+    assert len(writes) == 1
+    assert json.loads(marker.read_text(encoding="utf-8")) == [os.getpid(), 123]
+
+
 @pytest.mark.parametrize("stage", ["resolution", "application"])
 @pytest.mark.parametrize("cancel", [False, True], ids=["deadline", "cancellation"])
 def test_sdk_cancellation_reaps_native_child_and_descendant(tmp_path, monkeypatch, stage, cancel):
@@ -612,7 +642,7 @@ def test_sdk_cancellation_reaps_native_child_and_descendant(tmp_path, monkeypatc
         "descendant=subprocess.Popen([sys.executable,'-B','-c','import time;time.sleep(60)'])\n"
         f"marker=Path({str(marker)!r})\n"
     )
-    mark = "marker.write_text(json.dumps([os.getpid(),descendant.pid]))\n"
+    mark = _native_fixture_marker_source()
     if stage == "resolution":
         source = prefix + mark + "time.sleep(60)\n"
     else:

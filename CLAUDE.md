@@ -57,7 +57,164 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.68.0 | **License:** MIT | **Python:** >=3.10 | **Rust:** >=1.70
+**Version:** 0.91.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Continuous fixed-config exporter (unreleased 0.91.0): `monitor-fleet-exporter`
+and `api.serve_fleet_exporter` reuse finite native polls and cache immutable safe-label
+gauges. No scrape backend contact; all-N stale/failed views replace old PASS.
+Loopback ASGI stack is a declared optional extra; context cleanup joins owned
+resources. See [contract](docs/fleet-exporter.md).
+
+Operator serving declarations (unreleased 0.88.0): `serving declare|quote|export|verify`
+uses closed operator-authored settings without PlanRequest/PlanResult/corpus.
+Reuse native whole-instance quote arithmetic and shared argv/config projections;
+keep declaration identity distinct from optimizer identity. Quote allocation does
+not place replicas or prove capacity. See [contract](docs/serving-declaration.md).
+
+Selected-batch inventory (unreleased 0.87.0): opt-in `memory_basis="selected-batch"`
+or `inventory-check --memory-basis selected-batch` uses compatible native producer
+facts, saved B1 and the full-context active-sequence KV increment. Preserve every
+original N*TP*PP slot; unsupported geometry/formulas refuse before inventory
+contact. Default B1 reports/math stay held. No new model/corpus resolution or
+runtime peak/idle-pool/capacity claim. See [contract](docs/inventory-check.md).
+
+Whole-campaign diagnostics (unreleased 0.90.0): existing `report` and
+`api.render_trace_report` add `trace-campaign` / `fleet-trace-campaign`, all K/N,
+strict native receiving and separate client panels. See [contract](docs/campaign-diagnostics.md).
+
+Trace diagnostics (since 0.86.0): `api.render_trace_report` and existing
+`report --kind trace|fleet-trace --input` strictly hold one native input, retain
+all rows/original members and render static HTML/Markdown/SVG through a closed
+public projection. Protected exact 8 MiB artifacts keep runtime guards outside
+persisted fields. Browser-only dependency group and hosted rendering stay in the
+existing Ubuntu installed job. See [complete contract](docs/trace-diagnostics.md).
+
+Read-only Kubernetes inspection (since 0.85.0): async
+`api.inspect_kubernetes_deployment` and `deploy-inspect` hold original plans and
+independent image/namespace intent, retain all 2N resources and separate native
+Deployment rollout. Pinned enabled kuberc/selected-context projections prevent
+credential helpers and legacy refresh; incomplete private-reference inventory
+refuses file publication. Complete bounded JSON/JUnit has 3N+1 cases. See
+[the inspection contract and native proof limits](docs/kubernetes-inspection.md).
+
+Whole-original-fleet campaigns (since 0.84.0): async
+`api.replay_fleet_trace_campaign`, strict `api.load_fleet_trace_campaign`,
+`FleetTraceCampaignGatePolicy`, `api.gate_fleet_trace_campaigns` and
+`api.write_fleet_trace_campaign_gate`; CLI `trace-fleet-campaign` and
+`gate --kind fleet-trace-campaign`. K serial executions keep original N and one
+native global schedule/C per execution; failed/unstarted slots and known native
+mismatches remain. Native child limits stay unchanged, with explicit outer
+16MiB/pair32MiB/policy64KiB profiles. See [the full contract](docs/fleet-trace-campaign.md).
+
+Whole-original-fleet passive gates (since 0.83.0): `api.load_fleet_monitor`
+validates complete native reports against actual saved plans; `api.gate_fleet_monitors`
+and `gate --kind fleet-monitor` retain every declared case and publish bounded
+JSON/JUnit. Schema2 records effective requested controls. Exact 8 MiB JSON export
+refuses without truncation; native typed verdicts and text/Prometheus-only paths
+remain distinct. See [passive fleet gates](docs/fleet-monitor-gate.md).
+
+Authenticated active measurements (since 0.82.0): runtime-only keyword-only
+`connection` reaches saved benchmarks and ordinary/saved traces through exact
+native vLLM/SGLang factory admission. `bench`/`trace` reuse secure CLI flags;
+private TLS input guards and scoped pre-factory SDK diagnostics preserve public
+serialized schemas. See `docs/authenticated-active.md`.
+
+Kubernetes declarations (since 0.81.0): `deploy --format kubernetes`, typed
+`api.KubernetesOptions` and `api.verify_deployment` preserve every original online
+Linux CUDA vLLM/SGLang member and independently verify intent. A required pinned
+hosted kind job qualifies strict server dry-run admission, not scheduling, image
+execution or GPUs. See [Kubernetes deployment](docs/kubernetes-deployment.md).
+
+Original-fleet regression gate (since 0.80.0): `api.gate_fleet_traces`, `FleetTraceGatePolicy` and `gate --kind fleet-trace` compare one complete original fleet per arm. Closed source/population/routes policy, every-member eligibility and native global math retain inconclusive evidence ahead of known breaches. Bounded protected JSON/JUnit writes share one finalized decision. See [fleet gates](docs/fleet-trace-gate.md).
+
+Original fleet trace (since 0.79.0): `trace-fleet` and async `api.replay_fleet_trace` retain the original candidate and all routed rows under one shared schedule/concurrency/deadline. Per-member metadata uses declared-member scope without rewriting N. Strict `api.load_fleet_trace` rederives slot/global facts; SLOs, configuration, execution and cleanup remain distinct. See [fleet trace](docs/fleet-trace.md).
+
+Secure monitoring (since 0.78.0): runtime-only `MonitorConnection` supplies verified HTTPS, explicit private CA trust, environment-sourced bearer and optional unencrypted client keys to standalone/saved/fleet metrics and all metadata. Explicit fleet mappings, including `{}`, require HTTPS for every original slot; credentials stay per ID and outside persisted requests/reports. Anonymous defaults remain available. CPU TLS fixtures do not qualify a real inference deployment. See [secure monitoring](docs/secure-monitoring.md).
+
+Inventory arithmetic (since 0.77.0): `inventory-check` and async `api.check_inventory` preserve every original N*TP*PP selector and compare one bounded strict native NVIDIA inventory view with the saved per-GPU batch-one baseline. Exact bounded rational comparisons do not inherit caller Decimal settings. Malformed input1, unknown4, complete known missing/shortfall5, arithmetic-only pass0; deployment_ready is always null. MIG Enabled/Disabled/N/A are raw diagnostics, with no physical independence, allocation or runtime-peak claim. See [the inventory contract](docs/inventory-check.md).
+
+Passive fleet monitoring (since 0.76.0): typed async
+`api.monitor_fleet` and `monitor-fleet` require one declared direct endpoint per
+original saved replica. Shared cooperative HTTP/time/body/work budgets and owned
+async cleanup retain every slot/window/metadata prefix. Qualification separates
+native SLOs, required identity, unverified configuration, declared coverage and
+closure. URL declarations do not authenticate processes, GPUs, weights or capacity.
+See [the complete fleet monitoring contract](docs/fleet-monitoring.md).
+
+Deployment verification (since 0.75.0): separate typed
+`deployment_verify.verify_deployment(saved, config_path, *, image, ...)` and
+`deploy-verify --plan --config --image [same selection/layout flags] --json`
+compare bounded generated JSON Compose and only renderer-required sibling bytes
+against independently supplied original intent. Outcomes: 0 match, 5 admitted
+JSON/companion drift, 1 invalid/unsafe/unavailable; native Typer usage errors stay 2.
+No interpolation, actual mount following, Docker calls or writes. Receipts identify
+the current renderer and file-byte versus object-snapshot source hashes; fixed
+expected paths/categories disclose no actual values/unknown keys. Current-renderer
+consistency is not source authenticity, running weights or an atomic file snapshot.
+See [the complete verification contract](docs/deployment-verification.md).
+
+Homogeneous Compose fleets (since 0.74.0): direct
+`export_deployment(..., replica_gpu_devices=GROUPS, replica_host_ports=PORTS)`
+and repeatable `deploy --replica-devices GROUP --replica-port PORT` render the
+ORIGINAL online Linux CUDA vLLM/SGLang candidate as `inference-1..N`. N<=16,
+TP x PP<=64 per replica; total GPUs=N x TP x PP may exceed 64. Every replica needs
+disjoint canonical IDs and a distinct loopback host port. Singular/matrix options
+cannot mix. Preserve each replica's model/revision/context/quant/batch/native
+controls; no one-agent substitution, router/scaler or physical capacity claim.
+See [multi-replica deployment](docs/deployment.md#homogeneous-compose-replicas).
+
+Deployment placement (since 0.73.0): direct
+`deploy.export_deployment(..., gpu_devices=["7", "3"], host_port=9001)` and
+`deploy --gpu-device 7 --gpu-device 3 --host-port 9001` retain native TP x PP
+cardinality and all fidelity gates. Compose selects host device IDs without
+copying host ordinals into container CUDA visibility; systemd sets application
+visibility in order. Host ports apply only to Compose and remain loopback bound.
+The 64-GPU-per-replica limit bounds export work, not host/planner capability.
+Default exports retain their count/port behavior. See [deployment](docs/deployment.md).
+
+Hardware studies (since 0.72.0): `study PLAN_OR_BUNDLE --cases CASES
+--out STUDY --json` and `api.study_plan` accept exact case-insensitive `hardware`
+names from one held full GPU registry. Rebind full raw GPU facts and use native
+replay gates; model geometry, platform and original corpus/quality remain held.
+Explicit hardware selection refuses source cloud pricing or GPU overrides.
+Receipts distinguish saved source geometry from alternative registry facts,
+retain unknown/infeasible outcomes, and preserve native timing extrapolation
+and applicable measured quality. Ordinary workload/cost studies retain saved
+hardware when no alternative is selected. See [the study contract](docs/planning-api.md#frozen-context-sensitivity).
+
+Trusted signed gates (since 0.71.0): `contribute gate --baseline BEFORE --candidate AFTER
+--trusted-key RECEIVER_KEY --policy POLICY --out DECISION --json` and sync
+`api.gate_signed_contributions` compare public native facts after signature/artifact
+verification and explicit receiver trust. Preserve every declared verification,
+and never compare untrusted payloads. Semantic copies, incomplete populations and
+incompatible controls remain inconclusive. Reuse the existing native regression
+policy without reconstructing private plan/request bindings. Outcomes: 0 complete
+conditional pass, 1 authentication failure or comparable regression, 2 malformed
+or unsafe/failed output, 3 unavailable/untrusted/inconclusive. No measurement truth,
+hardware, weights or independence attestation. See
+[signed native gates](docs/signed-native-gates.md), available since 0.71.0.
+
+Private prediction bundles (since 0.70.0): `bundle prediction-create PLAN --policy POLICY
+--benchmark RECEIPT --out DIR --json`, `bundle prediction-verify DIR --json`, and
+`bundle prediction-score DIR --out SCORE --json`. Public `PredictionBundle` and
+create/verify/score APIs hold original plan/input/policy/receipt bytes and reuse
+the existing scorer. Preserve every ordered receipt including negative/duplicate
+and zero-received populations. Both manifests count toward the 32 MiB transport
+budget; score accounting remains explicit. Directory originals may contain private
+prompts/options/harness data; metadata is digest-only and no upload occurs.
+Exclusive creation publishes the outer manifest last; partial directories remain
+visible without an atomic-directory/crash-durability claim. See
+[private prediction bundles](docs/prediction-bundles.md), available since 0.70.0.
+
+Finite load points (since 0.69.0): `trace-envelope --cases CASES --policy POLICY
+--campaign CELL=CAMPAIGN --out decision.json --json` and sync
+`api.assess_trace_envelope` assess whole saved campaigns offline. Closed cases fix
+uniform cadences and request commitments; every request/replica must pass explicit
+targets. The highest observed passing nominal rate is a named measured cell,
+without interpolation or capacity qualification. Missing cells retain their
+population and may leave a lower point visible; contradictions/copies prevent
+ranking. Exits are 0 complete conditional pass, 1 observed breach, 2 invalid,
+3 incomplete/incompatible. See [finite load points](docs/trace-envelope.md).
 
 Plan-bound traces (since 0.68.0): `trace WORKLOAD --from-plan PLAN_OR_BUNDLE
 --candidate-index 0 --model SERVED_ALIAS --out RECEIPT --json` and async
@@ -166,8 +323,26 @@ pytest tests/ -v
 # `ruff check src/` also sweeps the legacy src/python/banterhearts tree, which
 # has never been clean and is not gated, so it fails with ~100 pre-existing
 # errors that have nothing to do with your change.
-ruff check src/chimeraforge/
-ruff format --check src/chimeraforge/
+uv run --no-sync ruff check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py tests/test_inventory_selected_batch.py tests/test_serving_declaration.py tests/test_chat*.py tests/test_campaign_report.py tests/test_fleet_exporter*.py
+uv run --no-sync ruff format --check src/chimeraforge scripts/ci_*.py scripts/check_coverage.py tests/test_ci_*.py tests/test_secure_active*.py tests/test_transport_logging.py tests/test_fleet_monitor_receipt.py tests/test_fleet_monitor_gate.py tests/test_fleet_trace_campaign.py tests/test_fleet_trace_campaign_gate.py tests/test_kubernetes_inspection.py tests/test_kubernetes_inspection_intent.py tests/test_kubernetes_inspection_process.py tests/test_trace_report.py tests/test_planner_properties.py tests/test_inventory_selected_batch.py tests/test_serving_declaration.py tests/test_chat*.py tests/test_campaign_report.py tests/test_fleet_exporter*.py
+
+# Continuous exporter lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_exporter_types.py src/chimeraforge/fleet_exporter_cache.py src/chimeraforge/fleet_exporter.py src/chimeraforge/commands/monitor_fleet_exporter.py scripts/ci_fleet_exporter.py
+
+# Native chat input/stream/consumer lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/trace_workload.py src/chimeraforge/bench/backends/base.py src/chimeraforge/bench/backends/_native_stream.py src/chimeraforge/bench/backends/_chat_stream.py scripts/ci_chat_trace.py
+
+# Native trace diagnostics lane (literal CI command)
+uv run --no-sync mypy --follow-imports skip src/chimeraforge/bench/plan_trace.py src/chimeraforge/commands/trace.py src/chimeraforge/report/trace.py src/chimeraforge/report/trace_inputs.py src/chimeraforge/report/trace_view.py src/chimeraforge/report/trace_formats.py src/chimeraforge/commands/report.py scripts/ci_trace_report.py scripts/ci_trace_report_browser.py src/chimeraforge/report/campaign_inputs.py src/chimeraforge/report/campaign_view.py src/chimeraforge/report/campaign_formats.py scripts/ci_campaign_report.py scripts/ci_campaign_report_browser.py
+
+# Native passive fleet lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/fleet_monitor_json.py src/chimeraforge/fleet_monitor_receipt.py src/chimeraforge/fleet_monitor_gate_types.py src/chimeraforge/fleet_monitor_gate.py src/chimeraforge/fleet_monitor_gate_output.py scripts/ci_fleet_monitor_gate.py src/chimeraforge/fleet_monitor_types.py src/chimeraforge/fleet_monitor_transport.py src/chimeraforge/fleet_monitor_output.py src/chimeraforge/fleet_monitor.py src/chimeraforge/monitor_binding.py src/chimeraforge/plan_monitor.py src/chimeraforge/commands/monitor_fleet.py scripts/ci_monitor_fleet.py
+
+# Native active fleet/campaign lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/bench/fleet_trace_types.py src/chimeraforge/bench/fleet_trace_inputs.py src/chimeraforge/bench/fleet_trace_receipt.py src/chimeraforge/bench/fleet_trace.py src/chimeraforge/commands/trace_fleet.py scripts/ci_fleet_trace.py src/chimeraforge/bench/fleet_campaign_types.py src/chimeraforge/bench/fleet_campaign.py src/chimeraforge/bench/fleet_campaign_receipt.py src/chimeraforge/bench/fleet_campaign_gate.py src/chimeraforge/bench/fleet_campaign_output.py src/chimeraforge/commands/trace_fleet_campaign.py scripts/ci_fleet_trace_campaign.py
+
+# Native Kubernetes inspection lane (literal CI command)
+uv run --no-sync mypy --follow-imports silent src/chimeraforge/kubernetes_options.py src/chimeraforge/kubernetes_export.py scripts/ci_kubernetes_export.py scripts/ci_kubernetes_admission.py src/chimeraforge/kubernetes_inspection.py src/chimeraforge/kubernetes_inspection_intent.py src/chimeraforge/kubernetes_inspection_process.py src/chimeraforge/kubernetes_inspection_types.py src/chimeraforge/kubernetes_inspection_output.py src/chimeraforge/commands/deploy_inspect.py scripts/ci_kubernetes_inspection.py scripts/ci_kubernetes_inspection_native.py
 
 # Rust agents
 cd src/rust/demo_agent && cargo build --release
@@ -256,7 +431,7 @@ resources/prompts/                    # Legacy banter_prompts.txt (not used in b
 ## Code Conventions
 
 ### Python
-- **Style:** PEP 8 via ruff (line-length: 100, target: py310)
+- **Style:** PEP 8 via ruff (line-length: 100, target: py311)
 - **Type hints:** Required on function signatures; use `from __future__ import annotations`
 - **Docstrings:** Google-style with Args, Returns, Raises
 - **Data containers:** `@dataclass` everywhere (configs, metrics, results, SLOs, GPU specs)

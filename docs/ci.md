@@ -5,15 +5,51 @@ credential, paid model API or production service is required.
 
 `CI required` fails unless every prerequisite succeeded, including cancelled or
 unexpectedly skipped jobs. It runs on pull requests, main pushes and merge groups.
-The Python matrix covers Linux 3.10–3.14 and Windows/macOS portability. Ruff checks
+The Python matrix covers Linux 3.11–3.14 and Windows/macOS portability. Ruff checks
 the shipped package and CI helpers; mypy enforces metrics, planner constants,
-signed contributions/replay, prediction scoring, campaign receipt validation/gates,
-plan-bound trace replay/CLI and the native registry bootstrap boundary. The
+signed contributions/replay/native gates, prediction scoring, campaign receipt validation/gates,
+plan-bound trace replay/CLI, finite load-envelope assessment, private prediction
+bundle receiving/publication and the native
+registry bootstrap boundary. The
 independent validation corpus/error-band
 tests remain part of the full suite.
 
+Chimeraforge 0.78.0 adds a focused typed runtime monitoring-connection
+boundary and real owned CPU HTTPS fixtures. Every installed wheel/rebuilt-sdist
+profile exercises both vLLM/SGLang metadata protocols, standalone/saved/all-three
+replica CLI/API, explicit private trust, bearer and mTLS, negative trust/auth
+controls and noninteractive encrypted-key refusal. Authorized metadata brackets
+are counted separately from SLOs; proxy/keylog sentinels and joined owned handlers
+bound these fixture claims. This is protocol acceptance without real inference,
+customer credentials, GPU execution or physical capacity qualification.
+
+Chimeraforge 0.80.0 adds a typed closed fleet-gate lane and actual
+installed API/CLI/JSON/JUnit pass, regression and inconclusive synthetic controls.
+The existing native CPU job consumes its unchanged original-fleet API/CLI receipts
+as adverse gate evidence (3), retaining CPU/GPU mismatch and unknown cache facts
+without additional inference. [Regenerate the source controls](../validation/2026-10-25-fleet-trace-gate/README.md)
+separately from exact-head hosted installed/native qualification.
+
+Chimeraforge 0.79.0 adds a focused typed original-fleet
+producer/strict-receiver/CLI boundary. Each installed wheel/rebuilt-sdist profile
+exercises complete and mTLS/bearer vLLM/SGLang protocol controls, actual short-token
+mismatch and required-preflight refusal, with one original six-row population
+and all three declared slots. These fixtures are one owned listener with three
+paths, without inference or physical independence claims. The existing CPU job
+reuses its single pinned download/import and initialized ordinary writable model
+store, closes the first daemon group, then starts three native daemon groups.
+It invokes the actual installed fleet API and CLI with the same six-row workload
+(two protocol invocations), retaining CPU-versus-modeled-GPU mismatches and
+unavailable startup diagnostics. All groups, children, listeners and clients
+must close; no extra scientific workload, GPU or capacity threshold is added.
+
 `uv.lock` contains the universal dependency resolution and distribution hashes.
-PR/release jobs refuse a stale lock. Build tooling is included in the lock and
+PR/release jobs refuse a stale lock. The dependency gate audits installed external
+packages AND every versioned registry pair in this lock, including versions for
+other supported interpreters/platforms. Deterministic exact-pin batches keep one
+version per package name for the native strict pip-audit CLI; every batch is
+attempted and any finding or unavailable lookup fails the command. This is
+current advisory coverage, not a claim that packages cannot be compromised. Build tooling is included in the lock and
 distributions are built without a second isolated, live dependency resolution.
 Dependabot updates the uv lock and immutable Action references. The separate daily
 `Dependency drift` workflow deliberately resolves supported ranges against the
@@ -29,10 +65,30 @@ the default published-image target retains its PyPI installation behavior.
 
 The consumer composite action is exercised with a candidate wheel for a successful
 plan and an expected no-fit failure. It posts no comment during acceptance.
+The 0.71.0 candidate extends signed installed consumers with trusted native gate
+pass/regression/untrusted/invalid/incomplete/copied/malformed and output-alias
+cases. Its CPU lane signs the two existing regression receipts and compares them
+offline, deriving the outcome from native facts without another inference run or
+a performance floor. CPU evidence remains ineligible for GPU prediction claims.
 Focused mutation testing requires a passing unmutated baseline, exact mutation
 anchors, assertion failures and no setup/collection errors. Hypothesis checks use
 independent unit and statistical derivations rather than shared implementation
 constants.
+
+The coverage job uses Python 3.14 and the pinned SDK's branch-capable SysMon
+core (`COVERAGE_CORE=sysmon`). Native core diagnostics are written to an owned
+`RUNNER_TEMP` file and printed after pytest, including on failure; pytest capture
+must not hide which collector actually ran. The original
+[0.84 coverage timeout](https://github.com/Sahil170595/Chimeraforge/actions/runs/41153230254/job/124394255798)
+and its bounded qualification are retained in the historical validation record.
+
+The complete coverage job has a 30-minute budget and reports the 20 slowest
+test durations with `--durations=20`. This follows the
+[0.82 release run](https://github.com/Sahil170595/Chimeraforge/actions/runs/41268004293/job/124734757861),
+which reported 5,334 passing tests and 2 skips at 1,200.69 seconds, then hit the
+20-minute job limit before the ratchet step ran. That cancelled run is not a
+coverage/whole-CI pass. The full test population, branch instrumentation, JSON
+report and all line/branch ratchets remain unchanged.
 
 Coverage is measured with branches enabled. The first baseline on main source
 `9a72f7050442c7786ad3f4ce93b11faee81861f1`, using CPython 3.12.13 on Windows,
@@ -95,3 +151,24 @@ adds one short request on its already-loaded model and retains known CPU/GPU
 binding mismatch separately from successful native execution and SLO outcomes.
 Distribution artifacts have a three-day retention and a concrete downstream
 consumer; routine test/coverage evidence stays in logs and job summaries.
+Finite load-envelope consumers execute the installed CLI against synthetic whole
+campaigns on every artifact host. They retain every request/replica, qualify
+complete pass, known breach and missing-higher-cell outcomes, and refuse malformed
+populations, unknown assignments and input/output aliases. Source mutation tests
+challenge the consumer oracle. Returned logs contain compact verified counts and
+observed-point projections; these fixtures establish offline protocol behavior,
+without model inference, capacity or independent-execution qualification.
+Private prediction bundle consumers reuse the installed scorer's existing
+synthetic plan/native fixtures. They verify original pretty JSON and policy
+hashes, closed inventories, both-manifest transport accounting, relocation,
+negative/duplicate/empty populations, tampering and source/output aliases. The
+existing CPU scorer consumer bundles its already-produced plan/receipt without
+more inference. That CPU evidence remains ineligible for a modeled GPU
+prediction. Compact summaries omit original private fields; preserved bundle
+files are private handoff content, with no automatic upload.
+
+## Kubernetes server admission (since 0.81.0)
+
+The dedicated required Ubuntu `kubernetes-admission` job installs the built wheel outside checkout and uses exact checksum-pinned kind/kubectl and a digest-pinned node image. It validates all native N1/N3 vLLM/SGLang objects using strict server-side dry-run, rejects malformed GPU resources/unknown fields, and distinguishes API-valid drift with the independent verifier. It owns a private kubeconfig/context, cluster and any newly created labelled bridge; partial startup still triggers named cleanup and process-group joins. Existing networks are preserved and no prune is used. Only normal kind system workloads persist temporarily; no inference object is created. The publish workflow calls this same CI workflow, so this job also gates future releases.
+
+Installed original-wheel/rebuilt-sdist consumers additionally run the offline CLI/API contract. [Regenerate the source record](../validation/2026-10-25-kubernetes-export/README.md). Native dry-run is API admission evidence, not image existence, executed argv, scheduling, GPU/plugin, model, inference or capacity qualification.
