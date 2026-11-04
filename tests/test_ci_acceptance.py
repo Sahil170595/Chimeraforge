@@ -61,7 +61,12 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     script = load_script("ci_deploy_placement")
     load_script("ci_deployment_verify")
     load_script("ci_monitor_fleet")
+    load_script("ci_secure_monitor")
     load_script("ci_inventory_check")
+    load_script("ci_fleet_trace")
+    load_script("ci_fleet_trace_gate")
+    load_script("ci_fleet_trace_campaign")
+    load_script("ci_kubernetes_export")
     parent = load_script("ci_installed_acceptance")
     monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path / "cache"))
     observation = checkpoint.seed(live=False)
@@ -69,7 +74,7 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     monkeypatch.setattr(parent, "assert_installed_origin", lambda *args: origins.append(args))
 
     def source_cli(arguments, cwd, env, expected_code=0):
-        result = CliRunner().invoke(app, arguments)
+        result = CliRunner().invoke(app, arguments, env=env)
         assert result.exit_code == expected_code, result.output
         return result.stdout
 
@@ -83,9 +88,20 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert receipt["scope"] == "offline declaration only"
     assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
     fleet = receipt["homogeneous_fleet"]
+    assert len(receipt["kubernetes"]["controls"]) == len(fleet["kubernetes"]["controls"]) == 2
+    assert all(row["objects"] == 2 for row in receipt["kubernetes"]["controls"])
+    assert all(row["objects"] == 6 for row in fleet["kubernetes"]["controls"])
     assert fleet["replicas"] == 3 and fleet["gpus_total"] == 6
     assert fleet["service_names"] == ["inference-1", "inference-2", "inference-3"]
     assert fleet["source_plan_bytes_unchanged"] and fleet["router"] == "not provided"
+    active = fleet["original_fleet_trace"]
+    gate = fleet["fleet_trace_gate"]
+    assert gate["synthetic"] is True and gate["input_bytes_unchanged"]
+    assert [row["api_exit"] for row in gate["controls"]] == [0, 1, 3]
+    assert [row["cli_exit"] for row in gate["controls"]] == [0, 1, 3]
+    assert len(active["controls"]) == 8 and active["fixture_resources"] == "closed"
+    assert active["original_bytes_unchanged"]
+    assert {row["backend"] for row in active["controls"]} == {"vllm", "sglang"}
     verification = fleet["deployment_verification"]
     assert verification["match_exit"] == 0 and verification["drift_exit"] == 5
     assert verification["invalid_exit"] == 1

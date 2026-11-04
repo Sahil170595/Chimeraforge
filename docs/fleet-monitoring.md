@@ -1,5 +1,9 @@
 # Passive declared-fleet monitoring
 
+Chimeraforge **0.83.0** adds [strict saved receiving and passive SLO gates](fleet-monitor-gate.md),
+effective requested controls and bounded full JSON export with `--out`.
+The monitoring behavior below remains available.
+
 Available since **Chimeraforge 0.76.0**. The existing single-endpoint `monitor`
 remains available, including monitoring an
 endpoint selected from a multi-replica plan; it does not establish whole-fleet
@@ -148,3 +152,7 @@ separate all-declared-endpoint qualification gauge. Output aliases of the saved
 plan are refused before network contact using the existing native protection.
 Textfile output is atomically replaced; this does not imply atomic observations,
 atomic source/output snapshots or source authentication.
+
+## Runtime secure connections (since 0.78.0)
+
+`run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); available since Chimeraforge 0.78.0.

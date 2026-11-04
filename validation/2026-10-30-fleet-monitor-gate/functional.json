@@ -1,0 +1,158 @@
+{
+  "captured_at": "2026-10-30T23:26:04.364659+00:00",
+  "version": "0.83.0",
+  "evidence": "source native API/CLI on owned CPU HTTPS fixtures; not installed/GPU qualification",
+  "result": {
+    "controls": [
+      {
+        "backend": "vllm",
+        "scenario": "pass",
+        "producer_cli_exit": 0,
+        "api_gate_exit": 0,
+        "cli_gate_exit": 0,
+        "original_slots_per_arm": 3,
+        "junit_cases": 7,
+        "junit_errors": 0,
+        "junit_failures": 0,
+        "stdout_equals_admitted_file_bytes": true,
+        "admitted_json_bytes": 90662,
+        "stdout_bytes": 90662,
+        "gate_stdout_bytes": 36492,
+        "gate_stdout_equals_admitted_file_bytes": true
+      },
+      {
+        "backend": "vllm",
+        "scenario": "breach",
+        "producer_cli_exit": 3,
+        "api_gate_exit": 1,
+        "cli_gate_exit": 1,
+        "original_slots_per_arm": 3,
+        "junit_cases": 7,
+        "junit_errors": 0,
+        "junit_failures": 3,
+        "stdout_equals_admitted_file_bytes": true,
+        "admitted_json_bytes": 90724,
+        "stdout_bytes": 90724,
+        "gate_stdout_bytes": 36598,
+        "gate_stdout_equals_admitted_file_bytes": true
+      },
+      {
+        "backend": "vllm",
+        "scenario": "partial",
+        "producer_cli_exit": 4,
+        "api_gate_exit": 3,
+        "cli_gate_exit": 3,
+        "original_slots_per_arm": 3,
+        "junit_cases": 7,
+        "junit_errors": 7,
+        "junit_failures": 0,
+        "stdout_equals_admitted_file_bytes": true,
+        "admitted_json_bytes": 33338,
+        "stdout_bytes": 33338,
+        "gate_stdout_bytes": 27216,
+        "gate_stdout_equals_admitted_file_bytes": true
+      },
+      {
+        "backend": "sglang",
+        "scenario": "pass",
+        "producer_cli_exit": 0,
+        "api_gate_exit": 0,
+        "cli_gate_exit": 0,
+        "original_slots_per_arm": 3,
+        "junit_cases": 7,
+        "junit_errors": 0,
+        "junit_failures": 0,
+        "stdout_equals_admitted_file_bytes": true,
+        "admitted_json_bytes": 90519,
+        "stdout_bytes": 90519,
+        "gate_stdout_bytes": 36403,
+        "gate_stdout_equals_admitted_file_bytes": true
+      },
+      {
+        "backend": "sglang",
+        "scenario": "breach",
+        "producer_cli_exit": 3,
+        "api_gate_exit": 1,
+        "cli_gate_exit": 1,
+        "original_slots_per_arm": 3,
+        "junit_cases": 7,
+        "junit_errors": 0,
+        "junit_failures": 3,
+        "stdout_equals_admitted_file_bytes": true,
+        "admitted_json_bytes": 90583,
+        "stdout_bytes": 90583,
+        "gate_stdout_bytes": 36511,
+        "gate_stdout_equals_admitted_file_bytes": true
+      },
+      {
+        "backend": "sglang",
+        "scenario": "partial",
+        "producer_cli_exit": 4,
+        "api_gate_exit": 3,
+        "cli_gate_exit": 3,
+        "original_slots_per_arm": 3,
+        "junit_cases": 7,
+        "junit_errors": 7,
+        "junit_failures": 0,
+        "stdout_equals_admitted_file_bytes": true,
+        "admitted_json_bytes": 33364,
+        "stdout_bytes": 33364,
+        "gate_stdout_bytes": 27176,
+        "gate_stdout_equals_admitted_file_bytes": true
+      }
+    ],
+    "output_aliases": [
+      {
+        "backend": "vllm",
+        "input": "ca",
+        "refused": true
+      },
+      {
+        "backend": "vllm",
+        "input": "client",
+        "refused": true
+      },
+      {
+        "backend": "vllm",
+        "input": "client_key",
+        "refused": true
+      },
+      {
+        "backend": "sglang",
+        "input": "ca",
+        "refused": true
+      },
+      {
+        "backend": "sglang",
+        "input": "client",
+        "refused": true
+      },
+      {
+        "backend": "sglang",
+        "input": "client_key",
+        "refused": true
+      }
+    ],
+    "source_sha256": "0ef102d2683c0d43068987d8ffb0c357143b559130dbf792974f9cadb2f333c1",
+    "source_and_tls_input_bytes_unchanged": true,
+    "owned_listeners_handlers_clients_tasks_closed": true,
+    "installed_module_provenance": null,
+    "scope": "owned CPU HTTPS protocol fixtures; no engine/GPU/traffic-authentication/performance qualification"
+  },
+  "source_sha256": {
+    "scripts/ci_fleet_monitor_gate.py": "65adfe36a8fe0b35a9c2b6c926373d40dd2f5a40776c6940094eb3c7f31b3b4b",
+    "scripts/ci_installed_acceptance.py": "fd02b63998e34ab4f019a417d50bdba6610ab5c3161643b0cc7758afb616959b",
+    "src/chimeraforge/fleet_monitor_types.py": "c0477b88c0bca64bedd7579e143b650f51753383370d427550acf4d36a143206",
+    "src/chimeraforge/fleet_monitor_json.py": "29aec0ce9ddde4e741e9c0161e8b7eb65e9f34ac0471a283e4243fcba59a3459",
+    "src/chimeraforge/fleet_monitor_receipt.py": "56ccea0c113da058c5893374e8cc6effaf8237c2655d4569e399e0542a60485b",
+    "src/chimeraforge/fleet_monitor_gate_types.py": "53d90cd3f09693b90aded75a0e104d82123561a7e8986b87300d43e663f88095",
+    "src/chimeraforge/fleet_monitor_gate.py": "61e98c2c6b97bc996479d61bb1565c139be2e0fcd572c063466dfe1bf2cd0f08",
+    "src/chimeraforge/fleet_monitor_gate_output.py": "0c050a43d84eb89024c62d90c7cf7920329bb43ede7c0826f68bc1844b02a68b",
+    "src/chimeraforge/fleet_monitor.py": "dab68e42f802b707c0fa450ac6c8f63c63eb5d9af1927e26db8116ba9393e89d",
+    "src/chimeraforge/monitor.py": "61f25e05f23b9c158333f53cddcca041c408100f514faa4bd3e1bd70b9509bfd",
+    "src/chimeraforge/monitor_binding.py": "a11faefc5bf3e4247476ebde0f07faeec8d97dc1bb7b18e7e0cd2d219f3d7438",
+    "src/chimeraforge/commands/monitor_fleet.py": "fadf9f9217a89007047c3b2aa26834a6bc51366d02e7762e799ced62d5fc3dbd",
+    "src/chimeraforge/commands/gate.py": "7e65ab0eae3e6bcb9e1a0f1e3c0b37b320f14cd8f9bffb5cd50c74c66fd70847",
+    "src/chimeraforge/api.py": "3d0cbfbf6927bbe937196c7c53c377832577f8d08f161877d18b54b96741c9e2"
+  }
+}

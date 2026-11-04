@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
+from chimeraforge.monitor_connection import MonitorConnection
 
 
 class FleetTransportError(httpx.TransportError):
@@ -62,10 +63,18 @@ class SharedBudget:
 class OwnedPool:
     """The coordinator owns one pool; client borrowers never close it."""
 
-    def __init__(self, budget: SharedBudget, limit: int, timeout: float = 10.0) -> None:
+    def __init__(
+        self,
+        budget: SharedBudget,
+        limit: int,
+        timeout: float = 10.0,
+        *,
+        connection: MonitorConnection | None = None,
+    ) -> None:
         self.budget = budget
         self.limit = limit
         self.timeout = timeout
+        self._connection = connection
         self.inner: httpx.AsyncBaseTransport | None = None
         self.streams: set[BudgetStream] = set()
         self.violation: str | None = None
@@ -78,6 +87,7 @@ class OwnedPool:
                 retries=0,
                 trust_env=False,
                 limits=httpx.Limits(max_connections=1, max_keepalive_connections=1),
+                **(self._connection._transport_kwargs() if self._connection is not None else {}),
             )
         return self.inner
 

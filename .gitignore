@@ -46,6 +46,11 @@ target/
 Cargo.lock
 
 # Testing & coverage
+*.serving.json
+*.serving.launch.json
+*.serving.compose.json
+*.serving.kubernetes.json
+*.serving-functional.local.json
 .pytest_cache/
 .coverage
 .coverage.*

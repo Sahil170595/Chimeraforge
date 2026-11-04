@@ -22,8 +22,10 @@ from chimeraforge.planner.launch import (
     VLLM_KV_CACHE_DTYPE,
 )
 from chimeraforge.planner.resolver import ModelSpec, SOURCE_HF, SOURCE_OLLAMA
+from chimeraforge.kubernetes_options import KubernetesOptions
+from chimeraforge.serving_target import ServingTarget
 
-FORMATS = ("compose", "systemd", "launchd", "modelfile")
+FORMATS = ("compose", "systemd", "launchd", "modelfile", "kubernetes")
 MAX_EXPORT_GPUS_PER_REPLICA = 64
 MAX_GPU_IDENTIFIER_CHARS = 40
 MAX_HOST_PORT = 65535
@@ -178,12 +180,16 @@ def _model_identity(
 
 
 def _validate_fidelity(
-    candidate: Candidate, spec: ModelSpec | None, inputs: dict, platform: str, format: str
+    candidate: Candidate | ServingTarget,
+    spec: ModelSpec | None,
+    inputs: dict,
+    platform: str,
+    format: str,
 ) -> None:
     if type(candidate.n_agents) is not int or not 1 <= candidate.n_agents <= MAX_REPLICAS:
         raise DeploymentError(f"replica population must be between 1 and {MAX_REPLICAS}")
     if candidate.n_agents > 1 and (
-        format != "compose"
+        format not in ("compose", "kubernetes")
         or candidate.backend not in ("vllm", "sglang")
         or candidate.mode != PLAN_MODE_ONLINE
         or inputs["mode"] != PLAN_MODE_ONLINE
@@ -249,7 +255,13 @@ def _validate_fidelity(
 
 
 def _hf_argv(
-    candidate: Candidate, spec: ModelSpec | None, model: str, inputs: dict, host: str
+    candidate: Candidate | ServingTarget,
+    spec: ModelSpec | None,
+    model: str,
+    inputs: dict,
+    host: str,
+    *,
+    claimed_revision: str | None = None,
 ) -> tuple[list[str], list[str]]:
     backend = candidate.backend
     context = str(inputs["context_length"])
@@ -355,7 +367,13 @@ def _hf_argv(
         raise DeploymentError(
             "this backend's implicit KV dtype does not establish the planned fp16 cache; replan q8"
         )
-    if spec and spec.checkpoint:
+    if claimed_revision is not None:
+        argv += ["--revision", claimed_revision]
+        notes.append(
+            "Revision is an operator claim; model/config/weight bytes were not "
+            "resolved or verified."
+        )
+    elif spec and spec.checkpoint:
         argv += ["--revision", spec.checkpoint["resolved_revision"]]
         notes.append(
             "HF commit is pinned; config bytes and declared LFS metadata do not verify "
@@ -430,7 +448,7 @@ def _device_selection(devices: list[str] | None, count: int) -> list[str] | None
 
 
 def _replica_device_selection(
-    candidate: Candidate, groups: list[list[str]] | None
+    candidate: Candidate | ServingTarget, groups: list[list[str]] | None
 ) -> list[list[str]]:
     if candidate.n_agents == 1:
         raise DeploymentError("replica matrices require a multi-replica saved candidate")
@@ -455,7 +473,7 @@ def _replica_device_selection(
 
 
 def _replica_layout(
-    candidate: Candidate,
+    candidate: Candidate | ServingTarget,
     groups: list[list[str]] | None,
     ports: list[int] | None,
 ) -> tuple[list[list[str]], list[int]] | None:
@@ -479,13 +497,15 @@ def _replica_layout(
 
 
 def _compose_service(
-    candidate: Candidate,
+    candidate: Candidate | ServingTarget,
     argv: list[str],
     env: dict[str, str],
     image: str,
     fingerprint: str,
     devices: list[str] | None,
     host_port: int | None,
+    *,
+    declaration: bool = False,
 ) -> dict[str, Any]:
     entry_length = {"vllm": 2, "sglang": 3, "tgi": 1, "ollama": 2}[candidate.backend]
     reservation: dict[str, Any] = {"driver": "nvidia"}
@@ -501,7 +521,11 @@ def _compose_service(
         "ports": [f"127.0.0.1:{published_port}:{_PORTS[candidate.backend]}"],
         "restart": "unless-stopped",
         "init": True,
-        "labels": {"org.chimeraforge.plan-fingerprint": fingerprint},
+        "labels": {
+            "org.chimeraforge.declaration-fingerprint"
+            if declaration
+            else "org.chimeraforge.plan-fingerprint": fingerprint
+        },
         "deploy": {"resources": {"reservations": {"devices": [reservation]}}},
     }
     if argv[entry_length:]:
@@ -531,12 +555,17 @@ def export_deployment(
     host_port: int | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
     replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
 ) -> DeploymentExport:
     """Render a supported saved candidate; refused assumptions never become placeholders."""
     if format not in FORMATS:
         raise DeploymentError(f"format must be one of {', '.join(FORMATS)}")
-    if image is not None and format != "compose":
+    if image is not None and format not in ("compose", "kubernetes"):
         raise DeploymentError("image override applies only to Compose format")
+    if kubernetes is not None and format != "kubernetes":
+        raise DeploymentError("Kubernetes options apply only to Kubernetes format")
+    if format == "kubernetes" and (type(candidate_index) is not int or candidate_index < 0):
+        raise DeploymentError("Kubernetes candidate selection requires a nonnegative integer")
     if executable is not None and format not in ("systemd", "launchd"):
         raise DeploymentError("executable override applies only to systemd or launchd format")
     if replica_gpu_devices is not None or replica_host_ports is not None:
@@ -560,7 +589,43 @@ def export_deployment(
     data = artifact.to_dict()
     inputs = data["inputs"]
     inputs["kv_quant"] = inputs["kv_quant"].lower()
+    if format == "kubernetes" and (
+        candidate.backend not in ("vllm", "sglang")
+        or candidate.mode != PLAN_MODE_ONLINE
+        or inputs["mode"] != PLAN_MODE_ONLINE
+        or data["result"]["platform"] != "linux"
+        or candidate.platform != "linux-cuda"
+    ):
+        raise DeploymentError("Kubernetes export requires online Linux CUDA vLLM/SGLang")
     _validate_fidelity(candidate, spec, inputs, data["result"]["platform"], format)
+    if format == "kubernetes":
+        from chimeraforge.kubernetes_options import admit_options
+        from chimeraforge.kubernetes_export import render
+
+        options = admit_options(kubernetes, data["fingerprint"], candidate_index)
+        identifier, identity_notes = _model_identity(candidate, spec, model)
+        argv, engine_notes = _hf_argv(candidate, spec, identifier, inputs, "0.0.0.0")
+        content = render(
+            candidate, argv, _image(image), data["fingerprint"], candidate_index, options
+        )
+        return DeploymentExport(
+            format,
+            candidate.backend,
+            content,
+            [
+                *candidate.warnings,
+                *identity_notes,
+                *engine_notes,
+                "Kubernetes declarations only: scheduler labels, GPU requests and memory emptyDir "
+                "do not verify plugin/driver availability, fit, image/model access, "
+                "physical identities, executed argv, readiness, independent capacity or SLOs. "
+                "Each logical member may be replaced.",
+            ],
+            [
+                "Review namespace, image access, node labels and GPU plugin "
+                "before applying explicitly."
+            ],
+        )
     layout = _replica_layout(candidate, replica_gpu_devices, replica_host_ports)
     devices = _device_selection(gpu_devices, candidate.gpus_total)
     identifier, identity_notes = _model_identity(candidate, spec, model)

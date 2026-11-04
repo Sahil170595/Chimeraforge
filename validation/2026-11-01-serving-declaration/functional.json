@@ -1,0 +1,68 @@
+{
+  "scope": "Actual CLI/API operator declaration and native config-only receivers; no engine, image, model, GPU or host execution.",
+  "logical_gpu_slots": 12,
+  "replicas": 3,
+  "profiles": {
+    "launch": {
+      "match_exit": 0,
+      "mutation_exit": 5,
+      "replicas": 3,
+      "logical_gpu_slots": 12,
+      "objects": 3
+    },
+    "compose": {
+      "match_exit": 0,
+      "mutation_exit": 5,
+      "replicas": 3,
+      "logical_gpu_slots": 12,
+      "objects": 3
+    },
+    "kubernetes": {
+      "match_exit": 0,
+      "mutation_exit": 5,
+      "replicas": 3,
+      "logical_gpu_slots": 12,
+      "objects": 6
+    }
+  },
+  "quote": {
+    "instance_count": 2,
+    "billed_gpus": 16,
+    "idle_billed_gpus": 4,
+    "captured_at": "2026-10-01",
+    "age_days": 31,
+    "stale": false,
+    "snapshot_object_sha256": "914118092bb662958957d408366af8fadb2a60a93a0f252dcaaf1c55048dce81"
+  },
+  "aliases_and_invalid_layout_refused": true,
+  "optimizer_misuse_refused": true,
+  "source_sha256": "89755650ea42e876d53170170623225d2954f783f3a08ee226a486efd237e38c",
+  "source_bytes_held": true,
+  "owned_CLI_children_joined": true,
+  "deployment_ready": null,
+  "tool_version": "0.88.0",
+  "recorded_at": "2026-11-01T18:55:50.067762+00:00",
+  "source_hash_basis": "Actual current RAW source files on the recording host.",
+  "current_source_sha256": {
+    ".github/workflows/ci.yml": "031f8bf1f4877a2d7d988e79f15bbc340242d110212b91083b181d3433769b06",
+    "pyproject.toml": "47de8a9384daf6ed6c69ef87afb0f4490fa710b48e09ff9455cd53d52d37c7b4",
+    "scripts/ci_installed_acceptance.py": "168a6220d3e7fded991117e111c420ea6ded61a8c8d690d3c0388fcfa4d66d9c",
+    "scripts/ci_serving_declaration.py": "918e7d1acb6f64c665a790428bbb9fcbb12c5fdc9b0ab75b567fcc8c10b2fffa",
+    "server.json": "7fa7cb7d05e31317d56ed705aaa1e7060d356b28a4bd62092d38aa88b164cea7",
+    "src/chimeraforge/api.py": "78ebea8786a24c94a5e95cfd7ab6fdc161d2afd4e2d8b612cea396fa19f3c46c",
+    "src/chimeraforge/cli.py": "a5397e910b7d17c15f5e9b2e73b35d9d21dffdec23a3c0dd2e8934509c97d377",
+    "src/chimeraforge/commands/serving.py": "c4d9de97903e6e76e7b55df354d1e6fe3b8f2f033b21e64ee4c9ca6b6a35c325",
+    "src/chimeraforge/deploy.py": "dafe1a3ba2521db1bbaabbf7106bd4c092b5302c964fbb9d35dc374f07d0873f",
+    "src/chimeraforge/deployment_verify.py": "3adfc8e0792d04728086bb74d2e887d20144e51d1d5e2f0062495abc7438d8b4",
+    "src/chimeraforge/kubernetes_export.py": "b06619140cfb5a4f82ead58f16f3391cf147db637b934c6262d492694675d01c",
+    "src/chimeraforge/planner/cloudprice.py": "4091c6931ef37853c51f054392186fc13c4e4241e37db8e374a8f50db0c04ff0",
+    "src/chimeraforge/planner/data/cloud_prices.json": "b2051ea4f73597035a3cce57566a1a2b38a53fb82f3287e6c507b0fa26689527",
+    "src/chimeraforge/serving_declaration.py": "d7c7a76d1e3388aacfc8f1c2c9d640a1ef8667982bd5ef5b4c53152194bb9d5e",
+    "src/chimeraforge/serving_export.py": "bd8a140f13b0183c53514af9eb40ecd5951f4eb81e07ce25ebd3591cbb9c8e97",
+    "src/chimeraforge/serving_quote.py": "ad39eb0149d9ad3a28222efe3ba879138a5f9662c3148aeedcad24221d8b7c1e",
+    "src/chimeraforge/serving_target.py": "ecab98a2a169e1859b8a610f617954c2da764731312432a1c0446e06c1e4c59c",
+    "tests/test_ci_serving_declaration.py": "ca5990965ee36fd8647b06986042ee2fcf29d3078aa615a397867cb11da3d67b",
+    "tests/test_serving_declaration.py": "ce06f3870a66c55da3a75aedcffb7e6e6f47fb5fc48cb7c245fdb41b56436953",
+    "uv.lock": "0aae3879e866fd7bf486284a5367d3a875a5ed97a6958692479df5076ce06ed1"
+  }
+}

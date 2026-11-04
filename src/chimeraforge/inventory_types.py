@@ -5,7 +5,14 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
-MemoryComparison = Literal["at_least_saved_baseline", "below_saved_baseline", "unknown"]
+MemoryBasis = Literal["batch-one", "selected-batch"]
+MemoryComparison = Literal[
+    "at_least_saved_baseline",
+    "below_saved_baseline",
+    "unknown",
+    "at_least_selected_batch_estimate",
+    "below_selected_batch_estimate",
+]
 
 UNASSESSED = (
     "physical_identity",
@@ -46,6 +53,35 @@ class InventoryBaseline:
 
 
 @dataclass(frozen=True)
+class SelectedBatchBaseline:
+    saved_batch1: InventoryBaseline
+    saved_effective_batch: int
+    saved_context_length: int | None
+    kv_quant: str | None
+    tensor_parallel: int
+    pipeline_parallel: int
+    per_sequence_increment_gib: str | None = None
+    selected_lower_gib: str | None = None
+    selected_upper_gib: str | None = None
+    status: Literal["estimated", "unsupported"] = "unsupported"
+    reason: str | None = None
+    formula_id: str | None = None
+    basis: Literal["saved_b1_plus_selected_batch_increment"] = (
+        "saved_b1_plus_selected_batch_increment"
+    )
+    interval_scope: Literal["saved_decimal_serialization_only"] = "saved_decimal_serialization_only"
+    increment_scope: Literal["full_saved_context_per_active_sequence"] = (
+        "full_saved_context_per_active_sequence"
+    )
+    unassessed_residency: tuple[str, ...] = (
+        "idle_sessions",
+        "prefix_pools",
+        "runtime_workspace",
+        "runtime_peak",
+    )
+
+
+@dataclass(frozen=True)
 class InventorySlot:
     replica_index: int
     device_index: int
@@ -75,13 +111,13 @@ class InventoryCheck:
     tool_version: str
     plan_fingerprint: str
     candidate_index: int
-    baseline: InventoryBaseline
+    baseline: InventoryBaseline | SelectedBatchBaseline
     observation: InventoryObservation
     slots: tuple[InventorySlot, ...]
     schema_version: int = 1
-    scope: Literal["queried_inventory_and_saved_b1_memory"] = (
-        "queried_inventory_and_saved_b1_memory"
-    )
+    scope: Literal[
+        "queried_inventory_and_saved_b1_memory", "queried_inventory_and_selected_batch_memory"
+    ] = "queried_inventory_and_saved_b1_memory"
     deployment_ready: None = None
     unassessed: tuple[str, ...] = UNASSESSED
 
@@ -90,12 +126,15 @@ class InventoryCheck:
         if self.observation.state != "complete" or self.observation.cleanup_state != "completed":
             return 4
         if any(
-            slot.selector_state == "absent" or slot.free_comparison == "below_saved_baseline"
+            slot.selector_state == "absent"
+            or slot.free_comparison in ("below_saved_baseline", "below_selected_batch_estimate")
             for slot in self.slots
         ):
             return 5
         if not self.slots or any(
-            slot.selector_state != "present" or slot.free_comparison != "at_least_saved_baseline"
+            slot.selector_state != "present"
+            or slot.free_comparison
+            not in ("at_least_saved_baseline", "at_least_selected_batch_estimate")
             for slot in self.slots
         ):
             return 4
