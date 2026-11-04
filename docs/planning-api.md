@@ -1,5 +1,9 @@
 # Saved plans and the Python API
 
+Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
+with runtime-only `connection` settings and matching CLI secure flags.
+Existing anonymous defaults and native metrics remain.
+
 ```python
 from chimeraforge.api import PlanRequest, plan, load_plan, check_plan
 
@@ -129,9 +133,10 @@ JSON keys and linked paths. Allowed changes are:
 | Workload | `request_rate`, `avg_tokens`, `reasoning_tokens`, `prompt_tokens`, `context_length`, `prefix_cache_hit_rate`, `workload_cv2` |
 | Targets | `latency_slo`, `ttft_slo`, `tpot_slo`, `quality_target`, `safety_target`, `budget` |
 | Cost assumptions | `duty_cycle`, `electricity_rate`, `gpu_price_multiplier`, `gpu_cost_per_hour` |
+| Hardware (since 0.72.0) | `hardware`: one exact case-insensitive canonical GPU registry name |
 
 Types, finite values and combinations use existing `PlanRequest` validation.
-Unspecified values inherit the saved request. Model, physical hardware, deployment
+Unspecified values inherit the saved request. Model, deployment
 platform, mode, parallelism, adapter setup, contribution permission and source
 selection remain fixed in this version. Latency targets unsupported by the saved
 mode refuse. `gpu_cost_per_hour` changes only the assumed hourly price of the
@@ -139,7 +144,52 @@ bound GPU; its operator basis is recorded per case, and zero remains unknown
 instead of a free GPU. Cloud cases refuse this override because the cloud prices
 whole instances. Price multipliers retain the ordinary planner's semantics.
 
-The shared search receives saved full model/raw GPU geometry (the unified-memory
+Since **Chimeraforge 0.72.0**, the existing `study_plan` / `study` interfaces also
+accept `PlanScenario("larger-gpu", {"hardware": "RTX 4090 24GB"})`.
+The same 1-16 case and 16-model bounds apply.
+Exact canonical names come from `chimeraforge plan --list-hardware`; case is ignored,
+but partial matches, `auto`, unknown or ambiguous names refuse before any search.
+Any explicit hardware selection refuses a source with nonempty `gpu_overrides` or
+cloud instance pricing, even a same-name selection. Cases without `hardware` retain
+those original bound workflows. The saved unified-memory fraction remains fixed;
+an alternative requiring an unavailable fraction refuses through native validation.
+
+```python
+from chimeraforge.api import PlanScenario, study_plan
+
+alternatives = study_plan("plan.json", [
+    PlanScenario("larger-gpu", {"hardware": "RTX 4090 24GB"}),
+    PlanScenario("ampere", {"hardware": "RTX 3090 24GB"}),
+    PlanScenario("operator-price", {"hardware": "H100 80GB", "gpu_cost_per_hour": 2}),
+])
+alternatives.save("hardware-study.json")
+```
+
+For the CLI, serialize those `name`/`changes` objects as `hardware-cases.json`, then
+run `chimeraforge study plan.json --cases hardware-cases.json --out hardware-study.json --json`.
+The model specs, original coefficient/quality bytes and saved deployment platform
+remain held. Full raw registry GPU facts replace both the hardware request and
+replay binding; the ordinary engine recalculates effective memory and applies its
+VRAM, vendor/platform, quantization, performance and budget gates. No display-only
+GPU substitution or price fallback is used.
+
+`frozen_context.hardware` preserves the source geometry. Its `hardware_registry`
+contains the full held registry entries and their digest, bound into the reported
+policy identity. Each result's `hardware` retains actual raw/effective specs and
+their provenance; `hardware_binding.basis` distinguishes `saved-source` from
+`held-registry` and binds the latter to its registry digest. Configuration comparison
+includes canonical hardware and a physical-spec digest, excluding hourly cost,
+price basis and source/capture metadata. Same-name physical changes therefore remain
+visible while price-only assumptions do not masquerade as physical switches.
+The full registry is held once before resolving alternatives. Live policy identity
+must still agree before/after every replay because native reference comparisons use
+the current registry. A detected mutation aborts rather than returning mixed facts;
+this is not an atomic snapshot or thread-safety attestation. Timing retains native
+extrapolation/estimate provenance; valid hardware-independent measured quality is
+preserved. No current host probe, inference, physical/topology/weight authentication,
+or scientific performance qualification is performed.
+
+The base and unchanged-hardware search receive saved full model/raw GPU geometry (the unified-memory
 fraction is applied once), held parsed coefficients/quality, and one captured
 current engine-support/cloud/grid/quarantine context. Grid/price staleness uses
 one observed date and existing expiry rules. Current policy tables and hardware
@@ -154,7 +204,8 @@ covers recorded facts, not source authenticity. Each case retains every feasible
 candidate and rejection trace, a recommendation or `null`, feasibility changes,
 added/removed identities, ordering, provenance, native-unit deltas and a
 configuration-switch flag. Unknown estimates remain `null` with unknown deltas.
-The selected planned configuration includes candidate identity, effective batch,
+The selected planned configuration includes candidate identity, canonical hardware,
+physical-spec digest, effective batch,
 context length, KV quantization and the fixed batched-token setting; a context
 or batch change is visible even when model/quant/backend/replica identity stays
 the same. These are planned settings, not observations of a deployed server.
@@ -230,6 +281,30 @@ facts, and 2 for malformed or unsupported inputs. `source_authentication` and
 performance remain unverified. A self-consistent bundle can be re-signed by
 anyone; hashes cannot authenticate the producing source, qualify actual served
 weights, or establish measured prediction accuracy.
+
+## Explicit deployment placement
+
+Since **Chimeraforge 0.73.0**, the direct API
+`chimeraforge.deploy.export_deployment` supports `gpu_devices` and `host_port`.
+The saved candidate's model and TP x PP geometry remain unchanged. See
+[complete CLI/API examples, identifier validation, ports and proof limits](deployment.md#explicit-device-selection-and-host-ports).
+Default exports retain their count/port behavior. Hardware studies, available
+since 0.72.0, model alternatives without observing host placement.
+
+Since **Chimeraforge 0.74.0**, this API also accepts `replica_gpu_devices` and
+`replica_host_ports` for original multi-replica online vLLM/SGLang Compose plans.
+The exporter preserves original N, total GPU accounting and per-replica batch;
+see [the complete replica contract](deployment.md#homogeneous-compose-replicas).
+
+## Offline deployment verification
+
+Chimeraforge 0.75.0 adds the separate direct module
+`chimeraforge.deployment_verify.verify_deployment(saved, config_path, *, image, ...)`
+returning immutable typed `DeploymentVerification`. Pass the original independent
+saved plan, selected index and complete image/model/placement intent; no options
+are inferred from actual files. See [the full signature, CLI/API examples,
+source hash basis and limits](deployment-verification.md). This does not replan,
+contact a provider, start an engine or authenticate running/source state.
 
 ## Checkpoint identity
 
@@ -496,3 +571,20 @@ not verify either run. Exit 0 denotes completed operation only, 1 known mismatch
 or failed/partial replay, and new CLI commands use 2 for malformed input/options
 or output errors. Receipt output guards refuse source/contribution overwrites and
 quarantine writes before execution. URL credentials/query values are redacted.
+
+## Runtime secure connections (since 0.78.0)
+
+`run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); available since Chimeraforge 0.78.0.
+
+## Original-fleet active trace (since 0.79.0)
+
+`api.TraceRoute`, `api.FleetTraceReplay`, async `api.replay_fleet_trace(saved, requests, endpoints, routes, ...)` and sync `api.load_fleet_trace(source)` retain the entire original N-member candidate under one native client schedule. Complete CLI/API admission, per-ID runtime HTTPS, cooperative task/client ownership and strict receiving semantics are documented in [original-fleet trace](fleet-trace.md). These APIs are available since Chimeraforge 0.79.0.
+
+
+## Original-fleet regression gate (since 0.80.0)
+
+`api.FleetTraceGatePolicy`, sync `api.gate_fleet_traces(baseline, candidate, *, policy)`
+and `api.write_fleet_trace_gate(decision, *, out=None, junit=None)` compare one whole
+original fleet per arm and write bounded guarded projections. See the complete
+[closed policy, receiving, metric, outcome and output contract](fleet-trace-gate.md).
+These APIs are available since Chimeraforge 0.80.0.

@@ -1,0 +1,104 @@
+{
+  "captured_at": "2026-10-25T15:49:44.038188+00:00",
+  "version": "0.79.0",
+  "evidence": "source CLI/API protocol controls; not installed distribution or native inference proof",
+  "result": {
+    "controls": [
+      {
+        "backend": "vllm",
+        "mode": "complete",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 12,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "mtls",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 12,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "short",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 12,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "preflight",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 0,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "complete",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 12,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "mtls",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 12,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "short",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 12,
+        "all_owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "preflight",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "original_replicas": 3,
+        "rows_per_interface": 6,
+        "generation_contacts": 0,
+        "all_owned_resources_closed": true
+      }
+    ],
+    "original_bytes_unchanged": true,
+    "scope": "one local protocol listener with three declared paths per control; no inference, GPU, physical independence or capacity qualification",
+    "fixture_resources": "closed"
+  },
+  "source_sha256": {
+    "scripts/ci_fleet_trace.py": "679b6650b8f066604a0e2365bac1f318642430993de8685284196cbdeb183b9f",
+    "src/chimeraforge/bench/fleet_trace.py": "632e480437710e34e2b68de4ab63c0cc6fab6fa20576faf0c6c1baf650f75e43",
+    "src/chimeraforge/bench/fleet_trace_inputs.py": "bc84972196a336a4a04dd9f315ac0b6f4a6c25bcaa0646c7f35b01c59041e089",
+    "src/chimeraforge/bench/fleet_trace_receipt.py": "ddf53373b2853bd52c7f4c4bad2d2000a09ba5a6bcdeee132f6678ac69305e30",
+    "src/chimeraforge/bench/fleet_trace_types.py": "37844bc46be7707f492b5ed5056b142207954fb26166ba7ddf7da9259af552eb",
+    "src/chimeraforge/bench/trace.py": "946250dd9266b76ad297652f518605a3e74a8c58113087a8aa9901dcf0e4576f",
+    "src/chimeraforge/bench/plan_trace.py": "1ccd48a318abbdd1d5535e38d6df3bc6132bc6f51e995f766d6639fec832d13a",
+    "src/chimeraforge/bench/serving_binding.py": "ae748c4a5a29c5fea258dd9285807613a3967e4c031ace872bde4f94595cb230",
+    "src/chimeraforge/api.py": "1cb544a0186fa5e1ba93824a517dcbcea1c30f48b9a290c07dee2b909b270db4",
+    "src/chimeraforge/commands/trace_fleet.py": "b8c8f4bc487cac51683b4d32d2489c0dbb1b8cab10ee658a58171588b8e69c3e"
+  }
+}

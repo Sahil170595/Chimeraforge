@@ -20,9 +20,16 @@ from chimeraforge.commands.contribute import contribute_app
 from chimeraforge.commands.doctor import doctor
 from chimeraforge.commands.gate import gate
 from chimeraforge.commands.deploy import deploy
+from chimeraforge.commands.deploy_verify import deploy_verify
+from chimeraforge.commands.deploy_inspect import deploy_inspect
+from chimeraforge.commands.inventory_check import inventory_check
 from chimeraforge.commands.eval import eval_cmd
 from chimeraforge.commands.mcp import mcp
 from chimeraforge.commands.monitor import monitor
+from chimeraforge.commands.monitor_fleet import monitor_fleet
+from chimeraforge.commands.monitor_fleet_exporter import monitor_fleet_exporter
+from chimeraforge.commands.trace_fleet import trace_fleet
+from chimeraforge.commands.trace_fleet_campaign import trace_fleet_campaign
 from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
@@ -31,6 +38,7 @@ from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
 from chimeraforge.commands.score import score
 from chimeraforge.commands.serve import serve
+from chimeraforge.commands.serving import serving_app
 from chimeraforge.commands.suggest import suggest
 from chimeraforge.commands.study import study
 from chimeraforge.commands.trace import trace
@@ -75,6 +83,9 @@ app.command()(check)
 app.add_typer(bundle_app, name="bundle")
 app.command()(study)
 app.command()(deploy)
+app.command("deploy-verify")(deploy_verify)
+app.command("deploy-inspect")(deploy_inspect)
+app.command("inventory-check")(inventory_check)
 app.command()(suggest)
 app.command()(measure)
 app.command()(validate)
@@ -92,10 +103,15 @@ app.command(name="eval")(eval_cmd)
 app.command()(report)
 app.command()(workload)
 app.command()(monitor)
+app.command("monitor-fleet")(monitor_fleet)
+app.command("monitor-fleet-exporter")(monitor_fleet_exporter)
+app.command("trace-fleet")(trace_fleet)
+app.command("trace-fleet-campaign")(trace_fleet_campaign)
 app.command()(doctor)
 app.add_typer(contribute_app, name="contribute")
 app.command()(mcp)
 app.command()(serve)
+app.add_typer(serving_app, name="serving")
 
 
 if __name__ == "__main__":  # pragma: no cover - module invocation

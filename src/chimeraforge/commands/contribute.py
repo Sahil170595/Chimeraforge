@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import NoReturn, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from chimeraforge.contribution_review import ContributionReceipt
     from chimeraforge.signed_contribution import SignedContribution
 
 import typer
@@ -205,7 +206,9 @@ def list_cmd(output_json: bool = typer.Option(False, "--json", help="Print as JS
     console.print(table)
 
 
-def _print_receipt(receipt, output_json: bool, out: Path | None) -> None:
+def _print_receipt(
+    receipt: ContributionReceipt | SignedContribution, output_json: bool, out: Path | None
+) -> None:
     from chimeraforge.contrib import ContribError
 
     if out is not None:
@@ -429,6 +432,40 @@ def _print_signed(receipt: SignedContribution, output_json: bool, out: Path | No
         )
     )
     raise typer.Exit(receipt.exit_code)
+
+
+@contribute_app.command("gate")
+def gate_cmd(
+    baseline: list[Path] = typer.Option(
+        ..., "--baseline", help="Ordered signed v2 baseline; repeat."
+    ),
+    candidate: list[Path] = typer.Option(
+        ..., "--candidate", help="Ordered signed v2 candidate; repeat."
+    ),
+    policy: Path = typer.Option(..., "--policy", help="Explicit native regression policy JSON."),
+    trusted_key: list[Path] | None = typer.Option(
+        None, "--trusted-key", help="Receiver-trusted Ed25519 public PEM/raw32; repeat."
+    ),
+    out: Path | None = typer.Option(
+        None, "--out", help="Decision outside consumed inputs and quarantine."
+    ),
+    output_json: bool = typer.Option(False, "--json"),
+) -> None:
+    """Compare trusted native facts offline; signatures do not prove measurement truth."""
+    from chimeraforge.api import gate_signed_contributions
+    from chimeraforge.contrib import ContribError
+    from chimeraforge.signed_contribution import SigningUnavailable
+
+    keys = tuple(trusted_key or ())
+    if out is not None:
+        _preprotect(out, (*baseline, *candidate, policy, *keys), output_json)
+    try:
+        decision = gate_signed_contributions(baseline, candidate, trusted_keys=keys, policy=policy)
+    except SigningUnavailable:
+        _signed_fail("signed gate requires available Ed25519 support", output_json, 3)
+    except ContribError:
+        _signed_fail("invalid signed gate input, policy or trusted key", output_json, 2)
+    _print_signed(decision, output_json, out)
 
 
 @contribute_app.command("sign")

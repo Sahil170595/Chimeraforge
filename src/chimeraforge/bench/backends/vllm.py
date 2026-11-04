@@ -22,6 +22,7 @@ from chimeraforge.bench.backends.base import (
     identity_message,
 )
 from chimeraforge.bench.metrics import RunMetrics
+from chimeraforge.monitor_connection import MonitorConnection, admit_connection
 
 logger = logging.getLogger(__name__)
 REQUEST_TIMEOUT_S = 300
@@ -40,21 +41,33 @@ class VLLMBackend(Backend):
         *,
         transport: httpx.AsyncBaseTransport | None = None,
         clock: Callable[[], float] | None = None,
+        connection: MonitorConnection | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
+        admit_connection(connection, self.base_url)
+        self._connection = connection
         self._transport = transport
         self._clock = clock or time.perf_counter
         self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(timeout=REQUEST_TIMEOUT_S, transport=self._transport)
+            self._client = httpx.AsyncClient(
+                timeout=REQUEST_TIMEOUT_S,
+                transport=self._transport,
+                **(self._connection._client_kwargs() if self._connection is not None else {}),
+            )
         return self._client
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""
         if self._client and not self._client.is_closed:
             await self._client.aclose()
+
+    def _refusal(self, message: str) -> tuple[bool, str]:
+        return False, (
+            "secure backend preflight unavailable" if self._connection is not None else message
+        )
 
     async def health_check(self) -> tuple[bool, str]:
         """GET /health, then GET /version: running means vLLM named itself.
@@ -67,17 +80,17 @@ class VLLMBackend(Backend):
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/health", timeout=10)
             if resp.status_code != 200:
-                return False, f"vLLM returned status {resp.status_code}"
+                return self._refusal(f"vLLM returned status {resp.status_code}")
             version = await self.get_version()
             if not version:
-                return False, identity_message(
-                    "vLLM", self.base_url, "GET /version returned no version"
+                return self._refusal(
+                    identity_message("vLLM", self.base_url, "GET /version returned no version")
                 )
             return True, f"vLLM {version} is running"
         except httpx.ConnectError:
-            return False, f"vLLM not running at {self.base_url}"
+            return self._refusal(f"vLLM not running at {self.base_url}")
         except httpx.TimeoutException:
-            return False, f"vLLM timed out at {self.base_url}"
+            return self._refusal(f"vLLM timed out at {self.base_url}")
 
     async def check_model(self, model: str) -> tuple[bool, str]:
         """GET /v1/models and check if model is listed."""
@@ -85,12 +98,12 @@ class VLLMBackend(Backend):
             client = await self._get_client()
             resp = await client.get(f"{self.base_url}/v1/models", timeout=30)
             if resp.status_code != 200:
-                return False, f"Cannot list models (status {resp.status_code})"
+                return self._refusal(f"Cannot list models (status {resp.status_code})")
             try:
                 data = resp.json()
             except ValueError:
                 logger.debug("vLLM model-list response is not JSON")
-                return False, "vLLM model-list response is malformed"
+                return self._refusal("vLLM model-list response is malformed")
             rows = data.get("data") if isinstance(data, dict) else None
             if not isinstance(rows, list) or any(
                 not isinstance(row, dict)
@@ -98,19 +111,19 @@ class VLLMBackend(Backend):
                 or not row["id"].strip()
                 for row in rows
             ):
-                return False, "vLLM model-list response is malformed"
+                return self._refusal("vLLM model-list response is malformed")
             model_ids = [row["id"] for row in rows]
             if model in model_ids:
                 return True, ""
-            return False, (
+            return self._refusal(
                 f"Model '{model}' not found. Available: {', '.join(model_ids) or 'none'}"
             )
         except httpx.ConnectError:
-            return False, f"vLLM not running at {self.base_url}"
+            return self._refusal(f"vLLM not running at {self.base_url}")
         except httpx.TimeoutException:
-            return False, f"vLLM timed out at {self.base_url}"
+            return self._refusal(f"vLLM timed out at {self.base_url}")
         except httpx.HTTPError as exc:
-            return False, f"vLLM model check failed at {self.base_url}: {exc}"
+            return self._refusal(f"vLLM model check failed at {self.base_url}: {exc}")
 
     async def generate(
         self,
@@ -148,10 +161,35 @@ class VLLMBackend(Backend):
             on_first_output,
         )
 
+    async def chat_observed(
+        self,
+        model: str,
+        messages: list[dict],
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        from chimeraforge.bench.backends._chat_stream import observe_chat
+
+        return await observe_chat(
+            await self._get_client(),
+            f"{self.base_url}/v1/chat/completions",
+            {
+                "model": model,
+                "messages": messages,
+                "max_tokens": options.get("max_tokens", DEFAULT_MAX_TOKENS),
+                "temperature": options.get("temperature", 0.0),
+            },
+            self._clock,
+            REQUEST_TIMEOUT_S,
+            on_first_output,
+        )
+
     async def get_version(self) -> str | None:
         """GET /version -> ``{"version": ...}`` (vLLM v0.30.0 source), else None."""
         client = await self._get_client()
-        return await fetch_json_field(client, f"{self.base_url}/version", "version")
+        return await fetch_json_field(
+            client, f"{self.base_url}/version", "version", secure=self._connection is not None
+        )
 
     async def observe_serving(self, model: str) -> dict:
         from chimeraforge.bench.serving import observe_vllm

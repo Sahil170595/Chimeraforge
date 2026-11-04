@@ -214,17 +214,22 @@ def test_failure_projection_prints_before_bounded_existing_tail(runtime, monkeyp
     assert len(reads) == 2
 
 
-def test_cpu_exclusions_apply_to_copy_for_owned_server_only(runtime):
+@pytest.mark.parametrize("inherited_repack", [None, "1"])
+def test_cpu_exclusions_apply_to_copy_for_owned_server_only(runtime, inherited_repack):
     original = {"CUDA_VISIBLE_DEVICES": "0", "PRIVATE": "secret", "OLLAMA_HOST": "local"}
+    if inherited_repack is not None:
+        original["LLAMA_ARG_REPACK"] = inherited_repack
     result = runtime.cpu_server_environment(original)
     assert result == original | {
         "CUDA_VISIBLE_DEVICES": "-1",
         "ROCR_VISIBLE_DEVICES": "-1",
         "GGML_VK_VISIBLE_DEVICES": "-1",
         "OLLAMA_VULKAN": "0",
+        "LLAMA_ARG_REPACK": "0",
     }
     assert original["CUDA_VISIBLE_DEVICES"] == "0"
     assert "OLLAMA_VULKAN" not in original
+    assert original.get("LLAMA_ARG_REPACK") == inherited_repack
 
 
 @pytest.mark.parametrize("outcome", ["success", "accept_failure", "cleanup_failure"])
@@ -271,7 +276,30 @@ def test_harness_scopes_server_env_and_emits_success_or_failure_facts(
         if outcome == "cleanup_failure":
             raise RuntimeError("synthetic cleanup failure")
 
-    parent_env = {"CUDA_VISIBLE_DEVICES": "0", "PRIVATE": "secret"}
+    groups, fleet_calls = [], []
+
+    def close_groups(servers, ports):
+        (server_options,) = [options for argv_, options in calls if argv_[-1] == "serve"]
+        expected_port = int(server_options["env"]["OLLAMA_HOST"].rsplit(":", 1)[1])
+        assert [server.pid for server in servers] == [12345] and ports == [expected_port]
+        groups.append(([server.pid for server in servers], ports))
+        terminate()
+        return {"state": "completed"}
+
+    def accept_fleet(work, binary, store, env):
+        assert groups and groups[0][0] == [12345]
+        (server_options,) = [options for argv_, options in calls if argv_[-1] == "serve"]
+        assert server_options["stdout"].closed
+        assert work == tmp_path and binary == tmp_path / "runtime/bin/ollama"
+        assert store == tmp_path / "models"
+        fleet_calls.append(env.copy())
+        return {"fixture_fleet": True}
+
+    monkeypatch.setitem(
+        sys.modules, "ci_cpu_fleet", SimpleNamespace(close_groups=close_groups, accept=accept_fleet)
+    )
+
+    parent_env = {"CUDA_VISIBLE_DEVICES": "0", "PRIVATE": "secret", "LLAMA_ARG_REPACK": "1"}
     monkeypatch.setattr(script, "os", SimpleNamespace(environ=parent_env, killpg=terminate))
     client = SimpleNamespace(
         get=lambda _endpoint: SimpleNamespace(
@@ -299,8 +327,19 @@ def test_harness_scopes_server_env_and_emits_success_or_failure_facts(
         with pytest.raises(expected, match="synthetic"):
             script.main(argv)
     stdout, stderr = capsys.readouterr()
+    documents = []
+    remaining = stdout.lstrip()
+    while remaining:
+        value, end = json.JSONDecoder().raw_decode(remaining)
+        documents.append(value)
+        remaining = remaining[end:].lstrip()
+    assert len(documents) == (2 if outcome == "success" else 1)
     if outcome != "accept_failure":
-        assert json.loads(stdout)["runtime_observation"]["startup_facts_complete"] is True
+        assert documents[0]["runtime_observation"]["startup_facts_complete"] is True
+    if outcome != "cleanup_failure":
+        assert documents[-1] == {"original_cpu_owned_cleanup": {"state": "completed"}}
+    assert len(groups) == 1 and groups[0][0] == [12345]
+    assert len(fleet_calls) == int(outcome == "success")
     if outcome != "success":
         first, tail = stderr.split("\n", 1)
         assert json.loads(first)["cpu_runtime_observation"]["records"][0]["ngl"] == 0
@@ -309,6 +348,8 @@ def test_harness_scopes_server_env_and_emits_success_or_failure_facts(
     (create_call,) = [kwargs for argv_, kwargs in calls if "create" in argv_]
     assert server_call["env"]["CUDA_VISIBLE_DEVICES"] == "-1"
     assert server_call["env"]["OLLAMA_VULKAN"] == "0"
+    assert server_call["env"]["LLAMA_ARG_REPACK"] == "0"
     assert create_call["env"]["CUDA_VISIBLE_DEVICES"] == "0"
+    assert create_call["env"]["LLAMA_ARG_REPACK"] == "1"
     assert "OLLAMA_VULKAN" not in create_call["env"]
-    assert parent_env == {"CUDA_VISIBLE_DEVICES": "0", "PRIVATE": "secret"}
+    assert parent_env == {"CUDA_VISIBLE_DEVICES": "0", "PRIVATE": "secret", "LLAMA_ARG_REPACK": "1"}

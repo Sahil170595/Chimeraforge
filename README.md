@@ -15,11 +15,38 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Unreleased 0.91.0 source:** `monitor-fleet-exporter` / `api.serve_fleet_exporter`
+serve cached native fleet gauges on loopback, with all-N freshness/failure views
+and owned shutdown. Scrapes make no backend calls. Public installation remains
+**0.86.0**; see [continuous fleet export](docs/fleet-exporter.md).
+
+**Unreleased 0.90.0 source:** `report --kind trace-campaign` / `--kind fleet-trace-campaign`
+and `api.render_trace_report` render whole native campaigns as HTML/SVG/Markdown,
+retaining every execution, original member and unknown fact. Public installation
+remains **0.86.0**; see [whole-campaign diagnostics](docs/campaign-diagnostics.md).
+
+**Unreleased 0.89.0 source:** native chat trace replay preserves ordered
+system/user/assistant messages across ordinary, saved-plan, fleet and campaign
+paths. Missing native usage stays unknown; text-only output, private commitments
+and secure ownership remain explicit. Public installation remains **0.86.0**;
+see [chat API/CLI and limits](docs/chat-trace-replay.md).
+
+**Unreleased 0.88.0 source:** `serving declare|quote|export|verify` authors concrete
+operator intent, quotes dated whole instances, and checks native configuration
+without optimizer predictions. Public installation remains **0.86.0**; see the
+[complete serving contract](docs/serving-declaration.md).
+
+**Unreleased 0.87.0 source:** `inventory-check --memory-basis selected-batch` and
+`api.check_inventory(..., memory_basis="selected-batch")` add compatible saved
+active-sequence KV components to the saved B1 interval without replanning. This
+is per-device modeled arithmetic, not runtime peak or deployment readiness.
+Public installation remains **0.86.0**; see the [complete contract](docs/inventory-check.md).
+
 **Every number is labeled `measured`, `extrapolated`, `derived`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are `derived` -- exact arithmetic over the model's real architecture, not a measurement. Throughput is a measured lookup only on the rig the corpus was measured on; on any other GPU that row is scaled by memory bandwidth and reported as `extrapolated`, carrying the row it came from, the rig it was measured on and the ratio applied, because a 17.8x bandwidth extrapolation (RTX 4080 Laptop 432 GB/s -> B200 7700 GB/s) is not a measurement of your card. Failing that it is an explicit roofline `estimate` -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**26 commands, one tool:** `plan` - `check` - `bundle` - `study` - `deploy` - `suggest` - `measure` - `workload` - `monitor` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.91.0 source; public installation remains 0.86.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -65,13 +92,17 @@ pip install "chimeraforge[refit]"     # + coefficient refitting (numpy, scipy)
 pip install "chimeraforge[all]"       # everything
 ```
 
-Python 3.10+. The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
+Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-10-17).** [Chimeraforge 0.66.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.66.0) adds frozen prediction scorecards. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope (2026-11-01).** [Chimeraforge 0.86.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.86.0) adds strict native ordinary/fleet trace diagnostics in complete static HTML, Markdown and SVG while preserving benchmark report defaults. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.66.0"
+pip install "chimeraforge[mcp]==0.86.0"
 ```
+
+**Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
+
+**Secure monitoring (since 0.78.0):** verified HTTPS, named-environment bearer and optional client certificates now cover standalone/saved/fleet metrics and every metadata bracket. Credentials stay runtime-only and per endpoint. See [secure monitoring](docs/secure-monitoring.md).
 
 ## Quickstart
 
@@ -304,7 +335,43 @@ bindings and nonempty contribution dependencies are refused before writing.
 Integrity does not authenticate a source or prove served weights or performance.
 See [the portable workflow](docs/planning-api.md#portable-plan-bundles).
 
-### `study` -- frozen-context workload and cost sensitivity
+### `contribute gate` -- trusted signed native comparisons (since 0.71.0)
+
+```bash
+chimeraforge contribute gate --baseline before.signed.json --candidate after.signed.json --trusted-key receiver.pub --policy gate-policy.json --out decision.json --json
+```
+
+Compare public native facts only after exact signature/artifact verification and
+explicit receiver trust. Repeated flags retain the declared populations; copied,
+incomplete or incompatible evidence cannot qualify. `api.gate_signed_contributions`
+returns a defensive decision receipt. Exits: 0 conditional pass, 1 authentication
+failure or comparable regression, 2 malformed/output failure, 3 unavailable or
+inconclusive. Signatures do not authenticate measurement truth, hardware, weights
+or execution independence. See [signed native gates](docs/signed-native-gates.md)
+for policy, matching rules, byte limits and the public projection's limits.
+
+### `bundle prediction-*` -- private prediction evidence (since 0.70.0)
+
+Preserve a plan with its bound inputs, explicit score policy and every original
+benchmark receipt for offline handoff:
+
+```bash
+chimeraforge bundle prediction-create plan.json --policy score-policy.json --benchmark first.json --benchmark second.json --out private-evidence --json
+chimeraforge bundle prediction-verify private-evidence --json
+chimeraforge bundle prediction-score private-evidence --out scorecard.json --json
+```
+
+**Private handoff:** original benchmark and harness files can contain prompts,
+options, provider diagnostics or paths. Review those files before sharing. Metadata
+and scorecards expose digest receipts and bounded outcomes; the directory preserves
+the raw originals. No upload occurs. The [closed bundle contract](docs/prediction-bundles.md)
+retains exact receipt order, bytes, hashes and negative/duplicate evidence under a
+32 MiB transport budget including both manifests. An empty received population is
+valid missing evidence. Create/verify exit 0 for valid content, 2 for invalid input;
+scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
+3 incomplete. Integrity does not qualify GPU evidence or authenticate measurements.
+
+### `study` -- frozen-model workload, hardware and cost sensitivity
 
 Available in the published 0.61.0 CLI.
 Compare explicit assumptions against one saved plan or portable bundle offline:
@@ -325,7 +392,7 @@ chimeraforge study plan.json --cases cases.json --out study.json --json
 chimeraforge study handoff --cases cases.json --json
 ```
 
-The ordinary search uses the same bound model/GPU geometry and verified
+The ordinary search uses the same bound model geometry and verified
 coefficient/quality bytes for every case. Current engine-support, applicable
 cloud prices, grid intensity, quarantine records and their time observations
 are captured once. The report distinguishes those current facts from producer
@@ -334,7 +401,9 @@ and estimates in native units. A changed policy identity aborts the study.
 
 Supply 1-16 unique cases for up to 16 bound model targets. Workload, context,
 SLOs, quality/safety targets, budget, duty and cost assumptions may change;
-model, physical hardware and platform stay fixed. `gpu_cost_per_hour` is an
+model and platform stay fixed. Cases without an explicit hardware alternative also
+hold physical hardware fixed.
+`gpu_cost_per_hour` is an
 operator price assumption, is refused for cloud instance pricing, and zero
 keeps the native unknown-price behavior. Output cannot overwrite known inputs.
 Exit 0 means a completed modeled study, including infeasible cases; invalid or
@@ -342,7 +411,100 @@ unavailable inputs exit 2. No weights are downloaded or serving traffic generate
 Integrity and modeled deltas do not authenticate inputs or qualify performance.
 See [the Python and case contract](docs/planning-api.md#frozen-context-sensitivity).
 
+**Hardware alternatives (since 0.72.0).** Compare full GPU registry
+specifications through the same CLI or Python API, without changing the saved plan:
+
+```json
+[
+  {"name": "larger-gpu", "changes": {"hardware": "RTX 4090 24GB"}},
+  {"name": "ampere", "changes": {"hardware": "RTX 3090 24GB"}},
+  {"name": "explicit-price", "changes": {"hardware": "H100 80GB", "gpu_cost_per_hour": 2}}
+]
+```
+
+Save as `hardware-cases.json` and run
+`chimeraforge study plan.json --cases hardware-cases.json --out hardware-study.json --json`.
+Use one exact case-insensitive canonical name from `chimeraforge plan --list-hardware`;
+partial names, ambiguous entries and `auto` refuse before search. Explicit hardware
+cases refuse sources with cloud instance pricing or `gpu_overrides`, including an
+explicit same-name selection; scenarios without `hardware` preserve that saved setup.
+An existing unified-memory fraction stays fixed and native compatibility rules apply.
+
+Each alternative binds the full raw/effective GPU spec from one held registry,
+including VRAM, bandwidth, compute, FP8, interconnect and price provenance. Base
+geometry stays bound to the source. Policy changes abort; physical configuration
+identity excludes price and source metadata. Unknown prices and infeasible cases
+remain explicit. Non-reference timing retains native extrapolation labels while
+valid model-quality evidence remains measured. These are modeled alternatives,
+without probing this host, running inference or attesting hardware/weights.
+
+### `serving` -- operator-authored serving intent
+
+**Unreleased 0.88.0 source.** Declare concrete settings without a predictive plan,
+model/corpus lookup or capacity claim. The example revision is an operator claim;
+the image is an explicit mutable tag, not verified runtime compatibility.
+
+```bash
+chimeraforge serving declare --model Qwen/Qwen2.5-1.5B-Instruct \
+  --revision 00112233445566778899aabbccddeeff00112233 \
+  --backend vllm --image vllm/vllm-openai:v0.30.0 \
+  --replicas 3 --tp 2 --pp 2 --context 8192 --batch 8 \
+  --out operator.serving.json --json
+chimeraforge serving quote --declaration operator.serving.json \
+  --cloud aws --instance p5.48xlarge --region us-east-1 --json
+chimeraforge serving export --declaration operator.serving.json --format compose \
+  --replica-devices 0,1,2,3 --replica-port 9001 \
+  --replica-devices 4,5,6,7 --replica-port 9002 \
+  --replica-devices 8,9,10,11 --replica-port 9003 \
+  --out operator.serving.compose.json --json
+chimeraforge serving verify --declaration operator.serving.json --format compose \
+  --replica-devices 0,1,2,3 --replica-port 9001 \
+  --replica-devices 4,5,6,7 --replica-port 9002 \
+  --replica-devices 8,9,10,11 --replica-port 9003 \
+  --config operator.serving.compose.json --json
+```
+
+N=3, TP=2, PP=2 means twelve logical slots. The exact 8-GPU offer quotes two
+**whole** billed instances, without assigning hosts. Launch/Compose maps describe
+one host namespace with twelve distinct IDs; they cannot be copied onto each
+quoted 8-GPU instance. `--format launch` returns three independent entrypoints;
+`--format kubernetes --namespace operators --name-prefix serving` produces three
+Deployments and three Services, without physical host/device mappings.
+
+Declaration settings also include `--dtype FP16|BF16 --kv-quant fp16|q8`,
+`--prefix-caching` and vLLM-only `--max-num-batched-tokens`. SGLang BF16 with
+requested fp16 KV refuses. Quote target flags are all-or-none; absent/unknown
+offers retain null costs and native dated sources/age travel with known prices.
+Single-replica host bindings use `--gpu-device`/`--host-port`; Kubernetes also
+accepts repeated `--node-selector key=value`. Match is 0, config drift 5, invalid
+input 1 and native usage 2. No throughput, quality, memory feasibility, placement,
+engine execution or deployment readiness is implied. See [all bounds, Python
+API and fixed argv-reference limits](docs/serving-declaration.md).
+
 ### `deploy` -- export serving configuration
+
+**Homogeneous Compose fleets (since 0.74.0).** Select an original
+online Linux CUDA vLLM/SGLang candidate with N>1. Repeat `--replica-devices 7,3
+--replica-port 9001` once per replica, supplying disjoint ordered groups of TP x PP
+IDs and distinct loopback host ports. The direct API accepts
+`replica_gpu_devices=[["7", "3"], ["9", "2"], ["8", "4"]]` and
+`replica_host_ports=[9001, 9002, 9003]` for a three-replica TP=2 candidate. Do not mix
+these options with singular device/port options. Each `inference-1..N` service
+retains the saved model/revision and per-replica batch; manually target each port.
+There is no router, scaler or verified physical capacity. See the
+[complete CLI/API example and limits](docs/deployment.md#homogeneous-compose-replicas).
+
+**Explicit deployment devices (since 0.73.0):** repeat `--gpu-device` once per saved TP x PP GPU
+and optionally set Compose `--host-port`. For the one-GPU vLLM selection below,
+append `--gpu-device 7 --host-port 9001`. Two-GPU selection uses, for example,
+`--gpu-device 7 --gpu-device 3`. Full GPU UUIDs are also supported. Compose emits
+`device_ids` instead of `count`; its list order is a requested declaration, not
+observed CUDA rank mapping. systemd uses ordered `CUDA_VISIBLE_DEVICES` selectors.
+The API accepts `gpu_devices=["7", "3"]` and `host_port=9001`; see the
+[full options, API examples and refusals](docs/deployment.md#explicit-device-selection-and-host-ports).
+Default exports retain their GPU count and ports when these options are omitted.
+The export admission bound is 64 GPUs per replica, with no device, topology or
+performance verification.
 
 Export one saved candidate as Compose, a systemd user service, an Ollama macOS
 LaunchAgent, or a Modelfile. No engines are installed, started or deployed.
@@ -366,6 +528,73 @@ Ollama emits daemon settings and a companion Modelfile with required provisionin
 steps. Native units require an explicit installed executable path. See
 [supported templates and config validation](docs/deployment.md). Config acceptance
 does not establish GPU execution or prediction accuracy.
+
+**Kubernetes (since 0.81.0):** preserve all original online Linux CUDA
+vLLM/SGLang members as individual Deployments and ClusterIP Services. Select a
+supported saved candidate and supply independent image and scheduler intent:
+
+```bash
+chimeraforge deploy --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --format kubernetes --image vllm/vllm-openai:v0.30.0 \
+  --namespace default --name-prefix inference \
+  --node-selector operator.example/accelerator=declared --out inference.json
+chimeraforge deploy-verify --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --format kubernetes --config inference.json --image vllm/vllm-openai:v0.30.0 \
+  --namespace default --name-prefix inference \
+  --node-selector operator.example/accelerator=declared --json
+```
+
+Typed `api.KubernetesOptions` and `api.verify_deployment` expose the same contract.
+GPU resources and logical member selectors are declarations; API admission does
+not prove scheduling, running engines or GPUs. Available since Chimeraforge 0.81.0.
+See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernetes-deployment.md).
+
+### `deploy-verify` -- check offline declaration drift
+
+**Offline deployment verification (since 0.75.0).** Keep the
+original saved plan, candidate index and full render intent independently from
+the file being checked. For the single-replica export above:
+
+```bash
+chimeraforge deploy-verify --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --config deployment/compose.yaml --image vllm/vllm-openai:v0.30.0 --json
+```
+
+Supply the same `--model` if required and the same singular `--gpu-device` /
+`--host-port`, or repeat all `--replica-devices` / `--replica-port` groups for a
+fleet. Defaults request the renderer defaults; options are never inferred from
+the actual file. It reads generated **JSON Compose** (regardless of extension)
+and only the expected Ollama sibling `Modelfile`. No YAML interpretation,
+interpolation, `.env`/actual-mount reads, Docker calls or writes occur.
+
+Exit 0 means consistency with this installed renderer; 5 means admitted JSON or
+required-companion drift; 1 means invalid/unsafe/unavailable/overlimit input.
+Native CLI usage errors remain 2. JSON object order/whitespace do not matter;
+scalar types, array order and companion bytes do. Fixed expected paths/categories
+omit actual values and unknown key names. This is not source authenticity,
+image/registry truth, running weights, an atomic snapshot or GPU execution proof.
+See [full API/fleet examples, bounds and receipt semantics](docs/deployment-verification.md).
+
+### `deploy-inspect` -- read-only Kubernetes intent and rollout
+
+Chimeraforge 0.85.0 inspects every original Deployment/Service using an explicit
+runtime kubeconfig/context and independently supplied render intent:
+
+```bash
+chimeraforge deploy-inspect --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --image vllm/vllm-openai:v0.30.0 --kubeconfig /private/cluster.conf \
+  --context operator-selected --namespace serving --name-prefix original \
+  --out inspection.json --junit inspection.xml --json
+```
+
+Matching declarations do not mean rollout is complete. Outcomes are 0 intent and
+native controller completion, 5 known missing/drift, 4 unavailable/pending,
+1 invalid intent and 2 usage/output refusal. All 2N resources and 3N+1 JUnit cases
+remain; oversized exports refuse without truncation. Native exec credentials
+are denied and selected legacy auth providers are unsupported. Incomplete private
+file inventory permits bounded stdout but refuses filesystem publication.
+See [the pinned profile, API, guards, budgets and hosted proof limits](docs/kubernetes-inspection.md).
+Available in Chimeraforge 0.86.0.
 
 ### `suggest` -- discover & rank models
 
@@ -443,6 +672,50 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
 
+### `monitor-fleet-exporter` -- continuously serve cached native gauges
+
+The unreleased 0.91.0 source adds a loopback service with one sequential native
+window per poll. Install the source with `python -m pip install -e ".[exporter]"`.
+Repeat `--endpoint ID=URL` for every original saved member; supply
+`--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
+`--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`
+sets native sampling and cache freshness. `--listen-port 9400` exposes GET/HEAD
+`http://127.0.0.1:9400/metrics`; scrapes never contact a backend.
+
+`--run-seconds 30` is an optional finite diagnostic; default service lifetime is
+continuous. Clean shutdown0 is separate from native qualification. Prior PASS
+metrics disappear after a new failure or TTL expiry; unknown numeric values are
+omitted. Native samples and outcomes remain gauges, not cumulative traffic.
+Outbound TLS/auth/mTLS settings are reused; public labels are ordinal/configured.
+See the [full API, CLI, lifecycle and evidence limits](docs/fleet-exporter.md).
+
+### `monitor-fleet` -- observe every declared saved replica
+
+**Passive declared-fleet monitoring (since 0.76.0).** Preserve
+an original native three-replica candidate and target existing endpoints directly:
+
+```bash
+chimeraforge monitor-fleet --from-plan fleet-plan.json --candidate-index "$FLEET_INDEX" \
+  --endpoint replica-1=http://127.0.0.1:9001 \
+  --endpoint replica-2=http://127.0.0.1:9002/metrics \
+  --endpoint replica-3=http://127.0.0.1:9003/metrics \
+  --ttft-slo 500 --interval 30 --windows 1 --observation-seconds 60 \
+  --cleanup-seconds 2 --max-requests 256 --max-body-bytes 8388608 \
+  --concurrency 4 --json --prometheus fleet-monitor.prom
+```
+
+The original candidate supplies model/backend and replica count. Saved TTFT/TPOT
+targets apply unless explicitly overridden. Ordered slots retain complete/error/
+cancelled/unstarted states, native histogram windows and metadata prefixes. All
+declared slots must complete and qualify before pass 0; known binding mismatch 5,
+known native breach 3 and unknown/incomplete 4 remain distinct; invalid inputs 1 and
+native CLI usage 2. Shared request/body/deadline limits cover every metrics and
+metadata route; cleanup is separately bounded and awaited. Existing `monitor`
+stays endpoint-only even when its saved candidate has multiple replicas.
+See [complete API/CLI examples, bounds, cancellation and proof limits](docs/fleet-monitoring.md).
+No load generation, GPU/topology/weights authentication, pooled percentiles or
+capacity/physical-independence claim is supplied.
+
 ### `monitor` -- observe explicit latency SLOs
 
 ```bash
@@ -454,6 +727,45 @@ chimeraforge monitor --from-plan plan.json --candidate-index "$CANDIDATE_INDEX" 
 ```
 
 Observes existing traffic through two-scrape histogram windows. Reports P95 bucket bounds against explicit millisecond targets, with `pass` (exit 0), `breach` (3), or `unknown` (4); an operational error exits 1. Missing data, no traffic, resets and buckets straddling a target cannot pass. SGLang TTFT is supported; its ITL histogram cannot establish per-request TPOT. `--from-plan plan.json --candidate-index 0` binds the saved candidate and target sources to passive serving metadata. Known identity/configuration disagreements exit 5 separately from native SLO outcomes; unavailable required endpoint identity exits 4. GPU geometry, fleet topology, workload and immutable weights remain explicitly unverified when unavailable. Independent plan-binding and native SLO Prometheus gauges are documented in [the monitoring guide](docs/monitoring.md). This does not claim calibrated prediction drift or generate traffic.
+
+Secure monitoring options (since 0.78.0):
+
+```bash
+chimeraforge monitor --backend vllm --url https://inference.example:8000 \
+  --model YOUR_SERVED_MODEL --ttft-slo 500 --bearer-env INFERENCE_TOKEN \
+  --ca-bundle /private/ca.pem --json
+```
+
+`--secure` selects verified anonymous HTTPS; private CA and client cert/key options are also available. Fleet settings are per ID and opt every declared slot into HTTPS. See [runtime trust, authentication and limits](docs/secure-monitoring.md).
+
+### `inventory-check` -- compare queried selectors and saved B1 memory
+
+**Unreleased 0.87.0 source:** add `--memory-basis selected-batch` to either form
+below to compare against the compatible saved effective B/context estimate.
+This requires a new native producer declaration; old plans remain B1-compatible
+and selected-batch unknown. Default `batch-one` keeps the existing report shape.
+
+**Inventory arithmetic (since 0.77.0).** Check every original ordered selector against one bounded
+NVIDIA inventory view and compare reported free memory with the saved per-GPU
+modeled batch-one baseline:
+
+```bash
+# When saved candidate 0 has N=3, TP=2 and PP=1, retain all six selectors:
+chimeraforge inventory-check --plan fleet.json --candidate-index 0 \
+  --replica-devices 7,3 --replica-devices 9,2 --replica-devices 8,4 --json
+
+# A saved single-replica TP=2 candidate instead uses repeated singular selectors:
+chimeraforge inventory-check --plan single.json --gpu-device 7 --gpu-device 3 --json
+```
+
+Exit 0 means only complete queried mapping and reported-free-versus-saved-baseline
+arithmetic; 5 means a complete view establishes selector absence or shortfall;
+4 means unavailable/incomplete evidence or overlap; malformed declarations exit 1
+before contact. Every report retains `deployment_ready: null`. Total memory is
+diagnostic and cannot replace unavailable free. MIG Enabled/Disabled/N/A remain raw
+diagnostics, with no physical independence, pooled capacity, allocation or runtime
+peak claim. The saved effective batch is reported separately from the B1 baseline.
+See the [complete CLI/API contract and exact interval](docs/inventory-check.md).
 
 ### `doctor` -- check this machine (read-only)
 
@@ -536,7 +848,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.66.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.86.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -570,6 +882,36 @@ chimeraforge safety --model llama3.2-3b --prompts harmful.txt --quant Q4_K_M --s
 ```
 
 Where `plan --safety-target` *decides* from bundled TR134/TR142 data, `safety` *measures*: it runs your probe prompts against a live model, classifies refusals (rule-based -- the TR134 regex baseline), reports the measured refusal rate vs the bundled gate data (expected, drift, RTSI risk tier), and exits 1 below `--safety-target`. **You provide the prompts** (`--prompts`, one per line) -- no attack corpus ships with the package; point it at HarmBench / AdvBench / your own set. Needs a running Ollama.
+
+**Read-only original Kubernetes inspection (since 0.85.0):** [read-only original Kubernetes inspection](docs/kubernetes-inspection.md)
+adds async `api.inspect_kubernetes_deployment`, `deploy-inspect` and complete
+protected JSON/JUnit. It retains original resources and separates intent drift
+from controller rollout, with bounded native processes and private runtime
+credential-path guards. Earlier authenticated active measurements and whole-fleet
+trace/monitor workflows remain available.
+
+**Whole-original-fleet trace campaigns (since 0.84.0):** [whole-original-fleet trace campaigns](docs/fleet-trace-campaign.md)
+add `trace-fleet-campaign`, `api.replay_fleet_trace_campaign`, strict complete
+saved receiving and `gate --kind fleet-trace-campaign` with complete JSON/JUnit.
+K serial executions retain original N/routes/global C and all failed/unstarted
+slots; complete configuration mismatch does not silently discard later runs.
+Explicit byte profiles refuse without truncation; earlier authenticated active
+measurements and passive fleet gates remain available.
+
+**Whole-original-fleet passive SLO gates (since 0.83.0):** [whole-original-fleet passive SLO gates](docs/fleet-monitor-gate.md)
+add strict original-plan receiving, `api.gate_fleet_monitors`, and
+`gate --kind fleet-monitor --baseline-plan ... --candidate-plan ... --junit ...`.
+Every native member/window/prefix remains; effective controls and exact bounded
+JSON export refuse oversize without truncation or premature paired output.
+Incomplete eligibility precedes candidate SLO breach. Bucket bounds are not
+confidence intervals or pooled performance.
+
+**Authenticated active measurements (since 0.82.0):** native vLLM/SGLang paths
+accept `--secure`, `--bearer-env NAME`, `--ca-bundle`, `--client-cert` and
+`--client-key` on `bench` and `trace`, including saved candidates.
+Runtime credentials stay outside serialized
+measurement schemas; effective TLS inputs are protected against output aliases.
+See [complete CLI/API examples, writer ownership and privacy limits](docs/authenticated-active.md).
 
 ### `bench` -- live inference benchmarking
 
@@ -622,6 +964,12 @@ confidence, GPU accuracy or queue-inclusive SLO attainment. See the complete
 
 ### `trace` -- real scheduled requests and joint-target goodput
 
+**Native chat (unreleased 0.89.0 source):** use explicit `mode: "chat"`, ordered
+`messages` role/content pairs and `temperature` in the existing private JSON input.
+The same input works through saved plans, complete fleets, serial campaigns,
+receiving/gates and diagnostics; roles are never flattened into a completion.
+See [full JSON/API/CLI examples and native usage limits](docs/chat-trace-replay.md).
+
 Create a private `workload.json` with an explicit schedule and output caps:
 
 ```json
@@ -661,10 +1009,9 @@ contacted endpoint and client workload; GPU geometry, independent cold runs and
 served-file authentication remain unverified. See [the trace contract](docs/trace-replay.md)
 for the Python API, limits, cancellation and timing bases.
 
-### `trace --from-plan` -- preserve a frozen candidate (0.68.0 candidate)
+### `trace --from-plan` -- preserve a frozen candidate (since 0.68.0)
 
-This unreleased interface requires the candidate checkout; the stable PyPI
-installation above remains 0.66.0. Select a candidate whose backend matches your
+Available since Chimeraforge 0.68.0. Select a candidate whose backend matches your
 existing endpoint, and make every workload output cap equal its saved
 `decode_tokens_per_req`:
 
@@ -712,6 +1059,59 @@ remains the default `--kind benchmark`. See the [trace policy/API contract](docs
 for zero baselines, evidence limits and output protections. Physical source
 authentication, independent cold executions and GPU qualification remain unverified.
 
+### `gate --kind fleet-trace` -- original-fleet regression decisions
+
+**Available since Chimeraforge 0.80.0.**
+Compare one complete original-fleet trace per arm under a closed predeclared policy:
+
+```bash
+chimeraforge gate --kind fleet-trace --baseline baseline-fleet.json --candidate candidate-fleet.json --policy fleet-policy.json --out fleet-gate.json --junit fleet-gate.xml --json
+```
+
+All original members, ordered routes/work, selected source and common client controls
+must match the declarations. Required identity/cache/binding/cleanup evidence is
+checked per member; global native p95/goodput uses every row and one common horizon.
+Evidence blockers return 3 before known regressions 1, retaining arithmetic. Eligible
+conditional pass is 0; malformed/unsafe input or output is 2. JUnit emits population
+and metric cases with errors for inconclusive evidence and failures for regressions.
+Both destinations protect held inputs and each other; per-file atomic writes are
+not a two-file transaction. Hashes and distinct URLs do not prove independent runs,
+source authenticity, cold/GPU execution or capacity. The decision may carry private
+plan intent. See the [closed policy and API contract](docs/fleet-trace-gate.md).
+
+### `trace-fleet-campaign`
+
+Chimeraforge 0.84.0 runs K serial whole-original-N fleet traces from one held plan,
+workload and route map. `--executions` is separate from saved N; each execution
+keeps the same global arrivals/concurrency, all requests and all original slots.
+Native completeness, configuration, SLOs and cleanup remain separate. Failed or
+unstarted executions are retained, with explicit bounded JSON and strict saved
+receiving. `gate --kind fleet-trace-campaign` compares every declared execution
+using native eligibility/math and complete JUnit. See the
+[full CLI/API contract and examples](docs/fleet-trace-campaign.md).
+
+### `trace-fleet`
+
+**Available since 0.79.0.** Replay one original saved fleet with an
+explicit direct endpoint and route map. All rows share one client schedule,
+concurrency semaphore and deadline; each declared member remains visible,
+including members assigned no requests.
+
+```bash
+chimeraforge trace-fleet requests.json --from-plan saved.json --candidate-index 0 \
+  --endpoint replica-1=http://host1:8000 --endpoint replica-2=http://host2:8000 \
+  --endpoint replica-3=http://host3:8000 --routes routes.json --concurrency 3 \
+  --out fleet-trace.json --json
+```
+
+The example requires an original N3 candidate and a route for every request.
+Output caps must equal the saved decode length. Complete execution exits 0,
+incomplete execution or known configuration/token mismatch exits 1, and invalid
+input exits 2; native SLO outcomes remain separate. URL declarations and metadata
+do not establish physical independence, GPU execution or capacity. See the
+[full original-fleet trace contract](docs/fleet-trace.md), including verified
+HTTPS for vLLM/SGLang and the strict receiving API. Use Chimeraforge 0.79.0 or later.
+
 ### `trace-campaign` -- frozen serial replay populations (since 0.64.0)
 
 Use Chimeraforge 0.64.0 or later and an existing served model:
@@ -737,7 +1137,7 @@ replica completed, `1` an incomplete/stopped population, and `2` malformed input
 or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
-### `trace-envelope` -- observed finite load points (0.69.0 candidate)
+### `trace-envelope` -- observed finite load points (since 0.69.0)
 
 Assess whole saved campaigns at declared uniform arrival cadences, without inference:
 
@@ -753,13 +1153,11 @@ capacity. Missing higher cells can retain a lower observed point, with overall e
 3. Known control, cache, actual token-length or timing-basis contradictions and
 copied native evidence prevent ranking. Exits: 0 complete conditional pass, 1 known
 SLO breach, 2 invalid input/output, 3 incomplete or incompatible evidence. Failed
-and unstarted slots and all known breaches remain visible. This candidate command
-is absent from published 0.66.0.
+and unstarted slots and all known breaches remain visible.
 
-### `gate --kind trace-campaign` -- whole-population decisions (0.67.0 candidate)
+### `gate --kind trace-campaign` -- whole-population decisions (since 0.67.0)
 
-The unreleased candidate compares two complete saved campaigns offline. Use the
-candidate checkout; the published 0.66.0 package does not include this interface.
+Available since Chimeraforge 0.67.0. Compare two complete saved campaigns offline.
 Declare the expected replica count in a `TraceGatePolicy` JSON file, then supply
 one whole campaign per arm:
 
@@ -828,6 +1226,22 @@ chimeraforge report --results-dir ./results/ --format markdown --output report.m
 ```
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
+
+Chimeraforge 0.86.0 adds strict native trace diagnostics while keeping benchmark defaults:
+
+```bash
+chimeraforge report --kind trace --input trace.json --format markdown --output trace.md
+chimeraforge report --kind fleet-trace --input fleet.json --format html --output fleet.html
+chimeraforge report --kind fleet-trace --input fleet.json --format svg --output fleet.svg
+```
+
+All original members/rows, missing states and separate native outcomes remain.
+Client active intervals include server queue, transport and cancellation drain,
+not server service time. The separate client queue is arrival-to-start.
+The closed public projection omits identities/metadata, preserves null versus zero
+and refuses whole over-limit output. Artifact exit0 is not a native performance
+pass. See [API, protected saves, bounds and browser proof limits](docs/trace-diagnostics.md).
+Available in Chimeraforge 0.86.0.
 
 ### `serve` -- local planning HTTP API
 

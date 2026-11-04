@@ -9,6 +9,80 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+**Unreleased 0.91.0 source** adds [continuous fleet export](fleet-exporter.md):
+fixed native polling, cached loopback gauges, all-member stale/failure views and
+owned API/OS CLI shutdown. Public installation remains 0.86.0.
+
+**Unreleased 0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md):
+all K/original N, native states/unknowns and complete static HTML/SVG/Markdown.
+
+**Unreleased 0.89.0 source** adds [native chat trace replay](chat-trace-replay.md):
+ordered text-role histories across ordinary/saved/fleet/campaign paths, explicit
+usage unknowns and complete private commitments. Public installation remains 0.86.0.
+
+**Unreleased 0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md):
+concrete settings, dated whole-instance quotes and native launch/Compose/Kubernetes
+exports/config verification without optimizer evidence or runtime claims.
+
+**Unreleased 0.87.0 source** adds opt-in [selected-batch inventory memory](inventory-check.md):
+saved B1 plus the compatible native active-sequence KV increment, with every
+original device slot retained. Public installation remains **0.86.0**.
+
+Chimeraforge **0.86.0** adds [strict native trace diagnostics](trace-diagnostics.md),
+retaining every ordinary row or original fleet member in complete static
+HTML/Markdown/SVG while preserving benchmark report defaults.
+
+Chimeraforge **0.85.0** adds [read-only original Kubernetes inspection](kubernetes-inspection.md),
+with independent intent, all original resources, separate native rollout and
+complete protected JSON/JUnit. Runtime credential-path guards remain private;
+unavailable or pending is distinct from known drift. Earlier active and passive
+measurement workflows remain available.
+
+Chimeraforge **0.84.0** adds [serial whole-original-fleet trace campaigns](fleet-trace-campaign.md),
+strict full-population receiving and complete native-comparison JSON/JUnit. K
+executions keep original N/routes/arrivals/global concurrency; all failed and
+unstarted slots remain. Earlier authenticated active measurements and passive
+fleet gates remain available.
+
+Chimeraforge **0.83.0** adds [whole-original-fleet passive SLO gates](fleet-monitor-gate.md),
+strict original-plan receiving, effective producer controls and complete bounded
+JSON/JUnit. It includes [authenticated active measurements](authenticated-active.md),
+available since 0.82.0.
+
+Chimeraforge **0.82.0** adds [authenticated active benchmarks and traces](authenticated-active.md), extending runtime-only secure connections and private input guards to native active measurements.
+
+Chimeraforge **0.81.0** adds [Kubernetes declarations and independent intent verification](kubernetes-deployment.md), with original logical members, native engine fidelity and a separate required hosted server-dry-run gate.
+
+Chimeraforge **0.80.0** adds [original-fleet regression gates](fleet-trace-gate.md), with closed source/population policy, native global metrics and guarded JSON/JUnit outputs.
+
+Chimeraforge **0.79.0** adds [original-fleet active trace replay](fleet-trace.md), with one native schedule, full original member coverage, per-ID secure connections and a strict receiving API.
+
+Chimeraforge **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
+
+Public CLI: **0.86.0**. The released features below are included in this version.
+
+Chimeraforge **0.77.0** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
+Chimeraforge 0.72.0 adds exact hardware alternatives to
+[frozen-model studies](planning-api.md#frozen-context-sensitivity).
+
+Chimeraforge 0.73.0 adds explicit GPU IDs and Compose host ports:
+[deployment contract, CLI and direct Python API](deployment.md#explicit-device-selection-and-host-ports).
+Default exports retain their count/port behavior.
+
+Chimeraforge 0.74.0 adds bounded homogeneous online vLLM/SGLang
+[Compose replica exports](deployment.md#homogeneous-compose-replicas) with complete
+explicit GPU groups/ports and manual endpoint targeting. No router/scaler or
+physical GPU verification is supplied. Single exports retain their existing behavior.
+
+Chimeraforge 0.75.0 adds [offline deployment verification](deployment-verification.md)
+with typed direct API and `deploy-verify`. It requires independent saved-plan/render
+intent and checks current-renderer JSON/companion consistency without runtime claims.
+
+Chimeraforge 0.76.0 adds [passive declared-fleet monitoring](fleet-monitoring.md)
+with typed async API and `monitor-fleet`. Original saved replica population, shared
+HTTP/time/body budgets, retained prefixes and cleanup remain explicit. Distinct
+URLs do not prove distinct processes, GPUs or independent capacity.
+
 - **[Installation](installation.md)** - install from PyPI, optional extras
 - **[Quick Start](quick_start.md)** - first run in minutes
 - **[Using the Planner](planning.md)** - `plan` / `suggest` / `measure` / `catalog`, end to end
@@ -17,6 +91,11 @@ planner's data came from; those guides are archived below.
 - **[Serial trace campaigns](trace-campaign.md)** - since 0.64.0, frozen ordered replica populations
 - **[Signed contributions and private replay](signed-contribution-v2.md)** - since 0.65.0, exact-byte signatures and explicit receiver trust
 - **[Frozen prediction scorecards](prediction-scorecards.md)** - since 0.66.0, explicit population and conditional native-rate error bands
+- **[Whole-campaign regression gates](trace-campaign-gates.md)** - since 0.67.0, complete declared replica populations and retained incomplete evidence
+- **[Plan-bound request traces](plan-bound-trace.md)** - since 0.68.0, frozen candidate and unchanged native trace bindings
+- **[Observed finite load points](trace-envelope.md)** - since 0.69.0, complete saved campaigns at finite declared cadences
+- **[Private prediction evidence bundles](prediction-bundles.md)** - since 0.70.0, original private inputs and explicit scoring policy
+- **[Signed native regression gates](signed-native-gates.md)** - since 0.71.0, exact signatures and explicit receiver trust before comparison
 
 ```bash
 pip install chimeraforge
@@ -25,11 +104,13 @@ chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-25 commands: `plan`, `check`, `bundle`, `study`, `deploy`, `suggest`, `measure`,
-`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-campaign`, `gate`, `refit`, `compare`,
-`score`, `eval`, `report`, `workload`, `monitor`, `doctor`, `contribute`, `mcp`, `serve`.
-Run `chimeraforge --help` or `chimeraforge <cmd> --help`. The candidate adds
-`gate --kind trace`; benchmark remains the default.
+32 commands in Chimeraforge 0.86.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `deploy-inspect`, `inventory-check`, `suggest`, `measure`,
+`validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-fleet-campaign`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
+`score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `monitor-fleet-exporter`, `doctor`, `contribute`, `mcp`, `serve`.
+Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
+compares saved traces; `gate --kind trace-campaign` compares whole campaigns;
+`gate --kind fleet-trace` compares two complete original-fleet executions.
+Benchmark gating remains the default.
 
 ## Project Information
 
@@ -75,5 +156,4 @@ The canonical technical-report archive lives in `outputs/publish_ready/reports/`
 - Commands assume execution from the repository root unless noted
 - Links are relative to this `docs/` directory
 
-Current CLI: **0.66.0**. The linked features are included in this version. See the
-[Changelog](../CHANGELOG.md) for version history.
+See the [Changelog](../CHANGELOG.md) for version history.

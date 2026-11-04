@@ -1,0 +1,83 @@
+{
+  "controls": [
+    {
+      "kind": "trace",
+      "format": "html",
+      "api_cli_raw_byte_parity": true
+    },
+    {
+      "kind": "trace",
+      "format": "svg",
+      "api_cli_raw_byte_parity": true
+    },
+    {
+      "kind": "trace",
+      "format": "markdown",
+      "api_cli_raw_byte_parity": true
+    },
+    {
+      "kind": "fleet-trace",
+      "format": "html",
+      "api_cli_raw_byte_parity": true
+    },
+    {
+      "kind": "fleet-trace",
+      "format": "svg",
+      "api_cli_raw_byte_parity": true
+    },
+    {
+      "kind": "fleet-trace",
+      "format": "markdown",
+      "api_cli_raw_byte_parity": true
+    }
+  ],
+  "adverse_controls": [
+    "plan-envelope",
+    "fingerprint",
+    "raw-cli-source-alias",
+    "lowered-whole-output-bound"
+  ],
+  "edge_controls": [
+    {
+      "case": "long",
+      "rows": 2,
+      "members": 0,
+      "api_cli_raw_byte_parity": true
+    },
+    {
+      "case": "unicode",
+      "rows": 6,
+      "members": 0,
+      "api_cli_raw_byte_parity": true
+    }
+  ],
+  "original_members": 3,
+  "requests": 6,
+  "row_states": 5,
+  "zero_assigned_members": 1,
+  "planned_only_retained": true,
+  "source_aliases_refused": true,
+  "raw_cli_byte_parity": true,
+  "scope": "synthetic native statuses and timings; no traffic or browser execution",
+  "captured_at": "2026-10-31T07:22:52.612412+00:00",
+  "source_profile": "editable source; installed and browser proofs separate",
+  "source_sha256": {
+    "src/chimeraforge/report/trace.py": "662364ce0f1b6afb5320d530b3053e0b7bc7b74a337132401c28549b158605d2",
+    "src/chimeraforge/report/trace_inputs.py": "29b9291d2c9680a1a2a1835a2695d8124fe918bcdff6b40ebc2fe91a69d2a6c5",
+    "src/chimeraforge/report/trace_view.py": "e75fe6e591bf40b726a0f8c17c2b989524a04af0cb6959c980e51168fb25c2e7",
+    "src/chimeraforge/report/trace_formats.py": "6f5a75921d32f8a940d442929139f82f09342220449ae98bcb4d3b0ed8bdf94e",
+    "src/chimeraforge/commands/report.py": "c0dd8bcd615c8cc70f94eeccf9df20469e5a9893053157689cbc74e988bbaeac",
+    "src/chimeraforge/api.py": "6711073c8d85482e96dcff532d6b71bc7fb97c5d6089e09acf1116de09fb032b",
+    "scripts/ci_trace_report.py": "69d59e3103160d20fd31c0838c6cce4f9e4d72a559cc215d33b308c8c63fac10",
+    "scripts/ci_trace_report_browser.py": "efc5850e9786882b2b23e2deeddbdbc0b4078d8674b67748c37bf8282d71eecc",
+    "src/chimeraforge/bench/trace.py": "a6ebe54417638152f3f2fa3d3222480ad553d9004761943ee95feb207ab11adc",
+    "src/chimeraforge/bench/trace_gate_inputs.py": "6467126bec43cb9834b282449f3e4c5d6e361944752c0c960eb183ebf8912007",
+    "src/chimeraforge/bench/gate_inputs.py": "4b51316de3435caac2cc6ce00b3d602f1a7e8724ecfed045cda7e568fb7d3e94",
+    "src/chimeraforge/bench/fleet_trace_receipt.py": "53a479bcece8732c8e177ce60c7725a26916bb81bffa28914c80a5a0802c718e",
+    "src/chimeraforge/bench/fleet_trace_types.py": "e921891d880b58ee66b10662b7033ef9e4689ab3ece30ef77db2cdb914e7d9b3",
+    "src/chimeraforge/planner/replay.py": "8f25501e440d65aea38be0fa9267fdff7b919b646e63c976cc079a7e4ad2846a",
+    "scripts/ci_fleet_trace_gate.py": "e92b018cffaaa47ccf8804a36df155c995aa8f1e6676d24571928989ead4ac0d",
+    "scripts/ci_installed_acceptance.py": "3e52491fb0ba8cda90dc6b206c2ba75a6b395f22c7f651f7a5a367e87e8eeafd",
+    "scripts/ci_distributions.py": "8613392779f772a34c6d179f917d2d6db47c7174fa367f93c57e39038da12a56"
+  }
+}

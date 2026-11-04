@@ -1,6 +1,6 @@
 # Observed finite load points
 
-This is the unreleased 0.69.0 candidate. Published 0.66.0 does not include it.
+Available since **Chimeraforge 0.69.0**.
 The receiver assesses whole saved serial campaigns offline; it never generates
 traffic, loads a model, replaces failures or interpolates between cells.
 

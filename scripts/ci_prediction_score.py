@@ -302,9 +302,13 @@ def accept_cpu(cwd: Path, env: dict, plan: Path, index: int, receipt: Path) -> d
     assert report["rows"][0]["state"] == "binding_mismatch"
     assert "hardware" in report["rows"][0]["reasons"]
     assert receipt.read_bytes() == raw
+    from ci_prediction_bundle import accept_cpu as accept_cpu_bundle
+
+    bundle_receipt = accept_cpu_bundle(cwd, env, plan, index, receipt)
     return {
         "exit_code": 3,
         "received": 1,
         "comparable": 0,
         "evidence_class": "actual hosted CPU receipt; GPU prediction remains ineligible",
+        "prediction_bundle": bundle_receipt,
     }
