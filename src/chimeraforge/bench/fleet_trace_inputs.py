@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceInput, TraceSource
+
 import asyncio
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
@@ -16,7 +18,7 @@ import httpx
 
 from chimeraforge.bench import plan_trace
 from chimeraforge.bench.fleet_trace_types import MAX_ROUTE_BYTES, TraceRoute
-from chimeraforge.bench.trace_workload import TraceRequest, number
+from chimeraforge.bench.trace_workload import TraceRequest as TraceRequest, number
 from chimeraforge.fleet_monitor_types import (
     MAX_CLEANUP_SECONDS,
     MAX_ENDPOINTS,
@@ -94,7 +96,7 @@ def admit_endpoints(values: tuple[FleetEndpoint, ...], count: int) -> tuple[Flee
 
 def hold_routes(
     source: list[TraceRoute] | str | Path,
-    requests: tuple[TraceRequest, ...],
+    requests: tuple[TraceInput, ...],
     endpoints: tuple[FleetEndpoint, ...],
 ) -> tuple[tuple[TraceRoute, ...], dict, tuple[Path, ...]]:
     from chimeraforge.api import PlanError, _unique_object
@@ -150,7 +152,7 @@ def hold_routes(
 
 def prepare(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,

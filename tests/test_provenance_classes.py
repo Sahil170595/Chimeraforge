@@ -237,7 +237,11 @@ class TestMcpPayloadRoundTrip:
         assert isinstance(anchor["ratio"], float)
 
     def test_every_provenance_value_is_a_plain_json_type(self):
-        for value in _candidate_summary(_plan("B200 180GB"))["provenance"].values():
+        payload = _candidate_summary(_plan("B200 180GB"))
+        original = payload["provenance"]
+        roundtrip = json.loads(json.dumps(payload, allow_nan=False))["provenance"]
+        assert roundtrip == original
+        for value in original.values():
             assert isinstance(value, (str, dict))
-            if isinstance(value, dict):
-                assert all(isinstance(v, (str, float, int, bool)) for v in value.values())
+        assert isinstance(original["vram"]["memory_formula"], dict)
+        assert roundtrip["vram"]["memory_formula"] == original["vram"]["memory_formula"]

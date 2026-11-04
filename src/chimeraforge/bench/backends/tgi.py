@@ -157,6 +157,29 @@ class TGIBackend(Backend):
             on_first_output,
         )
 
+    async def chat_observed(
+        self,
+        model: str,
+        messages: list[dict],
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        from chimeraforge.bench.backends._chat_stream import observe_chat
+
+        return await observe_chat(
+            await self._get_client(),
+            f"{self.base_url}/v1/chat/completions",
+            {
+                "model": model,
+                "messages": messages,
+                "max_tokens": options.get("max_tokens", DEFAULT_MAX_TOKENS),
+                "temperature": options.get("temperature", 0.0),
+            },
+            self._clock,
+            REQUEST_TIMEOUT_S,
+            on_first_output,
+        )
+
     async def get_version(self) -> str | None:
         """GET /info -> the server ``Info``'s ``version`` (TGI v3.3.7 source), else None."""
         client = await self._get_client()

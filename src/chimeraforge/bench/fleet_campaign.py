@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceSource
+
 import asyncio
 from dataclasses import replace
 import logging
@@ -27,7 +29,12 @@ from chimeraforge.bench.trace_campaign import (
     MAX_CAMPAIGN_REQUESTS,
     MAX_REPLICATES,
 )
-from chimeraforge.bench.trace_workload import MAX_TIMEOUT_SECONDS, TraceRequest, descriptor, number
+from chimeraforge.bench.trace_workload import (
+    MAX_TIMEOUT_SECONDS,
+    TraceRequest as TraceRequest,
+    descriptor,
+    number,
+)
 from chimeraforge.fleet_monitor_types import FleetEndpoint
 from chimeraforge.monitor_connection import MonitorConnection
 from chimeraforge.plan_check import identity
@@ -203,7 +210,7 @@ async def _execution(
 
 def prepare_campaign(
     saved: Any,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,
@@ -366,7 +373,7 @@ async def _replay_campaign_prepared(
 
 async def replay_fleet_trace_campaign(
     saved: Any,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,

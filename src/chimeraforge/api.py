@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceSource
+
 import copy
 import asyncio
 import hashlib
 import json
 import math
 import types
+from contextlib import AbstractAsyncContextManager
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from pathlib import Path
 import threading
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING, Literal
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
@@ -21,7 +24,11 @@ from chimeraforge.bench.plan_trace import PlanTraceReplay
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
 from chimeraforge.bench.fleet_gate_inputs import FleetTraceGatePolicy as FleetTraceGatePolicy
-from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
+from chimeraforge.bench.trace import TraceReplay, TraceRequest as TraceRequest, TraceSLO
+from chimeraforge.bench.trace_workload import (
+    ChatMessage as ChatMessage,
+    ChatTraceRequest as ChatTraceRequest,
+)
 from chimeraforge.bench.fleet_trace_receipt import load_fleet_trace as load_fleet_trace
 from chimeraforge.bench.fleet_trace_types import FleetTraceReplay as FleetTraceReplay
 from chimeraforge.bench.fleet_trace_types import TraceRoute as TraceRoute
@@ -45,6 +52,8 @@ from chimeraforge.bench.trace_workload import (
 from chimeraforge.contribution_review import ContributionReceipt
 from chimeraforge.signed_contribution import SignedContribution, SignedContributionReceipt
 
+from chimeraforge.report.trace import TraceReport as TraceReport
+
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
 from chimeraforge.monitor_connection import MonitorConnection as MonitorConnection
@@ -53,6 +62,12 @@ from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
 from chimeraforge.fleet_monitor_types import FleetMonitorError as FleetMonitorError
 from chimeraforge.fleet_monitor_types import FleetMonitorExportError as FleetMonitorExportError
+from chimeraforge.fleet_exporter_types import (
+    FleetExporterConfig as FleetExporterConfig,
+    FleetExporterSnapshot as FleetExporterSnapshot,
+    FleetExporterError as FleetExporterError,
+)
+from chimeraforge.fleet_exporter import FleetExporter as FleetExporter
 from chimeraforge.fleet_monitor_gate_types import (
     FleetMonitorGate as FleetMonitorGate,
     FleetMonitorGatePolicy as FleetMonitorGatePolicy,
@@ -64,8 +79,22 @@ from chimeraforge.inventory_types import (
     InventoryDevice as InventoryDevice,
     InventoryObservation as InventoryObservation,
     InventorySlot as InventorySlot,
+    SelectedBatchBaseline as SelectedBatchBaseline,
+    MemoryBasis as MemoryBasis,
 )
 from chimeraforge.kubernetes_options import KubernetesOptions as KubernetesOptions
+from chimeraforge.serving_declaration import (
+    ServingRequest as ServingRequest,
+    ServingDeclaration as ServingDeclaration,
+    ServingDeclarationError as ServingDeclarationError,
+    declare_serving as declare_serving,
+    load_serving_declaration as load_serving_declaration,
+)
+from chimeraforge.serving_quote import ServingQuote as ServingQuote
+from chimeraforge.kubernetes_inspection_types import (
+    KubernetesInspection as KubernetesInspection,
+    KubernetesInspectionError as KubernetesInspectionError,
+)
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
@@ -78,6 +107,8 @@ from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inp
 
 if TYPE_CHECKING:
     from chimeraforge.deployment_verify import DeploymentVerification
+    from chimeraforge.deploy import DeploymentExport
+    from chimeraforge.serving_export import ServingVerification
 
 SCHEMA_VERSION = 2
 MAX_PLAN_BYTES = 8 * 1024 * 1024
@@ -92,6 +123,54 @@ MODEL_OVERRIDE_TYPES = {
 
 class PlanError(ValueError):
     """Invalid request, unavailable planning input, or invalid saved plan."""
+
+
+async def inspect_kubernetes_deployment(
+    saved: PlanArtifact | str | Path,
+    *,
+    image: str,
+    kubeconfig: str | Path,
+    context: str,
+    kubernetes: KubernetesOptions | None = None,
+    candidate_index: int = 0,
+    model: str | None = None,
+    kubectl: str | Path = "kubectl",
+    timeout_s: float = 30,
+    request_timeout_s: float = 10,
+    concurrency: int = 4,
+    cleanup_timeout_s: float = 2,
+    stop_event: asyncio.Event | None = None,
+) -> KubernetesInspection:
+    """GET original named resources with independently supplied declaration intent."""
+    from chimeraforge.kubernetes_inspection import inspect_kubernetes_deployment as inspect
+
+    return await inspect(
+        saved,
+        image=image,
+        kubeconfig=kubeconfig,
+        context=context,
+        kubernetes=kubernetes,
+        candidate_index=candidate_index,
+        model=model,
+        kubectl=kubectl,
+        timeout_s=timeout_s,
+        request_timeout_s=request_timeout_s,
+        concurrency=concurrency,
+        cleanup_timeout_s=cleanup_timeout_s,
+        stop_event=stop_event,
+    )
+
+
+def write_kubernetes_inspection(
+    result: KubernetesInspection,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Preflight complete bounded JSON/JUnit before protected per-file writes."""
+    from chimeraforge.kubernetes_inspection_output import write_kubernetes_inspection as write
+
+    write(result, out=out, junit=junit)
 
 
 def create_prediction_bundle(
@@ -477,6 +556,8 @@ def snapshot(request: PlanRequest, result: PlanResult) -> PlanArtifact:
 
 def plan(request: PlanRequest) -> PlanArtifact:
     """Plan with the same search as CLI/MCP, through a strict public boundary."""
+    if not isinstance(request, PlanRequest):
+        raise PlanError("optimizer requires a PlanRequest, not a serving declaration")
     try:
         request.validate()
         return snapshot(request, run_plan(**asdict(request)))
@@ -631,6 +712,69 @@ def check_plan(
     return check(artifact, allow_network=allow_network, hf_token=hf_token)
 
 
+def quote_serving(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    cloud: str | None = None,
+    instance: str | None = None,
+    region: str | None = None,
+) -> ServingQuote:
+    """Quote dated whole instances without predicting capacity or assigning hosts."""
+    from chimeraforge.serving_quote import quote_serving as quote
+
+    return quote(declaration, cloud=cloud, instance=instance, region=region)
+
+
+def export_serving_declaration(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    format: str,
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
+) -> DeploymentExport:
+    """Render concrete operator intent through native config-only projections."""
+    from chimeraforge.serving_export import export_serving_declaration as export
+
+    return export(
+        declaration,
+        format=format,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+        kubernetes=kubernetes,
+    )
+
+
+def verify_serving_declaration(
+    declaration: ServingDeclaration | str | Path,
+    config_path: str | Path,
+    *,
+    format: str = "compose",
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
+) -> ServingVerification:
+    """Compare configuration with held original operator intent using the native verifier."""
+    from chimeraforge.serving_export import verify_serving_declaration as verify
+
+    return verify(
+        declaration,
+        config_path,
+        format=format,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+        kubernetes=kubernetes,
+    )
+
+
 def study_plan(
     saved: PlanArtifact | PlanBundle | str | Path, scenarios: list[PlanScenario]
 ) -> PlanStudy:
@@ -641,7 +785,7 @@ def study_plan(
 
 
 async def replay_trace(
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     model: str,
     backend: str = "ollama",
@@ -672,7 +816,7 @@ async def replay_trace(
 
 async def replay_plan_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     candidate_index: int = 0,
     model: str | None = None,
@@ -733,7 +877,7 @@ def write_fleet_trace_campaign_gate(
 
 async def replay_fleet_trace_campaign(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,
@@ -771,7 +915,7 @@ async def replay_fleet_trace_campaign(
 
 async def replay_fleet_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     endpoints: tuple[FleetEndpoint, ...],
     routes: list[TraceRoute] | str | Path,
     *,
@@ -804,7 +948,7 @@ async def replay_fleet_trace(
 
 
 async def replay_trace_campaign(
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     model: str,
     backend: str = "ollama",
@@ -917,8 +1061,9 @@ async def check_inventory(
     gpu_devices: list[str] | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
     timeout: float = 10.0,
+    memory_basis: Literal["batch-one", "selected-batch"] = "batch-one",
 ) -> InventoryCheck:
-    """Resolve queried selectors and compare reported memory with a saved B1 baseline."""
+    """Compare original selectors with saved B1 or opt-in selected resident memory."""
     from chimeraforge.inventory_check import check_inventory as check
 
     return await check(
@@ -927,6 +1072,7 @@ async def check_inventory(
         gpu_devices=gpu_devices,
         replica_gpu_devices=replica_gpu_devices,
         timeout=timeout,
+        memory_basis=memory_basis,
     )
 
 
@@ -947,6 +1093,22 @@ async def monitor_fleet(
         candidate_index=candidate_index,
         stop_event=stop_event,
         connections=connections,
+    )
+
+
+def serve_fleet_exporter(
+    saved: PlanArtifact | str | Path,
+    request: FleetMonitorRequest,
+    *,
+    config: FleetExporterConfig = FleetExporterConfig(),
+    candidate_index: int = 0,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> AbstractAsyncContextManager[FleetExporter]:
+    """Own a fixed-config loopback cached exporter; scrapes never poll backends."""
+    from chimeraforge.fleet_exporter import serve_fleet_exporter as serve
+
+    return serve(
+        saved, request, config=config, candidate_index=candidate_index, connections=connections
     )
 
 
@@ -1079,3 +1241,12 @@ async def replay_contribution(
         rate=rate,
         concurrency=concurrency,
     )
+
+
+def render_trace_report(
+    source: object, *, kind: str = "trace", format: str = "html", title: str = "Trace diagnostics"
+) -> TraceReport:
+    """Render strict native trace or whole-campaign diagnostics without changing outcomes."""
+    from chimeraforge.report.trace import render_trace_report as render
+
+    return render(source, kind=kind, format=format, title=title)

@@ -13,18 +13,28 @@ MAX_ROUTE_BYTES = 1024 * 1024
 MAX_FLEET_RECEIPT_BYTES = MAX_TOTAL_BYTES
 
 
-def _admit_receipt(data: dict) -> None:
+def _admit_receipt(data: dict, limit: int | None = None) -> None:
     """Bound the existing pretty writer, including its portable newline upper bound."""
     from chimeraforge.api import PlanError
 
+    # Resolve the outer bound now; explicit child profiles retain their own limits.
+    maximum = MAX_FLEET_RECEIPT_BYTES if limit is None else limit
     try:
-        encoded = (json.dumps(data, indent=2, allow_nan=False) + "\n").replace("\n", "\r\n")
-        if len(encoded.encode("utf-8")) > MAX_FLEET_RECEIPT_BYTES:
+        if type(maximum) is not int or not 0 < maximum <= MAX_TOTAL_BYTES:
             raise ValueError
+        remaining = maximum - 2  # The existing writer's final newline, portably CRLF.
+        for chunk in json.JSONEncoder(indent=2, allow_nan=False).iterencode(data):
+            size = len(chunk.replace("\n", "\r\n").encode("utf-8"))
+            if size > remaining:
+                raise ValueError
+            remaining -= size
     except (ValueError, TypeError, OverflowError, RecursionError):
-        raise PlanError(
+        message = (
             "original-fleet trace receipt exceeds its bounded writer contract"
-        ) from None
+            if maximum == MAX_FLEET_RECEIPT_BYTES
+            else "trace receipt exceeds its bounded writer byte limit"
+        )
+        raise PlanError(message) from None
 
 
 @dataclass(frozen=True)
@@ -41,6 +51,11 @@ class FleetTraceReplay:
     _protected_paths: tuple[Path, ...] = field(default=(), repr=False)
 
     def to_dict(self) -> dict:
+        from chimeraforge.bench.fleet_trace_receipt import native_projection
+
+        _admit_receipt(self._data)
+        if type(self._data.get("native_trace")) is dict:
+            native_projection(self._data["native_trace"])
         return copy.deepcopy(self._data)
 
     @property

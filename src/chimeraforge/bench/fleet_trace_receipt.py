@@ -107,11 +107,18 @@ def native_projection(native: dict) -> dict:
         or type(native["requests"]) is not list
     ):
         _fail()
-    projected = copy.deepcopy(native)
-    for row in projected["requests"]:
+    projected = {key: value for key, value in native.items() if key != "requests"}
+    projected["requests"] = []
+    for row in native["requests"]:
         if type(row) is not dict or set(row) != NATIVE_ROW | {"endpoint_id"}:
             _fail()
-        del row["endpoint_id"]
+        projected["requests"].append(
+            {key: value for key, value in row.items() if key != "endpoint_id"}
+        )
+    from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+    _admit_receipt(projected, MAX_RECEIPT_BYTES)
+    projected = copy.deepcopy(projected)
     # This compatibility fingerprint is private validation, not origin authentication.
     projected["fingerprint"] = digest({k: v for k, v in projected.items() if k != "fingerprint"})
     return projected
@@ -234,6 +241,7 @@ def make_report(
     }
     report["fingerprint"] = digest(report)
     _admit_receipt(report)
+    native_projection(native)
     return report
 
 

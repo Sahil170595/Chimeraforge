@@ -14,7 +14,7 @@ from chimeraforge.fleet_monitor_types import MAX_ENDPOINTS, MAX_ID_CHARS, MAX_UR
 
 def trace_fleet(
     workload: Path = typer.Argument(
-        ..., help="Private native request JSON; prompts reach endpoints."
+        ..., help="Private native JSON prompts or chat histories sent to endpoints."
     ),
     from_plan: Path = typer.Option(..., "--from-plan"),
     endpoint: list[str] = typer.Option(

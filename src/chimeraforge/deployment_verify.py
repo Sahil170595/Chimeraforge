@@ -14,6 +14,7 @@ from chimeraforge import __version__
 from chimeraforge.api import MAX_PLAN_BYTES, PlanArtifact, PlanError, artifact_from_dict
 from chimeraforge.deploy import (
     DeploymentError,
+    DeploymentExport,
     MAX_EXPORT_GPUS_PER_REPLICA,
     MAX_GPU_IDENTIFIER_CHARS,
     export_deployment,
@@ -325,66 +326,7 @@ def verify_deployment(
             replica_gpu_devices=replica_gpu_devices,
             replica_host_ports=replica_host_ports,
         )
-        expected_raw = expected.content.encode("utf-8")
-        expected_data = _json(expected_raw, MAX_CONFIG_BYTES)
-        actual_raw = _read(config, MAX_CONFIG_BYTES)
-        actual_data = _json(actual_raw, MAX_CONFIG_BYTES)
-        if format == "kubernetes":
-            _kubernetes_document(actual_data)
-        buffers = [source_raw, expected_raw, actual_raw]
-        _budget(*buffers)
-        companions: list[DeploymentCompanion] = []
-        if expected.files and set(expected.files) != {"Modelfile"}:
-            _fail("renderer companion set is unsupported")
-        for name, content in expected.files.items():
-            path = config.parent / name
-            _aliases([config, path, *([source_path] if source_path else [])])
-            companion_expected = content.encode("utf-8")
-            if len(companion_expected) > MAX_COMPANION_BYTES:
-                _fail("expected companion exceeds byte limit")
-            try:
-                companion_actual = _read(path, MAX_COMPANION_BYTES)
-            except FileNotFoundError:
-                companion_actual = None
-            buffers.extend([companion_expected, companion_actual or b""])
-            _budget(*buffers)
-            state: Literal["match", "missing", "drift"] = (
-                "missing"
-                if companion_actual is None
-                else "match"
-                if companion_actual == companion_expected
-                else "drift"
-            )
-            companions.append(
-                DeploymentCompanion(
-                    name,
-                    state,
-                    _sha(companion_expected),
-                    _sha(companion_actual) if companion_actual is not None else None,
-                )
-            )
-        changes, count, truncated = _differences(expected_data, actual_data)
-        for companion in companions:
-            if companion.state != "match":
-                count += 1
-                if len(changes) < MAX_CHANGES:
-                    changes.append(DeploymentChange("/companions/Modelfile", companion.state))
-                else:
-                    truncated = True
-        return DeploymentVerification(
-            "drift" if count else "match",
-            5 if count else 0,
-            __version__,
-            expected.backend,
-            "file_bytes" if source_path is not None else "artifact_snapshot",
-            _sha(source_raw),
-            _sha(actual_raw),
-            _sha(expected_raw),
-            tuple(changes),
-            count,
-            truncated,
-            tuple(companions),
-        )
+        return _verify_expected(expected, config, source_raw, source_path, format=format)
     except DeploymentVerificationError:
         raise
     except (
@@ -400,3 +342,75 @@ def verify_deployment(
     ):
         # Native/parser errors may contain private keys, identities or paths.
         raise DeploymentVerificationError("invalid deployment verification input") from None
+
+
+def _verify_expected(
+    expected: DeploymentExport,
+    config: Path,
+    source_raw: bytes,
+    source_path: Path | None,
+    *,
+    format: str,
+) -> DeploymentVerification:
+    """Shared bounded config comparison; source admission and intent stay independent."""
+    _aliases([config, *([source_path] if source_path else [])])
+    expected_raw = expected.content.encode("utf-8")
+    expected_data = _json(expected_raw, MAX_CONFIG_BYTES)
+    actual_raw = _read(config, MAX_CONFIG_BYTES)
+    actual_data = _json(actual_raw, MAX_CONFIG_BYTES)
+    if format == "kubernetes":
+        _kubernetes_document(actual_data)
+    buffers = [source_raw, expected_raw, actual_raw]
+    _budget(*buffers)
+    companions: list[DeploymentCompanion] = []
+    if expected.files and set(expected.files) != {"Modelfile"}:
+        _fail("renderer companion set is unsupported")
+    for name, content in expected.files.items():
+        path = config.parent / name
+        _aliases([config, path, *([source_path] if source_path else [])])
+        companion_expected = content.encode("utf-8")
+        if len(companion_expected) > MAX_COMPANION_BYTES:
+            _fail("expected companion exceeds byte limit")
+        try:
+            companion_actual = _read(path, MAX_COMPANION_BYTES)
+        except FileNotFoundError:
+            companion_actual = None
+        buffers.extend([companion_expected, companion_actual or b""])
+        _budget(*buffers)
+        state: Literal["match", "missing", "drift"] = (
+            "missing"
+            if companion_actual is None
+            else "match"
+            if companion_actual == companion_expected
+            else "drift"
+        )
+        companions.append(
+            DeploymentCompanion(
+                name,
+                state,
+                _sha(companion_expected),
+                _sha(companion_actual) if companion_actual is not None else None,
+            )
+        )
+    changes, count, truncated = _differences(expected_data, actual_data)
+    for companion in companions:
+        if companion.state != "match":
+            count += 1
+            if len(changes) < MAX_CHANGES:
+                changes.append(DeploymentChange("/companions/Modelfile", companion.state))
+            else:
+                truncated = True
+    return DeploymentVerification(
+        "drift" if count else "match",
+        5 if count else 0,
+        __version__,
+        expected.backend,
+        "file_bytes" if source_path is not None else "artifact_snapshot",
+        _sha(source_raw),
+        _sha(actual_raw),
+        _sha(expected_raw),
+        tuple(changes),
+        count,
+        truncated,
+        tuple(companions),
+    )
