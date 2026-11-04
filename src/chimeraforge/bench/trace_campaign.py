@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceInput, TraceSource
+
 import asyncio
 import copy
 from dataclasses import asdict, dataclass, field
@@ -15,7 +17,7 @@ from chimeraforge.bench.trace_workload import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TRACE_TIMEOUT_SECONDS,
     MAX_TIMEOUT_SECONDS,
-    TraceRequest,
+    TraceRequest as TraceRequest,
     TraceSLO,
     descriptor,
     load_workload,
@@ -39,6 +41,14 @@ class TraceCampaign:
     _protected_paths: tuple[Path, ...] = field(default=(), repr=False)
 
     def to_dict(self) -> dict:
+        from chimeraforge.bench.fleet_trace_types import _admit_receipt
+        from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+        from chimeraforge.bench.trace_campaign_inputs import MAX_CAMPAIGN_BYTES
+
+        _admit_receipt(self._data, MAX_CAMPAIGN_BYTES)
+        for slot in self._data.get("replicas", []):
+            if type(slot) is dict and type(slot.get("receipt")) is dict:
+                _admit_receipt(slot["receipt"], MAX_RECEIPT_BYTES)
         return copy.deepcopy(self._data)
 
     def save(self, path: str | Path) -> None:
@@ -50,7 +60,7 @@ class TraceCampaign:
 
 
 def _prepare(
-    source: list[TraceRequest] | str | Path,
+    source: TraceSource,
     *,
     model: str,
     backend: str,
@@ -62,7 +72,7 @@ def _prepare(
     campaign_timeout: float,
     slos: TraceSLO,
     stop_event: asyncio.Event | None,
-) -> tuple[list[TraceRequest], dict, tuple[Path, ...]]:
+) -> tuple[list[TraceInput], dict, tuple[Path, ...]]:
     from chimeraforge import __version__
     from chimeraforge.api import PlanError
 
@@ -156,7 +166,7 @@ async def _drain_waiter(waiter: asyncio.Task | None) -> None:
 
 
 async def _replicate(
-    rows: list[TraceRequest],
+    rows: list[TraceInput],
     manifest: dict,
     options: dict,
     caller_stop: asyncio.Event | None,
@@ -210,7 +220,7 @@ async def _replicate(
 
 
 async def replay_campaign(
-    source: list[TraceRequest] | str | Path,
+    source: TraceSource,
     *,
     model: str,
     backend: str = "ollama",
@@ -337,4 +347,8 @@ async def replay_campaign(
         ),
     }
     report["fingerprint"] = digest(report)
+    from chimeraforge.bench.fleet_trace_types import _admit_receipt
+    from chimeraforge.bench.trace_campaign_inputs import MAX_CAMPAIGN_BYTES
+
+    _admit_receipt(report, MAX_CAMPAIGN_BYTES)
     return TraceCampaign(report, protected)

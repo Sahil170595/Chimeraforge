@@ -23,6 +23,7 @@ from chimeraforge.planner.launch import (
 )
 from chimeraforge.planner.resolver import ModelSpec, SOURCE_HF, SOURCE_OLLAMA
 from chimeraforge.kubernetes_options import KubernetesOptions
+from chimeraforge.serving_target import ServingTarget
 
 FORMATS = ("compose", "systemd", "launchd", "modelfile", "kubernetes")
 MAX_EXPORT_GPUS_PER_REPLICA = 64
@@ -179,7 +180,11 @@ def _model_identity(
 
 
 def _validate_fidelity(
-    candidate: Candidate, spec: ModelSpec | None, inputs: dict, platform: str, format: str
+    candidate: Candidate | ServingTarget,
+    spec: ModelSpec | None,
+    inputs: dict,
+    platform: str,
+    format: str,
 ) -> None:
     if type(candidate.n_agents) is not int or not 1 <= candidate.n_agents <= MAX_REPLICAS:
         raise DeploymentError(f"replica population must be between 1 and {MAX_REPLICAS}")
@@ -250,7 +255,13 @@ def _validate_fidelity(
 
 
 def _hf_argv(
-    candidate: Candidate, spec: ModelSpec | None, model: str, inputs: dict, host: str
+    candidate: Candidate | ServingTarget,
+    spec: ModelSpec | None,
+    model: str,
+    inputs: dict,
+    host: str,
+    *,
+    claimed_revision: str | None = None,
 ) -> tuple[list[str], list[str]]:
     backend = candidate.backend
     context = str(inputs["context_length"])
@@ -356,7 +367,13 @@ def _hf_argv(
         raise DeploymentError(
             "this backend's implicit KV dtype does not establish the planned fp16 cache; replan q8"
         )
-    if spec and spec.checkpoint:
+    if claimed_revision is not None:
+        argv += ["--revision", claimed_revision]
+        notes.append(
+            "Revision is an operator claim; model/config/weight bytes were not "
+            "resolved or verified."
+        )
+    elif spec and spec.checkpoint:
         argv += ["--revision", spec.checkpoint["resolved_revision"]]
         notes.append(
             "HF commit is pinned; config bytes and declared LFS metadata do not verify "
@@ -431,7 +448,7 @@ def _device_selection(devices: list[str] | None, count: int) -> list[str] | None
 
 
 def _replica_device_selection(
-    candidate: Candidate, groups: list[list[str]] | None
+    candidate: Candidate | ServingTarget, groups: list[list[str]] | None
 ) -> list[list[str]]:
     if candidate.n_agents == 1:
         raise DeploymentError("replica matrices require a multi-replica saved candidate")
@@ -456,7 +473,7 @@ def _replica_device_selection(
 
 
 def _replica_layout(
-    candidate: Candidate,
+    candidate: Candidate | ServingTarget,
     groups: list[list[str]] | None,
     ports: list[int] | None,
 ) -> tuple[list[list[str]], list[int]] | None:
@@ -480,13 +497,15 @@ def _replica_layout(
 
 
 def _compose_service(
-    candidate: Candidate,
+    candidate: Candidate | ServingTarget,
     argv: list[str],
     env: dict[str, str],
     image: str,
     fingerprint: str,
     devices: list[str] | None,
     host_port: int | None,
+    *,
+    declaration: bool = False,
 ) -> dict[str, Any]:
     entry_length = {"vllm": 2, "sglang": 3, "tgi": 1, "ollama": 2}[candidate.backend]
     reservation: dict[str, Any] = {"driver": "nvidia"}
@@ -502,7 +521,11 @@ def _compose_service(
         "ports": [f"127.0.0.1:{published_port}:{_PORTS[candidate.backend]}"],
         "restart": "unless-stopped",
         "init": True,
-        "labels": {"org.chimeraforge.plan-fingerprint": fingerprint},
+        "labels": {
+            "org.chimeraforge.declaration-fingerprint"
+            if declaration
+            else "org.chimeraforge.plan-fingerprint": fingerprint
+        },
         "deploy": {"resources": {"reservations": {"devices": [reservation]}}},
     }
     if argv[entry_length:]:

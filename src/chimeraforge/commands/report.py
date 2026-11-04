@@ -48,8 +48,14 @@ def report(
         "--json",
         help="Output report metadata as JSON.",
     ),
-    kind: str = typer.Option("benchmark", "--kind", help="benchmark, trace or fleet-trace."),
-    input_path: list[str] = typer.Option(None, "--input", help="One strict native trace receipt."),
+    kind: str = typer.Option(
+        "benchmark",
+        "--kind",
+        help="benchmark, trace, fleet-trace, trace-campaign or fleet-trace-campaign.",
+    ),
+    input_path: list[str] = typer.Option(
+        None, "--input", help="One complete strict native trace or campaign receipt."
+    ),
     verbose: bool = typer.Option(
         False,
         "--verbose",
@@ -68,7 +74,7 @@ def report(
             not _defaulted(ctx, name) for name in ("results_dir", "results_files")
         )
         if (
-            kind not in {"trace", "fleet-trace"}
+            kind not in {"trace", "fleet-trace", "trace-campaign", "fleet-trace-campaign"}
             or not input_path
             or len(input_path) != 1
             or legacy_selectors

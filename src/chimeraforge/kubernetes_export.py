@@ -7,6 +7,7 @@ import json
 
 from chimeraforge.kubernetes_options import KubernetesOptions
 from chimeraforge.planner.engine import Candidate
+from chimeraforge.serving_target import ServingTarget
 
 MAX_ARGV_TOKENS = 128
 MAX_ARGV_TOKEN_BYTES = 4096
@@ -38,12 +39,14 @@ def literal_argv(argv: list[str]) -> list[str]:
 
 
 def render(
-    candidate: Candidate,
+    candidate: Candidate | ServingTarget,
     argv: list[str],
     image: str,
     fingerprint: str,
     index: int,
     options: KubernetesOptions,
+    *,
+    declaration: bool = False,
 ) -> str:
     from chimeraforge.deploy import DeploymentError
     from chimeraforge.deployment_verify import MAX_CONFIG_BYTES, _admit
@@ -65,8 +68,14 @@ def render(
             "namespace": options.namespace,
             "labels": labels,
             "annotations": {
-                ANNOTATION_PREFIX + "plan-fingerprint": fingerprint,
-                ANNOTATION_PREFIX + "candidate-index": str(index),
+                **(
+                    {ANNOTATION_PREFIX + "declaration-fingerprint": fingerprint}
+                    if declaration
+                    else {
+                        ANNOTATION_PREFIX + "plan-fingerprint": fingerprint,
+                        ANNOTATION_PREFIX + "candidate-index": str(index),
+                    }
+                ),
                 ANNOTATION_PREFIX + "replica-index": str(member),
                 ANNOTATION_PREFIX + "replica-count": str(candidate.n_agents),
             },

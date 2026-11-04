@@ -9,6 +9,25 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+**Unreleased 0.91.0 source** adds [continuous fleet export](fleet-exporter.md):
+fixed native polling, cached loopback gauges, all-member stale/failure views and
+owned API/OS CLI shutdown. Public installation remains 0.86.0.
+
+**Unreleased 0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md):
+all K/original N, native states/unknowns and complete static HTML/SVG/Markdown.
+
+**Unreleased 0.89.0 source** adds [native chat trace replay](chat-trace-replay.md):
+ordered text-role histories across ordinary/saved/fleet/campaign paths, explicit
+usage unknowns and complete private commitments. Public installation remains 0.86.0.
+
+**Unreleased 0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md):
+concrete settings, dated whole-instance quotes and native launch/Compose/Kubernetes
+exports/config verification without optimizer evidence or runtime claims.
+
+**Unreleased 0.87.0 source** adds opt-in [selected-batch inventory memory](inventory-check.md):
+saved B1 plus the compatible native active-sequence KV increment, with every
+original device slot retained. Public installation remains **0.86.0**.
+
 Chimeraforge **0.86.0** adds [strict native trace diagnostics](trace-diagnostics.md),
 retaining every ordinary row or original fleet member in complete static
 HTML/Markdown/SVG while preserving benchmark report defaults.
@@ -87,7 +106,7 @@ chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 
 32 commands in Chimeraforge 0.86.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `deploy-inspect`, `inventory-check`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-fleet-campaign`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
-`score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `doctor`, `contribute`, `mcp`, `serve`.
+`score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `monitor-fleet-exporter`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`
 compares saved traces; `gate --kind trace-campaign` compares whole campaigns;
 `gate --kind fleet-trace` compares two complete original-fleet executions.

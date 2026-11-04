@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceInput, TraceSource
+
 import asyncio
 import copy
 from dataclasses import asdict, dataclass, field
@@ -24,7 +26,7 @@ from chimeraforge.bench.trace_workload import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
     DEFAULT_TRACE_TIMEOUT_SECONDS,
     MAX_OUTPUT_TOKENS,
-    TraceRequest,
+    TraceRequest as TraceRequest,
     TraceSLO,
     descriptor,
     load_workload,
@@ -58,10 +60,18 @@ class PlanTraceReplay:
     _secure_output: bool = field(default=False, repr=False, compare=False)
 
     def to_dict(self) -> dict:
+        from chimeraforge.bench.fleet_trace_types import _admit_receipt
+        from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+        _admit_receipt(self._data, MAX_RECEIPT_BYTES)
         return copy.deepcopy(self._data)
 
     @property
     def native_trace(self) -> TraceReplay:
+        from chimeraforge.bench.fleet_trace_types import _admit_receipt
+        from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+        _admit_receipt(self._data["native_trace"], MAX_RECEIPT_BYTES)
         return TraceReplay(
             copy.deepcopy(self._data["native_trace"]), self._protected_paths, self._secure_output
         )
@@ -86,7 +96,7 @@ class _PreparedPlanTrace:
     candidate: dict = field(repr=False)
     candidate_index: int
     plan_raw_sha256: str | None
-    requests: tuple[TraceRequest, ...] = field(repr=False)
+    requests: tuple[TraceInput, ...] = field(repr=False)
     workload: dict
     ordered_descriptors: tuple[dict, ...]
     served_model: str
@@ -130,7 +140,7 @@ def _source(
 
 def _prepare(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     candidate_index: int = 0,
     model: str | None = None,
@@ -377,12 +387,16 @@ async def _replay_prepared(
     protected = prepared.protected_paths
     if connection is not None:
         protected += connection._input_paths()
+    from chimeraforge.bench.fleet_trace_types import _admit_receipt
+    from chimeraforge.bench.gate_inputs import MAX_RECEIPT_BYTES
+
+    _admit_receipt(report, MAX_RECEIPT_BYTES)
     return PlanTraceReplay(report, protected, connection is not None)
 
 
 async def replay_plan_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     candidate_index: int = 0,
     model: str | None = None,

@@ -170,6 +170,11 @@ def accept(directory: Path, screenshots: Path, label: str) -> dict:
                         results.append({"document": name, **result})
                     finally:
                         page.close()
+                from ci_campaign_report_browser import inspect_campaigns
+
+                campaign_results = inspect_campaigns(
+                    context, directory, screenshots, label, png_cap=MAX_PNG_BYTES
+                )
                 assert not traffic
             finally:
                 context.close()
@@ -183,6 +188,7 @@ def accept(directory: Path, screenshots: Path, label: str) -> dict:
         "playwright_version": sdk_version,
         "browser_version": browser_version,
         "documents": results,
+        "campaign_documents": campaign_results,
         "attempted_http_https_requests": len(traffic),
         "scope": (
             "Chromium file rendering and page request interception, "

@@ -517,8 +517,10 @@ def server(
     quant: str = "float16",
     deny_metadata: bool = False,
     slow: bool = False,
+    vllm_tpot: bool = False,
 ) -> Iterator[tuple[str, list[dict[str, Any]]]]:
     """Observe authorized route counts only; never retain headers or credential values."""
+    assert not vllm_tpot or backend == "vllm"
     calls: list[dict[str, Any]] = []
     counts: dict[str, int] = {}
 
@@ -552,6 +554,11 @@ def server(
                 count = counts.get(prefix, 0)
                 counts[prefix] = count + 1
                 code, body = 200, histogram(backend, model, 100 + count * 20, slow=slow)
+                if vllm_tpot:
+                    body += body.replace(
+                        b"vllm:time_to_first_token_seconds",
+                        b"vllm:request_time_per_output_token_seconds",
+                    )
             else:
                 data: dict[str, Any]
                 if route == "version":

@@ -23,7 +23,10 @@ from chimeraforge.inventory_types import (
     InventoryCheckError,
     InventoryObservation,
     InventorySlot,
+    SelectedBatchBaseline,
+    MemoryBasis,
 )
+from chimeraforge.inventory_memory import selected_baseline, selected_comparison
 
 if TYPE_CHECKING:
     from chimeraforge.api import PlanArtifact
@@ -116,26 +119,47 @@ async def check_inventory(
     gpu_devices: list[str] | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    memory_basis: MemoryBasis = "batch-one",
 ) -> InventoryCheck:
-    """Check declared selectors and saved B1 arithmetic, never deployment eligibility."""
+    """Check all selectors against saved resident components, never deployment eligibility."""
     from chimeraforge.deploy import DeploymentError, _validate_fidelity
 
+    if type(memory_basis) is not str or memory_basis not in ("batch-one", "selected-batch"):
+        raise InventoryCheckError("Invalid inventory memory basis.")
     artifact, candidate, layout = _admit(
         saved, candidate_index, gpu_devices, replica_gpu_devices, timeout
     )
     data = artifact.to_dict()
-    baseline = _baseline(candidate)
+    baseline: InventoryBaseline | SelectedBatchBaseline = _baseline(candidate)
+    selected_bounds = None
+    if memory_basis == "selected-batch":
+        baseline, selected_bounds = selected_baseline(candidate, data, baseline)
     reason = baseline.reason
     try:
         inputs = data["inputs"]
         inputs["kv_quant"] = inputs["kv_quant"].lower()
-        _validate_fidelity(
-            candidate, artifact.spec(candidate.model), inputs, data["result"]["platform"], "compose"
-        )
+        if memory_basis == "batch-one":
+            _validate_fidelity(
+                candidate,
+                artifact.spec(candidate.model),
+                inputs,
+                data["result"]["platform"],
+                "compose",
+            )
+        elif reason is None:
+            _validate_fidelity(candidate, None, inputs, data["result"]["platform"], "compose")
     except DeploymentError as exc:
         logger.info("saved inventory fidelity unsupported (%s)", type(exc).__name__)
         reason = "saved_fidelity_unsupported"
-        baseline = replace(baseline, basis="unsupported", reason=reason)
+        baseline = replace(
+            baseline,
+            reason=reason,
+            **(
+                {"basis": "unsupported"}
+                if memory_basis == "batch-one"
+                else {"status": "unsupported"}
+            ),
+        )
     observation = InventoryObservation("not_started", inventory_process.COMMAND, reason=reason)
     if reason is None:
         observation = await inventory_process.observe(timeout)
@@ -161,8 +185,16 @@ async def check_inventory(
                 )
             else:
                 device = by_id[selector]
-                free = comparison(device.memory_free_mib, baseline.lower_gib, baseline.upper_gib)
-                total = comparison(device.memory_total_mib, baseline.lower_gib, baseline.upper_gib)
+                if isinstance(baseline, InventoryBaseline):
+                    free = comparison(
+                        device.memory_free_mib, baseline.lower_gib, baseline.upper_gib
+                    )
+                    total = comparison(
+                        device.memory_total_mib, baseline.lower_gib, baseline.upper_gib
+                    )
+                else:
+                    free = selected_comparison(device.memory_free_mib, selected_bounds)
+                    total = selected_comparison(device.memory_total_mib, selected_bounds)
                 slot = InventorySlot(
                     replica,
                     position,
@@ -176,6 +208,17 @@ async def check_inventory(
                     else (),
                 )
             slots.append(slot)
+    if memory_basis == "selected-batch":
+        return InventoryCheck(
+            __version__,
+            data["fingerprint"],
+            candidate_index,
+            baseline,
+            observation,
+            tuple(slots),
+            schema_version=2,
+            scope="queried_inventory_and_selected_batch_memory",
+        )
     return InventoryCheck(
         __version__, data["fingerprint"], candidate_index, baseline, observation, tuple(slots)
     )

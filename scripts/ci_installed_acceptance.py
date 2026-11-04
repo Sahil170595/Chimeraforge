@@ -65,7 +65,7 @@ def run_cli(
 ) -> str:
     """Invoke the installed module with checkout and PYTHONPATH isolation."""
     result = subprocess.run(
-        [sys.executable, "-I", "-m", "chimeraforge", *arguments],
+        [sys.executable, "-I", "-B", "-m", "chimeraforge", *arguments],
         cwd=cwd,
         env=env,
         text=True,
@@ -263,6 +263,11 @@ def main(argv: list[str] | None = None) -> int:
         passive_gate_receipt = accept_fleet_monitor_gate(
             cwd / "fleet-monitor-gate", env, cwd / "fleet-plan.json", args.checkout
         )
+        from ci_fleet_exporter import accept as accept_fleet_exporter
+
+        exporter_receipt = accept_fleet_exporter(
+            cwd / "fleet-exporter", env, cwd / "fleet-plan.json"
+        )
         from ci_fleet_trace_campaign import accept as accept_fleet_campaign
 
         fleet_campaign_receipt = accept_fleet_campaign(
@@ -280,6 +285,15 @@ def main(argv: list[str] | None = None) -> int:
             cwd / "trace-reports", env, cwd / "fleet-plan.json", handoff=args.trace_report_handoff
         )
 
+        from ci_campaign_report import accept as accept_campaign_report
+
+        campaign_report_receipt = accept_campaign_report(
+            cwd / "campaign-reports",
+            env,
+            cwd / "fleet-plan.json",
+            handoff=args.trace_report_handoff,
+        )
+
         from ci_signed_contribution import accept as accept_signed
 
         signed_receipt = accept_signed(cwd, env, args.checkout)
@@ -292,6 +306,12 @@ def main(argv: list[str] | None = None) -> int:
         from ci_prediction_bundle import accept as accept_prediction_bundle
 
         prediction_bundle_receipt = accept_prediction_bundle(cwd, env, args.checkout, snapshot_path)
+        from ci_serving_declaration import accept as accept_serving_declaration
+
+        serving_receipt = accept_serving_declaration(cwd, env)
+        from ci_chat_trace import accept as accept_chat_trace
+
+        chat_trace_receipt = accept_chat_trace(cwd, env)
         error = json.loads(run_cli(["plan", "--hardware", "ci-unknown-gpu", "--json"], cwd, env, 1))
         assert error["error"], "invalid hardware did not produce a machine-readable error"
         info, tools = probe(
@@ -323,9 +343,11 @@ def main(argv: list[str] | None = None) -> int:
                     "native_stream_protocol": native_stream_receipt,
                     "secure_active_protocol": secure_active_receipt,
                     "fleet_monitor_gate_protocol": passive_gate_receipt,
+                    "fleet_exporter_protocol": exporter_receipt,
                     "fleet_trace_campaign_protocol": fleet_campaign_receipt,
                     "kubernetes_inspection_protocol": inspection_receipt,
                     "trace_report_protocol": trace_report_receipt,
+                    "campaign_report_protocol": campaign_report_receipt,
                     "loaded_module_provenance": {
                         "before": loaded_before,
                         "after": assert_installed_modules(args.checkout),
@@ -334,6 +356,8 @@ def main(argv: list[str] | None = None) -> int:
                     "signed_native_gate_protocol": signed_gate_receipt,
                     "prediction_score_protocol": score_receipt,
                     "prediction_bundle_protocol": prediction_bundle_receipt,
+                    "serving_declaration_protocol": serving_receipt,
+                    "native_chat_trace_protocol": chat_trace_receipt,
                     "mcp_tools": tools,
                     "mcp_http": http_receipt,
                     "cli_and_mcp_acceptance": "passed",

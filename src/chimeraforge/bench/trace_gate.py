@@ -177,7 +177,7 @@ def _evidence(row: dict) -> str:
     workload["ordered_descriptors_sha256"] = digest(
         [
             {
-                key: _evidence_real(value) if key == "arrival_offset_s" else value
+                key: _evidence_real(value) if key in ("arrival_offset_s", "temperature") else value
                 for key, value in request["descriptor"].items()
                 if key != "request_id"
             }

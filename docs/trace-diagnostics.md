@@ -4,6 +4,9 @@ Chimeraforge **0.86.0** adds descriptive
 reports for one strict ordinary trace or one complete original-fleet trace.
 Benchmark report defaults and output remain unchanged.
 
+Unreleased 0.90.0 source also admits complete `trace-campaign` and
+`fleet-trace-campaign` inputs. See [whole-campaign API/CLI and limits](campaign-diagnostics.md).
+
 ```python
 from chimeraforge import api
 

@@ -646,6 +646,9 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     trace_replay = accept_trace(
         cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION, plan_replay=True
     )
+    from ci_chat_trace import accept_cpu as accept_cpu_chat
+
+    trace_chat = accept_cpu_chat(cwd, env, MODEL_NAME, str(client.base_url), OLLAMA_VERSION)
     error = run_cli(
         ["bench", "--model", "ci-definitely-missing-model", "--base-url", str(client.base_url)],
         cwd,
@@ -685,6 +688,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
         "saved_plan_benchmark": saved_plan_benchmark,
         "contribution_replay": contribution_replay,
         "request_trace": trace_replay,
+        "native_chat_trace": trace_chat,
         "missing_model_identity_and_metrics_errors": "passed",
         "scope": "CPU functional integration; no performance or prediction-accuracy claim",
     }
