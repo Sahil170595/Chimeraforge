@@ -28,6 +28,8 @@ CPU_EXCLUSIONS = {
     "ROCR_VISIBLE_DEVICES": "-1",
     "GGML_VK_VISIBLE_DEVICES": "-1",
     "OLLAMA_VULKAN": "0",
+    # Pinned llama.cpp b11232 disables AMX extra buffers when repacking is off.
+    "LLAMA_ARG_REPACK": "0",
 }
 COMPONENTS = {"load_tensors", "llama_kv_cache", "llama_context", "sched_reserve"}
 GPU_BACKENDS = {"CUDA": "cuda", "ROCm": "rocm", "Vulkan": "vulkan", "MTL": "metal"}
@@ -47,7 +49,7 @@ _LOADED = re.compile(r"^srv\s+llama_server:\s+model loaded$")
 
 
 def cpu_server_environment(parent: dict) -> dict:
-    """Exclude GPU discovery only in the owned daemon and its model subprocesses."""
+    """Constrain owned daemon discovery and CPU buffers without mutating its caller."""
     return dict(parent) | CPU_EXCLUSIONS
 
 

@@ -1,2 +1,5 @@
 # Preserve exact consumed/output bytes in this dated CLI documentation run.
 validation/2026-10-09-cli-readme/** -text
+
+# Exact captured native 0.86 bytes, including its Windows serialization newlines.
+tests/fixtures/inventory/legacy086-qwen-b8.json -text whitespace=trailing-space,space-before-tab,cr-at-eol

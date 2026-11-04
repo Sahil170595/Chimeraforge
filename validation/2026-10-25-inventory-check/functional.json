@@ -1,0 +1,110 @@
+{
+  "captured_at": "2026-10-25T08:40:23.708292+00:00",
+  "version": "0.77.0",
+  "evidence": "source CLI/API on owned Python subprocess fixtures; no installed-distribution or GPU qualification",
+  "population": {
+    "replicas": 3,
+    "tensor_parallel": 2,
+    "pipeline_parallel": 1,
+    "declared_slots": 6,
+    "ordered_groups": [
+      [
+        "7",
+        "3"
+      ],
+      [
+        "9",
+        "2"
+      ],
+      [
+        "8",
+        "4"
+      ]
+    ]
+  },
+  "baseline": {
+    "saved_gib": "3.57",
+    "lower_gib": "3.565",
+    "upper_gib": "3.575",
+    "basis": "saved_modeled_batch1_per_gpu",
+    "saved_effective_batch": 128,
+    "reason": null
+  },
+  "controls": {
+    "complete": {
+      "api_exit": 0,
+      "cli_exit": 0,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 6,
+        "absent": 0,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    },
+    "unavailable_free": {
+      "api_exit": 4,
+      "cli_exit": 4,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 6,
+        "absent": 0,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    },
+    "shortfall": {
+      "api_exit": 5,
+      "cli_exit": 5,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 6,
+        "absent": 0,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    },
+    "malformed": {
+      "api_exit": 4,
+      "cli_exit": 4,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 0,
+        "absent": 0,
+        "unknown": 6
+      },
+      "deployment_ready": null
+    },
+    "missing": {
+      "api_exit": 5,
+      "cli_exit": 5,
+      "declared_coverage": {
+        "expected": 6,
+        "present": 5,
+        "absent": 1,
+        "unknown": 0
+      },
+      "deployment_ready": null
+    }
+  },
+  "source_bytes_unchanged": true,
+  "deployment_ready": null,
+  "unassessed": [
+    "physical_identity",
+    "independent_memory_pools",
+    "partition_topology",
+    "cuda_process_visibility",
+    "hardware_equivalence",
+    "engine_compatibility",
+    "runtime_peak",
+    "allocation",
+    "deployment_eligibility"
+  ],
+  "hardware_queries": 0,
+  "source_sha256": {
+    "src/chimeraforge/inventory_check.py": "b244c3f55a0acac9996ef6c8843726e817711a2a6ad6b6b8ced3c571de2ff9f3",
+    "src/chimeraforge/inventory_numbers.py": "824a7495b5742d999d3b8fa8f82934c2df9221073e1f52422e638bdb99596770",
+    "src/chimeraforge/inventory_process.py": "d39cb1b88a94ab36d2a75c5dbb411b1bbdecc38e8e712b726d3a733a3d5b892c",
+    "src/chimeraforge/inventory_types.py": "8e9d3e224a745f2f561e48bc89236f76404b0492fe667415294a5db282cc5049"
+  }
+}

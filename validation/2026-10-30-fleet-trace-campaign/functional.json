@@ -1,0 +1,231 @@
+{
+  "generated_at": "2026-10-31T00:52:35.929618+00:00",
+  "source_profile": "editable source, not installed proof",
+  "method": "actual owned CPU HTTPS API/CLI protocols; separately synthetic native matching gates",
+  "source_sha256": {
+    "scripts/ci_fleet_trace_campaign.py": "e6bc669f67796265fe50ffea53247012d996e2faaefca1df30718ac6f7addfdb",
+    "scripts/ci_cpu_fleet.py": "5faad7c5d46aea6a88cde7c96184848e763c7d5e7643185bb3fd995d8de18317",
+    "scripts/ci_installed_acceptance.py": "d51955859791cdef21f915c151af2b6424b03195bb34a240e8cd38910377d384",
+    "src/chimeraforge/api.py": "e145edb5fd3e626f14fd408ad6bd0eda3cf07e5e9b7f628a0f9641fc1502ad90",
+    "src/chimeraforge/cli.py": "11b8d30779c98210ebe19e24496cbaa4d67aa21252aeacd38e23c631d7b7cbcf",
+    "src/chimeraforge/bench/fleet_campaign.py": "51bbc28fe710a7674c994cb735fb776a432c8011d26d8248394078e69431ba2f",
+    "src/chimeraforge/bench/fleet_campaign_types.py": "2c56fd0b47ef405c60bd4948d1cd83cb43436b86e8babf0ad4d8c51945f6b205",
+    "src/chimeraforge/bench/fleet_campaign_receipt.py": "54d7f5a5b127f9991b019f843c389bdc20b407f97a547a863dfb5b9194f5de4e",
+    "src/chimeraforge/bench/fleet_campaign_gate.py": "98b14f557666f6c61fb4150bb2139487f103d37c078146fc7ec6bb42a2e91b41",
+    "src/chimeraforge/bench/fleet_campaign_output.py": "96652e457bd6eaa9d4270d549b7d30ec60b5ddd02ae790aa29da72a405928959",
+    "src/chimeraforge/bench/fleet_trace_receipt.py": "53a479bcece8732c8e177ce60c7725a26916bb81bffa28914c80a5a0802c718e",
+    "src/chimeraforge/bench/fleet_trace_gate.py": "06fcf23f51641305adc23bc2a67b00e7320a0b2815a4cc843082cfb66015cd43",
+    "src/chimeraforge/commands/trace_fleet_campaign.py": "a908635cbf9180482ad4cbef67cdfff95540b61bf3cb6e0d671a855c7ee17a36",
+    "src/chimeraforge/commands/gate.py": "50d7b792bdd90b5f9de06c8a90b5082ddba0573581d478cbdbf952f44c608215"
+  },
+  "result": {
+    "protocol_controls": [
+      {
+        "backend": "vllm",
+        "mode": "complete",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 2,
+        "generation_contacts": 24,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "mtls",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 2,
+        "generation_contacts": 24,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "short",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 2,
+        "generation_contacts": 24,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "vllm",
+        "mode": "preflight",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 0,
+        "generation_contacts": 0,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "complete",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 2,
+        "generation_contacts": 24,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "mtls",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 2,
+        "generation_contacts": 24,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "short",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 2,
+        "generation_contacts": 24,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      },
+      {
+        "backend": "sglang",
+        "mode": "preflight",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "K": 2,
+        "original_N": 3,
+        "M": 6,
+        "global_C": 3,
+        "completed_executions": 0,
+        "generation_contacts": 0,
+        "raw_stdout_file_parity": true,
+        "owned_resources_closed": true
+      }
+    ],
+    "synthetic_gate_controls": [
+      {
+        "label": "synthetic-0",
+        "api_exit": 0,
+        "cli_exit": 0,
+        "junit_cases": 5,
+        "junit_errors": 0,
+        "junit_failures": 0,
+        "stdout_matches_file_bytes": true
+      },
+      {
+        "label": "synthetic-1",
+        "api_exit": 1,
+        "cli_exit": 1,
+        "junit_cases": 5,
+        "junit_errors": 0,
+        "junit_failures": 2,
+        "stdout_matches_file_bytes": true
+      },
+      {
+        "label": "synthetic-3",
+        "api_exit": 3,
+        "cli_exit": 3,
+        "junit_cases": 5,
+        "junit_errors": 5,
+        "junit_failures": 0,
+        "stdout_matches_file_bytes": true
+      }
+    ],
+    "tls_alias_controls": [
+      {
+        "backend": "vllm",
+        "role": "ca",
+        "api_refused": true,
+        "cli_exit": 2,
+        "unchanged_bytes": true,
+        "zero_added_contacts": true
+      },
+      {
+        "backend": "vllm",
+        "role": "client",
+        "api_refused": true,
+        "cli_exit": 2,
+        "unchanged_bytes": true,
+        "zero_added_contacts": true
+      },
+      {
+        "backend": "vllm",
+        "role": "client_key",
+        "api_refused": true,
+        "cli_exit": 2,
+        "unchanged_bytes": true,
+        "zero_added_contacts": true
+      },
+      {
+        "backend": "sglang",
+        "role": "ca",
+        "api_refused": true,
+        "cli_exit": 2,
+        "unchanged_bytes": true,
+        "zero_added_contacts": true
+      },
+      {
+        "backend": "sglang",
+        "role": "client",
+        "api_refused": true,
+        "cli_exit": 2,
+        "unchanged_bytes": true,
+        "zero_added_contacts": true
+      },
+      {
+        "backend": "sglang",
+        "role": "client_key",
+        "api_refused": true,
+        "cli_exit": 2,
+        "unchanged_bytes": true,
+        "zero_added_contacts": true
+      }
+    ],
+    "secure_admission": [
+      {
+        "backend": "vllm",
+        "wrong_origin_refused_before_contact": true
+      },
+      {
+        "backend": "sglang",
+        "wrong_origin_refused_before_contact": true
+      }
+    ],
+    "loaded_before": null,
+    "loaded_after": null,
+    "source_bytes_unchanged": true,
+    "fixture_resources": "closed",
+    "scope": "CPU protocol fixtures and separately synthetic matching gates; no inference/GPU/cold/independence/performance qualification."
+  }
+}

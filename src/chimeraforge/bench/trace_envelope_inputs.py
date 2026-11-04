@@ -18,6 +18,7 @@ from chimeraforge.bench.trace_campaign_inputs import MAX_CAMPAIGN_BYTES, load_ca
 from chimeraforge.bench.trace_gate import _known_fact
 from chimeraforge.bench.trace_gate_inputs import TARGETS, validate_descriptor
 from chimeraforge.bench.trace_workload import (
+    CHAT_DESCRIPTOR_FIELDS,
     MAX_CONCURRENCY,
     MAX_TIMEOUT_SECONDS,
     MAX_TRACE_REQUESTS,
@@ -104,7 +105,11 @@ def cases_from(source: object) -> tuple[dict, dict, Path | None]:
         or len(rows) * data["expected_replicates"] > MAX_CAMPAIGN_REQUESTS
     ):
         fail("invalid declared whole-campaign request population")
-    if any(type(row) is not dict or set(row) != DESCRIPTOR_FIELDS for row in rows):
+    if any(
+        type(row) is not dict
+        or set(row) not in (DESCRIPTOR_FIELDS, CHAT_DESCRIPTOR_FIELDS - {"arrival_offset_s"})
+        for row in rows
+    ):
         fail("descriptors must exclude arrivals and contain only native commitments")
     cells = data["cells"]
     if type(cells) is not list or not 1 <= len(cells) <= MAX_CELLS:
@@ -190,7 +195,7 @@ def match_campaign(loaded: dict, cases: dict, cell: dict, policy: dict) -> None:
     if len(observed) != len(declared):
         fail("campaign descriptor population disagrees with declaration")
     for index, (actual, wanted) in enumerate(zip(observed, declared)):
-        if {name: actual[name] for name in DESCRIPTOR_FIELDS} != wanted:
+        if {name: value for name, value in actual.items() if name != "arrival_offset_s"} != wanted:
             fail("campaign request commitments disagree with declaration")
         expected = float(index) * float(cell["arrival_interval_seconds"])
         value = float(actual["arrival_offset_s"])

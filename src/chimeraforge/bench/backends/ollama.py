@@ -262,6 +262,84 @@ class OllamaBackend(Backend):
             "server-decode-duration/output-token-count",
         )
 
+    async def chat_observed(
+        self,
+        model: str,
+        messages: list[dict],
+        options: dict,
+        on_first_output: Callable[[], None],
+    ) -> GenerationObservation:
+        from chimeraforge.bench.backends._chat_stream import plain_content
+        from chimeraforge.bench.backends._stream_frames import refuse
+        from chimeraforge.bench.gate_inputs import MAX_TOKEN_COUNT
+
+        client = await self._get_client()
+        final = None
+        visible = False
+        async with client.stream(
+            "POST",
+            f"{self.base_url}/api/chat",
+            json={
+                "model": model,
+                "messages": messages,
+                "stream": True,
+                "think": False,
+                "truncate": False,
+                "shift": False,
+                "options": options,
+            },
+            timeout=300,
+        ) as response:
+            response.raise_for_status()
+            async for data in _json_lines(response):
+                if type(data) is not dict or "error" in data or final is not None:
+                    refuse("invalid or post-terminal Ollama chat frame")
+                if type(data.get("done")) is not bool:
+                    refuse("invalid Ollama chat completion flag")
+                text = plain_content(data.get("message"))
+                if text and not visible:
+                    on_first_output()
+                    visible = True
+                if data["done"]:
+                    if data.get("done_reason") not in (None, "stop", "length"):
+                        refuse("unsupported Ollama chat finish reason")
+                    final = data
+        if final is None:
+            refuse("incomplete Ollama chat transport")
+        for name in ("eval_count", "prompt_eval_count", "prompt_eval_cached_count"):
+            if name in final:
+                parsed = _native_number(final, name, count=True)
+                if parsed is None or parsed > MAX_TOKEN_COUNT:
+                    refuse("invalid Ollama chat native count")
+        for name in ("eval_duration", "prompt_eval_duration", "total_duration"):
+            if name in final and _native_number(final, name) is None:
+                refuse("invalid Ollama chat native duration")
+        tokens = _native_number(final, "eval_count", count=True)
+        if tokens is not None and tokens > options["num_predict"]:
+            refuse("Ollama chat native count exceeds output cap")
+        prompt = _native_number(final, "prompt_eval_count", count=True)
+        cache = _native_number(final, "prompt_eval_cached_count", count=True)
+        if cache is not None and prompt is not None and cache > prompt:
+            refuse("inconsistent Ollama chat cached prompt count")
+        decode = _native_number(final, "eval_duration")
+        prefill = _native_number(final, "prompt_eval_duration")
+        tpot = decode / tokens if decode is not None and tokens is not None and tokens > 0 else None
+        return GenerationObservation(
+            {
+                "tokens_generated": tokens,
+                "prompt_tokens": _native_number(final, "prompt_eval_count", count=True),
+                "cached_prompt_tokens": cache,
+                "throughput_tps": 1000 / tpot if tpot is not None and tpot > 0 else None,
+                "ttft_ms": prefill,
+                "ttft_basis": "server-prefill-duration" if prefill is not None else "unknown",
+                "total_duration_ms": _native_number(final, "total_duration"),
+                "prompt_eval_duration_ms": prefill,
+                "eval_duration_ms": decode,
+            },
+            tpot,
+            "server-decode-duration/output-token-count" if tpot is not None else "unavailable",
+        )
+
     async def get_version(self) -> str | None:
         """GET /api/version -> ``{"version": ...}``, else None."""
         client = await self._get_client()

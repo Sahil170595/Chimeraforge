@@ -2,25 +2,44 @@
 
 from __future__ import annotations
 
+from chimeraforge.bench.trace_workload import TraceSource
+
 import copy
 import asyncio
 import hashlib
 import json
 import math
 import types
+from contextlib import AbstractAsyncContextManager
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 from pathlib import Path
 import threading
-from typing import Callable
+from typing import Callable, TYPE_CHECKING, Literal
 from typing import get_args, get_origin, get_type_hints
 
 from chimeraforge.bench.plan import PlanBenchmark
 from chimeraforge.bench.plan_trace import PlanTraceReplay
 from chimeraforge.bench.gate import RegressionGate, RegressionPolicy
 from chimeraforge.bench.trace_gate import TraceGatePolicy
-from chimeraforge.bench.trace import TraceReplay, TraceRequest, TraceSLO
+from chimeraforge.bench.fleet_gate_inputs import FleetTraceGatePolicy as FleetTraceGatePolicy
+from chimeraforge.bench.trace import TraceReplay, TraceRequest as TraceRequest, TraceSLO
+from chimeraforge.bench.trace_workload import (
+    ChatMessage as ChatMessage,
+    ChatTraceRequest as ChatTraceRequest,
+)
+from chimeraforge.bench.fleet_trace_receipt import load_fleet_trace as load_fleet_trace
+from chimeraforge.bench.fleet_trace_types import FleetTraceReplay as FleetTraceReplay
+from chimeraforge.bench.fleet_trace_types import TraceRoute as TraceRoute
+from chimeraforge.bench.fleet_campaign_types import FleetTraceCampaign as FleetTraceCampaign
+from chimeraforge.bench.fleet_campaign_types import (
+    FleetTraceCampaignError as FleetTraceCampaignError,
+)
+from chimeraforge.bench.fleet_campaign_types import FleetTraceCampaignGate as FleetTraceCampaignGate
+from chimeraforge.bench.fleet_campaign_types import (
+    FleetTraceCampaignGatePolicy as FleetTraceCampaignGatePolicy,
+)
 from chimeraforge.bench.trace_campaign import (
     DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
     DEFAULT_REPLICATES,
@@ -33,8 +52,49 @@ from chimeraforge.bench.trace_workload import (
 from chimeraforge.contribution_review import ContributionReceipt
 from chimeraforge.signed_contribution import SignedContribution, SignedContributionReceipt
 
+from chimeraforge.report.trace import TraceReport as TraceReport
+
 from chimeraforge import __version__
 from chimeraforge.monitor import MonitorReport, MonitorRequest, MonitorWindow
+from chimeraforge.monitor_connection import MonitorConnection as MonitorConnection
+from chimeraforge.monitor_connection import MonitorConnectionError as MonitorConnectionError
+from chimeraforge.fleet_monitor_types import FleetEndpoint as FleetEndpoint
+from chimeraforge.fleet_monitor_types import FleetMonitorRequest, FleetMonitorReport
+from chimeraforge.fleet_monitor_types import FleetMonitorError as FleetMonitorError
+from chimeraforge.fleet_monitor_types import FleetMonitorExportError as FleetMonitorExportError
+from chimeraforge.fleet_exporter_types import (
+    FleetExporterConfig as FleetExporterConfig,
+    FleetExporterSnapshot as FleetExporterSnapshot,
+    FleetExporterError as FleetExporterError,
+)
+from chimeraforge.fleet_exporter import FleetExporter as FleetExporter
+from chimeraforge.fleet_monitor_gate_types import (
+    FleetMonitorGate as FleetMonitorGate,
+    FleetMonitorGatePolicy as FleetMonitorGatePolicy,
+)
+from chimeraforge.inventory_types import (
+    InventoryCheckError as InventoryCheckError,
+    InventoryCheck as InventoryCheck,
+    InventoryBaseline as InventoryBaseline,
+    InventoryDevice as InventoryDevice,
+    InventoryObservation as InventoryObservation,
+    InventorySlot as InventorySlot,
+    SelectedBatchBaseline as SelectedBatchBaseline,
+    MemoryBasis as MemoryBasis,
+)
+from chimeraforge.kubernetes_options import KubernetesOptions as KubernetesOptions
+from chimeraforge.serving_declaration import (
+    ServingRequest as ServingRequest,
+    ServingDeclaration as ServingDeclaration,
+    ServingDeclarationError as ServingDeclarationError,
+    declare_serving as declare_serving,
+    load_serving_declaration as load_serving_declaration,
+)
+from chimeraforge.serving_quote import ServingQuote as ServingQuote
+from chimeraforge.kubernetes_inspection_types import (
+    KubernetesInspection as KubernetesInspection,
+    KubernetesInspectionError as KubernetesInspectionError,
+)
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy
@@ -44,6 +104,11 @@ from chimeraforge.planner.engine import Candidate
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
 from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inputs
+
+if TYPE_CHECKING:
+    from chimeraforge.deployment_verify import DeploymentVerification
+    from chimeraforge.deploy import DeploymentExport
+    from chimeraforge.serving_export import ServingVerification
 
 SCHEMA_VERSION = 2
 MAX_PLAN_BYTES = 8 * 1024 * 1024
@@ -58,6 +123,54 @@ MODEL_OVERRIDE_TYPES = {
 
 class PlanError(ValueError):
     """Invalid request, unavailable planning input, or invalid saved plan."""
+
+
+async def inspect_kubernetes_deployment(
+    saved: PlanArtifact | str | Path,
+    *,
+    image: str,
+    kubeconfig: str | Path,
+    context: str,
+    kubernetes: KubernetesOptions | None = None,
+    candidate_index: int = 0,
+    model: str | None = None,
+    kubectl: str | Path = "kubectl",
+    timeout_s: float = 30,
+    request_timeout_s: float = 10,
+    concurrency: int = 4,
+    cleanup_timeout_s: float = 2,
+    stop_event: asyncio.Event | None = None,
+) -> KubernetesInspection:
+    """GET original named resources with independently supplied declaration intent."""
+    from chimeraforge.kubernetes_inspection import inspect_kubernetes_deployment as inspect
+
+    return await inspect(
+        saved,
+        image=image,
+        kubeconfig=kubeconfig,
+        context=context,
+        kubernetes=kubernetes,
+        candidate_index=candidate_index,
+        model=model,
+        kubectl=kubectl,
+        timeout_s=timeout_s,
+        request_timeout_s=request_timeout_s,
+        concurrency=concurrency,
+        cleanup_timeout_s=cleanup_timeout_s,
+        stop_event=stop_event,
+    )
+
+
+def write_kubernetes_inspection(
+    result: KubernetesInspection,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Preflight complete bounded JSON/JUnit before protected per-file writes."""
+    from chimeraforge.kubernetes_inspection_output import write_kubernetes_inspection as write
+
+    write(result, out=out, junit=junit)
 
 
 def create_prediction_bundle(
@@ -121,6 +234,62 @@ def gate_traces(
     from chimeraforge.bench.trace_gate import gate_traces as apply_gate
 
     return apply_gate(baseline_receipts, candidate_receipts, policy=policy)
+
+
+def verify_deployment(
+    saved: PlanArtifact | str | Path,
+    config_path: str | Path,
+    *,
+    image: str,
+    format: str = "compose",
+    kubernetes: KubernetesOptions | None = None,
+    model: str | None = None,
+    candidate_index: int = 0,
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+) -> DeploymentVerification:
+    """Compare bounded generated declarations with independently supplied original intent."""
+    from chimeraforge.deployment_verify import verify_deployment as verify
+
+    return verify(
+        saved,
+        config_path,
+        image=image,
+        format=format,
+        kubernetes=kubernetes,
+        model=model,
+        candidate_index=candidate_index,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+    )
+
+
+def gate_fleet_traces(
+    baseline: FleetTraceReplay | dict | str | Path,
+    candidate: FleetTraceReplay | dict | str | Path,
+    *,
+    policy: FleetTraceGatePolicy | dict | str | Path,
+) -> RegressionGate:
+    """Compare one complete declared original fleet per arm under an explicit policy."""
+    from chimeraforge.bench.fleet_trace_gate import gate_fleet_traces as apply_gate
+
+    return apply_gate(baseline, candidate, policy=policy)
+
+
+def write_fleet_trace_gate(
+    result: RegressionGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Write bounded decision/JUnit projections after admitting both destinations."""
+    from chimeraforge.bench.fleet_gate_output import write_fleet_trace_gate as write
+
+    write(result, out=out, junit=junit)
 
 
 def gate_trace_campaigns(
@@ -387,6 +556,8 @@ def snapshot(request: PlanRequest, result: PlanResult) -> PlanArtifact:
 
 def plan(request: PlanRequest) -> PlanArtifact:
     """Plan with the same search as CLI/MCP, through a strict public boundary."""
+    if not isinstance(request, PlanRequest):
+        raise PlanError("optimizer requires a PlanRequest, not a serving declaration")
     try:
         request.validate()
         return snapshot(request, run_plan(**asdict(request)))
@@ -541,6 +712,69 @@ def check_plan(
     return check(artifact, allow_network=allow_network, hf_token=hf_token)
 
 
+def quote_serving(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    cloud: str | None = None,
+    instance: str | None = None,
+    region: str | None = None,
+) -> ServingQuote:
+    """Quote dated whole instances without predicting capacity or assigning hosts."""
+    from chimeraforge.serving_quote import quote_serving as quote
+
+    return quote(declaration, cloud=cloud, instance=instance, region=region)
+
+
+def export_serving_declaration(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    format: str,
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
+) -> DeploymentExport:
+    """Render concrete operator intent through native config-only projections."""
+    from chimeraforge.serving_export import export_serving_declaration as export
+
+    return export(
+        declaration,
+        format=format,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+        kubernetes=kubernetes,
+    )
+
+
+def verify_serving_declaration(
+    declaration: ServingDeclaration | str | Path,
+    config_path: str | Path,
+    *,
+    format: str = "compose",
+    gpu_devices: list[str] | None = None,
+    host_port: int | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    replica_host_ports: list[int] | None = None,
+    kubernetes: KubernetesOptions | None = None,
+) -> ServingVerification:
+    """Compare configuration with held original operator intent using the native verifier."""
+    from chimeraforge.serving_export import verify_serving_declaration as verify
+
+    return verify(
+        declaration,
+        config_path,
+        format=format,
+        gpu_devices=gpu_devices,
+        host_port=host_port,
+        replica_gpu_devices=replica_gpu_devices,
+        replica_host_ports=replica_host_ports,
+        kubernetes=kubernetes,
+    )
+
+
 def study_plan(
     saved: PlanArtifact | PlanBundle | str | Path, scenarios: list[PlanScenario]
 ) -> PlanStudy:
@@ -551,7 +785,7 @@ def study_plan(
 
 
 async def replay_trace(
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     model: str,
     backend: str = "ollama",
@@ -561,6 +795,7 @@ async def replay_trace(
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     slos: TraceSLO | None = None,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> TraceReplay:
     """Execute a bounded real workload with queue-inclusive client timing."""
     from chimeraforge.bench.trace import replay
@@ -570,6 +805,7 @@ async def replay_trace(
         model=model,
         backend_name=backend,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
@@ -580,7 +816,7 @@ async def replay_trace(
 
 async def replay_plan_trace(
     saved: PlanArtifact | PlanBundle | str | Path,
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     candidate_index: int = 0,
     model: str | None = None,
@@ -589,6 +825,7 @@ async def replay_plan_trace(
     request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
     trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
     stop_event: asyncio.Event | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanTraceReplay:
     """Preserve a saved candidate beside an unchanged native scheduled replay."""
     from chimeraforge.bench.plan_trace import replay_plan_trace as replay
@@ -599,6 +836,7 @@ async def replay_plan_trace(
         candidate_index=candidate_index,
         model=model,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
         concurrency=concurrency,
         request_timeout=request_timeout,
         trace_timeout=trace_timeout,
@@ -606,8 +844,111 @@ async def replay_plan_trace(
     )
 
 
+def load_fleet_trace_campaign(source: FleetTraceCampaign | dict | str | Path) -> FleetTraceCampaign:
+    """Validate one held complete fleet campaign, retaining every declared execution."""
+    from chimeraforge.bench.fleet_campaign_receipt import load_fleet_trace_campaign as load
+
+    return load(source)
+
+
+def gate_fleet_trace_campaigns(
+    baseline: FleetTraceCampaign | dict | str | Path,
+    candidate: FleetTraceCampaign | dict | str | Path,
+    *,
+    policy: FleetTraceCampaignGatePolicy | dict | str | Path,
+) -> FleetTraceCampaignGate:
+    """Compare every declared execution through unchanged native fleet conditions/math."""
+    from chimeraforge.bench.fleet_campaign_gate import gate_fleet_trace_campaigns as gate
+
+    return gate(baseline, candidate, policy=policy)
+
+
+def write_fleet_trace_campaign_gate(
+    result: FleetTraceCampaignGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Admit complete JSON/JUnit before protected, separately atomic output writes."""
+    from chimeraforge.bench.fleet_campaign_output import write_fleet_trace_campaign_gate as write
+
+    write(result, out=out, junit=junit)
+
+
+async def replay_fleet_trace_campaign(
+    saved: PlanArtifact | PlanBundle | str | Path,
+    requests: TraceSource,
+    endpoints: tuple[FleetEndpoint, ...],
+    routes: list[TraceRoute] | str | Path,
+    *,
+    executions: int = DEFAULT_REPLICATES,
+    candidate_index: int = 0,
+    model: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    cleanup_timeout: float = 2,
+    campaign_timeout: float = DEFAULT_CAMPAIGN_TIMEOUT_SECONDS,
+    stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> FleetTraceCampaign:
+    """Execute K serial original fleets over one held source/workload/route map."""
+    from chimeraforge.bench.fleet_campaign import replay_fleet_trace_campaign as replay
+
+    return await replay(
+        saved,
+        requests,
+        endpoints,
+        routes,
+        executions=executions,
+        candidate_index=candidate_index,
+        model=model,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        cleanup_timeout=cleanup_timeout,
+        campaign_timeout=campaign_timeout,
+        stop_event=stop_event,
+        connections=connections,
+    )
+
+
+async def replay_fleet_trace(
+    saved: PlanArtifact | PlanBundle | str | Path,
+    requests: TraceSource,
+    endpoints: tuple[FleetEndpoint, ...],
+    routes: list[TraceRoute] | str | Path,
+    *,
+    candidate_index: int = 0,
+    model: str | None = None,
+    concurrency: int = 1,
+    request_timeout: float = DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    trace_timeout: float = DEFAULT_TRACE_TIMEOUT_SECONDS,
+    cleanup_timeout: float = 2,
+    stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> FleetTraceReplay:
+    """Replay every original member through one native client schedule and owner."""
+    from chimeraforge.bench.fleet_trace import replay_fleet_trace as replay
+
+    return await replay(
+        saved,
+        requests,
+        endpoints,
+        routes,
+        candidate_index=candidate_index,
+        model=model,
+        concurrency=concurrency,
+        request_timeout=request_timeout,
+        trace_timeout=trace_timeout,
+        cleanup_timeout=cleanup_timeout,
+        stop_event=stop_event,
+        connections=connections,
+    )
+
+
 async def replay_trace_campaign(
-    requests: list[TraceRequest] | str | Path,
+    requests: TraceSource,
     *,
     model: str,
     backend: str = "ollama",
@@ -671,6 +1012,7 @@ async def benchmark_plan(
     rate: float | None = None,
     concurrency: int | None = None,
     base_url: str | None = None,
+    connection: MonitorConnection | None = None,
 ) -> PlanBenchmark:
     """Measure a selected saved scenario against an explicitly contacted live endpoint."""
     from chimeraforge.bench.plan import benchmark
@@ -686,6 +1028,7 @@ async def benchmark_plan(
         rate=rate,
         concurrency=concurrency,
         base_url=base_url,
+        **({"connection": connection} if connection is not None else {}),
     )
 
 
@@ -696,13 +1039,120 @@ def monitor_plan(
     candidate_index: int = 0,
     stop_event: threading.Event | None = None,
     on_window: Callable[[MonitorWindow], None] | None = None,
+    connection: MonitorConnection | None = None,
 ) -> MonitorReport:
     """Passively observe saved candidate bindings and native SLOs as separate evidence."""
     from chimeraforge.plan_monitor import monitor_saved
 
     return monitor_saved(
-        saved, request, candidate_index=candidate_index, stop_event=stop_event, on_window=on_window
+        saved,
+        request,
+        candidate_index=candidate_index,
+        stop_event=stop_event,
+        on_window=on_window,
+        connection=connection,
     )
+
+
+async def check_inventory(
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+    gpu_devices: list[str] | None = None,
+    replica_gpu_devices: list[list[str]] | None = None,
+    timeout: float = 10.0,
+    memory_basis: Literal["batch-one", "selected-batch"] = "batch-one",
+) -> InventoryCheck:
+    """Compare original selectors with saved B1 or opt-in selected resident memory."""
+    from chimeraforge.inventory_check import check_inventory as check
+
+    return await check(
+        saved,
+        candidate_index=candidate_index,
+        gpu_devices=gpu_devices,
+        replica_gpu_devices=replica_gpu_devices,
+        timeout=timeout,
+        memory_basis=memory_basis,
+    )
+
+
+async def monitor_fleet(
+    saved: PlanArtifact | str | Path,
+    request: FleetMonitorRequest,
+    *,
+    candidate_index: int = 0,
+    stop_event: asyncio.Event | None = None,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> FleetMonitorReport:
+    """Passively observe all declared replicas with shared budgets and retained prefixes."""
+    from chimeraforge.fleet_monitor import monitor_fleet as observe
+
+    return await observe(
+        saved,
+        request,
+        candidate_index=candidate_index,
+        stop_event=stop_event,
+        connections=connections,
+    )
+
+
+def serve_fleet_exporter(
+    saved: PlanArtifact | str | Path,
+    request: FleetMonitorRequest,
+    *,
+    config: FleetExporterConfig = FleetExporterConfig(),
+    candidate_index: int = 0,
+    connections: Mapping[str, MonitorConnection] | None = None,
+) -> AbstractAsyncContextManager[FleetExporter]:
+    """Own a fixed-config loopback cached exporter; scrapes never poll backends."""
+    from chimeraforge.fleet_exporter import serve_fleet_exporter as serve
+
+    return serve(
+        saved, request, config=config, candidate_index=candidate_index, connections=connections
+    )
+
+
+def load_fleet_monitor(
+    source: FleetMonitorReport | dict | str | Path,
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+) -> FleetMonitorReport:
+    """Strictly receive all native members against the actual original saved plan."""
+    from chimeraforge.fleet_monitor_receipt import load_fleet_monitor as receive
+
+    return receive(source, saved, candidate_index=candidate_index)
+
+
+def gate_fleet_monitors(
+    baseline: FleetMonitorReport | dict | str | Path,
+    candidate: FleetMonitorReport | dict | str | Path,
+    *,
+    baseline_plan: PlanArtifact | str | Path,
+    candidate_plan: PlanArtifact | str | Path,
+    policy: FleetMonitorGatePolicy | dict | str | Path,
+) -> FleetMonitorGate:
+    """Whole-original-fleet eligibility precedes candidate native SLO acceptance."""
+    from chimeraforge.fleet_monitor_gate import gate_fleet_monitors as apply_gate
+
+    return apply_gate(
+        baseline,
+        candidate,
+        baseline_plan=baseline_plan,
+        candidate_plan=candidate_plan,
+        policy=policy,
+    )
+
+
+def write_fleet_monitor_gate(
+    result: FleetMonitorGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    from chimeraforge.fleet_monitor_gate_output import write_fleet_monitor_gate as write
+
+    write(result, out=out, junit=junit)
 
 
 def sign_contribution(
@@ -712,6 +1162,19 @@ def sign_contribution(
     from chimeraforge.signed_contribution import sign
 
     return sign(source, private_key)
+
+
+def gate_signed_contributions(
+    baseline: list[SignedContribution | dict | str | Path],
+    candidate: list[SignedContribution | dict | str | Path],
+    *,
+    trusted_keys: tuple[bytes | str | Path, ...],
+    policy: RegressionPolicy | dict | str | Path,
+) -> SignedContributionReceipt:
+    """Gate explicitly trusted public native facts without inventing private bindings."""
+    from chimeraforge.signed_gate import gate_signed_contributions as apply_gate
+
+    return apply_gate(baseline, candidate, trusted_keys=trusted_keys, policy=policy)
 
 
 def verify_signed_contribution(
@@ -778,3 +1241,12 @@ async def replay_contribution(
         rate=rate,
         concurrency=concurrency,
     )
+
+
+def render_trace_report(
+    source: object, *, kind: str = "trace", format: str = "html", title: str = "Trace diagnostics"
+) -> TraceReport:
+    """Render strict native trace or whole-campaign diagnostics without changing outcomes."""
+    from chimeraforge.report.trace import render_trace_report as render
+
+    return render(source, kind=kind, format=format, title=title)

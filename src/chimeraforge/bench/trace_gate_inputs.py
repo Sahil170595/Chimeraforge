@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 from pathlib import Path
+from typing import cast
 
 from chimeraforge.bench.gate_inputs import (
     MAX_RECEIPT_BYTES,
@@ -23,6 +24,11 @@ from chimeraforge.bench.trace import (
     _timing,
 )
 from chimeraforge.bench.trace_workload import (
+    CHAT_DESCRIPTOR_FIELDS,
+    CHAT_PROFILE,
+    CHAT_ROLES,
+    MAX_CHAT_MESSAGES,
+    chat_backend_supported,
     MAX_CONCURRENCY,
     MAX_OUTPUT_TOKENS,
     MAX_PROMPT_BYTES,
@@ -217,6 +223,42 @@ def _native(row: dict, backend: str) -> None:
 
 def validate_descriptor(descriptor: object, seen: set[str]) -> None:
     """Validate declared descriptors even when a campaign has no native receipt."""
+    if type(descriptor) is dict and set(descriptor) == CHAT_DESCRIPTOR_FIELDS:
+        descriptor = cast(dict, descriptor)
+        ident = descriptor["request_id"]
+        if type(ident) is not str or not REQUEST_ID.fullmatch(ident) or ident in seen:
+            fail("trace request IDs must be valid and unique")
+        messages = descriptor["messages"]
+        if (
+            descriptor["mode"] != "chat"
+            or descriptor["profile"] != CHAT_PROFILE
+            or type(messages) is not list
+            or not 1 <= len(messages) <= MAX_CHAT_MESSAGES
+            or not finite(descriptor["temperature"], minimum=0)
+            or descriptor["temperature"] > 2
+            or not trace_count(descriptor["max_output_tokens"], MAX_OUTPUT_TOKENS)
+            or descriptor["max_output_tokens"] <= 0
+            or not finite(descriptor["arrival_offset_s"], minimum=0)
+            or descriptor["arrival_offset_s"] > MAX_TIMEOUT_SECONDS
+        ):
+            fail("invalid chat descriptor controls")
+        total = 0
+        for message in messages:
+            if (
+                type(message) is not dict
+                or set(message) != {"role", "content_sha256", "content_bytes"}
+                or type(message["role"]) is not str
+                or message["role"] not in CHAT_ROLES
+                or not sha(message["content_sha256"])
+                or not trace_count(message["content_bytes"], MAX_PROMPT_BYTES)
+                or message["content_bytes"] <= 0
+            ):
+                fail("invalid ordered chat message commitment")
+            total += message["content_bytes"]
+        if total > MAX_PROMPT_BYTES or descriptor["message_commitment_sha256"] != digest(messages):
+            fail("chat message commitment or byte budget disagrees")
+        seen.add(ident)
+        return
     if type(descriptor) is not dict or set(descriptor) != {
         "request_id",
         "prompt_sha256",
@@ -258,6 +300,8 @@ def _row(row: object, backend: str, targets: dict, seen: set[str]) -> None:
         fail("unsupported trace request row")
     descriptor = row["descriptor"]
     validate_descriptor(descriptor, seen)
+    if descriptor.get("mode") == "chat" and not chat_backend_supported(backend):
+        fail("unsupported native chat backend")
     times = row["times"]
     if (
         type(times) is not dict
