@@ -4,6 +4,11 @@
 
 This document covers the public Python API for Chimeraforge 0.96.0.
 
+In 0.101.0 (unreleased), `api.assess_fleet_trace_envelope(saved, cases, campaigns,
+*, policy, candidate_index=0)` returns a defensive `RegressionGate` over finite
+observed load points from complete original-fleet campaigns. The explicit saved
+plan and candidate bind every cell. See [the fleet wire and outcomes](trace-envelope.md#whole-fleet-campaigns).
+
 Since 0.96.0, pass
 `budget_policy=api.ServingQuoteBudgetPolicy(max_monthly_usd, max_price_age_days=90)`
 to `api.quote_serving`. The cap is a decimal string. The resulting schema 2

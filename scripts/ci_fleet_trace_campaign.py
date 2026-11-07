@@ -202,6 +202,163 @@ def gate_control(cwd: Path, env: dict, left: dict, right: dict, wanted: int, lab
     }
 
 
+def accept_envelope(
+    cwd: Path, env: dict, saved: Path, index: int, endpoints: tuple, contacts: list
+) -> dict:
+    """Current native CPU campaigns and offline API/installed CLI load points."""
+    from chimeraforge import api
+
+    plan = api.load_plan(saved)
+    cap = plan.candidate(index).decode_tokens_per_req
+    campaigns = {}
+    before_generation = sum(row["method"] == "POST" for row in contacts)
+    for name, interval in (("lower", 0.02), ("higher", 0.01)):
+        requests = [
+            api.TraceRequest(f"load-{i}", f"private-envelope-prompt-{i}", cap, i * interval)
+            for i in range(REQUESTS)
+        ]
+        routing = [
+            api.TraceRoute(row.request_id, endpoints[i % MEMBERS].id)
+            for i, row in enumerate(requests)
+        ]
+        campaigns[name] = asyncio.run(
+            api.replay_fleet_trace_campaign(
+                saved,
+                requests,
+                endpoints,
+                routing,
+                candidate_index=index,
+                executions=EXECUTIONS,
+                concurrency=MEMBERS,
+                request_timeout=5,
+                trace_timeout=10,
+                cleanup_timeout=2,
+                campaign_timeout=CAMPAIGN_TIMEOUT,
+            )
+        )
+    assert (
+        sum(row["method"] == "POST" for row in contacts) - before_generation
+        == 2 * EXECUTIONS * REQUESTS
+    )
+    manifest = campaigns["lower"].to_dict()["manifest"]
+    controls = manifest["controls"]
+    cases = {
+        "schema_version": 1,
+        "kind": "chimeraforge.fleet-trace-envelope-cases",
+        **{
+            name: controls[name]
+            for name in (
+                "model",
+                "backend",
+                "concurrency",
+                "request_timeout_seconds",
+                "trace_timeout_seconds",
+                "cleanup_timeout_seconds",
+                "campaign_timeout_seconds",
+            )
+        },
+        "model_override": None,
+        "expected_executions": EXECUTIONS,
+        "original_replicas": MEMBERS,
+        "endpoints": manifest["endpoints"],
+        "routes": manifest["routes"]["rows"],
+        "ordered_descriptors": [
+            {k: v for k, v in row.items() if k != "arrival_offset_s"}
+            for row in manifest["ordered_descriptors"]
+        ],
+        "cells": [
+            {"name": name, "arrival_interval_seconds": interval}
+            for name, interval in (("lower", 0.02), ("higher", 0.01))
+        ],
+    }
+    policy = {
+        "schema_version": 1,
+        "kind": "chimeraforge.fleet-trace-envelope-policy",
+        "targets": controls["targets"],
+        "fixed_controls": {"version": "controlled-protocol"},
+        "require_cache_evidence": False,
+    }
+    paths = {
+        name: cwd / (controls["backend"] + "-load-" + name + ".json")
+        for name in ("cases", "policy", "lower", "higher")
+    }
+    for name, data in (("cases", cases), ("policy", policy)):
+        paths[name].write_text(json.dumps(data), encoding="utf-8")
+    for name, campaign in campaigns.items():
+        campaign.save(paths[name])
+    held = {path: path.read_bytes() for path in (saved, *paths.values())}
+    contact_count = len(contacts)
+    direct = api.assess_fleet_trace_envelope(
+        saved,
+        paths["cases"],
+        {name: paths[name] for name in campaigns},
+        policy=paths["policy"],
+        candidate_index=index,
+    ).to_dict()
+    args = [
+        "trace-envelope",
+        "--fleet",
+        "--plan",
+        str(saved),
+        "--candidate-index",
+        str(index),
+        "--cases",
+        str(paths["cases"]),
+        "--policy",
+        str(paths["policy"]),
+        "--json",
+    ]
+    full = [
+        *args,
+        "--campaign",
+        "lower=" + str(paths["lower"]),
+        "--campaign",
+        "higher=" + str(paths["higher"]),
+    ]
+    output = cwd / (controls["backend"] + "-load-assessment.json")
+    cli = json.loads(run_raw([*full, "--out", str(output)], cwd, env, 0))
+    assert cli == json.loads(output.read_bytes())
+    for report in (direct, cli):
+        assert (
+            report["exit_code"] == 0
+            and report["highest_observed_passing"]["nominal_rate_rps"] == 100
+        )
+        assert len(report["cells"]) == 2
+        for cell in report["cells"]:
+            assert (
+                cell["original_replicas"] == MEMBERS and cell["expected_executions"] == EXECUTIONS
+            )
+            assert cell["total_requests"] == EXECUTIONS * REQUESTS
+            assert len(cell["executions"]) == EXECUTIONS
+            assert all(
+                len(slot["members"]) == MEMBERS and len(slot["rows"]) == REQUESTS
+                for slot in cell["executions"]
+            )
+        public = json.dumps(report)
+        assert "private-envelope-prompt" not in public and endpoints[0].url not in public
+        assert endpoints[0].id not in public and str(saved) not in public
+    missing = json.loads(run_raw(args, cwd, env, 3))
+    assert missing["highest_observed_passing"] is None
+    assert all(cell["outcome"] == "unknown" for cell in missing["cells"])
+    run_raw([*full, "--out", str(paths["higher"])], cwd, env, 2)
+    assert all(path.read_bytes() == raw for path, raw in held.items())
+    assert len(contacts) == contact_count
+    return {
+        "backend": controls["backend"],
+        "match_exit": 0,
+        "missing_exit": 3,
+        "alias_exit": 2,
+        "K": EXECUTIONS,
+        "N": MEMBERS,
+        "M": REQUESTS,
+        "cells": 2,
+        "highest_observed_rate_rps": 100,
+        "added_receiving_contacts": 0,
+        "generation_contacts": 2 * EXECUTIONS * REQUESTS,
+        "input_bytes_held": True,
+    }
+
+
 def accept(cwd: Path, env: dict, saved: Path, checkout: Path | None = None) -> dict:
     from chimeraforge import api
     from ci_installed_acceptance import assert_installed_modules
@@ -212,7 +369,7 @@ def accept(cwd: Path, env: dict, saved: Path, checkout: Path | None = None) -> d
     plan = json.loads(held_source)
     paths = certificates(cwd / "tls")
     held_tls = {name: path.read_bytes() for name, path in paths.items()}
-    controls, aliases, admission = [], [], []
+    controls, aliases, admission, envelopes = [], [], [], []
     for backend in ("vllm", "sglang"):
         index = next(
             i
@@ -426,6 +583,8 @@ def accept(cwd: Path, env: dict, saved: Path, checkout: Path | None = None) -> d
                         "owned_resources_closed": True,
                     }
                 )
+                if mode == "complete":
+                    envelopes.append(accept_envelope(cwd, env, saved, index, endpoints, calls))
         assert all(path.read_bytes() == raw for path, raw in held.items())
     left = matching_campaign(saved, [0.1, 0.11])
     gates = [
@@ -440,6 +599,7 @@ def accept(cwd: Path, env: dict, saved: Path, checkout: Path | None = None) -> d
         "synthetic_gate_controls": gates,
         "tls_alias_controls": aliases,
         "secure_admission": admission,
+        "fleet_load_envelope": envelopes,
         "loaded_before": before,
         "loaded_after": after,
         "source_bytes_unchanged": True,

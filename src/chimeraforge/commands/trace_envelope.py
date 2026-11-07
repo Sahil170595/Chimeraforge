@@ -11,6 +11,11 @@ import typer
 def trace_envelope(
     cases: Path = typer.Option(..., "--cases", help="Frozen uniform schedules and population."),
     policy: Path = typer.Option(..., "--policy", help="Explicit targets and observed conditions."),
+    fleet: bool = typer.Option(False, "--fleet", help="Assess native whole-fleet campaigns."),
+    plan: Path | None = typer.Option(None, "--plan", help="Original plan required with --fleet."),
+    candidate_index: int | None = typer.Option(
+        None, "--candidate-index", help="Original fleet candidate index."
+    ),
     campaign: list[str] = typer.Option(
         [],
         "--campaign",
@@ -24,6 +29,15 @@ def trace_envelope(
     from chimeraforge.plan_study import protect_output
 
     try:
+        if (
+            fleet
+            and (plan is None or candidate_index is None)
+            or not fleet
+            and (plan is not None or candidate_index is not None)
+        ):
+            raise api.PlanError(
+                "fleet mode requires its original plan and independent candidate selection"
+            )
         supplied: dict[str, Path] = {}
         for assignment in campaign:
             name, separator, filename = assignment.partition("=")
@@ -33,8 +47,20 @@ def trace_envelope(
                 raise api.PlanError("--campaign cannot repeat a cell name")
             supplied[name] = Path(filename)
         if out is not None:
-            protect_output(out, [cases, policy, *supplied.values()])
-        result = api.assess_trace_envelope(cases, supplied, policy=policy)
+            protect_output(
+                out, [cases, policy, *supplied.values(), *([plan] if plan is not None else [])]
+            )
+        if fleet:
+            assert plan is not None
+            result = api.assess_fleet_trace_envelope(
+                plan,
+                cases,
+                supplied,
+                policy=policy,
+                candidate_index=0 if candidate_index is None else candidate_index,
+            )
+        else:
+            result = api.assess_trace_envelope(cases, supplied, policy=policy)
         if out is not None:
             result.save(out)
         report = result.to_dict()
@@ -48,7 +74,7 @@ def trace_envelope(
         point = report.get("highest_observed_passing")
         if point is not None:
             typer.echo(
-                f"Highest observed passing cell: {point['cell']} "
+                f"Highest observed passing cell: {point.get('cell', point.get('cell_index'))} "
                 f"({point['nominal_rate_rps']} req/s)"
             )
     raise typer.Exit(report["exit_code"])

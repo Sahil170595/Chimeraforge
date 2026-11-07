@@ -1155,6 +1155,11 @@ See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
 ### `trace-envelope` -- observed finite load points (since 0.69.0)
 
+In 0.101.0 (unreleased), `trace-envelope --fleet --plan ORIGINAL --candidate-index N`
+and `api.assess_fleet_trace_envelope` also assess native whole-fleet campaigns.
+Distinct [fleet cases and policy declarations](docs/trace-envelope.md#whole-fleet-campaigns)
+fix the original plan, all members, routing and executions across finite load cells.
+
 Assess whole saved campaigns at declared uniform arrival cadences, without inference:
 
 ```bash

@@ -125,3 +125,100 @@ remain part of the measurement; consistently rescheduled and resealed copies
 cannot be authenticated or excluded. Digests do not prove preregistration time,
 private prompts, independent execution, physical hardware, served weights, cold
 caches, deployment, planner calibration or scientific GO.
+
+## Whole-fleet campaigns
+
+In 0.101.0 (unreleased), the explicit fleet mode receives saved native
+`trace-fleet-campaign` receipts and an independent original plan/candidate.
+It holds all inputs offline and reuses strict native campaign receiving,
+per-request SLO qualification, member conditions/cache checks and normalized
+whole-execution evidence hashes.
+
+```bash
+chimeraforge trace-envelope --fleet --plan original-plan.json \
+  --candidate-index "$FLEET_INDEX" --cases fleet-cases.json \
+  --policy fleet-policy.json --campaign slow=slow-fleet.json \
+  --campaign fast=fast-fleet.json --out fleet-envelope.json --json
+```
+
+```python
+decision = api.assess_fleet_trace_envelope(
+    "original-plan.json", "fleet-cases.json",
+    {"slow": "slow-fleet.json", "fast": "fast-fleet.json"},
+    policy="fleet-policy.json", candidate_index=fleet_index,
+)
+```
+
+Fleet cases are a distinct closed schema 1 object. Its exact keys are
+`schema_version`, `kind`, `model`, `model_override`, `backend`, `concurrency`,
+`expected_executions`, `original_replicas`, `request_timeout_seconds`,
+`trace_timeout_seconds`, `cleanup_timeout_seconds`, `campaign_timeout_seconds`,
+`ordered_descriptors`, `endpoints`, `routes` and `cells`.
+
+Use `kind="chimeraforge.fleet-trace-envelope-cases"`. The schedule and descriptor
+fields follow the serial declaration above. Replace `expected_replicates` with
+`expected_executions` for K. Set `original_replicas` to the selected candidate's N.
+`model_override` is null when the original campaign used its candidate model,
+otherwise it is the exact independently retained override. `model` is the native
+served identity after the native Ollama prefix handling. Copy no intent from an
+untrusted received campaign.
+
+`endpoints` is the complete ordered native list of exact `{"id", "url"}` objects.
+`routes` is the complete canonical ordered list of `{"request_id", "endpoint_id"}`
+objects, one for each declared descriptor. IDs/URLs, routing, request order,
+prompt or chat commitments, temperature, caps, N, K, concurrency and all timeout
+controls remain fixed across cells. Only each declared uniform arrival interval
+varies. A native chat descriptor keeps its complete ordered message commitments,
+mode and profile. The source remains private and unauthenticated.
+
+Fleet policy is a separate closed schema 1 object with the same five keys as the
+serial policy, using `kind="chimeraforge.fleet-trace-envelope-policy"`. Its
+`targets` must equal the original saved plan's native SLO targets. Each member's
+fixed observed controls are checked before/after and across every execution and
+cell. Missing required facts, changed known facts, contradictory caches, changed
+ordered actual lengths/cache counts and incompatible active TPOT bases block
+eligibility. Unrequired unknown controls remain uncontrolled.
+
+K counts complete global executions. N counts original declared endpoints.
+With M scheduled requests, each cell retains K*M global rows and K*N member
+views that refer to those rows. For K=2, N=3 and M=6, this is 12 global rows per
+cell. Nominal global offered rate is `1 / arrival_interval_seconds`. It is
+independent of N and K and describes only the declared cadence.
+
+Each cell retains every execution/member/request, including not-started, failed,
+missing, incomplete and zero-assigned members. Native metrics remain known or
+unknown as recorded. There are no pooled percentile or synthetic capacity values.
+Cell outcomes are `observed_pass`, `breach` or `unknown`. Eligibility requires
+complete known native request evidence and the full original member population.
+Zero-assigned members block eligibility. Empty or missing evidence cannot pass.
+
+Overall priority is inconclusive/exit 3, then observed breach/exit 1, then
+conditional pass/exit 0. Invalid declarations, source selection, controls or
+native receiving use exit 2. Known breaches remain visible under exit 3. A local
+passing point can remain descriptive with a missing grid cell. Global
+compatibility or duplicate-execution blockers disqualify all points. The highest
+observed point selects only an eligible declared cell, with no extrapolation.
+
+The distinct `chimeraforge.fleet-trace-envelope-assessment` schema 1 output uses
+cell, execution, member and row ordinals. It omits model/endpoint/operator names,
+private paths, prompts, messages, native diagnostic bodies and raw metadata
+values. Inputs retain exact held-byte hashes and fingerprints. File plan hashes
+must match the producer's original source-byte basis. Typed artifacts use their
+defensive snapshot basis with no original-file hash. The complete snapshot and
+candidate identity are checked in either case. Embedded child hashes describe
+their serialized representation, rather than alleged original child files.
+
+The original plan is bounded to 8 MiB, cases to 1 MiB, policy to 64 KiB, each
+campaign to 16 MiB and logical campaign occurrences to 32 MiB total. All files
+are held once and repeated occurrences are charged. Native link/regular-file
+guards apply. Every consumed path, including protected paths from typed inputs,
+participates in output alias protection. The complete portable JSON document
+must fit 8 MiB before a result is returned, printed or atomically saved. Overflow
+refuses the whole document. These byte profiles do not bound total heap usage.
+
+Evidence hashes detect identical normalized native executions under changed
+dates, IDs, paths or clock origins. Arrivals and relative timings stay in the
+measurement, so consistently rescheduled/resealed copies remain unauthenticated.
+The installed consumer uses CPU protocol fixtures for native campaign generation
+and verifies that offline API/CLI receiving adds zero backend contacts. This does
+not establish inference performance, independent physical devices or capacity.
