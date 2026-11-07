@@ -337,6 +337,20 @@ def gate_trace_campaigns(
     return apply_gate(baseline_campaign, candidate_campaign, policy=policy)
 
 
+def assess_fleet_trace_envelope(
+    saved: PlanArtifact | str | Path,
+    cases: object,
+    campaigns: Mapping,
+    *,
+    policy: object,
+    candidate_index: int = 0,
+) -> RegressionGate:
+    """Assess finite saved load points from complete original-fleet campaigns offline."""
+    from chimeraforge.bench.fleet_envelope import assess_fleet_trace_envelope as assess
+
+    return assess(saved, cases, campaigns, policy=policy, candidate_index=candidate_index)
+
+
 def assess_trace_envelope(
     cases: dict | str | Path,
     campaigns: Mapping[str, TraceCampaign | dict | str | Path],

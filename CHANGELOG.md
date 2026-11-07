@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.101.0] - Unreleased
+
+### Whole-fleet campaign load points
+
+- Add `trace-envelope --fleet --plan --candidate-index` and typed `api.assess_fleet_trace_envelope` to assess declared finite load cells from strict saved whole-fleet campaigns. Every execution, original member and request is retained with ordinal diagnostics, native SLO conditions and exact input provenance.
+
 ## [0.96.0] - 2026-11-06
 
 ### Budget checks for dated serving quotes

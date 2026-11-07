@@ -27,3 +27,12 @@ def test_real_protocol_campaign_api_cli_and_synthetic_gates(native_fleet, tmp_pa
     assert len(result["tls_alias_controls"]) == 6
     assert len(result["secure_admission"]) == 2
     assert result["fixture_resources"] == "closed"
+    assert len(result["fleet_load_envelope"]) == 2
+    assert all(
+        row["K"] == 2
+        and row["N"] == 3
+        and row["M"] == 6
+        and row["highest_observed_rate_rps"] == 100
+        and row["added_receiving_contacts"] == 0
+        for row in result["fleet_load_envelope"]
+    )
