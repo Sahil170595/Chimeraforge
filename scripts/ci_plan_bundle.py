@@ -11,6 +11,24 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from xml.etree import ElementTree as ET
+
+
+def _junit(
+    args: list[str], cwd: Path, env: dict, path: Path, code: int, expected: dict
+) -> ET.Element:
+    from ci_installed_acceptance import run_cli
+
+    actual = json.loads(run_cli([*args, "--junit", str(path), "--json"], cwd, env, code))
+    assert actual == expected and actual["exit_code"] == code
+    raw = path.read_bytes()
+    assert len(raw) <= 64 * 1024 and b"ci/bundle-fixture" not in raw
+    assert b"private_payload" not in raw and str(cwd).encode() not in raw
+    suite = ET.fromstring(raw)
+    assert suite.attrib["tests"] == str(len(suite.findall("testcase")))
+    issues = int(suite.attrib["failures"]) + int(suite.attrib["errors"])
+    assert bool(issues) == bool(code)
+    return suite
 
 
 def validate(report: dict, raw_plan: bytes, directory: Path) -> None:
@@ -115,6 +133,11 @@ def produce(directory: Path, checkout: Path) -> dict:
             env,
         )
         original = plan.read_bytes()
+        plain_args = ["check", str(plan)]
+        baseline = json.loads(run_cli([*plain_args, "--json"], work, env))
+        suite = _junit(plain_args, work, env, work / "plain.xml", 0, baseline)
+        assert suite.find(".//testcase[@name='performance']/skipped") is not None
+        run_cli([*plain_args, "--junit", str(plan), "--json"], work, env, 2)
         run_cli(["bundle", "create", str(plan), "--out", str(directory), "--json"], work, env)
         assert original == plan.read_bytes() == (directory / "plan.json").read_bytes()
     data = json.loads(original)
@@ -123,6 +146,21 @@ def produce(directory: Path, checkout: Path) -> dict:
         run_cli(["bundle", "check", str(directory), "--json"], directory.parent, env)
     )
     validate(report, original, directory)
+    originals = {member: member.read_bytes() for member in directory.iterdir()}
+    with tempfile.TemporaryDirectory(prefix="chimeraforge-bundle-junit-") as temporary:
+        work = Path(temporary).resolve()
+        env["CHIMERAFORGE_CACHE"] = str(work / "cache")
+        bundle_args = ["bundle", "check", str(directory)]
+        suite = _junit(bundle_args, work, env, work / "bundle.xml", 0, report)
+        assert suite.find(".//testcase[@name='comparison']") is not None
+        for output in (directory / "manifest.json", directory / "new.xml"):
+            run_cli([*bundle_args, "--junit", str(output), "--json"], work, env, 2)
+        unverified_args = ["check", str(directory / "plan.json")]
+        unverified = json.loads(run_cli([*unverified_args, "--json"], work, env, 1))
+        missing = _junit(unverified_args, work, env, work / "unverified.xml", 1, unverified)
+        assert missing.find(".//testcase[@name='component.corpus']/error") is not None
+        assert missing.find(".//testcase[@name='comparison']/skipped") is not None
+    assert {member: member.read_bytes() for member in directory.iterdir()} == originals
     return {
         "origin": origin,
         "plan_sha256": hashlib.sha256(original).hexdigest(),
@@ -130,6 +168,13 @@ def produce(directory: Path, checkout: Path) -> dict:
         "producer_paths_absent": True,
         "producer_path_flavor": data["result"]["replay_context"]["quality"]["input"]["path_flavor"],
         "scope": "synthetic coefficient/harness fixture, actual installed CLI",
+        "junit_controls": {
+            "check_exit": 0,
+            "bundle_check_exit": 0,
+            "unavailable_original_exit": 1,
+            "plan_and_bundle_alias_exit": 2,
+            "source_members_unchanged": True,
+        },
     }
 
 

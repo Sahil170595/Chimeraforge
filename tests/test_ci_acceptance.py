@@ -587,6 +587,13 @@ def test_bundle_harness_cli_commands_in_source_protocol_fixture(tmp_path, monkey
     receipt = script.produce(tmp_path / "handoff", Path(__file__).resolve().parents[1])
     assert receipt["producer_paths_absent"] is True
     assert len(receipt["plan_sha256"]) == 64
+    assert receipt["junit_controls"] == {
+        "check_exit": 0,
+        "bundle_check_exit": 0,
+        "unavailable_original_exit": 1,
+        "plan_and_bundle_alias_exit": 2,
+        "source_members_unchanged": True,
+    }
 
 
 def test_mcp_http_acceptance_exercises_real_cli_and_closes_owned_process(tmp_path):

@@ -91,6 +91,40 @@ def test_actual_handoff_without_producer_files_preserves_bytes_and_native_compar
     assert verified.to_dict()["relocations"]
 
 
+def test_bundle_check_junit_writes_outside_members_and_retains_native_receipt(tmp_path):
+    from xml.etree import ElementTree as ET
+
+    plan_path, corpus, harness = source_plan(tmp_path)
+    directory = tmp_path / "private-bundle"
+    create(plan_path, directory)
+    originals = {member: member.read_bytes() for member in directory.iterdir()}
+    args = ["bundle", "check", str(directory), "--json"]
+    baseline = CliRunner().invoke(app, args)
+    junit = tmp_path / "bundle.xml"
+    result = CliRunner().invoke(app, [*args, "--junit", str(junit)])
+    assert result.exit_code == baseline.exit_code == 0, result.output
+    assert json.loads(result.stdout) == json.loads(baseline.stdout)
+    suite = ET.fromstring(junit.read_bytes())
+    assert suite.attrib["failures"] == suite.attrib["errors"] == "0"
+    assert suite.find(".//testcase[@name='comparison']") is not None
+    for destination in (directory / "manifest.json", directory / "nested" / "new.xml"):
+        refused = CliRunner().invoke(app, [*args, "--junit", str(destination)])
+        assert refused.exit_code == 2 and "error" in json.loads(refused.stdout)
+    assert {member: member.read_bytes() for member in directory.iterdir()} == originals
+    for protected in (corpus, harness):
+        held = protected.read_bytes()
+        refused = CliRunner().invoke(
+            app, ["check", str(plan_path), "--json", "--junit", str(protected)]
+        )
+        assert refused.exit_code == 2 and protected.read_bytes() == held
+    hardlink = tmp_path / "manifest-link.xml"
+    os.link(directory / "manifest.json", hardlink)
+    refused = CliRunner().invoke(app, [*args, "--junit", str(hardlink)])
+    assert (
+        refused.exit_code == 2 and hardlink.read_bytes() == originals[directory / "manifest.json"]
+    )
+
+
 def test_implicit_external_corpus_is_portable(tmp_path, monkeypatch):
     path, corpus, _ = source_plan(tmp_path, quality=False, implicit=True, monkeypatch=monkeypatch)
     create(path, tmp_path / "bundle")
