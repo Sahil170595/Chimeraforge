@@ -67,6 +67,57 @@ dated list-price arithmetic, not a live offer, invoice, placement or availabilit
 check. Quotes do not assign replica/device identities to hosts or predict
 throughput, token cost, quality, feasibility or deployment readiness.
 
+## Check a monthly budget
+
+Since 0.96.0, opt in with `--max-monthly-usd` or a typed
+`ServingQuoteBudgetPolicy`.
+
+```bash
+chimeraforge serving quote --declaration operator.serving.json \
+  --cloud aws --instance p5.48xlarge --region us-east-1 \
+  --max-monthly-usd 80000 --max-price-age-days 45 --json
+```
+
+```python
+budgeted = api.quote_serving(
+    held,
+    cloud="aws",
+    instance="p5.48xlarge",
+    region="us-east-1",
+    budget_policy=api.ServingQuoteBudgetPolicy("80000", max_price_age_days=45),
+)
+print(budgeted.exit_code, budgeted.to_dict()["budget"])
+```
+
+Supply a nonnegative ASCII decimal string with one to twelve integer digits
+and up to six fractional digits. A decimal point requires a fractional digit.
+Zero is valid, and leading zeros are only accepted for the single integer
+digit `0`. Signs, exponents, separators and surrounding whitespace are invalid.
+The optional age limit is an integer from 0 to 90 inclusive, defaulting to 90.
+It requires a cap. Price age equal to the limit is eligible for comparison.
+
+The budget comparison multiplies the held selected offer's per-instance
+hourly price by the native whole-instance count and 720 hours. The price uses
+the native snapshot number's shortest decimal spelling, as written by the
+bundled snapshot generator. The exact decimal result is compared without
+binary rounding or caller Decimal context, and schema 2 reports the cap and
+exact estimate as decimal strings without insignificant trailing zeros.
+The existing numeric quote fields retain their original estimates.
+
+| Budget status | Exit | Meaning |
+| --- | --- | --- |
+| `within_budget` | 0 | The estimate is at or below the cap. |
+| `above_budget` | 5 | The estimate exceeds the cap. |
+| `stale` | 4 | An estimate exists, but its age exceeds the policy limit. |
+| `unknown` | 4 | The native quote could not price the target. |
+
+A stale budget result retains the exact dated estimate for reference. An
+unknown result has a null estimate and keeps the native reason. Malformed
+policies use the invalid-input exit 1 or CLI usage exit 2. Omitting the policy
+keeps the original schema 1 quote and normal CLI exit 0 for estimated or
+unknown results. Price comes from the local dated snapshot. Placement,
+availability, throughput and deployment readiness remain unassessed.
+
 ## Export and verify the same concrete intent
 
 `api.export_serving_declaration(intent, *, format, ...)` returns the existing
@@ -118,7 +169,8 @@ See the [complete `serving` command examples](../README.md).
 `serving declare` requires `--model --revision --backend --image --out`, with
 `--replicas --tp --pp --context --batch --dtype --kv-quant --prefix-caching` and
 optional `--max-num-batched-tokens`. `serving quote` requires `--declaration` and
-optionally the complete `--cloud --instance --region` target. `serving export`
+optionally the complete `--cloud --instance --region` target. Budget checks add
+`--max-monthly-usd` and optional `--max-price-age-days`. `serving export`
 requires `--declaration --out`, and `serving verify` requires
 `--declaration --config`; both accept `--format launch|compose|kubernetes`,
 `--gpu-device --host-port`, repeated `--replica-devices --replica-port`, or

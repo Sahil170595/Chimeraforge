@@ -57,7 +57,12 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.95.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.96.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Serving quote budget checks (since 0.96.0): `serving quote --max-monthly-usd`
+and typed `ServingQuoteBudgetPolicy` use exact dated whole-instance decimals
+with an optional tighter age limit. Budget schema 2 leaves the native quote
+fields intact. See [policy and exit contract](docs/serving-declaration.md#check-a-monthly-budget).
 
 Offline passive fleet reports (since 0.95.0): `report --kind fleet-monitor`
 and `api.render_fleet_monitor_report` strictly hold a native receipt and its
