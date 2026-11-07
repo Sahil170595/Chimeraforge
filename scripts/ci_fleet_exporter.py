@@ -129,6 +129,16 @@ async def _api(
         ) as client:
             responses = await asyncio.gather(*[client.get(running.metrics_url) for _ in range(5)])
             assert all(row.status_code == 200 and row.content == first.body for row in responses)
+            readiness = await client.get(running.readiness_url)
+            assert readiness.status_code == 200
+            assert readiness.json()["ready"] is True and readiness.json()["native_exit_code"] == 0
+            assert (
+                readiness.json()["state"] == "fresh"
+                and readiness.json()["sequence"] == first.sequence
+            )
+            assert len(readiness.content) <= 1024 and b"private-slot" not in readiness.content
+            head = await client.head(running.readiness_url)
+            assert head.status_code == 200 and not head.content
             assert requests() == before
             await asyncio.sleep(1.02)
             stale = await client.get(running.metrics_url)
@@ -137,6 +147,12 @@ async def _api(
             assert stale.content == snapshot.body and requests() == before
             assert b"chimeraforge_fleet_slot_p95_lower_ms{" not in snapshot.body
             assert b"chimeraforge_fleet_slot_samples{" not in snapshot.body
+            stale_readiness = await client.get(running.readiness_url)
+            assert stale_readiness.status_code == 503
+            assert stale_readiness.json()["ready"] is False
+            assert stale_readiness.json()["state"] == "stale"
+            assert stale_readiness.json()["native_exit_code"] == 4
+            assert stale_readiness.json()["sequence"] == first.sequence and requests() == before
         later = await _published(running, first.sequence)
         assert later.native_exit_code == 0
     assert running.closed and running.listener_joined and running.worker_joined
@@ -153,6 +169,8 @@ async def _api(
         "safe_labels": True,
         "listener_joined": True,
         "worker_joined": True,
+        "readiness_http_codes": [200, 503],
+        "readiness_backend_requests": 0,
     }
 
 
@@ -203,6 +221,13 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
                 assert child.poll() is None, stderr.read_bytes()
                 time.sleep(0.01)
             assert ready and ready["kind"] == "chimeraforge.fleet-exporter-ready"
+            assert set(ready) == {
+                "kind",
+                "metrics_url",
+                "replicas",
+                "label_policy",
+                "process_exit_is_qualification",
+            }
             assert ready["replicas"] == 3 and ready["process_exit_is_qualification"] is False
             with httpx.Client(trust_env=False, timeout=3) as client:
                 while time.monotonic() < deadline:
@@ -215,6 +240,15 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
                 before = state["requests"]
                 for _ in range(5):
                     assert client.get(ready["metrics_url"]).content == response.content
+                readiness_url = ready["metrics_url"].removesuffix("/metrics") + "/readyz"
+                readiness = client.get(readiness_url)
+                assert readiness.status_code == 200 and readiness.json()["ready"] is True
+                assert (
+                    readiness.json()["state"] == "fresh"
+                    and readiness.json()["native_exit_code"] == 0
+                )
+                head = client.head(readiness_url)
+                assert head.status_code == 200 and not head.content
                 assert state["requests"] == before
             code = child.wait(WAIT_SECONDS)
         finally:
@@ -235,6 +269,8 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
         "scrape_backend_requests": 0,
         "ready_and_closed": True,
         "child_joined": True,
+        "readiness_http_code": 200,
+        "readiness_backend_requests": 0,
     }
 
 
