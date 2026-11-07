@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.95.0] - 2026-11-06
+
+### Offline passive fleet reports
+
+- Render a saved passive fleet monitor receipt against its original plan as static Markdown or HTML with `report --kind fleet-monitor` and `api.render_fleet_monitor_report`.
+- Keep every original member and every recorded requested window. Show missing or unavailable evidence separately from observed zeros and retain native SLO and binding outcomes. Bounded reports omit private labels and protect both inputs from output aliases.
+
 ## [0.94.0] - 2026-11-06
 
 ### Kubernetes inspection for serving declarations

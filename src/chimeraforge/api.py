@@ -1284,3 +1284,18 @@ def render_trace_report(
     from chimeraforge.report.trace import render_trace_report as render
 
     return render(source, kind=kind, format=format, title=title)
+
+
+def render_fleet_monitor_report(
+    source: FleetMonitorReport | dict | str | Path,
+    saved: PlanArtifact | str | Path,
+    *,
+    candidate_index: int = 0,
+    format: str = "html",
+    title: str = "Passive fleet diagnostics",
+) -> TraceReport:
+    """Strictly bind native passive evidence and render every original member offline."""
+    from chimeraforge.report.fleet_monitor import render
+
+    held = load_fleet_monitor(source, saved, candidate_index=candidate_index)
+    return render(held, format=format, title=title)

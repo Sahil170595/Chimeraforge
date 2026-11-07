@@ -40,11 +40,16 @@ def accept(cwd: Path, env: dict[str, str], saved: Path, checkout: Path | None = 
 
     cwd.mkdir(parents=True, exist_ok=True)
     loaded_before = assert_installed_modules(checkout) if checkout is not None else None
+    python = [sys.executable, "-I", "-B"]
+    if checkout is None:
+        assert api.__file__ is not None
+        python = [sys.executable, "-B"]
+        env = {**env, "PYTHONPATH": str(Path(api.__file__).resolve().parents[1])}
     original = saved.read_bytes()
     data = json.loads(original)
     paths = certificates(cwd / "tls")
     held_tls = {name: path.read_bytes() for name, path in paths.items()}
-    controls, aliases = [], []
+    controls, aliases, reports = [], [], []
     for backend in ("vllm", "sglang"):
         index = next(
             i
@@ -144,7 +149,7 @@ def accept(cwd: Path, env: dict[str, str], saved: Path, checkout: Path | None = 
                 if scenario == "partial":
                     args += ["--max-requests", "1"]
                 child = subprocess.run(
-                    [sys.executable, "-I", "-m", "chimeraforge", *args],
+                    [*python, "-m", "chimeraforge", *args],
                     cwd=cwd,
                     env={**env, "CF_FIXTURE_MONITOR83": TOKEN},
                     stdin=subprocess.DEVNULL,
@@ -162,6 +167,77 @@ def accept(cwd: Path, env: dict[str, str], saved: Path, checkout: Path | None = 
             assert candidate.cleanup["state"] == "completed"
             assert candidate.cleanup["closed_pools"] == candidate.cleanup["owned_pools"] == 6
             assert candidate.cleanup["joined_endpoint_tasks"] == 3
+            if scenario in {"pass", "partial"}:
+                fmt = "markdown" if scenario == "pass" else "html"
+                suffix = "md" if fmt == "markdown" else "html"
+                document = cwd / f"{backend}-{scenario}.{suffix}"
+                report_args = [
+                    *python,
+                    "-m",
+                    "chimeraforge",
+                    "report",
+                    "--kind",
+                    "fleet-monitor",
+                    "--input",
+                    str(right),
+                    "--plan",
+                    str(saved),
+                    "--candidate-index",
+                    str(index),
+                    "--format",
+                    fmt,
+                ]
+                rendered = subprocess.run(
+                    [*report_args, "--output", str(document)],
+                    cwd=cwd,
+                    env=env,
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    timeout=60,
+                )
+                assert rendered.returncode == 0 and document.read_bytes() == rendered.stdout
+                assert f"native exit: {native_code}".encode() in rendered.stdout
+                assert all(
+                    private not in rendered.stdout + rendered.stderr
+                    for private in (
+                        TOKEN.encode(),
+                        model.encode(),
+                        str(right).encode(),
+                        str(paths["client_key"]).encode(),
+                        b"https://127.0.0.1",
+                    )
+                )
+                if fmt == "html":
+                    assert rendered.stdout.count(b"data-member=") == 3
+                    assert rendered.stdout.count(b'data-window-state="missing"') == 3
+                    refused = subprocess.run(
+                        [*report_args, "--output", str(right)],
+                        cwd=cwd,
+                        env=env,
+                        stdin=subprocess.DEVNULL,
+                        capture_output=True,
+                        timeout=60,
+                    )
+                    assert refused.returncode == 2 and not refused.stdout
+                else:
+                    assert all(
+                        f"### Member {ordinal}\n".encode() in rendered.stdout
+                        for ordinal in range(1, 4)
+                    )
+                    assert rendered.stdout.count(b"| 1 | observed |") == 3
+                assert right.read_bytes() == raw and saved.read_bytes() == original
+                reports.append(
+                    {
+                        "backend": backend,
+                        "scenario": scenario,
+                        "format": fmt,
+                        "report_cli_exit": rendered.returncode,
+                        "native_exit": native_code,
+                        "members": 3,
+                        "windows": 3,
+                        "stdout_equals_file_bytes": True,
+                    }
+                )
             chosen = _policy(baseline, candidate)
             policy = cwd / f"{backend}-{scenario}-policy.json"
             policy.write_text(json.dumps(chosen), encoding="utf-8")
@@ -200,7 +276,7 @@ def accept(cwd: Path, env: dict[str, str], saved: Path, checkout: Path | None = 
                 "--json",
             ]
             gate_child = subprocess.run(
-                [sys.executable, "-I", "-m", "chimeraforge", *gate_args],
+                [*python, "-m", "chimeraforge", *gate_args],
                 cwd=cwd,
                 env=env,
                 stdin=subprocess.DEVNULL,
@@ -238,6 +314,7 @@ def accept(cwd: Path, env: dict[str, str], saved: Path, checkout: Path | None = 
     return {
         "controls": controls,
         "output_aliases": aliases,
+        "static_reports": reports,
         "source_sha256": hashlib.sha256(original).hexdigest(),
         "source_and_tls_input_bytes_unchanged": True,
         "owned_listeners_handlers_clients_tasks_closed": True,

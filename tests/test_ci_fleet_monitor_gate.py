@@ -18,4 +18,12 @@ def test_complete_native_passive_gate_consumer(monitor_source, tmp_path):
     result = script.accept(tmp_path, dict(os.environ), saved)
     assert len(result["controls"]) == len(result["output_aliases"]) == 6
     assert [row["api_gate_exit"] for row in result["controls"]] == [0, 1, 3, 0, 1, 3]
+    reports = result["static_reports"]
+    assert [(row["format"], row["native_exit"]) for row in reports] == [
+        ("markdown", 0),
+        ("html", 4),
+        ("markdown", 0),
+        ("html", 4),
+    ]
+    assert all(row["members"] == row["windows"] == 3 for row in reports)
     assert result["source_and_tls_input_bytes_unchanged"]

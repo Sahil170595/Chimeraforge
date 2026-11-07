@@ -2,7 +2,14 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.94.0.
+This document covers the public Python API for Chimeraforge 0.95.0.
+
+Since 0.95.0, `api.render_fleet_monitor_report(source, saved, *,
+candidate_index=0, format="html", title="Passive fleet diagnostics")` uses the
+strict native receiver and original plan, then returns a bounded static
+`TraceReport` artifact with `kind="fleet-monitor"`. It accepts the same input
+types as `api.load_fleet_monitor` and supports HTML or Markdown. See
+[window evidence, offline behavior and protected saves](fleet-monitoring.md#static-receipt-reports).
 
 Since 0.94.0, async `api.inspect_kubernetes_declaration(declaration, *,
 kubeconfig, context, kubernetes=None, kubectl="kubectl", timeout_s=30,

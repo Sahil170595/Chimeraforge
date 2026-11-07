@@ -28,6 +28,131 @@ def monitor_source():
     return make_native_fleet()
 
 
+def test_static_passive_report_keeps_ordinal_windows_and_private_inputs(
+    monitor_source, tmp_path, monkeypatch
+):
+    import os
+    import subprocess
+
+    saved, indices = monitor_source
+    index = indices["vllm"]
+    native = assembled_report(monitor_source, version_chars=32)
+    first, second = (text.replace("org/model", MODEL) for text in pair("vllm"))
+    reset = evaluate_window(second, first, backend="vllm", model=MODEL, seconds=1, ttft_slo=500)
+    slot = native.slots[0]
+    slot.windows[0] = replace(reset, observed_at=slot.windows[0].observed_at)
+    slot.slo = "unknown"
+    slot.windows[0].metrics["tpot"] = replace(
+        slot.windows[0].metrics["tpot"], reason="private-unavailable-reason"
+    )
+    source, receipt = tmp_path / "private-plan.json", tmp_path / "private-receipt.json"
+    saved.save(source)
+    native.save(receipt)
+    held = source.read_bytes(), receipt.read_bytes()
+    loaded = api.load_fleet_monitor(receipt, source, candidate_index=index)
+    assert loaded.exit_code == 4 and loaded.slots[0].windows[0].outcome == "unknown"
+    assert any("reset" in metric.reason for metric in reset.metrics.values())
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("static report attempted native observation")
+
+    monkeypatch.setattr(api, "monitor_fleet", forbidden)
+    monkeypatch.setattr(subprocess, "Popen", forbidden)
+    title = "<script>alert(1)</script> [name](https://invalid.example)"
+    result = api.render_fleet_monitor_report(receipt, source, candidate_index=index, title=title)
+    assert result.kind == "fleet-monitor"
+    assert result.content.count("data-member=") == 3
+    assert result.content.count("data-window=") == 12
+    assert 'data-window-state="reset"' in result.content
+    assert 'data-window-state="observed"' in result.content
+    assert "native exit: 4" in result.content and "configuration: unverified" in result.content
+    assert "<script>" not in result.content and "&lt;script&gt;" in result.content
+    for private in (
+        MODEL,
+        "fixture.invalid",
+        "private-unavailable-reason",
+        str(source),
+        str(receipt),
+    ):
+        assert private not in result.content
+    for path in (source, receipt):
+        with pytest.raises(api.PlanError):
+            result.save(path)
+        alias = tmp_path / ("alias-" + path.name)
+        os.link(path, alias)
+        with pytest.raises(api.PlanError):
+            result.save(alias)
+    assert held == (source.read_bytes(), receipt.read_bytes())
+
+
+def test_static_passive_report_cli_requires_plan_and_publishes_exact_bytes(
+    monitor_source, tmp_path
+):
+    saved, indices = monitor_source
+    native = assembled_report(monitor_source, version_chars=32)
+    source, receipt, output = (
+        tmp_path / name for name in ("plan.json", "receipt.json", "report.md")
+    )
+    saved.save(source)
+    native.save(receipt)
+    held = source.read_bytes(), receipt.read_bytes()
+    args = ["report", "--kind", "fleet-monitor", "--input", str(receipt)]
+    assert CliRunner().invoke(app, args).exit_code == 2
+    args += ["--plan", str(source), "--candidate-index", str(indices["vllm"])]
+    for extras in (["--json"], ["--format", "svg"], ["--plan", str(source)]):
+        refused = CliRunner().invoke(app, [*args, *extras, "--output", str(output)])
+        assert refused.exit_code == 2 and not refused.stdout and not output.exists()
+    for sink in (source, receipt):
+        refused = CliRunner().invoke(app, [*args, "--output", str(sink)])
+        assert refused.exit_code == 2 and not refused.stdout
+    result = CliRunner().invoke(app, [*args, "--output", str(output)])
+    assert result.exit_code == 0, result.output
+    assert result.stdout.encode() == output.read_bytes()
+    assert "### Member 3" in result.stdout and "native exit: 0" in result.stdout
+    assert held == (source.read_bytes(), receipt.read_bytes())
+
+
+def test_static_passive_report_refuses_wrong_candidate_and_overlimit_output(
+    monitor_source, tmp_path, monkeypatch
+):
+    import chimeraforge.report.trace as bounded
+
+    saved, indices = monitor_source
+    native = assembled_report(monitor_source, version_chars=32)
+    source, receipt, output = (
+        tmp_path / name for name in ("plan.json", "receipt.json", "report.md")
+    )
+    saved.save(source)
+    native.save(receipt)
+    index = indices["vllm"]
+    args = [
+        "report",
+        "--kind",
+        "fleet-monitor",
+        "--input",
+        str(receipt),
+        "--plan",
+        str(source),
+        "--candidate-index",
+        str(index),
+        "--output",
+        str(output),
+    ]
+    output.write_bytes(b"existing output\n")
+    expected = api.render_fleet_monitor_report(
+        receipt, source, candidate_index=index, format="markdown"
+    ).content.encode("utf-8")
+    monkeypatch.setattr(bounded, "MAX_OUTPUT_BYTES", len(expected) - 1)
+    result = CliRunner().invoke(app, args)
+    assert (
+        result.exit_code == 2 and not result.stdout and output.read_bytes() == b"existing output\n"
+    )
+    monkeypatch.setattr(bounded, "MAX_OUTPUT_BYTES", len(expected))
+    assert CliRunner().invoke(app, args).stdout.encode() == output.read_bytes() == expected
+    with pytest.raises(api.PlanError, match="does not bind"):
+        api.render_fleet_monitor_report(receipt, source, candidate_index=indices["sglang"])
+
+
 @pytest.fixture(scope="module")
 def monitor_source_one():
     saved = api.plan(
@@ -467,6 +592,19 @@ async def test_native_precancelled_producer_loads_all_unstarted_slots(monitor_so
     assert loaded.exit_code == 4 and loaded.budget["requests"] == 0
     assert loaded.cleanup["resources_closed"] and loaded.cleanup["closed_pools"] == 6
     assert [slot.state for slot in loaded.slots] == ["unstarted"] * 3
+    rendered = api.render_fleet_monitor_report(loaded, saved, candidate_index=indices["vllm"])
+    assert rendered.content.count("data-member=") == 3
+    assert rendered.content.count('data-window-state="missing"') == 3 * REQUESTED_WINDOWS
+    assert (
+        "native exit: 4" in rendered.content
+        and "requests 0 / accepted body bytes 0" in rendered.content
+    )
+    assert "observed windows: 0" in rendered.content and "<td>unavailable</td>" in rendered.content
+    legacy = replace(report, schema_version=1, effective_controls=None)
+    old = api.render_fleet_monitor_report(legacy, saved, candidate_index=indices["vllm"])
+    assert old.content.count("data-member=") == 3
+    assert "requested windows per member: unavailable" in old.content
+    assert "data-window=" not in old.content
     policy = policy_for(baseline, baseline)
     gate = api.gate_fleet_monitors(
         baseline, loaded, baseline_plan=saved, candidate_plan=saved, policy=policy

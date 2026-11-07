@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import InitVar, dataclass
 import logging
 from pathlib import Path
@@ -20,7 +21,7 @@ FORMATS = {"html", "markdown", "svg"}
 LOG = logging.getLogger(__name__)
 
 
-def admitted(content: str) -> bytes:
+def admitted(content: str, profile: str = "trace report") -> bytes:
     from chimeraforge.api import PlanError
 
     try:
@@ -32,7 +33,7 @@ def admitted(content: str) -> bytes:
         return raw
     except (ValueError, TypeError, UnicodeError) as exc:
         LOG.info("Trace report bytes refused (%s)", type(exc).__name__)
-        raise PlanError("complete trace report exceeds its output profile") from None
+        raise PlanError(f"complete {profile} exceeds its output profile") from None
 
 
 @dataclass(frozen=True)
@@ -56,13 +57,44 @@ class TraceReport:
         from chimeraforge.bench.fleet_gate_output import _write
         from chimeraforge.plan_study import protect_output
 
+        profile = "fleet monitor report" if self.kind == "fleet-monitor" else "trace report"
         try:
-            raw = admitted(self.content)
+            raw = admitted(self.content, profile)
             protect_output(path, self._input_paths)
             _write(Path(path), raw)
         except (PlanError, OSError) as exc:
             LOG.info("Trace report publication refused (%s)", type(exc).__name__)
-            raise PlanError("trace report output unavailable") from None
+            raise PlanError(f"{profile} output unavailable") from None
+
+
+def admit_title(title: str, profile: str = "trace report") -> None:
+    from chimeraforge.api import PlanError
+
+    try:
+        if (
+            type(title) is not str
+            or not 0 < len(title) <= MAX_TITLE_CHARS
+            or len(title.encode("utf-8")) > MAX_TITLE_BYTES
+            or any(
+                (unicodedata.category(c).startswith("C") or unicodedata.category(c) in {"Zl", "Zp"})
+                for c in title
+            )
+        ):
+            raise ValueError
+    except (ValueError, UnicodeError):
+        raise PlanError(f"{profile} title is outside its public profile") from None
+
+
+def materialize(stream: Iterable[str], profile: str = "trace report") -> str:
+    from chimeraforge.api import PlanError
+
+    output = bytearray()
+    for chunk in stream:
+        raw = chunk.encode("utf-8")
+        if len(raw) > MAX_OUTPUT_BYTES - len(output):
+            raise PlanError(f"complete {profile} exceeds its output profile")
+        output.extend(raw)
+    return output.decode("utf-8")
 
 
 def render_trace_report(
@@ -78,19 +110,7 @@ def render_trace_report(
         or format not in FORMATS
     ):
         raise PlanError("unsupported trace report kind or format")
-    try:
-        if (
-            type(title) is not str
-            or not 0 < len(title) <= MAX_TITLE_CHARS
-            or len(title.encode("utf-8")) > MAX_TITLE_BYTES
-            or any(
-                (unicodedata.category(c).startswith("C") or unicodedata.category(c) in {"Zl", "Zp"})
-                for c in title
-            )
-        ):
-            raise ValueError
-    except (ValueError, UnicodeError):
-        raise PlanError("trace report title is outside its public profile") from None
+    admit_title(title)
     campaign = kind in {"trace-campaign", "fleet-trace-campaign"}
     if campaign:
         from chimeraforge.report.campaign_inputs import hold as hold_campaign
@@ -104,10 +124,4 @@ def render_trace_report(
         held = hold(source, kind)
         view = projection(held, kind)
         stream = chunks(view, title, format)
-    output = bytearray()
-    for chunk in stream:
-        raw = chunk.encode("utf-8")
-        if len(raw) > MAX_OUTPUT_BYTES - len(output):
-            raise PlanError("complete trace report exceeds its output profile")
-        output.extend(raw)
-    return TraceReport(output.decode("utf-8"), kind, format, held["protected_paths"])
+    return TraceReport(materialize(stream), kind, format, held["protected_paths"])
