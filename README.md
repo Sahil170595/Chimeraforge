@@ -1000,6 +1000,11 @@ Create a private `workload.json` with an explicit schedule and output caps:
 chimeraforge trace workload.json --model llama3.2-3b --backend ollama --concurrency 1 --latency-slo 2000 --first-output-slo 500 --tpot-slo 50 --out trace.json --json
 ```
 
+In 0.97.0 (unreleased), trace commands check `--out` before backend contact.
+Ordinary, plan-bound, fleet and serial campaign saves require an existing parent
+directory. Whole-fleet campaign saves can create missing parents during final
+publication. See [receipt destination rules](docs/trace-replay.md#receipt-destinations).
+
 `trace` records every planned request, including failed, partial, cancelled and
 not-started requests. Actual client arrival, queue, first output and terminal
 times distinguish scheduler lag from serving latency. Joint-target goodput uses

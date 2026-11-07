@@ -57,7 +57,11 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.96.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.97.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Trace output preflight (0.97.0, unreleased): trace CLI paths check destination
+shape before backend contact. Existing alias guards and atomic publication
+remain in place. See [receipt destinations](docs/trace-replay.md#receipt-destinations).
 
 Serving quote budget checks (since 0.96.0): `serving quote --max-monthly-usd`
 and typed `ServingQuoteBudgetPolicy` use exact dated whole-instance decimals
