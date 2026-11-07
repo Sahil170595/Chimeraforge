@@ -849,3 +849,162 @@ async def test_original_n1_uses_two_resources_and_four_cases(
     assert result._data["budget"]["processes"] == 7
     _, xml = materialize(result)
     assert len(ET.fromstring(xml).findall("testcase")) == 4
+
+
+def declared_intent(protocol):
+    declaration = api.declare_serving(
+        api.ServingRequest(
+            model="org/declared-serving",
+            revision="a" * 40,
+            backend="vllm",
+            image="example/declared:1",
+            replicas=3,
+            tensor_parallel=2,
+            pipeline_parallel=2,
+            context_length=8192,
+            batch_size=8,
+        )
+    )
+    options = api.KubernetesOptions(
+        namespace="declared",
+        name_prefix="operator",
+        node_selector={"operator.example/node": "batch"},
+    )
+    from test_kubernetes_inspection_intent import defaulted
+
+    rendered = api.export_serving_declaration(declaration, format="kubernetes", kubernetes=options)
+    expected = json.loads(rendered.content)["items"]
+    protocol["objects"] = {
+        row["metadata"]["name"] + row["kind"]: defaulted(row) for row in expected
+    }
+    return declaration, options, rendered
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("from_file", [False, True])
+async def test_declared_inspection_retains_exact_source_and_all_resource_intent(
+    tmp_path, protocol, from_file
+):
+    import hashlib
+    from xml.etree import ElementTree
+
+    declaration, options, rendered = declared_intent(protocol)
+    config = tmp_path / "private-config"
+    config.write_text("opaque", encoding="utf-8")
+    source = tmp_path / "private-declaration.json"
+    declaration.save(source)
+    raw = (
+        source.read_bytes()
+        if from_file
+        else json.dumps(
+            declaration.to_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode()
+    )
+    result = await api.inspect_kubernetes_declaration(
+        source if from_file else declaration,
+        kubeconfig=config,
+        context="private-context",
+        kubernetes=options,
+        timeout_s=10,
+    )
+    data = result.to_dict()
+    assert result.exit_code == 0 and data["schema_version"] == 2 and "plan" not in data
+    assert data["declaration"] == {
+        "fingerprint": declaration.fingerprint,
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "source_basis": "file_bytes" if from_file else "canonical_declaration",
+        "replicas": 3,
+        "tensor_parallel": 2,
+        "pipeline_parallel": 2,
+    }
+    assert data["intent"]["image"] == "example/declared:1"
+    assert data["intent"]["render_sha256"] == hashlib.sha256(rendered.content.encode()).hexdigest()
+    assert [(row["name"], row["kind"]) for row in result.resources] == [
+        (f"operator-m{i}", kind) for i in range(1, 4) for kind in ("Deployment", "Service")
+    ]
+    assert all(row["intent"]["state"] == "match" for row in result.resources)
+    assert len([argv for argv in protocol["calls"] if "get" in argv]) == 6
+    assert data["cleanup"]["owned_processes"] == data["cleanup"]["closed_processes"] == 11
+    assert all(child.returncode is not None for child in protocol["processes"])
+    out, junit = tmp_path / "reported.json", tmp_path / "reported.xml"
+    api.write_kubernetes_inspection(result, out=out, junit=junit)
+    assert out.read_bytes() == result.json_bytes()
+    assert len(ElementTree.fromstring(junit.read_bytes()).findall("testcase")) == 10
+    assert "private-context" not in out.read_text() and str(source) not in out.read_text()
+    if from_file:
+        assert source.read_bytes() == raw
+        with pytest.raises(api.KubernetesInspectionError):
+            api.write_kubernetes_inspection(result, out=source)
+
+
+def test_declared_cli_match_and_known_source_alias_refusal(tmp_path, protocol):
+    from typer.testing import CliRunner
+    from chimeraforge.cli import app
+
+    declaration, options, _ = declared_intent(protocol)
+    config = tmp_path / "private-config"
+    config.write_text("opaque", encoding="utf-8")
+    source = tmp_path / "private-declaration.json"
+    declaration.save(source)
+    original = source.read_bytes()
+    command = [
+        "deploy-inspect",
+        "--declaration",
+        str(source),
+        "--kubeconfig",
+        str(config),
+        "--context",
+        "private-context",
+        "--namespace",
+        options.namespace,
+        "--name-prefix",
+        options.name_prefix,
+        "--node-selector",
+        "operator.example/node=batch",
+        "--json",
+    ]
+    rejected = CliRunner().invoke(app, [*command, "--junit", str(source)])
+    assert rejected.exit_code == 2 and not protocol["calls"]
+    assert source.read_bytes() == original
+    for mixed in (
+        ["--plan", str(source)],
+        ["--image", "example/declared:1"],
+        ["--model", "org/declared-serving"],
+        ["--candidate-index", "0"],
+    ):
+        rejected = CliRunner().invoke(app, [*command, *mixed])
+        assert rejected.exit_code == 2 and not protocol["calls"]
+    cli = CliRunner().invoke(app, command)
+    assert cli.exit_code == 0, cli.output
+    assert json.loads(cli.stdout)["declaration"]["fingerprint"] == declaration.fingerprint
+    assert source.read_bytes() == original
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fault", ["oversized", "tampered", "hardlink", "config_alias"])
+async def test_declared_inspection_refuses_bad_source_before_native_work(tmp_path, protocol, fault):
+    import os
+
+    from chimeraforge.serving_declaration import MAX_DECLARATION_BYTES
+
+    declaration, options, _ = declared_intent(protocol)
+    source = tmp_path / "private-declaration.json"
+    declaration.save(source)
+    config = tmp_path / "private-config"
+    config.write_text("opaque", encoding="utf-8")
+    if fault == "oversized":
+        source.write_bytes(source.read_bytes().ljust(MAX_DECLARATION_BYTES + 1, b" "))
+    elif fault == "tampered":
+        source.write_bytes(source.read_bytes().replace(b"example/declared:1", b"example/forged:1"))
+    elif fault == "hardlink":
+        os.link(source, tmp_path / "other-link.json")
+    else:
+        config = source
+    original = source.read_bytes()
+    with pytest.raises(
+        api.KubernetesInspectionError, match="invalid independent Kubernetes inspection intent"
+    ):
+        await api.inspect_kubernetes_declaration(
+            source, kubeconfig=config, context="private-context", kubernetes=options
+        )
+    assert not protocol["calls"] and source.read_bytes() == original

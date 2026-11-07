@@ -13,8 +13,13 @@ LOG = logging.getLogger(__name__)
 
 
 def deploy_inspect(
-    plan: Path = typer.Option(..., "--plan", help="Original saved plan."),
-    image: str = typer.Option(..., "--image", help="Independent expected non-latest image."),
+    plan: Path | None = typer.Option(None, "--plan", help="Original saved plan."),
+    declaration: Path | None = typer.Option(
+        None, "--declaration", help="Original operator serving declaration."
+    ),
+    image: str | None = typer.Option(
+        None, "--image", help="Independent expected non-latest image (required with --plan)."
+    ),
     kubeconfig: Path = typer.Option(
         ..., "--kubeconfig", help="Explicit runtime credential config."
     ),
@@ -28,7 +33,9 @@ def deploy_inspect(
     node_selector: list[str] | None = typer.Option(
         None, "--node-selector", help="Independent key=value; repeat."
     ),
-    candidate_index: int = typer.Option(0, "--candidate-index"),
+    candidate_index: int | None = typer.Option(
+        None, "--candidate-index", help="Plan candidate index (defaults to 0)."
+    ),
     model: str | None = typer.Option(
         None, "--model", help="Independent concrete serving identity."
     ),
@@ -60,10 +67,21 @@ def deploy_inspect(
     from chimeraforge.kubernetes_inspection_types import KubernetesInspectionError
     from chimeraforge.deployment_verify import _absolute
 
+    if declaration is not None:
+        if any(value is not None for value in (plan, image, model, candidate_index)):
+            raise typer.BadParameter(
+                "--declaration cannot be combined with "
+                "--plan, --image, --model, or --candidate-index"
+            )
+        source = declaration
+    else:
+        if plan is None or image is None:
+            raise typer.BadParameter("provide --declaration or both --plan and --image")
+        source = plan
     outputs = tuple(path for path in (out, junit) if path is not None)
     try:
         _protect(
-            tuple(_absolute(path) for path in outputs), (_absolute(plan), _absolute(kubeconfig))
+            tuple(_absolute(path) for path in outputs), (_absolute(source), _absolute(kubeconfig))
         )
     except (PlanError, ValueError, OSError) as exc:
         LOG.info("Kubernetes inspection output admission refused (%s)", type(exc).__name__)
@@ -74,10 +92,11 @@ def deploy_inspect(
             inspect_kubernetes_deployment(
                 plan,
                 image=image,
+                declaration=declaration,
                 kubeconfig=kubeconfig,
                 context=context,
                 kubernetes=_kubernetes_options(namespace, name_prefix, node_selector),
-                candidate_index=candidate_index,
+                candidate_index=0 if candidate_index is None else candidate_index,
                 model=model,
                 kubectl=kubectl,
                 timeout_s=timeout,

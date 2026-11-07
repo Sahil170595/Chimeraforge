@@ -20,6 +20,10 @@ def test_source_consumer_runs_both_engines_and_complete_junit(native_plans, tmp_
     assert len(result["controls"]) == 18
     assert {row["api_exit"] for row in result["controls"]} == {0, 4, 5}
     assert all(row["resources"] == 6 and row["junit_cases"] == 10 for row in result["controls"])
+    declared = result["declaration_controls"]
+    assert len(declared) == 3
+    assert {row["api_exit"] for row in declared} == {0, 4, 5}
+    assert all(row["resources"] == 6 and row["junit_cases"] == 10 for row in declared)
     assert result["raw_cli_byte_parity"] and result["owned_processes_closed"]
     assert result["source_unchanged"]
     assert result["loaded_modules_before"] is result["loaded_modules_after"] is None

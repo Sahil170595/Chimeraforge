@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.94.0] - 2026-11-06
+
+### Kubernetes inspection for serving declarations
+
+- Use `deploy-inspect --declaration` or `api.inspect_kubernetes_declaration` to compare all declared Deployments and Services against live Kubernetes objects. Both reuse the strict declaration exporter and existing read-only kubectl observation.
+- Schema 2 binds the held declaration and independently rendered Kubernetes intent, keeps rollout separate and preserves complete JSON/JUnit evidence. Plan-based inspection retains schema 1.
+
 ## [0.93.0] - 2026-11-06
 
 ### Offline inventory arithmetic

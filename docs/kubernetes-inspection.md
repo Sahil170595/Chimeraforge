@@ -36,6 +36,53 @@ api.write_kubernetes_inspection(result, out=Path("inspection.json"),
                                junit=Path("inspection.xml"))
 ```
 
+## Serving declarations
+
+Since 0.94.0, inspect resources against an operator-authored
+[serving declaration](serving-declaration.md). Supply the namespace, name prefix
+and node selectors used to export it. Omitted options use the declaration
+exporter's defaults. Image, model, revision and replica layout come from the
+held declaration.
+
+```bash
+chimeraforge deploy-inspect --declaration serving.json \
+  --kubeconfig /private/cluster.conf --context operator-selected \
+  --namespace serving --name-prefix original \
+  --node-selector operator.example/accelerator=declared \
+  --out inspection.json --junit inspection.xml --json
+```
+
+```python
+result = await api.inspect_kubernetes_declaration(
+    Path("serving.json"),
+    kubeconfig=Path("/private/cluster.conf"), context="operator-selected",
+    kubernetes=api.KubernetesOptions(
+        namespace="serving", name_prefix="original",
+        node_selector={"operator.example/accelerator": "declared"},
+    ),
+)
+api.write_kubernetes_inspection(result, out=Path("inspection.json"),
+                               junit=Path("inspection.xml"))
+```
+
+The API also accepts a typed `ServingDeclaration`. Files use the declaration's
+64 KiB bounded regular-file reader and strict fingerprint check. Schema 2
+records the declaration fingerprint, replicas, TP/PP, and SHA-256 of the held
+file bytes (`file_bytes`) or compact, sorted UTF-8 JSON of the held typed object
+including its fingerprint (`canonical_declaration`). The same renderer used by
+`serving export --format kubernetes` produces the independent intent, whose
+rendered bytes receive their own digest. File paths and raw input are excluded
+from the report. Treat the intended image and resource names as operator data
+when sharing reports.
+
+`--declaration` excludes `--plan`, `--image`, `--model` and `--candidate-index`.
+The plan API and CLI lane retain schema 1. Both modes share the native GET-only
+profile, rollout evidence, input guards and output bounds below. Declaration
+results describe declared Kubernetes intent and native controller status.
+Optimizer feasibility, GPU readiness and physical capacity remain unassessed.
+
+## Observation and publication
+
 `KubernetesInspection` retains all ordered 2N original Deployment/Service rows,
 including missing, unavailable and unstarted rows. Deployment rollout is a
 separate result; Services have no requested rollout assessment. Native exit 5
@@ -62,7 +109,8 @@ absolute supplied kubeconfig's parent, including a symlink's parent, matching
 the pinned native loader. Runtime config/context/path identities remain outside
 serialized dataclass fields, `asdict`, JSON and JUnit; copy/replace retains those
 guards. Config and actual source identities are frozen before the first await.
-Passing an in-memory plan cannot recover the filename it once came from.
+Passing an in-memory plan or declaration cannot recover the filename it once
+came from.
 
 Filesystem publication fails closed when the complete config-referenced path inventory
 could not be verified, even if the typed unavailable report or bounded stdout
@@ -118,7 +166,7 @@ reports like their input plans when sharing.
 
 The native client is selected with the supported platform `shutil.which` rules
 and held as an absolute path before the first await. Every launch uses that
-same selection; output guards protect it alongside the plan/config/referenced
+same selection; output guards protect it alongside the source/config/referenced
 private files, including samefile aliases. Unresolved clients remain unavailable.
 This does not freeze executable bytes against concurrent filesystem changes.
 

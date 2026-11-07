@@ -23,12 +23,16 @@ def materialize(result: KubernetesInspection) -> tuple[bytes, bytes]:
         raise KubernetesInspectionError("inspection output requires a typed native result")
     raw = result.json_bytes()
     data = json.loads(raw)
-    n = data["plan"]["n_agents"]
+    schema = data["schema_version"]
+    if type(schema) is not int or schema not in (1, 2):
+        raise KubernetesInspectionError("invalid finalized inspection population")
+    if schema == 1:
+        n = data["plan"]["n_agents"]
+    else:
+        n = data["declaration"]["replicas"]
     rows = data["resources"]
     if (
         data["kind"] != KIND
-        or type(data["schema_version"]) is not int
-        or data["schema_version"] != 1
         or type(n) is not int
         or not 1 <= n <= 16
         or len(rows) != 2 * n

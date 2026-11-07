@@ -2,7 +2,15 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.93.0.
+This document covers the public Python API for Chimeraforge 0.94.0.
+
+Since 0.94.0, async `api.inspect_kubernetes_declaration(declaration, *,
+kubeconfig, context, kubernetes=None, kubectl="kubectl", timeout_s=30,
+request_timeout_s=10, concurrency=4, cleanup_timeout_s=2, stop_event=None)`
+accepts a `ServingDeclaration` or its saved file. It uses the serving exporter's
+Kubernetes intent and returns `KubernetesInspection` schema 2. Use
+`api.write_kubernetes_inspection` for protected JSON and JUnit.
+See [declaration identity and native observation](kubernetes-inspection.md#serving-declarations).
 
 Since 0.93.0, pass `inventory_file: str | Path | None = None`
 to `api.check_inventory` to use a supplied NVIDIA CSV with either memory basis.
