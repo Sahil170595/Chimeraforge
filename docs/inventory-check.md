@@ -53,9 +53,9 @@ Reported total is compared separately and never fills unavailable free. No memor
 values are summed. Offload-clamped, unavailable or unsupported saved baselines
 remain unknown without reconstruction or native contact.
 
-## Offline CSV capture (0.93 source)
+## Offline CSV capture
 
-On the machine that owns the inventory, capture the exact native query to a new
+Available since Chimeraforge 0.93.0. On the machine that owns the inventory, capture the exact native query to a new
 file with Bash or cmd.exe byte-preserving redirection. Retain the file only if
 the query succeeds and produces ASCII or UTF-8 with a final newline. Legacy
 PowerShell text redirection can write UTF-16 and is unsuitable.

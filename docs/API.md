@@ -2,16 +2,15 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.92.0 and the
-unreleased 0.93.0 inventory addition.
+This document covers the public Python API for Chimeraforge 0.93.0.
 
-In the 0.93.0 source candidate, pass `inventory_file: str | Path | None = None`
+Since 0.93.0, pass `inventory_file: str | Path | None = None`
 to `api.check_inventory` to use a supplied NVIDIA CSV with either memory basis.
 The returned `InventoryCheck` uses schema 3 and a frozen
 `InventoryCaptureObservation`. Its state, parsed devices and accepted raw SHA-256
 describe the file view. The observation has no process provenance. Without the
 argument the native query still uses schema 1 or 2. See the [offline input and
-exit-code contract](inventory-check.md#offline-csv-capture-093-source).
+exit-code contract](inventory-check.md#offline-csv-capture).
 
 Chimeraforge 0.92.0 adds typed `FleetExporterConfig` and frozen
 `FleetExporterSnapshot`; async `serve_fleet_exporter` holds native saved intent
