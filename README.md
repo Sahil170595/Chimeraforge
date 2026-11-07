@@ -692,6 +692,9 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
 per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.96.0"`.
+In 0.99.0 (unreleased), the same loopback listener adds GET/HEAD `/readyz`
+for cache freshness, separately from native fleet qualification. See
+[readiness responses](docs/fleet-exporter.md#cache-readiness).
 Repeat `--endpoint ID=URL` for every original saved member; supply
 `--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
 `--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`

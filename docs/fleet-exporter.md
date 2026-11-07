@@ -6,7 +6,7 @@ native fleet observation through a loopback Prometheus endpoint. Install the
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install "chimeraforge[exporter]==0.93.0"
+python -m pip install "chimeraforge[exporter]==0.96.0"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \
@@ -92,10 +92,40 @@ sequence counts cache publications, not traffic. Do not sum window samples into
 a cumulative request counter or pool percentiles. Local publication wall time is
 diagnostic, not signed freshness, server identity, capacity or SLO proof.
 
+## Cache readiness
+
+In 0.99.0 (unreleased), GET or HEAD `/readyz` exposes a small cached-readiness
+response. The Python service has a read-only `readiness_url` property.
+The CLI ready/closed records and `metrics_url` keep their existing shapes.
+
+```bash
+curl --fail http://127.0.0.1:9400/readyz
+```
+
+The response has `schema_version: 1`,
+`kind: "chimeraforge.fleet-exporter-readiness"`, `ready`, `state`,
+`age_seconds`, `sequence` and `native_exit_code`. It returns 200 exactly when
+snapshot state is `fresh`, including fresh native breach, mismatch or unknown
+evidence. Initial, stale, unavailable and stopped cache states return 503.
+Initial age is null. Sequence and native exit come from that same snapshot.
+
+This endpoint performs no upstream poll and uses the existing monotonic
+expiry. It exposes no model/endpoint/operator labels, paths or native bodies.
+Responses use `Cache-Control: no-store` and a complete 1 KiB JSON limit;
+an oversized response is refused with an empty 503. HEAD sends the same
+status and headers with an empty body. The same method, raw-path, query,
+header and request-body admission applies to both endpoints. Normal native
+concurrency backpressure can also return 503.
+
+Readiness describes whether cached observation is fresh. Fleet qualification
+continues to use the separately reported native exit and metric outcomes.
+After the listener closes the URL is no longer served.
+
 ## HTTP and outbound settings
 
-Only numeric `127.0.0.1` or `::1` listens are admitted. GET/HEAD `/metrics` without
-query or request body is supported; other methods/paths refuse. HTTP runs on the
+Only numeric `127.0.0.1` or `::1` listens are admitted. GET/HEAD `/metrics` and,
+in 0.99.0, `/readyz` support requests without a query or request body. Other
+methods and paths refuse. HTTP runs on the
 installed supported ASGI stack with configured concurrency/backlog (2–64),
 one-second keepalive, bounded header/path admission and a complete 1 MiB metric
 snapshot cap. These bounds do not claim a process heap or kernel-buffer limit.
