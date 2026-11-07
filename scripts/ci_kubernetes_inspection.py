@@ -29,6 +29,8 @@ SOURCE_FILES = (
     "src/chimeraforge/commands/deploy_inspect.py",
     "src/chimeraforge/kubernetes_options.py",
     "src/chimeraforge/kubernetes_export.py",
+    "src/chimeraforge/serving_declaration.py",
+    "src/chimeraforge/serving_export.py",
     "src/chimeraforge/api.py",
     "scripts/ci_kubernetes_inspection.py",
     "scripts/ci_kubernetes_inspection_native.py",
@@ -82,30 +84,56 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
     client.write_bytes(client_bytes)
     client.chmod(0o700)
     controls: list[dict] = []
+    declaration_controls: list[dict] = []
+    declaration = api.declare_serving(
+        api.ServingRequest(
+            model="example/operator",
+            revision="a" * 40,
+            backend="vllm",
+            image=IMAGE,
+            replicas=n,
+            tensor_parallel=2,
+            pipeline_parallel=2,
+            context_length=8192,
+            batch_size=8,
+        )
+    )
+    declaration_path = work / "operator-declaration.json"
+    declaration.save(declaration_path)
+    declaration_bytes = declaration_path.read_bytes()
     native_launch = asyncio.create_subprocess_exec
     total_children = 0
-    for backend, index in indices.items():
+    for backend, index in (*indices.items(), ("declaration", None)):
         options = api.KubernetesOptions(namespace="inspection", name_prefix=f"inspect-{backend}")
-        manifest = json.loads(
-            deploy.export_deployment(
+        if index is None:
+            rendered = api.export_serving_declaration(
+                declaration, format="kubernetes", kubernetes=options
+            )
+            source_args = ["--declaration", str(declaration_path)]
+        else:
+            model = artifact.candidate(index).model
+            rendered = deploy.export_deployment(
                 artifact,
                 format="kubernetes",
                 image=IMAGE,
                 candidate_index=index,
-                model=artifact.candidate(index).model,
+                model=model,
                 kubernetes=options,
-            ).content
-        )
+            )
+            source_args = [
+                "--plan",
+                str(saved),
+                "--image",
+                IMAGE,
+                "--candidate-index",
+                str(index),
+                "--model",
+                model,
+            ]
+        manifest = json.loads(rendered.content)
         common = [
             "deploy-inspect",
-            "--plan",
-            str(saved),
-            "--image",
-            IMAGE,
-            "--candidate-index",
-            str(index),
-            "--model",
-            artifact.candidate(index).model,
+            *source_args,
             "--kubeconfig",
             str(config),
             "--context",
@@ -129,6 +157,8 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
             ("generation_width", 4),
             ("replica_width", 4),
         ):
+            if index is None and fault not in {"matching_status", "intent_drift", "pending_status"}:
+                continue
             objects: dict[str, Any] = {
                 row["metadata"]["name"] + row["kind"]: observed(row) for row in manifest["items"]
             }
@@ -192,8 +222,17 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
                 return child
 
             with patch("asyncio.create_subprocess_exec", launch):
-                result = asyncio.run(
-                    api.inspect_kubernetes_deployment(
+                if index is None:
+                    observation = api.inspect_kubernetes_declaration(
+                        declaration_path,
+                        kubernetes=options,
+                        kubeconfig=config,
+                        context=PRIVATE,
+                        kubectl=client,
+                        timeout_s=20,
+                    )
+                else:
+                    observation = api.inspect_kubernetes_deployment(
                         saved,
                         image=IMAGE,
                         candidate_index=index,
@@ -204,7 +243,7 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
                         kubectl=client,
                         timeout_s=20,
                     )
-                )
+                result = asyncio.run(observation)
                 cli_out = work / f"{backend}-{fault}-cli.json"
                 cli_xml = work / f"{backend}-{fault}-cli.xml"
                 arguments = (
@@ -232,6 +271,27 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
                     assert client.read_bytes() == client_bytes
             assert result.exit_code == cli.exit_code == code, (backend, fault, cli.exit_code)
             cli_data = json.loads(cli.stdout)
+            if index is None:
+                for report in (result.to_dict(), cli_data):
+                    assert report["schema_version"] == 2 and "plan" not in report
+                    assert report["declaration"] == {
+                        "fingerprint": declaration.fingerprint,
+                        "source_sha256": hashlib.sha256(declaration_bytes).hexdigest(),
+                        "source_basis": "file_bytes",
+                        "replicas": n,
+                        "tensor_parallel": 2,
+                        "pipeline_parallel": 2,
+                    }
+                    assert [row["member_index"] for row in report["resources"]] == [
+                        0,
+                        0,
+                        1,
+                        1,
+                        2,
+                        2,
+                    ]
+            else:
+                assert result.to_dict()["schema_version"] == cli_data["schema_version"] == 1
             raw, xml = materialize(result)
             assert len(result.resources) == len(cli_data["resources"]) == 2 * n
             assert len(ET.fromstring(xml).findall("testcase")) == 3 * n + 1
@@ -258,9 +318,9 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
             assert result._data["cleanup"]["state"] == cli_data["cleanup"]["state"] == "completed"
             assert all(child.returncode is not None for child in children)
             total_children += len(children)
-            controls.append(
+            (declaration_controls if index is None else controls).append(
                 {
-                    "backend": backend,
+                    "backend": declaration.request.backend if index is None else backend,
                     "control": fault,
                     "api_exit": code,
                     "cli_exit": code,
@@ -284,9 +344,12 @@ def accept(work: Path, env: dict, saved: Path, checkout: Path | None = None) -> 
             json.dumps(decoded, indent=2, ensure_ascii=True, allow_nan=False) + "\n"
         ).encode()
         assert canonical == output.stdout and len(decoded["resources"]) == 2 * n
+        assert decoded["schema_version"] == (2 if index is None else 1)
     assert saved.read_bytes() == original and config.read_text(encoding="utf-8") == PRIVATE
+    assert declaration_path.read_bytes() == declaration_bytes
     return {
         "controls": controls,
+        "declaration_controls": declaration_controls,
         "controlled_owned_processes": total_children,
         "protocol_scope": (
             "controlled Python processes/statuses; native kubectl/kind proof separate"

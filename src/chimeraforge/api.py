@@ -162,6 +162,37 @@ async def inspect_kubernetes_deployment(
     )
 
 
+async def inspect_kubernetes_declaration(
+    declaration: ServingDeclaration | str | Path,
+    *,
+    kubeconfig: str | Path,
+    context: str,
+    kubernetes: KubernetesOptions | None = None,
+    kubectl: str | Path = "kubectl",
+    timeout_s: float = 30,
+    request_timeout_s: float = 10,
+    concurrency: int = 4,
+    cleanup_timeout_s: float = 2,
+    stop_event: asyncio.Event | None = None,
+) -> KubernetesInspection:
+    """GET all named Kubernetes resources from an operator serving declaration."""
+    from chimeraforge.kubernetes_inspection import inspect_kubernetes_deployment as inspect
+
+    return await inspect(
+        None,
+        declaration=declaration,
+        kubeconfig=kubeconfig,
+        context=context,
+        kubernetes=kubernetes,
+        kubectl=kubectl,
+        timeout_s=timeout_s,
+        request_timeout_s=request_timeout_s,
+        concurrency=concurrency,
+        cleanup_timeout_s=cleanup_timeout_s,
+        stop_event=stop_event,
+    )
+
+
 def write_kubernetes_inspection(
     result: KubernetesInspection,
     *,

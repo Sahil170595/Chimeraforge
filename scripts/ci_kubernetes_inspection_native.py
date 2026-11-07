@@ -7,6 +7,7 @@ import base64
 from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
+import hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
@@ -339,6 +340,7 @@ def accept(
     namespace = "cf-inspection-" + owner[:12]
     controls: list[dict] = []
     interfaces: list[dict] = []
+    declaration_interfaces: list[dict] = []
     receipt.update(interfaces=interfaces, controls=controls, phase="admitting_owned_namespace")
     inputs = {case["saved"]: case["saved"].read_bytes() for case in cases}
     inputs[original_config] = original_config.read_bytes()
@@ -383,8 +385,17 @@ def accept(
         selected: str = context,
     ) -> api.KubernetesInspection:
         with patch.dict(os.environ, caller_settings):
-            result = asyncio.run(
-                api.inspect_kubernetes_deployment(
+            if case.get("declaration") is not None:
+                observation = api.inspect_kubernetes_declaration(
+                    case["saved"],
+                    kubernetes=options,
+                    kubeconfig=config,
+                    context=selected,
+                    kubectl=executable,
+                    timeout_s=30,
+                )
+            else:
+                observation = api.inspect_kubernetes_deployment(
                     case["saved"],
                     image=case["image"],
                     candidate_index=case["index"],
@@ -394,7 +405,7 @@ def accept(
                     kubectl=executable,
                     timeout_s=30,
                 )
-            )
+            result = asyncio.run(observation)
         assert (
             legacy.read_bytes() == legacy_bytes and not (caller_home / ".kube" / "config").exists()
         )
@@ -412,18 +423,25 @@ def accept(
         child_env: dict | None = None,
     ) -> dict:
         assert options.name_prefix is not None
+        source_args = (
+            ["--declaration", str(case["saved"])]
+            if case.get("declaration") is not None
+            else [
+                "--plan",
+                str(case["saved"]),
+                "--image",
+                case["image"],
+                "--candidate-index",
+                str(case["index"]),
+            ]
+        )
         args = [
             sys.executable,
             "-I",
             "-m",
             "chimeraforge",
             "deploy-inspect",
-            "--plan",
-            str(case["saved"]),
-            "--image",
-            case["image"],
-            "--candidate-index",
-            str(case["index"]),
+            *source_args,
             "--kubeconfig",
             str(config),
             "--context",
@@ -462,6 +480,30 @@ def accept(
         )
         selected_cases = [case for case in cases if case["n"] == 3]
         assert [case["backend"] for case in selected_cases] == ["vllm", "sglang"]
+        declared = api.declare_serving(
+            api.ServingRequest(
+                model="example/operator",
+                revision="a" * 40,
+                backend="vllm",
+                image="example/inspection:1",
+                replicas=3,
+                tensor_parallel=2,
+                pipeline_parallel=2,
+                context_length=8192,
+                batch_size=8,
+            )
+        )
+        declared_path = work / "operator-declaration.json"
+        declared.save(declared_path)
+        inputs[declared_path] = declared_path.read_bytes()
+        selected_cases.append(
+            {
+                "backend": "declaration",
+                "saved": declared_path,
+                "declaration": declared,
+                "options": selected_cases[0]["options"],
+            }
+        )
         live: list[tuple[dict, api.KubernetesOptions, dict]] = []
         for case in selected_cases:
             receipt["phase"] = "original_gpu_intent_and_pending_rollout"
@@ -470,21 +512,26 @@ def accept(
                 name_prefix=f"observe-{case['backend']}",
                 node_selector=case["options"].node_selector,
             )
-            manifest = json.loads(
-                deploy.export_deployment(
+            is_declared = case.get("declaration") is not None
+            if is_declared:
+                rendered = api.export_serving_declaration(
+                    declared, format="kubernetes", kubernetes=options
+                )
+            else:
+                rendered = deploy.export_deployment(
                     api.load_plan(case["saved"]),
                     format="kubernetes",
                     image=case["image"],
                     candidate_index=case["index"],
                     kubernetes=options,
-                ).content
-            )
+                )
+            manifest = json.loads(rendered.content)
             assert len(manifest["items"]) == 6
             assert all(
                 row["spec"]["template"]["spec"]["containers"][0]["resources"]["limits"][
                     "nvidia.com/gpu"
                 ]
-                == "2"
+                == ("4" if is_declared else "2")
                 for row in manifest["items"]
                 if row["kind"] == "Deployment"
             )
@@ -505,9 +552,29 @@ def accept(
             api.write_kubernetes_inspection(direct, out=out, junit=junit)
             command = cli(case, options, code=4)
             for interface, report in (("api", direct.to_dict()), ("cli", command)):
-                interfaces.append(
+                (declaration_interfaces if is_declared else interfaces).append(
                     {"backend": case["backend"], "interface": interface, "report": report}
                 )
+                if is_declared:
+                    assert report["schema_version"] == 2 and "plan" not in report
+                    assert report["declaration"] == {
+                        "fingerprint": declared.fingerprint,
+                        "source_sha256": hashlib.sha256(inputs[declared_path]).hexdigest(),
+                        "source_basis": "file_bytes",
+                        "replicas": 3,
+                        "tensor_parallel": 2,
+                        "pipeline_parallel": 2,
+                    }
+                    assert [row["member_index"] for row in report["resources"]] == [
+                        0,
+                        0,
+                        1,
+                        1,
+                        2,
+                        2,
+                    ]
+                else:
+                    assert report["schema_version"] == 1
                 assert report["exit_code"] == 4 and len(report["resources"]) == 6
                 assert all(row["intent"]["state"] == "match" for row in report["resources"]), report
                 assert all(
@@ -668,10 +735,11 @@ def accept(
         assert (
             legacy.read_bytes() == legacy_bytes and not (caller_home / ".kube" / "config").exists()
         )
-        assert PRIVATE not in json.dumps(interfaces)
+        assert PRIVATE not in json.dumps([*interfaces, *declaration_interfaces])
         receipt.update(
             {
                 "interfaces": interfaces,
+                "declaration_interfaces": declaration_interfaces,
                 "controls": controls,
                 "original_n": 3,
                 "intent_resources_per_invocation": 6,

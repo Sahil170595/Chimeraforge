@@ -37,6 +37,11 @@ from chimeraforge.kubernetes_inspection_types import (
     verdict,
 )
 from chimeraforge.kubernetes_options import KubernetesOptions
+from chimeraforge.serving_declaration import (
+    MAX_DECLARATION_BYTES,
+    ServingDeclaration,
+    declaration_from_dict,
+)
 
 LOG = logging.getLogger(__name__)
 MAX_CONTEXT_CHARS = 253
@@ -143,10 +148,27 @@ def _empty_row(index: int, expected: dict) -> dict[str, Any]:
     }
 
 
+def _declared_source(
+    source: ServingDeclaration | str | Path,
+) -> tuple[ServingDeclaration, bytes, Path | None]:
+    from chimeraforge.plan_bundle import _read
+
+    if isinstance(source, ServingDeclaration):
+        held = declaration_from_dict(source.to_dict())
+        raw = json.dumps(
+            held.to_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8")
+        return held, raw, None
+    path = _absolute(source)
+    raw = _read(path, MAX_DECLARATION_BYTES)
+    return declaration_from_dict(_json(raw, MAX_DECLARATION_BYTES)), raw, path
+
+
 async def inspect_kubernetes_deployment(
     saved: Any,
     *,
-    image: str,
+    image: str | None = None,
+    declaration: ServingDeclaration | str | Path | None = None,
     kubeconfig: str | Path,
     context: str,
     kubernetes: KubernetesOptions | None = None,
@@ -163,6 +185,7 @@ async def inspect_kubernetes_deployment(
     """Observe 2N named resources; native discovery may issue additional read requests."""
     from chimeraforge.deploy import export_deployment
     from chimeraforge.bench.fleet_campaign_types import canonical_hash
+    from chimeraforge.serving_export import export_serving_declaration
 
     started = time.perf_counter()
     try:
@@ -183,17 +206,52 @@ async def inspect_kubernetes_deployment(
         selected = shutil.which(str(kubectl))
         client_path = _absolute(selected) if selected is not None else None
         outputs = tuple(_absolute(value) for value in _outputs)
-        artifact, source_raw, source_path = _source(saved)
-        declaration = export_deployment(
-            artifact,
-            format="kubernetes",
-            image=image,
-            candidate_index=candidate_index,
-            model=model,
-            kubernetes=kubernetes,
-        )
-        expected = json.loads(declaration.content)["items"]
-        candidate = artifact.candidate(candidate_index)
+        if declaration is None:
+            if image is None:
+                raise ValueError("expected an independent image")
+            artifact, source_raw, source_path = _source(saved)
+            rendered = export_deployment(
+                artifact,
+                format="kubernetes",
+                image=image,
+                candidate_index=candidate_index,
+                model=model,
+                kubernetes=kubernetes,
+            )
+            candidate = artifact.candidate(candidate_index)
+            schema = 1
+            source_key = "plan"
+            identity = {
+                "fingerprint": artifact._data["fingerprint"],
+                "source_sha256": hashlib.sha256(source_raw).hexdigest(),
+                "source_basis": "file_bytes" if source_path is not None else "artifact_snapshot",
+                "candidate_index": candidate_index,
+                "n_agents": candidate.n_agents,
+                "tensor_parallel": candidate.tensor_parallel,
+                "pipeline_parallel": candidate.pipeline_parallel,
+            }
+        else:
+            if saved is not None or image is not None or model is not None or candidate_index != 0:
+                raise ValueError("mixed inspection intent")
+            held, source_raw, source_path = _declared_source(declaration)
+            if source_path is not None:
+                _protect((source_path,), (config,) + ((client_path,) if client_path else ()))
+            rendered = export_serving_declaration(held, format="kubernetes", kubernetes=kubernetes)
+            request = held.request
+            image = request.image
+            schema = 2
+            source_key = "declaration"
+            identity = {
+                "fingerprint": held.fingerprint,
+                "source_sha256": hashlib.sha256(source_raw).hexdigest(),
+                "source_basis": "file_bytes"
+                if source_path is not None
+                else "canonical_declaration",
+                "replicas": request.replicas,
+                "tensor_parallel": request.tensor_parallel,
+                "pipeline_parallel": request.pipeline_parallel,
+            }
+        expected = json.loads(rendered.content)["items"]
         guards = (
             (config,)
             + ((source_path,) if source_path is not None else ())
@@ -211,22 +269,14 @@ async def inspect_kubernetes_deployment(
         raise _OutputAdmissionError("unsafe inspection output") from None
 
     data: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": schema,
         "kind": KIND,
         "tool_version": __version__,
         "exit_code": 4,
         "state": "unavailable",
-        "plan": {
-            "fingerprint": artifact._data["fingerprint"],
-            "source_sha256": hashlib.sha256(source_raw).hexdigest(),
-            "source_basis": "file_bytes" if source_path is not None else "artifact_snapshot",
-            "candidate_index": candidate_index,
-            "n_agents": candidate.n_agents,
-            "tensor_parallel": candidate.tensor_parallel,
-            "pipeline_parallel": candidate.pipeline_parallel,
-        },
+        source_key: identity,
         "intent": {
-            "render_sha256": hashlib.sha256(declaration.content.encode("utf-8")).hexdigest(),
+            "render_sha256": hashlib.sha256(rendered.content.encode("utf-8")).hexdigest(),
             "namespace": expected[0]["metadata"]["namespace"],
             "image": image,
         },

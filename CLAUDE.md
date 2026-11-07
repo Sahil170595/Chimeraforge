@@ -57,7 +57,7 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.93.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.94.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
 Continuous fixed-config exporter (since 0.92.0): `monitor-fleet-exporter`
 and `api.serve_fleet_exporter` reuse finite native polls and cache immutable safe-label
@@ -92,7 +92,9 @@ existing Ubuntu installed job. See [complete contract](docs/trace-diagnostics.md
 Read-only Kubernetes inspection (since 0.85.0): async
 `api.inspect_kubernetes_deployment` and `deploy-inspect` hold original plans and
 independent image/namespace intent, retain all 2N resources and separate native
-Deployment rollout. Pinned enabled kuberc/selected-context projections prevent
+Deployment rollout. Since 0.94.0, `api.inspect_kubernetes_declaration` and
+`deploy-inspect --declaration` reuse the serving exporter and emit schema 2
+with held declaration identity. Pinned enabled kuberc/selected-context projections prevent
 credential helpers and legacy refresh; incomplete private-reference inventory
 refuses file publication. Complete bounded JSON/JUnit has 3N+1 cases. See
 [the inspection contract and native proof limits](docs/kubernetes-inspection.md).
