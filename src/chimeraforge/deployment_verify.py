@@ -193,7 +193,7 @@ def _source(saved: PlanArtifact | str | Path) -> tuple[PlanArtifact, bytes, Path
 
 
 def _intent(
-    image: str,
+    image: str | None,
     model: str | None,
     index: int,
     devices: list[str] | None,
@@ -203,7 +203,7 @@ def _intent(
     for text in (image, model):
         if text is not None and (type(text) is not str or len(text) > MAX_INTENT_CHARS):
             _fail("render text exceeds verifier bounds")
-    if type(image) is not str or type(index) is not int or not 0 <= index < MAX_JSON_NODES:
+    if type(index) is not int or not 0 <= index < MAX_JSON_NODES:
         _fail("invalid render selection")
     if devices is not None:
         if type(devices) is not list or len(devices) > MAX_EXPORT_GPUS_PER_REPLICA:
@@ -305,6 +305,8 @@ def verify_deployment(
     try:
         if format not in ("compose", "kubernetes"):
             _fail("verification format must be compose or kubernetes")
+        if type(image) is not str:
+            _fail("invalid render image")
         _intent(image, model, candidate_index, gpu_devices, replica_gpu_devices, replica_host_ports)
         config = _absolute(config_path)
         artifact, source_raw, source_path = _source(saved)
@@ -344,6 +346,53 @@ def verify_deployment(
         raise DeploymentVerificationError("invalid deployment verification input") from None
 
 
+def verify_systemd_deployment(
+    saved: PlanArtifact | str | Path,
+    config_path: str | Path,
+    *,
+    executable: str,
+    model: str | None = None,
+    candidate_index: int = 0,
+    gpu_devices: list[str] | None = None,
+) -> DeploymentVerification:
+    """Compare exact native unit bytes and companions with independent saved intent."""
+    try:
+        _intent(None, model, candidate_index, gpu_devices, None, None)
+        if type(executable) is not str or len(executable) > MAX_INTENT_CHARS:
+            _fail("invalid render executable")
+        config = _absolute(config_path)
+        artifact, source_raw, source_path = _source(saved)
+        _aliases([config, *([source_path] if source_path else [])])
+        row = artifact.candidate(candidate_index)
+        spec = artifact.spec(row.model)
+        for text in (row.model, spec.name if spec else None):
+            if text is not None and len(text) > MAX_INTENT_CHARS:
+                _fail("saved serving identity exceeds verifier bounds")
+        expected = export_deployment(
+            artifact,
+            format="systemd",
+            executable=executable,
+            model=model,
+            candidate_index=candidate_index,
+            gpu_devices=gpu_devices,
+        )
+        return _verify_expected(expected, config, source_raw, source_path, format="systemd")
+    except DeploymentVerificationError:
+        raise
+    except (
+        PlanError,
+        DeploymentError,
+        OSError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        KeyError,
+        OverflowError,
+        RecursionError,
+    ):
+        raise DeploymentVerificationError("invalid deployment verification input") from None
+
+
 def _verify_expected(
     expected: DeploymentExport,
     config: Path,
@@ -355,11 +404,20 @@ def _verify_expected(
     """Shared bounded config comparison; source admission and intent stay independent."""
     _aliases([config, *([source_path] if source_path else [])])
     expected_raw = expected.content.encode("utf-8")
-    expected_data = _json(expected_raw, MAX_CONFIG_BYTES)
+    expected_data = None if format == "systemd" else _json(expected_raw, MAX_CONFIG_BYTES)
     actual_raw = _read(config, MAX_CONFIG_BYTES)
-    actual_data = _json(actual_raw, MAX_CONFIG_BYTES)
-    if format == "kubernetes":
-        _kubernetes_document(actual_data)
+    if format == "systemd":
+        if not 0 < len(expected_raw) <= MAX_CONFIG_BYTES or not actual_raw or b"\0" in actual_raw:
+            _fail("invalid or overlimit unit content")
+        actual_raw.decode("utf-8")
+        changes = [] if actual_raw == expected_raw else [DeploymentChange("/unit", "content")]
+        count, truncated = len(changes), False
+    else:
+        actual_data = _json(actual_raw, MAX_CONFIG_BYTES)
+        if format == "kubernetes":
+            _kubernetes_document(actual_data)
+        assert expected_data is not None
+        changes, count, truncated = _differences(expected_data, actual_data)
     buffers = [source_raw, expected_raw, actual_raw]
     _budget(*buffers)
     companions: list[DeploymentCompanion] = []
@@ -392,7 +450,6 @@ def _verify_expected(
                 _sha(companion_actual) if companion_actual is not None else None,
             )
         )
-    changes, count, truncated = _differences(expected_data, actual_data)
     for companion in companions:
         if companion.state != "match":
             count += 1

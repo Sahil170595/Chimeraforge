@@ -7,6 +7,78 @@ import json
 from pathlib import Path
 
 
+def accept_systemd(
+    cwd: Path, env: dict, saved: Path, unit: Path, index: int, devices: list[str]
+) -> dict:
+    from ci_installed_acceptance import run_cli
+    from chimeraforge import api
+
+    source, raw = saved.read_bytes(), unit.read_bytes()
+    command = [
+        "deploy-verify",
+        "--plan",
+        str(saved),
+        "--candidate-index",
+        str(index),
+        "--config",
+        str(unit),
+        "--format",
+        "systemd",
+        "--executable",
+        "/usr/bin/true",
+        *[item for device in devices for item in ("--gpu-device", device)],
+        "--json",
+    ]
+    direct = api.verify_systemd_deployment(
+        saved,
+        unit,
+        executable="/usr/bin/true",
+        candidate_index=index,
+        gpu_devices=devices,
+    )
+    matched = json.loads(run_cli(command, cwd, env))
+    assert matched == json.loads(json.dumps(direct.to_dict())) and direct.exit_code == 0
+    assert (
+        matched["config_sha256"]
+        == matched["expected_config_sha256"]
+        == hashlib.sha256(raw).hexdigest()
+    )
+    drift = cwd / "verification-drift.service"
+    drift.write_bytes(raw + b"PrivateDirective=PRIVATE_SYSTEMD_VALUE\n")
+    changed = command[:]
+    changed[changed.index("--config") + 1] = str(drift)
+    output = run_cli(changed, cwd, env, 5)
+    receipt = json.loads(output)
+    assert receipt["changes"] == [{"path": "/unit", "category": "content", "count": 1}]
+    assert "PRIVATE_SYSTEMD_VALUE" not in output and str(cwd) not in output
+    drift.write_bytes(b"invalid\0unit")
+    assert json.loads(run_cli(changed, cwd, env, 1))["status"] == "invalid"
+    assert (
+        json.loads(run_cli([*command, "--image", "example/engine:1"], cwd, env, 1))["status"]
+        == "invalid"
+    )
+    assert (
+        api.verify_systemd_deployment(
+            saved,
+            unit,
+            executable="/opt/other/engine",
+            candidate_index=index,
+            gpu_devices=devices,
+        ).exit_code
+        == 5
+    )
+    assert saved.read_bytes() == source and unit.read_bytes() == raw
+    return {
+        "match_exit": 0,
+        "drift_exit": 5,
+        "invalid_exit": 1,
+        "independent_executable_drift_exit": 5,
+        "source_and_unit_held": True,
+        "installed_api_and_cli": "passed",
+        "config_sha256": matched["config_sha256"],
+    }
+
+
 def accept(
     cwd: Path,
     env: dict,

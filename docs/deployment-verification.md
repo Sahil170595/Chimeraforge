@@ -9,6 +9,54 @@ independently supplied saved plan and complete render intent. It reuses
 refusals and original multi-replica population. It never copies a fleet into a
 one-agent candidate or reconstructs expected options from the file being checked.
 
+In 0.100.0 (unreleased), explicit systemd verification also compares exact native
+unit bytes with independent intent, as described below.
+
+## Systemd units
+
+Keep the original plan, selected candidate, model override and ordered GPU IDs
+used for `deploy --format systemd`. Supply the independently expected absolute
+POSIX engine/interpreter path.
+
+```bash
+chimeraforge deploy-verify --plan plan.json --candidate-index "$CANDIDATE_INDEX" \
+  --config deployment/chimeraforge.service --format systemd \
+  --executable /opt/engine/bin/vllm --gpu-device 7 --gpu-device 3 --json
+```
+
+The illustrative executable and two-device selection must agree with the original
+export. The additive typed API exposes the same intent.
+
+```python
+from chimeraforge import api
+
+checked = api.verify_systemd_deployment(
+    "plan.json", "deployment/chimeraforge.service",
+    executable="/opt/engine/bin/vllm", candidate_index=selected_index,
+    gpu_devices=["7", "3"],
+)
+```
+
+The verifier holds the bounded original plan and unit, reuses the current native
+`export_deployment(format="systemd")`, and compares the complete UTF-8 bytes.
+Whitespace, comments, line endings, environment ordering and argv changes all
+produce drift. Input must be nonempty UTF-8 without NUL and at most 2 MiB.
+The existing source, file/link/alias, cumulative-byte and companion bounds apply.
+Only the expected Ollama sibling `Modelfile` participates when required.
+
+The existing result uses match/exit 0, drift/exit 5, and invalid/exit 1. Unit
+drift is one categorical `/unit` content change with actual and expected SHA256
+digests. It omits unit values, executable paths and private identities. The
+original-file or typed-artifact source hash retains its existing byte basis.
+CLI syntax errors use exit 2.
+
+Native Linux backend, single-replica, model/checkpoint/quantization/KV and GPU
+selection restrictions apply. The CLI refuses image, host-port, replica-layout
+and Kubernetes controls in this lane. JSON formats continue to require `--image`.
+The verifier uses no shell/unit parser and performs no start, reload, executable
+existence check or network operation. A match establishes current-renderer
+consistency, with startup, hardware, capacity and performance remaining unverified.
+
 ## Single-replica CLI
 
 First create a saved plan and supported export using [the deployment example](deployment.md).

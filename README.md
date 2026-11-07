@@ -555,6 +555,10 @@ See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernet
 
 ### `deploy-verify` -- check offline declaration drift
 
+In 0.100.0 (unreleased), use `--format systemd --executable /absolute/engine`
+to compare exact native unit bytes against the original saved plan and independently
+retained model/GPU intent. See [systemd verification](docs/deployment-verification.md#systemd-units).
+
 **Offline deployment verification (since 0.75.0).** Keep the
 original saved plan, candidate index and full render intent independently from
 the file being checked. For the single-replica export above:

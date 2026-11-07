@@ -4,6 +4,12 @@
 
 This document covers the public Python API for Chimeraforge 0.96.0.
 
+In 0.100.0 (unreleased), `api.verify_systemd_deployment(saved, config_path, *,
+executable, model=None, candidate_index=0, gpu_devices=None)` verifies bounded
+systemd unit bytes with the current native renderer and independent intent.
+It returns the existing typed `DeploymentVerification` result.
+See [systemd input, drift and companion semantics](deployment-verification.md#systemd-units).
+
 Since 0.96.0, pass
 `budget_policy=api.ServingQuoteBudgetPolicy(max_monthly_usd, max_price_age_days=90)`
 to `api.quote_serving`. The cap is a decimal string. The resulting schema 2
