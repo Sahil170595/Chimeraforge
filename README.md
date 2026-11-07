@@ -15,6 +15,9 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Since 0.96.0**, [serving quote budget checks](docs/serving-declaration.md#check-a-monthly-budget)
+compare dated whole-instance prices to an exact monthly USD cap.
+
 **Since 0.95.0**, [passive fleet reports](docs/fleet-monitoring.md#static-receipt-reports)
 render an existing receipt against its original plan in Markdown or HTML.
 
@@ -36,7 +39,7 @@ checks a saved plan against a supplied NVIDIA CSV without a local GPU query.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.95.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.96.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -84,10 +87,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.95.0 adds static passive fleet reports. It includes declaration-based Kubernetes inspection from 0.94.0, offline inventory arithmetic from 0.93.0 and the five workflows introduced in 0.92.0. Native outcomes retain their own evidence limits.
+**Release scope.** Chimeraforge 0.96.0 adds budget checks for dated serving quotes. It includes static passive fleet reports from 0.95.0, declaration-based Kubernetes inspection from 0.94.0, offline inventory arithmetic from 0.93.0 and the five workflows introduced in 0.92.0.
 
 ```bash
-pip install "chimeraforge[mcp]==0.95.0"
+pip install "chimeraforge[mcp]==0.96.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -471,6 +474,17 @@ input 1 and native usage 2. No throughput, quality, memory feasibility, placemen
 engine execution or deployment readiness is implied. See [all bounds, Python
 API and fixed argv-reference limits](docs/serving-declaration.md).
 
+To apply a monthly cap to the dated estimate:
+
+```bash
+chimeraforge serving quote --declaration operator.serving.json \
+  --cloud aws --instance p5.48xlarge --region us-east-1 \
+  --max-monthly-usd 80000 --max-price-age-days 45 --json
+```
+
+The budget exit is 0 at or below the cap, 5 above, and 4 for stale or
+unknown pricing. See [decimal controls and quote compatibility](docs/serving-declaration.md#check-a-monthly-budget).
+
 ### `deploy` -- export serving configuration
 
 **Homogeneous Compose fleets (since 0.74.0).** Select an original
@@ -677,7 +691,7 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.95.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.96.0"`.
 Repeat `--endpoint ID=URL` for every original saved member; supply
 `--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
 `--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`
@@ -850,7 +864,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.95.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.96.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

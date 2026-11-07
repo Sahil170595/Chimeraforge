@@ -92,6 +92,7 @@ from chimeraforge.serving_declaration import (
     load_serving_declaration as load_serving_declaration,
 )
 from chimeraforge.serving_quote import ServingQuote as ServingQuote
+from chimeraforge.serving_quote import ServingQuoteBudgetPolicy as ServingQuoteBudgetPolicy
 from chimeraforge.kubernetes_inspection_types import (
     KubernetesInspection as KubernetesInspection,
     KubernetesInspectionError as KubernetesInspectionError,
@@ -750,11 +751,14 @@ def quote_serving(
     cloud: str | None = None,
     instance: str | None = None,
     region: str | None = None,
+    budget_policy: ServingQuoteBudgetPolicy | None = None,
 ) -> ServingQuote:
     """Quote dated whole instances without predicting capacity or assigning hosts."""
     from chimeraforge.serving_quote import quote_serving as quote
 
-    return quote(declaration, cloud=cloud, instance=instance, region=region)
+    return quote(
+        declaration, cloud=cloud, instance=instance, region=region, budget_policy=budget_policy
+    )
 
 
 def export_serving_declaration(

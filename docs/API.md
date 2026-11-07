@@ -2,7 +2,13 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.95.0.
+This document covers the public Python API for Chimeraforge 0.96.0.
+
+Since 0.96.0, pass
+`budget_policy=api.ServingQuoteBudgetPolicy(max_monthly_usd, max_price_age_days=90)`
+to `api.quote_serving`. The cap is a decimal string. The resulting schema 2
+adds a separate budget verdict and `.exit_code` while retaining the native
+estimate and provenance. See [budget states and decimal semantics](serving-declaration.md#check-a-monthly-budget).
 
 Since 0.95.0, `api.render_fleet_monitor_report(source, saved, *,
 candidate_index=0, format="html", title="Passive fleet diagnostics")` uses the

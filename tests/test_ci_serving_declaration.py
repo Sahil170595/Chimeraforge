@@ -12,3 +12,7 @@ def test_operator_serving_actual_cli_api_and_native_receivers(tmp_path):
     assert actual["owned_CLI_children_joined"] and actual["source_bytes_held"]
     assert actual["optimizer_misuse_refused"] and actual["aliases_and_invalid_layout_refused"]
     assert set(actual["profiles"]) == {"launch", "compose", "kubernetes"}
+    budget = actual["quote_budget"]
+    assert len(budget["actual_cli_observed_snapshot_age"]) == 3
+    assert budget["controlled_api_exit_codes"] == [0, 5, 4]
+    assert budget["malformed_cli_exit"] == 1 and budget["unknown_cli_exit"] == 4

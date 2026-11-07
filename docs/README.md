@@ -9,6 +9,8 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+Chimeraforge **0.96.0** adds [budget checks for dated serving quotes](serving-declaration.md#check-a-monthly-budget).
+
 Chimeraforge **0.95.0** adds [offline passive fleet reports](fleet-monitoring.md#static-receipt-reports).
 
 Chimeraforge **0.94.0** adds [read-only Kubernetes inspection for operator serving declarations](kubernetes-inspection.md#serving-declarations).
@@ -54,7 +56,7 @@ Chimeraforge **0.79.0** adds [original-fleet active trace replay](fleet-trace.md
 
 Chimeraforge **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
 
-The command examples on this page use **0.95.0**.
+The command examples on this page use **0.96.0**.
 
 Chimeraforge **0.77.0** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
@@ -93,13 +95,13 @@ URLs do not prove distinct processes, GPUs or independent capacity.
 - **[Signed native regression gates](signed-native-gates.md)** - since 0.71.0, exact signatures and explicit receiver trust before comparison
 
 ```bash
-pip install chimeraforge==0.95.0
+pip install chimeraforge==0.96.0
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --request-rate 2
 chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-34 commands in Chimeraforge 0.95.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `deploy-inspect`, `inventory-check`, `suggest`, `measure`,
+34 commands in Chimeraforge 0.96.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `deploy-inspect`, `inventory-check`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-fleet-campaign`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `monitor-fleet-exporter`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`

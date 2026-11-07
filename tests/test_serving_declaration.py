@@ -352,6 +352,170 @@ def test_quote_target_region_and_whole_instance_unknowns():
         api.quote_serving(declaration, cloud="aws")
 
 
+def test_budget_quote_exact_boundary_ignores_binary_and_ambient_decimal(monkeypatch):
+    from decimal import Inexact, localcontext
+
+    from chimeraforge.planner import cloudprice
+
+    snapshot = copy.deepcopy(cloudprice.load_cloud_prices())
+    offer = next(row for row in snapshot["offers"] if row["instance"] == "p5.48xlarge")
+    offer["price_per_hour"] = 0.07
+    captured = dt.date.fromisoformat(snapshot["captured_at"])
+    monkeypatch.setattr(cloudprice, "load_cloud_prices", lambda: snapshot)
+    monkeypatch.setattr(cloudprice, "_today", lambda: captured)
+    declaration = api.declare_serving(request())
+    target = dict(cloud="aws", instance="p5.48xlarge", region="us-east-1")
+    default = api.quote_serving(declaration, **target).to_dict()
+    assert default["schema_version"] == 1 and default["monthly_cost"] > 100.8
+    with localcontext() as context:
+        context.prec = 1
+        context.traps[Inexact] = True
+        report = api.quote_serving(
+            declaration, **target, budget_policy=api.ServingQuoteBudgetPolicy("100.800000")
+        )
+    data = report.to_dict()
+    assert report.exit_code == data["exit_code"] == 0
+    assert data["schema_version"] == 2
+    assert data["budget"]["quoted_monthly_usd"] == data["budget"]["max_monthly_usd"] == "100.8"
+    assert data["budget"]["status"] == "within_budget"
+    assert data["instance_count"] == 2 and data["billed_gpus"] == 16
+    assert data["monthly_cost"] == default["monthly_cost"]
+    assert data["feasibility"] is data["deployment_ready"] is None
+
+
+def test_budget_quote_cli_within_above_and_native_unknown_exits(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+
+    from chimeraforge.cli import app
+    from chimeraforge.planner import cloudprice
+
+    captured = dt.date.fromisoformat(cloudprice.load_cloud_prices()["captured_at"])
+    monkeypatch.setattr(cloudprice, "_today", lambda: captured)
+    path = tmp_path / "operator.json"
+    api.declare_serving(request()).save(path)
+    held = path.read_bytes()
+    command = ["serving", "quote", "--declaration", str(path), "--json"]
+    target = ["--cloud", "aws", "--instance", "p5.48xlarge", "--region", "us-east-1"]
+    for arguments, cap, expected, status in (
+        (target, "79257.6", 0, "within_budget"),
+        (target, "79257.599999", 5, "above_budget"),
+        ([], "1", 4, "unknown"),
+    ):
+        result = CliRunner().invoke(app, [*command, *arguments, "--max-monthly-usd", cap])
+        assert result.exit_code == expected, result.output
+        data = json.loads(result.stdout)
+        assert data["exit_code"] == expected and data["budget"]["status"] == status
+    assert path.read_bytes() == held
+
+
+@pytest.mark.parametrize(
+    "age,limit,state,code,native_stale",
+    [
+        (0, 0, "within_budget", 0, False),
+        (7, 7, "within_budget", 0, False),
+        (8, 7, "stale", 4, False),
+        (90, 90, "within_budget", 0, False),
+        (91, 90, "stale", 4, True),
+    ],
+)
+def test_budget_quote_preserves_native_quote_but_enforces_policy_age(
+    monkeypatch, age, limit, state, code, native_stale
+):
+    from chimeraforge.planner import cloudprice
+
+    captured = dt.date.fromisoformat(cloudprice.load_cloud_prices()["captured_at"])
+    monkeypatch.setattr(cloudprice, "_today", lambda: captured + dt.timedelta(days=age))
+    target = dict(cloud="aws", instance="p5.48xlarge", region="us-east-1")
+    declaration = api.declare_serving(request())
+    default = api.quote_serving(declaration, **target)
+    actual = api.quote_serving(
+        declaration, **target, budget_policy=api.ServingQuoteBudgetPolicy("79257.6", limit)
+    )
+    data = actual.to_dict()
+    assert actual.exit_code == code and data["budget"]["status"] == state
+    assert data["budget"]["quoted_monthly_usd"] == "79257.6"
+    assert data["stale"] is native_stale and data["age_days"] == age
+    assert default.exit_code == 0
+    legacy = default.to_dict()
+    assert legacy["schema_version"] == 1 and "exit_code" not in legacy and "budget" not in legacy
+    for name in legacy.keys() - {"created_at", "schema_version"}:
+        assert data[name] == legacy[name]
+
+
+@pytest.mark.parametrize(
+    "policy",
+    [
+        {"max_monthly_usd": "1"},
+        *(
+            (bad, 90)
+            for bad in (
+                True,
+                0.01,
+                "",
+                "NaN",
+                "Infinity",
+                "-0",
+                "1e3",
+                " 1",
+                "01",
+                "\u0661",
+                "1000000000000",
+                "0.0000001",
+                "1" * 1000,
+            )
+        ),
+        *(("1", bad) for bad in (True, 7.0, -1, 91)),
+    ],
+)
+def test_invalid_budget_refuses_before_loading_billing_snapshot(monkeypatch, policy):
+    from chimeraforge.planner import cloudprice
+
+    def unexpected():
+        pytest.fail("malformed policy reached the native snapshot")
+
+    monkeypatch.setattr(cloudprice, "load_cloud_prices", unexpected)
+    if isinstance(policy, tuple):
+        policy = api.ServingQuoteBudgetPolicy(*policy)
+    with pytest.raises(api.ServingDeclarationError, match="invalid serving quote budget policy"):
+        api.quote_serving(
+            api.declare_serving(request()),
+            cloud="aws",
+            instance="p5.48xlarge",
+            region="us-east-1",
+            budget_policy=policy,
+        )
+
+
+def test_budget_quote_invalid_age_alone_and_unavailable_offer_cli(tmp_path):
+    from typer.testing import CliRunner
+
+    from chimeraforge.cli import app
+
+    path = tmp_path / "operator.json"
+    api.declare_serving(request()).save(path)
+    command = ["serving", "quote", "--declaration", str(path), "--json"]
+    result = CliRunner().invoke(app, [*command, "--max-price-age-days", "5"])
+    assert result.exit_code == 1 and json.loads(result.stdout)["exit_code"] == 1
+    result = CliRunner().invoke(
+        app,
+        [
+            *command,
+            "--cloud",
+            "aws",
+            "--instance",
+            "p5.48xlarge",
+            "--region",
+            "us-west-2",
+            "--max-monthly-usd",
+            "0",
+        ],
+    )
+    assert result.exit_code == 4
+    body = json.loads(result.stdout)
+    assert body["reason"] == body["budget"]["reason"] == "offer_unavailable"
+    assert body["budget"]["status"] == "unknown" and body["budget"]["quoted_monthly_usd"] is None
+
+
 @pytest.mark.parametrize("days", [90, 91])
 def test_quote_carries_native_snapshot_age_and_stale_boundary(monkeypatch, days):
     from chimeraforge.planner import cloudprice

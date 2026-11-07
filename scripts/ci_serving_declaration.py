@@ -3,12 +3,101 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal, localcontext
 import hashlib
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
+from typing import TYPE_CHECKING
+from unittest.mock import patch
+
+if TYPE_CHECKING:
+    from chimeraforge.serving_declaration import ServingDeclaration
+
+
+def _accept_budget(
+    cwd: Path, env: dict, flags: list[str], native: dict, artifact: ServingDeclaration
+) -> dict:
+    from chimeraforge import api
+    from chimeraforge.planner import cloudprice
+    from ci_installed_acceptance import run_cli
+
+    with localcontext() as context:
+        context.prec = 80
+        monthly = Decimal(str(native["offer"]["price_per_hour"])) * 2 * 720
+        exact = format(monthly.normalize(), "f")
+        below = format((monthly - Decimal("0.000001")).normalize(), "f")
+    observed = []
+    for cap, limit, fresh_exit in ((exact, 90, 0), (below, 90, 5), (exact, 0, 0)):
+        child = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-B",
+                "-m",
+                "chimeraforge",
+                "serving",
+                "quote",
+                *flags,
+                "--max-monthly-usd",
+                cap,
+                "--max-price-age-days",
+                str(limit),
+                "--json",
+            ],
+            cwd=cwd,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=30,
+        )
+        body = json.loads(child.stdout)
+        stale = body["age_days"] > limit
+        code = 4 if stale else fresh_exit
+        assert child.returncode == body["exit_code"] == code
+        assert body["schema_version"] == 2 and body["captured_at"] == native["captured_at"]
+        assert body["instance_count"] == 2 and body["hours_per_month"] == 720
+        assert body["feasibility"] is body["deployment_ready"] is None
+        assert body["budget"]["quoted_monthly_usd"] == exact
+        assert body["budget"]["status"] == {0: "within_budget", 4: "stale", 5: "above_budget"}[code]
+        assert body["budget"]["max_monthly_usd"] == cap
+        observed.append({"age_days": body["age_days"], "limit": limit, "exit_code": code})
+    refused = json.loads(
+        run_cli(["serving", "quote", *flags, "--max-monthly-usd", "NaN", "--json"], cwd, env, 1)
+    )
+    assert refused["exit_code"] == 1 and "budget" not in refused
+    unknown = json.loads(
+        run_cli(["serving", "quote", *flags[:2], "--max-monthly-usd", exact, "--json"], cwd, env, 4)
+    )
+    assert unknown["budget"]["reason"] == "no_billing_target"
+    assert unknown["budget"]["quoted_monthly_usd"] is None and unknown["exit_code"] == 4
+
+    captured = date.fromisoformat(native["captured_at"])
+    controlled = []
+    for age, limit, cap, code in ((7, 7, exact, 0), (7, 7, below, 5), (8, 7, exact, 4)):
+        with patch.object(cloudprice, "_today", return_value=captured + timedelta(days=age)):
+            report = api.quote_serving(
+                artifact,
+                cloud=native["cloud"],
+                instance=native["instance"],
+                region=native["region"],
+                budget_policy=api.ServingQuoteBudgetPolicy(cap, limit),
+            )
+        assert (
+            report.exit_code == code and report.to_dict()["budget"]["quoted_monthly_usd"] == exact
+        )
+        controlled.append(code)
+    return {
+        "bundled_native_monthly_usd": exact,
+        "actual_cli_observed_snapshot_age": observed,
+        "controlled_api_exit_codes": controlled,
+        "malformed_cli_exit": 1,
+        "unknown_cli_exit": 4,
+    }
 
 
 def accept(cwd: Path, env: dict) -> dict:
@@ -79,6 +168,8 @@ def accept(cwd: Path, env: dict) -> dict:
     }
     assert cli_quote["instance_count"] == 2 and cli_quote["billed_gpus"] == 16
     assert cli_quote["idle_billed_gpus"] == 4 and cli_quote["feasibility"] is None
+    assert cli_quote["schema_version"] == 1 and "budget" not in cli_quote
+    quote_budget = _accept_budget(cwd, env, quote_flags, cli_quote, artifact)
     groups = [[str(4 * r + i) for i in range(4)] for r in range(3)]
     ports = [9001, 9002, 9003]
     profiles = {}
@@ -201,6 +292,7 @@ def accept(cwd: Path, env: dict) -> dict:
         "logical_gpu_slots": 12,
         "replicas": 3,
         "profiles": profiles,
+        "quote_budget": quote_budget,
         "quote": {
             "instance_count": 2,
             "billed_gpus": 16,

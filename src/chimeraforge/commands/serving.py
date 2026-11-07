@@ -88,20 +88,46 @@ def quote(
     cloud: str | None = typer.Option(None, "--cloud"),
     instance: str | None = typer.Option(None, "--instance"),
     region: str | None = typer.Option(None, "--region"),
+    max_monthly_usd: str | None = typer.Option(
+        None, "--max-monthly-usd", help="Optional exact nonnegative decimal monthly USD cap."
+    ),
+    max_price_age_days: int | None = typer.Option(
+        None, "--max-price-age-days", help="Optional tighter price age limit (0 to 90 days)."
+    ),
     output_json: bool = typer.Option(False, "--json"),
 ) -> None:
     """Quote an exact dated billing target; no replica-to-host placement."""
-    from chimeraforge.api import quote_serving
+    from chimeraforge.api import ServingQuoteBudgetPolicy, quote_serving
+    from chimeraforge.planner.cloudprice import STALE_AFTER_DAYS
 
+    if max_monthly_usd is None and max_price_age_days is not None:
+        _error(output_json)
+    policy = (
+        ServingQuoteBudgetPolicy(
+            max_monthly_usd,
+            STALE_AFTER_DAYS if max_price_age_days is None else max_price_age_days,
+        )
+        if max_monthly_usd is not None
+        else None
+    )
     try:
-        result = quote_serving(declaration, cloud=cloud, instance=instance, region=region).to_dict()
+        report = quote_serving(
+            declaration, cloud=cloud, instance=instance, region=region, budget_policy=policy
+        )
+        result = report.to_dict()
     except (ValueError, OSError, TypeError, KeyError):
         _error(output_json)
-    typer.echo(
-        json.dumps(result)
-        if output_json
-        else f"Serving quote {result['status']}: {result['reason']}; feasibility unknown."
-    )
+    summary = f"Serving quote {result['status']}: {result['reason']}; feasibility unknown."
+    if policy is not None:
+        budget = result["budget"]
+        quoted = budget["quoted_monthly_usd"] or "unknown"
+        summary += (
+            f" Budget {budget['status']} ({budget['reason']}): "
+            f"quoted USD {quoted}, cap USD {budget['max_monthly_usd']}."
+        )
+    typer.echo(json.dumps(result) if output_json else summary)
+    if report.exit_code:
+        raise typer.Exit(report.exit_code)
 
 
 @serving_app.command("export")
