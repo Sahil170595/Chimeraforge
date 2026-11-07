@@ -303,6 +303,10 @@ unchanged, 1 means changed/expired/unverified required evidence, and 2 means
 malformed input. A stable modeled recommendation does not prove serving
 performance or identify immutable model weights. See [the API contract](docs/planning-api.md).
 
+In 0.98.0 (unreleased), add `--junit check.xml` to `check` or `bundle check`
+to write native results for CI alongside the usual stdout. Write bundle JUnit
+outside the source bundle. See [JUnit outcomes and output rules](docs/planning-api.md#saved-check-junit).
+
 ### `bundle` -- portable saved-plan handoff
 
 Available in the published 0.61.0 CLI.

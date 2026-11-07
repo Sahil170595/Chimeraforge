@@ -13,11 +13,23 @@ bundle_app = typer.Typer(
 )
 
 
-def _emit(operation: Callable[..., Any], *args: Any, json_output: bool = False) -> None:
+def _emit(
+    operation: Callable[..., Any],
+    *args: Any,
+    json_output: bool = False,
+    junit: Path | None = None,
+    protected: tuple[Path, ...] = (),
+) -> None:
     from chimeraforge.api import PlanError
 
     try:
+        if junit is not None:
+            from chimeraforge.plan_check_output import protect_junit, publish_junit
+
+            protect_junit(junit, protected)
         report = operation(*args).to_dict()
+        if junit is not None:
+            publish_junit(report, junit, protected)
     except PlanError as exc:
         if json_output:
             typer.echo(json.dumps({"error": str(exc)}))
@@ -65,11 +77,26 @@ def check(
     json_output: bool = typer.Option(
         False, "--json", help="Emit offline replay and relocation evidence."
     ),
+    junit: Path | None = typer.Option(
+        None, "--junit", help="Write a bounded JUnit report outside the bundle."
+    ),
 ) -> None:
     """Recheck held inputs offline; exit 1 for changed/expired/required unverified facts."""
     from chimeraforge.api import check_plan_bundle
 
-    _emit(check_plan_bundle, directory, json_output=json_output)
+    if junit is None:
+        _emit(check_plan_bundle, directory, json_output=json_output)
+    else:
+        from chimeraforge.plan_bundle import ROLE_PATHS
+
+        protected = (
+            directory,
+            directory / "manifest.json",
+            *(directory / p for p in ROLE_PATHS.values()),
+        )
+        _emit(
+            check_plan_bundle, directory, json_output=json_output, junit=junit, protected=protected
+        )
 
 
 def _prediction_emit(
