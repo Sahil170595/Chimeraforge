@@ -1,7 +1,7 @@
 # Native chat trace replay
 
-**Unreleased 0.89.0 source.** Public installation remains **0.86.0**. This adds
-explicit plain-text chat histories to the existing trace commands and Python
+Chimeraforge 0.92.0 adds explicit plain-text chat histories to the existing
+trace commands and Python
 receivers. It contacts a server you already operate; it does not start an engine,
 download a model, orchestrate dependent turns or flatten roles into a prompt.
 
@@ -30,7 +30,7 @@ assistant turns. The tool does not append generated answers to subsequent rows.
 The legacy four-field prompt format remains supported, including mixed workloads.
 
 ```bash
-# Requires an existing served model and this unreleased source installation.
+# Requires Chimeraforge 0.92.0 and an existing served model.
 chimeraforge trace chat.json --model my-served-model --backend ollama \
   --base-url http://localhost:11434 --concurrency 1 \
   --request-timeout 60 --trace-timeout 90 --out chat.trace.json --json

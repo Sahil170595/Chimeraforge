@@ -1,6 +1,6 @@
 # Whole-campaign diagnostics
 
-**Unreleased 0.90.0 source.** Public installation remains **0.86.0**.
+**Since 0.92.0.**
 Render one complete native serial or original-fleet campaign as HTML, SVG or
 Markdown. Every declared execution stays visible, including failed, incomplete
 and not-started slots. Native child observations and missing receipts remain

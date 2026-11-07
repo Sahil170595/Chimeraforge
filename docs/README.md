@@ -9,24 +9,13 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
-**Unreleased 0.91.0 source** adds [continuous fleet export](fleet-exporter.md):
-fixed native polling, cached loopback gauges, all-member stale/failure views and
-owned API/OS CLI shutdown. Public installation remains 0.86.0.
+Chimeraforge **0.92.0** adds:
 
-**Unreleased 0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md):
-all K/original N, native states/unknowns and complete static HTML/SVG/Markdown.
-
-**Unreleased 0.89.0 source** adds [native chat trace replay](chat-trace-replay.md):
-ordered text-role histories across ordinary/saved/fleet/campaign paths, explicit
-usage unknowns and complete private commitments. Public installation remains 0.86.0.
-
-**Unreleased 0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md):
-concrete settings, dated whole-instance quotes and native launch/Compose/Kubernetes
-exports/config verification without optimizer evidence or runtime claims.
-
-**Unreleased 0.87.0 source** adds opt-in [selected-batch inventory memory](inventory-check.md):
-saved B1 plus the compatible native active-sequence KV increment, with every
-original device slot retained. Public installation remains **0.86.0**.
+- [Continuous fleet export](fleet-exporter.md) with fixed native polling, cached loopback gauges and all-member stale or failed views.
+- [Whole-campaign diagnostics](campaign-diagnostics.md) with complete static HTML, SVG and Markdown.
+- [Native chat trace replay](chat-trace-replay.md) with ordered role histories and explicit usage unknowns.
+- [Operator-authored serving declarations](serving-declaration.md) with concrete settings, dated whole-instance quotes and native exports and verification.
+- [Selected-batch inventory memory](inventory-check.md) with saved batch-one estimates, compatible active-sequence KV increments and every original slot.
 
 Chimeraforge **0.86.0** adds [strict native trace diagnostics](trace-diagnostics.md),
 retaining every ordinary row or original fleet member in complete static
@@ -59,7 +48,7 @@ Chimeraforge **0.79.0** adds [original-fleet active trace replay](fleet-trace.md
 
 Chimeraforge **0.78.0** adds [runtime HTTPS, bearer and mTLS monitoring](secure-monitoring.md), covering metrics and all metadata without persisting private settings.
 
-Public CLI: **0.86.0**. The released features below are included in this version.
+The command examples on this page use **0.92.0**.
 
 Chimeraforge **0.77.0** adds [inventory mapping and saved B1 memory arithmetic](inventory-check.md), with full original selector coverage and deployment readiness always unassessed.
 Chimeraforge 0.72.0 adds exact hardware alternatives to
@@ -98,13 +87,13 @@ URLs do not prove distinct processes, GPUs or independent capacity.
 - **[Signed native regression gates](signed-native-gates.md)** - since 0.71.0, exact signatures and explicit receiver trust before comparison
 
 ```bash
-pip install chimeraforge
+pip install chimeraforge==0.92.0
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB" --request-rate 2
 chimeraforge suggest --source ollama --hardware "RTX 4080 12GB" --budget 500
 chimeraforge measure --model qwen3:14b --ollama-url http://localhost:11434
 ```
 
-32 commands in Chimeraforge 0.86.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `deploy-inspect`, `inventory-check`, `suggest`, `measure`,
+34 commands in Chimeraforge 0.92.0: `plan`, `check`, `bundle`, `study`, `deploy`, `deploy-verify`, `deploy-inspect`, `inventory-check`, `suggest`, `measure`,
 `validate`, `catalog`, `safety`, `bench`, `trace`, `trace-fleet`, `trace-fleet-campaign`, `trace-campaign`, `trace-envelope`, `gate`, `refit`, `compare`,
 `score`, `eval`, `report`, `workload`, `monitor`, `monitor-fleet`, `monitor-fleet-exporter`, `doctor`, `contribute`, `mcp`, `serve`.
 Run `chimeraforge --help` or `chimeraforge <cmd> --help`. `gate --kind trace`

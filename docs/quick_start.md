@@ -1,19 +1,11 @@
 # Quick Start Guide
 
-Unreleased **0.91.0 source** adds [continuous fleet export](fleet-exporter.md)
-through `monitor-fleet-exporter` and `api.serve_fleet_exporter`. Scrapes only read
-cached bytes; qualification and lifecycle remain separate. Public install is 0.86.0.
-
-Unreleased **0.90.0 source** adds [whole-campaign diagnostics](campaign-diagnostics.md).
-Public installation remains **0.86.0**.
-
-Unreleased **0.89.0 source** adds [native chat trace replay](chat-trace-replay.md)
-through the existing trace command family. Explicit role histories are sent intact;
-missing usage remains unknown. Public installation remains 0.86.0.
-
-Unreleased **0.88.0 source** adds [operator-authored serving declarations](serving-declaration.md)
-through `serving declare|quote|export|verify`. Public installation remains 0.86.0.
-No optimizer, model/corpus lookup or capacity proof is needed to declare intent.
+Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
+[whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)
+and [operator-authored serving declarations](serving-declaration.md).
+The exporter serves cached bytes, and chat replay preserves explicit role
+histories and unknown usage. Declaring serving intent needs no optimizer,
+model or corpus lookup.
 
 Chimeraforge 0.86.0 adds [strict whole trace diagnostics](trace-diagnostics.md) through
 `api.render_trace_report` and `report --kind trace|fleet-trace --input`.
@@ -64,10 +56,10 @@ reported free memory with the saved per-GPU batch-one baseline. Every result kee
 independence, allocation or runtime fit. See [complete CLI/API examples and
 exit statuses](inventory-check.md).
 
-**Unreleased 0.87.0 source:** `--memory-basis selected-batch` (or API
+**Since 0.92.0:** `--memory-basis selected-batch` (or API
 `memory_basis="selected-batch"`) adds the compatible saved active-sequence KV
 increment at the saved B/context. Older plans keep default B1 behavior and return
-selected-batch unknown without inventory contact. Public installation remains 0.86.0.
+selected-batch unknown without inventory contact.
 
 **Passive declared-fleet monitoring (since 0.76.0):** [passive declared-fleet monitoring](fleet-monitoring.md)
 adds `monitor-fleet` and typed async `api.monitor_fleet`. Repeat explicit ID=URL

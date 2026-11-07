@@ -1,8 +1,7 @@
 # Queried inventory and saved baseline arithmetic
 
-**Unreleased 0.87.0 source:** optional selected-batch memory preflight is described
-below. The current public installation is 0.86.0; its batch-one behavior remains
-the default in this source candidate.
+Chimeraforge 0.92.0 adds optional selected-batch memory preflight. Batch-one
+behavior remains the default.
 
 Available since **Chimeraforge 0.77.0**. This operation checks an inventory view and
 saved arithmetic. Every report has `deployment_ready: null`.
@@ -54,7 +53,7 @@ Reported total is compared separately and never fills unavailable free. No memor
 values are summed. Offload-clamped, unavailable or unsupported saved baselines
 remain unknown without reconstruction or native contact.
 
-## Opt-in selected-batch memory (unreleased 0.87.0)
+## Opt-in selected-batch memory (since 0.92.0)
 
 ```bash
 # Produce/save the plan with this 0.87 source first; keep its selected B/context:

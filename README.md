@@ -15,38 +15,19 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
-**Unreleased 0.91.0 source:** `monitor-fleet-exporter` / `api.serve_fleet_exporter`
-serve cached native fleet gauges on loopback, with all-N freshness/failure views
-and owned shutdown. Scrapes make no backend calls. Public installation remains
-**0.86.0**; see [continuous fleet export](docs/fleet-exporter.md).
+**Included in 0.92.0**
 
-**Unreleased 0.90.0 source:** `report --kind trace-campaign` / `--kind fleet-trace-campaign`
-and `api.render_trace_report` render whole native campaigns as HTML/SVG/Markdown,
-retaining every execution, original member and unknown fact. Public installation
-remains **0.86.0**; see [whole-campaign diagnostics](docs/campaign-diagnostics.md).
-
-**Unreleased 0.89.0 source:** native chat trace replay preserves ordered
-system/user/assistant messages across ordinary, saved-plan, fleet and campaign
-paths. Missing native usage stays unknown; text-only output, private commitments
-and secure ownership remain explicit. Public installation remains **0.86.0**;
-see [chat API/CLI and limits](docs/chat-trace-replay.md).
-
-**Unreleased 0.88.0 source:** `serving declare|quote|export|verify` authors concrete
-operator intent, quotes dated whole instances, and checks native configuration
-without optimizer predictions. Public installation remains **0.86.0**; see the
-[complete serving contract](docs/serving-declaration.md).
-
-**Unreleased 0.87.0 source:** `inventory-check --memory-basis selected-batch` and
-`api.check_inventory(..., memory_basis="selected-batch")` add compatible saved
-active-sequence KV components to the saved B1 interval without replanning. This
-is per-device modeled arithmetic, not runtime peak or deployment readiness.
-Public installation remains **0.86.0**; see the [complete contract](docs/inventory-check.md).
+- [Continuous fleet export](docs/fleet-exporter.md) serves cached native gauges on loopback, with all-member freshness and failure views and owned shutdown. Scrapes make no backend calls.
+- [Whole-campaign diagnostics](docs/campaign-diagnostics.md) render complete native campaigns as HTML, SVG or Markdown, retaining every execution, original member and unknown value.
+- [Native chat trace replay](docs/chat-trace-replay.md) preserves ordered role histories across ordinary, saved-plan, fleet and campaign paths. Missing native usage stays unknown.
+- [Operator-authored serving declarations](docs/serving-declaration.md) capture concrete intent, quote dated whole instances and check native configuration without optimizer predictions.
+- [Selected-batch inventory preflight](docs/inventory-check.md) adds the saved active-sequence KV increment to the saved batch-one interval for each original device.
 
 **Every number is labeled `measured`, `extrapolated`, `derived`, `estimated`, or `unknown`, and the tool refuses to fake the ones it can't stand behind.** VRAM and KV-cache are `derived` -- exact arithmetic over the model's real architecture, not a measurement. Throughput is a measured lookup only on the rig the corpus was measured on; on any other GPU that row is scaled by memory bandwidth and reported as `extrapolated`, carrying the row it came from, the rig it was measured on and the ratio applied, because a 17.8x bandwidth extrapolation (RTX 4080 Laptop 432 GB/s -> B200 7700 GB/s) is not a measurement of your card. Failing that it is an explicit roofline `estimate` -- never presented as data it isn't. Quality below the bundled corpus reports `unknown`, not a made-up score. A 0-result plan names the exact gate that rejected every candidate instead of a generic "nothing found." No telemetry, no phone-home, works air-gapped.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This inventory describes unreleased Chimeraforge 0.91.0 source; public installation remains 0.86.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.92.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -94,10 +75,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope (2026-11-01).** [Chimeraforge 0.86.0](https://github.com/Sahil170595/Chimeraforge/releases/tag/v0.86.0) adds strict native ordinary/fleet trace diagnostics in complete static HTML, Markdown and SVG while preserving benchmark report defaults. The workflows below are available in this version. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
+**Release scope.** Chimeraforge 0.92.0 includes the five workflows above and retains the ordinary and fleet trace diagnostics introduced in 0.86.0. Native protocol observations and hosted CPU acceptance do not qualify GPU execution or physical serving performance.
 
 ```bash
-pip install "chimeraforge[mcp]==0.86.0"
+pip install "chimeraforge[mcp]==0.92.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -440,7 +421,7 @@ without probing this host, running inference or attesting hardware/weights.
 
 ### `serving` -- operator-authored serving intent
 
-**Unreleased 0.88.0 source.** Declare concrete settings without a predictive plan,
+**Since 0.92.0.** Declare concrete settings without a predictive plan,
 model/corpus lookup or capacity claim. The example revision is an operator claim;
 the image is an explicit mutable tag, not verified runtime compatibility.
 
@@ -674,8 +655,8 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
-The unreleased 0.91.0 source adds a loopback service with one sequential native
-window per poll. Install the source with `python -m pip install -e ".[exporter]"`.
+Chimeraforge 0.92.0 adds a loopback service with one sequential native window
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.92.0"`.
 Repeat `--endpoint ID=URL` for every original saved member; supply
 `--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
 `--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`
@@ -740,7 +721,7 @@ chimeraforge monitor --backend vllm --url https://inference.example:8000 \
 
 ### `inventory-check` -- compare queried selectors and saved B1 memory
 
-**Unreleased 0.87.0 source:** add `--memory-basis selected-batch` to either form
+**Since 0.92.0:** add `--memory-basis selected-batch` to either form
 below to compare against the compatible saved effective B/context estimate.
 This requires a new native producer declaration; old plans remain B1-compatible
 and selected-batch unknown. Default `batch-one` keeps the existing report shape.
@@ -848,7 +829,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.86.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.92.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -964,7 +945,7 @@ confidence, GPU accuracy or queue-inclusive SLO attainment. See the complete
 
 ### `trace` -- real scheduled requests and joint-target goodput
 
-**Native chat (unreleased 0.89.0 source):** use explicit `mode: "chat"`, ordered
+**Native chat (since 0.92.0):** use explicit `mode: "chat"`, ordered
 `messages` role/content pairs and `temperature` in the existing private JSON input.
 The same input works through saved plans, complete fleets, serial campaigns,
 receiving/gates and diagnostics; roles are never flattened into a completion.

@@ -1,6 +1,6 @@
 # Operator-authored serving declarations
 
-**Unreleased 0.88.0 source.** Public installation remains **0.86.0**. This workflow
+**Since 0.92.0.** This workflow
 declares concrete serving settings without running an optimizer, resolving a model,
 loading a coefficient corpus or claiming that the configuration can serve traffic.
 

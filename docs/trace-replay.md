@@ -1,7 +1,7 @@
 # Real request-trace replay
 
-Unreleased 0.89.0 source adds the separate [native chat JSON/type variant](chat-trace-replay.md)
-to these same replay/receiving paths. Public installation remains 0.86.0.
+Chimeraforge 0.92.0 adds [native chat JSON and request types](chat-trace-replay.md)
+to these replay and receipt-loading paths.
 
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
