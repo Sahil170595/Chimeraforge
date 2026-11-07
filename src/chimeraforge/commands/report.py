@@ -51,10 +51,18 @@ def report(
     kind: str = typer.Option(
         "benchmark",
         "--kind",
-        help="benchmark, trace, fleet-trace, trace-campaign or fleet-trace-campaign.",
+        help=(
+            "benchmark, trace, fleet-trace, trace-campaign, fleet-trace-campaign or fleet-monitor."
+        ),
     ),
     input_path: list[str] = typer.Option(
-        None, "--input", help="One complete strict native trace or campaign receipt."
+        None, "--input", help="One complete native trace, campaign or passive fleet receipt."
+    ),
+    plan_path: list[str] = typer.Option(
+        None, "--plan", help="Original saved plan (fleet-monitor only)."
+    ),
+    candidate_index: int | None = typer.Option(
+        None, "--candidate-index", help="Original plan candidate (fleet-monitor only, default 0)."
     ),
     verbose: bool = typer.Option(
         False,
@@ -67,6 +75,10 @@ def report(
     import logging
     from pathlib import Path
 
+    passive = kind == "fleet-monitor"
+    if not passive and (plan_path or candidate_index is not None):
+        typer.echo("--plan and --candidate-index apply only to fleet-monitor reports.", err=True)
+        raise typer.Exit(code=2)
     if kind != "benchmark":
         from chimeraforge import api
 
@@ -74,26 +86,50 @@ def report(
             not _defaulted(ctx, name) for name in ("results_dir", "results_files")
         )
         if (
-            kind not in {"trace", "fleet-trace", "trace-campaign", "fleet-trace-campaign"}
+            kind
+            not in {
+                "trace",
+                "fleet-trace",
+                "trace-campaign",
+                "fleet-trace-campaign",
+                "fleet-monitor",
+            }
             or not input_path
             or len(input_path) != 1
             or legacy_selectors
             or output_json
+            or (passive and (not plan_path or len(plan_path) != 1))
         ):
-            typer.echo(
-                "Trace report requires one --input and no benchmark selectors/--json.", err=True
+            message = (
+                "Fleet monitor report requires one --input and one --plan, "
+                "with no benchmark selectors/--json."
+                if passive
+                else "Trace report requires one --input and no benchmark selectors/--json."
             )
+            typer.echo(message, err=True)
             raise typer.Exit(code=2)
         try:
-            report_title = "Trace diagnostics" if _defaulted(ctx, "title") else title
-            artifact = api.render_trace_report(
-                input_path[0], kind=kind, format=fmt, title=report_title
-            )
+            if passive:
+                artifact = api.render_fleet_monitor_report(
+                    input_path[0],
+                    plan_path[0],
+                    candidate_index=0 if candidate_index is None else candidate_index,
+                    format=fmt,
+                    title="Passive fleet diagnostics" if _defaulted(ctx, "title") else title,
+                )
+            else:
+                artifact = api.render_trace_report(
+                    input_path[0],
+                    kind=kind,
+                    format=fmt,
+                    title="Trace diagnostics" if _defaulted(ctx, "title") else title,
+                )
             if output:
                 artifact.save(output)
             typer.echo(artifact.content.encode("utf-8"), nl=False)
         except api.PlanError:
-            typer.echo("Trace report input or output unavailable.", err=True)
+            label = "Fleet monitor report" if passive else "Trace report"
+            typer.echo(f"{label} input or output unavailable.", err=True)
             raise typer.Exit(code=2) from None
         return
     if input_path:

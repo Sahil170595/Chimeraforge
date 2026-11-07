@@ -15,6 +15,9 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Since 0.95.0**, [passive fleet reports](docs/fleet-monitoring.md#static-receipt-reports)
+render an existing receipt against its original plan in Markdown or HTML.
+
 **Since 0.94.0**, [read-only Kubernetes inspection](docs/kubernetes-inspection.md#serving-declarations)
 accepts an operator serving declaration directly and retains every declared resource.
 
@@ -33,7 +36,7 @@ checks a saved plan against a supplied NVIDIA CSV without a local GPU query.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.94.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.95.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -81,10 +84,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.94.0 adds Kubernetes inspection for operator serving declarations. It includes offline inventory arithmetic from 0.93.0 and the five workflows introduced in 0.92.0. Native rollout is a controller observation with GPU execution and physical serving performance unassessed.
+**Release scope.** Chimeraforge 0.95.0 adds static passive fleet reports. It includes declaration-based Kubernetes inspection from 0.94.0, offline inventory arithmetic from 0.93.0 and the five workflows introduced in 0.92.0. Native outcomes retain their own evidence limits.
 
 ```bash
-pip install "chimeraforge[mcp]==0.94.0"
+pip install "chimeraforge[mcp]==0.95.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -674,7 +677,7 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.94.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.95.0"`.
 Repeat `--endpoint ID=URL` for every original saved member; supply
 `--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
 `--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`
@@ -847,7 +850,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.94.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.95.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -1241,6 +1244,19 @@ The closed public projection omits identities/metadata, preserves null versus ze
 and refuses whole over-limit output. Artifact exit0 is not a native performance
 pass. See [API, protected saves, bounds and browser proof limits](docs/trace-diagnostics.md).
 Available in Chimeraforge 0.86.0.
+
+Since 0.95.0, render an existing passive fleet receipt offline against its
+original plan:
+
+```bash
+chimeraforge report --kind fleet-monitor --input monitor.json --plan fleet-plan.json \
+  --candidate-index "$CANDIDATE_INDEX" --format html --output monitor.html
+```
+
+This mode uses Markdown or HTML and retains every member and requested window
+recorded by the native receipt. Rendering a receipt with an unknown, breach or
+mismatch outcome still succeeds when the inputs and output are valid. See
+[source identity, privacy and bounds](docs/fleet-monitoring.md#static-receipt-reports).
 
 ### `serve` -- local planning HTTP API
 

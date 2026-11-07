@@ -153,6 +153,54 @@ plan are refused before network contact using the existing native protection.
 Textfile output is atomically replaced; this does not imply atomic observations,
 atomic source/output snapshots or source authentication.
 
+## Static receipt reports
+
+Since 0.95.0, render a saved passive fleet receipt in Markdown (the CLI
+default) or HTML. Supply the original plan and its candidate index, which
+defaults to 0.
+
+```bash
+chimeraforge report --kind fleet-monitor --input monitor.json --plan fleet-plan.json \
+  --candidate-index "$CANDIDATE_INDEX" --format html --output monitor.html
+```
+
+```python
+from chimeraforge import api
+
+document = api.render_fleet_monitor_report(
+    "monitor.json", "fleet-plan.json", candidate_index=selected_index, format="html"
+)
+document.save("monitor.html")
+```
+
+The native receiver verifies the receipt against the plan and keeps every
+original member in ordinal order. For schema 2, each member shows every
+requested window, including missing suffixes. Schema 1 shows every observed
+window and reports the requested count as unavailable. Each observed window
+keeps its native outcome, duration, sample counts, P95 bounds and targets
+where available. Known zeros remain zero, and an open upper bucket has no
+finite upper bound. A reset label reflects a recognized native reset or
+restart reason in the held receipt. The report also shows native binding
+states, target sources, budget counts, cancellation and cleanup.
+
+The report includes the native receipt schema and a digest of its held
+representation, plus the validated plan fingerprint and candidate index.
+For a receipt file the digest covers exact bytes. An object uses the held
+native JSON representation. These bindings establish local consistency.
+Model and endpoint labels, URLs, raw diagnostics, metadata bodies and input
+paths are excluded. Treat the report as operator data when sharing it.
+
+Rendering runs offline and performs no monitor polling, process launch or GPU
+query. It makes no new SLO, regression gate, pooled percentile or capacity
+assessment. Successful rendering exits 0 even when the document reports a
+different native observation outcome. Invalid sources, unsupported options,
+unsafe output and over-limit documents exit 2 with no partial document.
+Output is capped at 8 MiB of complete UTF-8 bytes. The title is escaped and
+uses the static report limit of 200 characters and 1,024 UTF-8 bytes. With
+`--output`, the file and stdout contain the same bytes. Save rejects resolved
+aliases and same-file links to either held input. In-memory inputs only retain
+file guards carried by their native artifact.
+
 ## Runtime secure connections (since 0.78.0)
 
 `run_monitor(..., connection=...)` and `api.monitor_plan(..., connection=...)` accept an opaque runtime `MonitorConnection`; async `api.monitor_fleet(..., connections=...)` accepts per-ID settings. Explicit fleet mappings, including `{}`, require verified HTTPS for all original slots. CLI named-environment bearer, private CA and optional client cert/key settings cover metrics and all metadata, without persisting credentials. Anonymous defaults and native evidence/cleanup behavior remain. See [the complete trust and lifecycle contract](secure-monitoring.md); available since Chimeraforge 0.78.0.
