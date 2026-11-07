@@ -10,9 +10,16 @@ import typer
 
 def deploy_verify(
     plan: Path = typer.Option(..., "--plan", help="Original independently supplied saved plan."),
-    config: Path = typer.Option(..., "--config", help="Existing generated JSON declaration."),
-    image: str = typer.Option(..., "--image", help="Independent expected image tag/digest."),
-    format: str = typer.Option("compose", "--format", help="compose (default) or kubernetes."),
+    config: Path = typer.Option(..., "--config", help="Existing generated declaration."),
+    image: str | None = typer.Option(
+        None, "--image", help="Expected image, required for JSON formats."
+    ),
+    format: str = typer.Option(
+        "compose", "--format", help="compose (default), kubernetes or systemd."
+    ),
+    executable: str | None = typer.Option(
+        None, "--executable", help="Expected absolute systemd engine path."
+    ),
     model: str | None = typer.Option(None, "--model", help="Expected concrete serving identity."),
     candidate_index: int = typer.Option(0, "--candidate-index", help="Saved candidate index."),
     gpu_device: list[str] | None = typer.Option(
@@ -41,22 +48,55 @@ def deploy_verify(
     """Compare current-renderer declarations; no interpolation, Docker or GPU calls."""
     from chimeraforge.commands.deploy import _kubernetes_options, _replica_groups
     from chimeraforge.deploy import DeploymentError
-    from chimeraforge.deployment_verify import DeploymentVerificationError, verify_deployment
+    from chimeraforge.deployment_verify import (
+        DeploymentVerificationError,
+        verify_deployment,
+        verify_systemd_deployment,
+    )
 
     try:
-        result = verify_deployment(
-            plan,
-            config,
-            image=image,
-            format=format,
-            kubernetes=_kubernetes_options(namespace, name_prefix, node_selector),
-            model=model,
-            candidate_index=candidate_index,
-            gpu_devices=gpu_device,
-            host_port=host_port,
-            replica_gpu_devices=_replica_groups(replica_devices),
-            replica_host_ports=replica_port,
-        )
+        if format == "systemd":
+            if executable is None or any(
+                value is not None
+                for value in (
+                    image,
+                    host_port,
+                    replica_devices,
+                    replica_port,
+                    namespace,
+                    name_prefix,
+                    node_selector,
+                )
+            ):
+                raise DeploymentVerificationError("invalid systemd render controls")
+            result = verify_systemd_deployment(
+                plan,
+                config,
+                executable=executable,
+                model=model,
+                candidate_index=candidate_index,
+                gpu_devices=gpu_device,
+            )
+        else:
+            if image is None:
+                raise typer.BadParameter(
+                    "--image is required for JSON formats", param_hint="--image"
+                )
+            if executable is not None:
+                raise DeploymentVerificationError("executable requires systemd format")
+            result = verify_deployment(
+                plan,
+                config,
+                image=image,
+                format=format,
+                kubernetes=_kubernetes_options(namespace, name_prefix, node_selector),
+                model=model,
+                candidate_index=candidate_index,
+                gpu_devices=gpu_device,
+                host_port=host_port,
+                replica_gpu_devices=_replica_groups(replica_devices),
+                replica_host_ports=replica_port,
+            )
     except (DeploymentVerificationError, DeploymentError) as exc:
         if output_json:
             typer.echo(
