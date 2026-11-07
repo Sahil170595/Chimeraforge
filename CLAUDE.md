@@ -57,28 +57,28 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.91.0 (unreleased source) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.92.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
-Continuous fixed-config exporter (unreleased 0.91.0): `monitor-fleet-exporter`
+Continuous fixed-config exporter (since 0.92.0): `monitor-fleet-exporter`
 and `api.serve_fleet_exporter` reuse finite native polls and cache immutable safe-label
 gauges. No scrape backend contact; all-N stale/failed views replace old PASS.
 Loopback ASGI stack is a declared optional extra; context cleanup joins owned
 resources. See [contract](docs/fleet-exporter.md).
 
-Operator serving declarations (unreleased 0.88.0): `serving declare|quote|export|verify`
+Operator serving declarations (since 0.92.0): `serving declare|quote|export|verify`
 uses closed operator-authored settings without PlanRequest/PlanResult/corpus.
 Reuse native whole-instance quote arithmetic and shared argv/config projections;
 keep declaration identity distinct from optimizer identity. Quote allocation does
 not place replicas or prove capacity. See [contract](docs/serving-declaration.md).
 
-Selected-batch inventory (unreleased 0.87.0): opt-in `memory_basis="selected-batch"`
+Selected-batch inventory (since 0.92.0): opt-in `memory_basis="selected-batch"`
 or `inventory-check --memory-basis selected-batch` uses compatible native producer
 facts, saved B1 and the full-context active-sequence KV increment. Preserve every
 original N*TP*PP slot; unsupported geometry/formulas refuse before inventory
 contact. Default B1 reports/math stay held. No new model/corpus resolution or
 runtime peak/idle-pool/capacity claim. See [contract](docs/inventory-check.md).
 
-Whole-campaign diagnostics (unreleased 0.90.0): existing `report` and
+Whole-campaign diagnostics (since 0.92.0): existing `report` and
 `api.render_trace_report` add `trace-campaign` / `fleet-trace-campaign`, all K/N,
 strict native receiving and separate client panels. See [contract](docs/campaign-diagnostics.md).
 

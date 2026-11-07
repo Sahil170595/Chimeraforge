@@ -1,13 +1,12 @@
-# Continuous fleet exporter (unreleased 0.91.0)
+# Continuous fleet exporter (since 0.92.0)
 
 `api.serve_fleet_exporter` and `monitor-fleet-exporter` expose the latest bounded
-native fleet observation through a loopback Prometheus endpoint. Public
-installation remains 0.86.0; this workflow requires the current source candidate
-and its `exporter` extra. The fixed reference stack is Starlette 1.7.0 and
+native fleet observation through a loopback Prometheus endpoint. Install the
+`exporter` extra for this workflow. Its reference stack is Starlette 1.7.0 and
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install -e '.[exporter]'
+python -m pip install "chimeraforge[exporter]==0.92.0"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \

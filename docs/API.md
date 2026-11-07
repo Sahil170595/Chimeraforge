@@ -2,24 +2,22 @@
 
 ## Overview
 
-This document covers the public Python API for the `chimeraforge` package.
-This document covers unreleased Chimeraforge 0.91.0 source. Public installation
-remains 0.86.0.
+This document covers the public Python API for Chimeraforge 0.92.0.
 
-The 0.91.0 source adds typed `FleetExporterConfig` and frozen
+Chimeraforge 0.92.0 adds typed `FleetExporterConfig` and frozen
 `FleetExporterSnapshot`; async `serve_fleet_exporter` holds native saved intent
 and yields an owned loopback cached-gauge service. `snapshot()` performs no
 backend I/O; context exit or `aclose()` joins the listener and poll task.
 See [the complete exporter contract](fleet-exporter.md).
 
-The 0.89.0 source adds frozen `ChatMessage(role, content)` and
+Chimeraforge 0.92.0 adds frozen `ChatMessage(role, content)` and
 `ChatTraceRequest(request_id, messages, max_output_tokens, arrival_offset_s,
 temperature=0.0)`. Existing ordinary/saved/fleet/campaign replay APIs accept typed
 chat rows or explicit private JSON histories, with strict native saved receiving,
 gates and diagnostics. Missing usage is null; the client never infers token counts
 from chunks or flattens roles. See [the complete chat contract](chat-trace-replay.md).
 
-The 0.88.0 source adds `ServingRequest`, `declare_serving(request)`,
+Chimeraforge 0.92.0 adds `ServingRequest`, `declare_serving(request)`,
 `load_serving_declaration(path)`, `quote_serving(declaration, *, cloud=None,
 instance=None, region=None)`, `export_serving_declaration(declaration, *, format,
 ...)` and `verify_serving_declaration(declaration, config_path, *,
@@ -28,7 +26,7 @@ Dated whole-instance arithmetic, explicit export layouts and native config
 verification preserve unknown feasibility/readiness. See [complete typed fields,
 serialization, examples and limits](serving-declaration.md).
 
-The 0.87.0 source adds optional `memory_basis="selected-batch"` to async
+Chimeraforge 0.92.0 adds optional `memory_basis="selected-batch"` to async
 `api.check_inventory`, with frozen `SelectedBatchBaseline` and `MemoryBasis` types.
 The default `"batch-one"` retains its report shape and arithmetic. Selected mode
 uses compatible saved producer facts and the saved B/context, retains every
@@ -438,7 +436,7 @@ for the full API (Tokio + reqwest streaming).
 
 **Last Updated**: March 2026
 
-## Whole-campaign diagnostics (unreleased 0.90.0)
+## Whole-campaign diagnostics (since 0.92.0)
 
 `api.render_trace_report(source, kind="trace-campaign" | "fleet-trace-campaign",
 format="html" | "svg" | "markdown", title="Trace diagnostics")` returns the same
