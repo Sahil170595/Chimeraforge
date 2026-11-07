@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import csv
 from dataclasses import replace
 from fractions import Fraction
+import hashlib
 import logging
 import math
 from pathlib import Path
@@ -19,6 +21,7 @@ from chimeraforge.inventory_numbers import (
 )
 from chimeraforge.inventory_types import (
     InventoryBaseline,
+    InventoryCaptureObservation,
     InventoryCheck,
     InventoryCheckError,
     InventoryObservation,
@@ -67,7 +70,7 @@ def _admit(
     devices: list[str] | None,
     groups: list[list[str]] | None,
     timeout: float,
-) -> tuple[PlanArtifact, Candidate, list[list[str]]]:
+) -> tuple[PlanArtifact, Candidate, list[list[str]], Path | None]:
     from chimeraforge.deploy import (
         DeploymentError,
         MAX_EXPORT_GPUS_PER_REPLICA,
@@ -84,7 +87,7 @@ def _admit(
             or not math.isfinite(timeout)
         ):
             raise ValueError("invalid timeout")
-        artifact, _, _ = _source(saved)
+        artifact, _, source_path = _source(saved)
         candidate = artifact.candidate(index)
         n, tp, pp = candidate.n_agents, candidate.tensor_parallel, candidate.pipeline_parallel
         if (
@@ -104,12 +107,30 @@ def _admit(
             if devices is not None:
                 raise ValueError("singular selectors cannot replace original replicas")
             layout = _replica_device_selection(candidate, groups)
-        return artifact, candidate, layout
+        return artifact, candidate, layout, source_path
     except (ValueError, OSError, TypeError, KeyError, RecursionError, DeploymentError) as exc:
         logger.info("inventory input admission refused (%s)", type(exc).__name__)
         raise InventoryCheckError(
             "Invalid saved inventory source or selector declarations."
         ) from None
+
+
+def _capture(inventory_file: str | Path, source_path: Path | None) -> InventoryCaptureObservation:
+    from chimeraforge.deployment_verify import _absolute, _aliases
+    from chimeraforge.plan_bundle import _read
+
+    try:
+        path = _absolute(inventory_file)
+        if source_path is not None:
+            _aliases([source_path, path])
+        raw = _read(path, inventory_process.MAX_STDOUT_BYTES)
+        devices = inventory_process.parse_inventory(raw)
+    except (OSError, TypeError, ValueError, csv.Error) as exc:
+        logger.info("supplied inventory unavailable (%s)", type(exc).__name__)
+        return InventoryCaptureObservation("unknown", reason="supplied_inventory_invalid")
+    return InventoryCaptureObservation(
+        "complete", devices=devices, capture_sha256=hashlib.sha256(raw).hexdigest()
+    )
 
 
 async def check_inventory(
@@ -120,13 +141,14 @@ async def check_inventory(
     replica_gpu_devices: list[list[str]] | None = None,
     timeout: float = DEFAULT_TIMEOUT_SECONDS,
     memory_basis: MemoryBasis = "batch-one",
+    inventory_file: str | Path | None = None,
 ) -> InventoryCheck:
     """Check all selectors against saved resident components, never deployment eligibility."""
     from chimeraforge.deploy import DeploymentError, _validate_fidelity
 
     if type(memory_basis) is not str or memory_basis not in ("batch-one", "selected-batch"):
         raise InventoryCheckError("Invalid inventory memory basis.")
-    artifact, candidate, layout = _admit(
+    artifact, candidate, layout, source_path = _admit(
         saved, candidate_index, gpu_devices, replica_gpu_devices, timeout
     )
     data = artifact.to_dict()
@@ -160,9 +182,19 @@ async def check_inventory(
                 else {"status": "unsupported"}
             ),
         )
-    observation = InventoryObservation("not_started", inventory_process.COMMAND, reason=reason)
-    if reason is None:
-        observation = await inventory_process.observe(timeout)
+    observation: InventoryObservation | InventoryCaptureObservation
+    if inventory_file is None:
+        observation = (
+            await inventory_process.observe(timeout)
+            if reason is None
+            else InventoryObservation("not_started", inventory_process.COMMAND, reason=reason)
+        )
+    else:
+        observation = (
+            _capture(inventory_file, source_path)
+            if reason is None
+            else InventoryCaptureObservation("not_started", reason=reason)
+        )
     by_id = {key: row for row in observation.devices for key in (row.ordinal, row.uuid)}
     slots = []
     for replica, group in enumerate(layout):
@@ -181,7 +213,11 @@ async def check_inventory(
                     position,
                     selector,
                     "absent",
-                    reasons=("selector_absent_from_queried_view",),
+                    reasons=(
+                        "selector_absent_from_queried_view"
+                        if inventory_file is None
+                        else "selector_absent_from_supplied_view",
+                    ),
                 )
             else:
                 device = by_id[selector]
@@ -208,6 +244,21 @@ async def check_inventory(
                     else (),
                 )
             slots.append(slot)
+    if inventory_file is not None:
+        return InventoryCheck(
+            __version__,
+            data["fingerprint"],
+            candidate_index,
+            baseline,
+            observation,
+            tuple(slots),
+            schema_version=3,
+            scope=(
+                "supplied_inventory_and_selected_batch_memory"
+                if memory_basis == "selected-batch"
+                else "supplied_inventory_and_saved_b1_memory"
+            ),
+        )
     if memory_basis == "selected-batch":
         return InventoryCheck(
             __version__,

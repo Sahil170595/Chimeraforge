@@ -9,6 +9,8 @@ planner's data came from; those guides are archived below.
 
 ## The Planner CLI (start here)
 
+The **0.93.0 source candidate** can compare a saved plan with an [external NVIDIA inventory capture](inventory-check.md#offline-csv-capture-093-source).
+
 Chimeraforge **0.92.0** adds:
 
 - [Continuous fleet export](fleet-exporter.md) with fixed native polling, cached loopback gauges and all-member stale or failed views.

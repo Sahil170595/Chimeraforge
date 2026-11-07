@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.93.0] - UNRELEASED
+
+### Offline inventory arithmetic
+
+- Read a bounded complete NVIDIA inventory CSV with `inventory-check --inventory-file` or `api.check_inventory(..., inventory_file=...)`. Both memory bases retain every original selector and native arithmetic without querying hardware.
+- Use schema 3 for supplied evidence, with a separate typed observation and an accepted raw-byte hash. Invalid captures leave every original slot unknown. Live queries keep their existing schemas and defaults.
+
 ## [0.92.0] - 2026-11-06
 
 This release is the first public package to include the merged 0.87–0.91 source features below.

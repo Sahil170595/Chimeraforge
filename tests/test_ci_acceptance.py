@@ -115,6 +115,13 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert monitoring["physical_independence"] == "unverified"
     inventory = fleet["inventory_arithmetic"]
     assert inventory["source_bytes_unchanged"] and inventory["deployment_ready"] is None
+    captured = inventory["selected_batch"]["captured_inventory_controls"]
+    assert {name: case["exit_code"] for name, case in captured.items()} == {
+        "batch_one": 0,
+        "selected_batch": 0,
+        "invalid_tail": 4,
+    }
+    assert all(case["original_slots"] == 6 for case in captured.values())
     assert {key: value["api"]["exit_code"] for key, value in inventory["controls"].items()} == {
         "complete": 0,
         "unavailable_free": 4,

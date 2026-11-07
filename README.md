@@ -15,6 +15,10 @@ uvx chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB"
 
 ## The trust principle
 
+**Unreleased 0.93.0 source** adds [offline inventory arithmetic](docs/inventory-check.md#offline-csv-capture-093-source)
+from a complete supplied NVIDIA CSV, with no local GPU query. The package
+installation examples still target 0.92.0.
+
 **Included in 0.92.0**
 
 - [Continuous fleet export](docs/fleet-exporter.md) serves cached native gauges on loopback, with all-member freshness and failure views and owned shutdown. Scrapes make no backend calls.

@@ -754,3 +754,140 @@ def test_genuine_saved_offload_or_lora_controls_remain_unavailable_before_query(
     )
     assert result.exit_code == 4 and result.observation.state == "not_started"
     assert len(result.slots) == 2
+
+
+@pytest.mark.parametrize("basis,expected", [("batch-one", 0), ("selected-batch", 5)])
+def test_capture_uses_same_native_arithmetic_without_process(
+    tmp_path, monkeypatch, basis, expected
+):
+    _, index, plan = native_qwen(tmp_path, rate=128)
+    groups = [["7", "3"], ["9", "2"], ["8", "4"]]
+    raw = "".join(
+        f"{i}, GPU-{i:08x}-1111-2222-3333-444444444444, fixture, 6000, 4100, 595.00, N/A\n"
+        for i in sorted(int(selector) for group in groups for selector in group)
+    ).encode()
+    capture = tmp_path / "private-capture.csv"
+    capture.write_bytes(raw)
+    monkeypatch.setattr(
+        inventory_process,
+        "COMMAND",
+        (sys.executable, "-B", "-c", f"print({raw.decode()!r}, end='')"),
+    )
+    live = asyncio.run(
+        api.check_inventory(
+            plan, candidate_index=index, replica_gpu_devices=groups, memory_basis=basis
+        )
+    )
+    assert live.schema_version == (1 if basis == "batch-one" else 2)
+    assert live.observation.cleanup_state == "completed"
+    assert set(live.to_dict()["observation"]) == {
+        "state",
+        "command",
+        "started_at",
+        "finished_at",
+        "returncode",
+        "reason",
+        "devices",
+        "stdout_sha256",
+        "cleanup_state",
+    }
+    monkeypatch.setattr(inventory_process, "observe", refuse_live_inventory)
+    report = asyncio.run(
+        api.check_inventory(
+            plan,
+            candidate_index=index,
+            replica_gpu_devices=groups,
+            memory_basis=basis,
+            inventory_file=capture,
+        )
+    )
+    assert isinstance(report.observation, api.InventoryCaptureObservation)
+    assert report.schema_version == 3 and report.exit_code == live.exit_code == expected
+    assert report.scope == (
+        "supplied_inventory_and_saved_b1_memory"
+        if basis == "batch-one"
+        else "supplied_inventory_and_selected_batch_memory"
+    )
+    assert report.baseline == live.baseline and report.slots == live.slots
+    assert [s.selector for s in report.slots] == ["7", "3", "9", "2", "8", "4"]
+    assert report.to_dict()["observation"]["source"] == "supplied_nvidia_smi_csv"
+    assert report.observation.capture_sha256 == hashlib.sha256(raw).hexdigest()
+    assert not {"started_at", "finished_at", "returncode", "command", "cleanup_state"} & set(
+        report.to_dict()["observation"]
+    )
+    assert str(capture) not in json.dumps(report.to_dict())
+    assert capture.read_bytes() == raw
+
+
+async def refuse_live_inventory(*args, **kwargs):
+    pytest.fail("file-based inventory must not call the native observer")
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["late_row", "missing_final_newline", "oversize", "absent_file", "plan_alias", "hardlink"],
+)
+def test_capture_refuses_whole_invalid_evidence_without_leaking_input(tmp_path, monkeypatch, bad):
+    import os
+
+    _, index, plan = native_qwen(tmp_path, rate=128)
+    groups = [["7", "3"], ["9", "2"], ["8", "4"]]
+    monkeypatch.setattr(inventory_process, "observe", refuse_live_inventory)
+    private = "PRIVATE_CAPTURE_INPUT_MARKER"
+    raw = b"7, GPU-00000007-1111-2222-3333-444444444444, fixture, 6000, 5900, 595.00, N/A\n"
+    capture = tmp_path / f"{private}.csv"
+    if bad == "late_row":
+        capture.write_bytes(raw + private.encode() + b"\n")
+    elif bad == "missing_final_newline":
+        capture.write_bytes(raw[:-1])
+    elif bad == "oversize":
+        capture.write_bytes(b"x" * (inventory_process.MAX_STDOUT_BYTES + 1))
+    elif bad == "plan_alias":
+        capture = plan
+    elif bad == "hardlink":
+        original = tmp_path / "actual.csv"
+        original.write_bytes(raw)
+        os.link(original, capture)
+    plan_before = plan.read_bytes()
+    cli = CliRunner().invoke(
+        app,
+        [
+            "inventory-check",
+            "--plan",
+            str(plan),
+            "--candidate-index",
+            str(index),
+            "--inventory-file",
+            str(capture),
+            "--json",
+            *[arg for group in groups for arg in ("--replica-devices", ",".join(group))],
+        ],
+    )
+    assert cli.exit_code == 4, cli.output
+    public = json.loads(cli.stdout)
+    assert public["schema_version"] == 3 and public["exit_code"] == 4
+    assert public["observation"]["state"] == "unknown"
+    assert (
+        public["observation"]["devices"] == [] and public["observation"]["capture_sha256"] is None
+    )
+    assert public["declared_coverage"] == {"expected": 6, "present": 0, "absent": 0, "unknown": 6}
+    assert all(slot["device"] is None for slot in public["slots"])
+    assert private not in cli.output and str(capture) not in cli.output
+    assert plan.read_bytes() == plan_before
+
+
+def test_capture_complete_missing_selector_is_relative_to_supplied_view(tmp_path, monkeypatch):
+    _, index, plan = native_qwen(tmp_path)
+    capture = tmp_path / "bounded.csv"
+    capture.write_bytes(
+        b"0, GPU-00000000-1111-2222-3333-444444444444, fixture, 6000, 5900, 595.00, N/A\n"
+    )
+    monkeypatch.setattr(inventory_process, "observe", refuse_live_inventory)
+    report = asyncio.run(
+        api.check_inventory(
+            plan, candidate_index=index, gpu_devices=["0", "1"], inventory_file=str(capture)
+        )
+    )
+    assert report.exit_code == 5 and report.observation.state == "complete"
+    assert [slot.selector_state for slot in report.slots] == ["present", "absent"]
+    assert report.slots[1].reasons == ("selector_absent_from_supplied_view",)

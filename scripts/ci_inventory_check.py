@@ -13,6 +13,56 @@ import sys
 import tempfile
 
 
+def _accept_captured_inventory(cwd: Path, env: dict, arguments: list[str], raw: str) -> dict:
+    """Exercise installed CLI receiving, including late failure after six valid rows."""
+    from ci_installed_acceptance import run_cli
+
+    capture = cwd / "inventory-input.csv"
+    supplied = raw.encode("utf-8")
+    controls = {}
+    for label, basis, bad_tail, code in (
+        ("batch_one", "batch-one", False, 0),
+        ("selected_batch", "selected-batch", False, 0),
+        ("invalid_tail", "selected-batch", True, 4),
+    ):
+        private = "PRIVATE_CAPTURE_TAIL_FIXTURE"
+        held = supplied + (private.encode() + b"\n" if bad_tail else b"")
+        capture.write_bytes(held)
+        cli = [*arguments, "--memory-basis", basis, "--inventory-file", str(capture), "--json"]
+        stdout = run_cli(cli, cwd, env, code)
+        report = json.loads(stdout)
+        observation = report["observation"]
+        assert report["schema_version"] == 3 and report["exit_code"] == code
+        assert report["deployment_ready"] is None
+        assert [slot["selector"] for slot in report["slots"]] == list("012345")
+        assert observation["source"] == "supplied_nvidia_smi_csv"
+        assert not {"command", "started_at", "finished_at", "returncode", "cleanup_state"} & set(
+            observation
+        )
+        assert str(capture) not in stdout and private not in stdout
+        assert capture.read_bytes() == held
+        if bad_tail:
+            assert observation["state"] == "unknown" and observation["devices"] == []
+            assert observation["capture_sha256"] is None
+            assert report["declared_coverage"] == {
+                "expected": 6,
+                "present": 0,
+                "absent": 0,
+                "unknown": 6,
+            }
+        else:
+            assert observation["state"] == "complete" and len(observation["devices"]) == 6
+            assert observation["capture_sha256"] == hashlib.sha256(held).hexdigest()
+            assert report["declared_coverage"] == {
+                "expected": 6,
+                "present": 6,
+                "absent": 0,
+                "unknown": 0,
+            }
+        controls[label] = {"exit_code": code, "original_slots": 6, "source": observation["source"]}
+    return controls
+
+
 def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) -> dict:
     """Qualify installed producer/receiver arithmetic with declared archived geometry."""
     from typer.testing import CliRunner
@@ -22,6 +72,7 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
     from ci_installed_acceptance import run_cli
 
     outcomes = {}
+    captured = {}
     native_absence = None
     consumed_corpus = None
     original_command = inventory_process.COMMAND
@@ -85,10 +136,10 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
                 arguments += [
                     arg for group in groups for arg in ("--replica-devices", ",".join(group))
                 ]
-            arguments += ["--memory-basis", "selected-batch", "--json"]
+            selected_arguments = [*arguments, "--memory-basis", "selected-batch", "--json"]
             if context == 8192 and replicas == 1 and hosted_native_absence:
                 if os.environ.get("GITHUB_ACTIONS") == "true":
-                    public = json.loads(run_cli(arguments, cwd, env, 4))
+                    public = json.loads(run_cli(selected_arguments, cwd, env, 4))
                     assert public["baseline"]["status"] == "estimated"
                     assert public["deployment_ready"] is None and len(public["slots"]) == 2
                     native_absence = {"exit_code": 4, "slots": 2, "deployment_ready": None}
@@ -129,7 +180,7 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
                         replica_gpu_devices=groups if replicas > 1 else None,
                     )
                 )
-                cli = CliRunner().invoke(app, arguments)
+                cli = CliRunner().invoke(app, selected_arguments)
                 assert direct.exit_code == cli.exit_code == expected, (
                     label,
                     direct.to_dict(),
@@ -143,6 +194,9 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
                 ]
                 assert public["observation"]["cleanup_state"] == "completed"
                 assert isinstance(direct.baseline, api.SelectedBatchBaseline)
+                assert isinstance(direct.observation, api.InventoryObservation)
+                if hosted_native_absence and label == "all_original_six":
+                    captured = _accept_captured_inventory(cwd, env, arguments, raw)
                 if label == "selected_shortfall":
                     b1 = asyncio.run(
                         api.check_inventory(path, candidate_index=index, gpu_devices=groups[0])
@@ -249,6 +303,7 @@ def accept_selected_batch(cwd: Path, env: dict, *, hosted_native_absence: bool) 
         ),
         "literal_addition_mib": 784,
         "controls": outcomes,
+        "captured_inventory_controls": captured,
         "hosted_cpu_native_absence": native_absence,
         "all_saved_bytes_held": True,
         "legacy_exact_sha256": legacy_sha,

@@ -107,23 +107,40 @@ class InventoryObservation:
 
 
 @dataclass(frozen=True)
+class InventoryCaptureObservation:
+    """A supplied CSV view without native query or process provenance."""
+
+    state: Literal["complete", "unknown", "not_started"]
+    reason: str | None = None
+    devices: tuple[InventoryDevice, ...] = ()
+    capture_sha256: str | None = None
+    source: Literal["supplied_nvidia_smi_csv"] = "supplied_nvidia_smi_csv"
+
+
+@dataclass(frozen=True)
 class InventoryCheck:
     tool_version: str
     plan_fingerprint: str
     candidate_index: int
     baseline: InventoryBaseline | SelectedBatchBaseline
-    observation: InventoryObservation
+    observation: InventoryObservation | InventoryCaptureObservation
     slots: tuple[InventorySlot, ...]
     schema_version: int = 1
     scope: Literal[
-        "queried_inventory_and_saved_b1_memory", "queried_inventory_and_selected_batch_memory"
+        "queried_inventory_and_saved_b1_memory",
+        "queried_inventory_and_selected_batch_memory",
+        "supplied_inventory_and_saved_b1_memory",
+        "supplied_inventory_and_selected_batch_memory",
     ] = "queried_inventory_and_saved_b1_memory"
     deployment_ready: None = None
     unassessed: tuple[str, ...] = UNASSESSED
 
     @property
     def exit_code(self) -> int:
-        if self.observation.state != "complete" or self.observation.cleanup_state != "completed":
+        if self.observation.state != "complete" or (
+            isinstance(self.observation, InventoryObservation)
+            and self.observation.cleanup_state != "completed"
+        ):
             return 4
         if any(
             slot.selector_state == "absent"
