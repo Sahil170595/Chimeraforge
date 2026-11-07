@@ -538,27 +538,38 @@ async def test_stop_during_native_metadata_awaits_stream_and_backend_closure(
 async def test_trickling_body_cannot_extend_global_observation_deadline(native_fleet, monkeypatch):
     saved, indices = native_fleet
     streams, pools = [], []
+    attempted_after_deadline = False
 
     class Trickle(Stream):
-        async def __aiter__(self):
-            for _ in range(100):
-                yield b"x"
-                await asyncio.sleep(0.005)
+        def __init__(self, budget):
+            super().__init__()
+            self.budget = budget
 
-    async def handler(value):
-        stream = Trickle()
-        streams.append(stream)
-        return httpx.Response(200, stream=stream)
+        async def __aiter__(self):
+            nonlocal attempted_after_deadline
+            yield b"x"
+            assert self.budget.accepted_body_bytes == 1 and self.budget.termination is None
+            self.budget.deadline = asyncio.get_running_loop().time() - 1
+            attempted_after_deadline = True
+            yield b"y"
 
     def owned(pool):
         if pool.inner is None:
+
+            async def handler(value):
+                stream = Trickle(pool.budget)
+                streams.append(stream)
+                return httpx.Response(200, stream=stream)
+
             pool.inner = Transport(handler)
             pools.append(pool.inner)
         return pool.inner
 
     monkeypatch.setattr(OwnedPool, "_transport", owned)
-    value = replace(request(urls()), observation_seconds=0.03, concurrency=1)
+    value = replace(request(urls()), observation_seconds=10, concurrency=1)
     result = await api.monitor_fleet(saved, value, candidate_index=indices["vllm"])
+    assert attempted_after_deadline and len(streams) == 1
     assert result.exit_code == 4 and result.budget["termination"] == "observation_deadline"
-    assert 0 < result.budget["accepted_body_bytes"] < 100
+    assert result.budget["accepted_body_bytes"] == 1
     assert result.cleanup["state"] == "completed" and all(stream.closed == 1 for stream in streams)
+    assert pools and all(pool.closed == 1 for pool in pools)
