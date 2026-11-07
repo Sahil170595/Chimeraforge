@@ -29,6 +29,9 @@ def inventory_check(
         "--memory-basis",
         help="batch-one (default) or selected-batch modeled resident components.",
     ),
+    inventory_file: Path | None = typer.Option(
+        None, "--inventory-file", help="Read a complete nvidia-smi CSV capture instead of querying."
+    ),
     output_json: bool = typer.Option(False, "--json"),
 ) -> None:
     """Compare reported inventory with saved resident memory; no deployment readiness."""
@@ -45,6 +48,7 @@ def inventory_check(
                 replica_gpu_devices=_replica_groups(replica_devices),
                 timeout=timeout,
                 memory_basis=cast(api.MemoryBasis, memory_basis),
+                inventory_file=inventory_file,
             )
         )
     except (api.InventoryCheckError, DeploymentError) as exc:
@@ -68,6 +72,8 @@ def inventory_check(
     if output_json:
         typer.echo(json.dumps(report.to_dict(), allow_nan=False))
     else:
+        if isinstance(report.observation, api.InventoryCaptureObservation):
+            typer.echo(f"Supplied inventory CSV: {report.observation.state}.")
         typer.echo(f"Inventory arithmetic {report.outcome}; deployment readiness is unassessed.")
         if isinstance(report.baseline, api.SelectedBatchBaseline):
             baseline = report.baseline

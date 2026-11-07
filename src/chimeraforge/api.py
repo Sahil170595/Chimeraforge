@@ -78,6 +78,7 @@ from chimeraforge.inventory_types import (
     InventoryBaseline as InventoryBaseline,
     InventoryDevice as InventoryDevice,
     InventoryObservation as InventoryObservation,
+    InventoryCaptureObservation as InventoryCaptureObservation,
     InventorySlot as InventorySlot,
     SelectedBatchBaseline as SelectedBatchBaseline,
     MemoryBasis as MemoryBasis,
@@ -1062,8 +1063,9 @@ async def check_inventory(
     replica_gpu_devices: list[list[str]] | None = None,
     timeout: float = 10.0,
     memory_basis: Literal["batch-one", "selected-batch"] = "batch-one",
+    inventory_file: str | Path | None = None,
 ) -> InventoryCheck:
-    """Compare original selectors with saved B1 or opt-in selected resident memory."""
+    """Compare original selectors with saved memory using a native query or a supplied CSV."""
     from chimeraforge.inventory_check import check_inventory as check
 
     return await check(
@@ -1073,6 +1075,7 @@ async def check_inventory(
         replica_gpu_devices=replica_gpu_devices,
         timeout=timeout,
         memory_basis=memory_basis,
+        inventory_file=inventory_file,
     )
 
 

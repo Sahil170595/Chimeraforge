@@ -53,6 +53,47 @@ Reported total is compared separately and never fills unavailable free. No memor
 values are summed. Offload-clamped, unavailable or unsupported saved baselines
 remain unknown without reconstruction or native contact.
 
+## Offline CSV capture
+
+Available since Chimeraforge 0.93.0. On the machine that owns the inventory, capture the exact native query to a new
+file with Bash or cmd.exe byte-preserving redirection. Retain the file only if
+the query succeeds and produces ASCII or UTF-8 with a final newline. Legacy
+PowerShell text redirection can write UTF-16 and is unsuitable.
+
+```sh
+nvidia-smi --query-gpu=index,uuid,name,memory.total,memory.free,driver_version,mig.mode.current --format=csv,noheader,nounits > inventory.csv
+```
+
+Run the check on any supported platform using that file and the original saved
+plan. The same repeated selectors and both memory bases apply. The timeout
+option still accepts the native range and does not launch a timer in file mode.
+
+```sh
+chimeraforge inventory-check --plan saved.json --gpu-device 7 --gpu-device 3 --inventory-file inventory.csv --json
+```
+
+In Python use `await api.check_inventory("saved.json", gpu_devices=["7", "3"],
+inventory_file="inventory.csv")`. The command writes its result to stdout. It
+makes no hardware query or subprocess call.
+
+The file must be regular, at most 1 MiB, UTF-8, newline-terminated and complete
+under the native CSV parser. Links, reparse points and aliases of the saved-plan
+file are refused. An inaccessible or invalid file returns exit **4** with every
+original slot unknown. A malformed final row invalidates the entire file. Invalid
+plan, selector or option declarations still return exit **1**. With an admitted
+file, exit **5** indicates known shortfall or absence in the supplied view, and
+exit **0** means the modeled free-memory check passed for all original slots.
+
+JSON schema **3** distinguishes supplied observations from live schemas 1 and 2.
+The supplied observation includes its state, parsed devices and accepted raw
+SHA-256. It contains no file path, original CSV body, process times, return code
+or cleanup status. The hash identifies the supplied bytes. It cannot establish
+the file's age or provenance. A syntactically complete subset does not establish
+a complete physical device census. Selector absence is scoped to the supplied
+view. Reports still
+include parsed device names, UUIDs and memory fields. Keep captures and reports
+private if those fields identify infrastructure.
+
 ## Opt-in selected-batch memory (since 0.92.0)
 
 ```bash
