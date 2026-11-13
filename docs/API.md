@@ -2,9 +2,9 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.96.0.
+This document covers the public Python API for Chimeraforge 0.99.0.
 
-In 0.99.0 (unreleased), an owned `FleetExporter` also exposes a read-only
+Since 0.99.0, an owned `FleetExporter` also exposes a read-only
 `readiness_url`. GET/HEAD uses the same immutable cached snapshot as metrics
 and reports readiness separately from native qualification.
 See [the cached readiness contract](fleet-exporter.md#cache-readiness).

@@ -46,6 +46,20 @@ The typed API also accepts a workload path. `TraceReplay.to_dict()` returns a
 defensive copy. `save()` atomically writes JSON and refuses paths or hardlink
 aliases of the input workload. CLI stdout and `--out` contain the same receipt.
 
+## Receipt destinations
+
+Since 0.97.0, `--out` for `trace`, `trace-fleet`,
+`trace-campaign` and `trace-fleet-campaign` is checked before backend
+contact. An existing directory or special-file destination is invalid.
+Ordinary and plan-bound `trace`, `trace-fleet` and `trace-campaign`
+require an existing parent directory. `trace-fleet-campaign` can create
+missing parents during final publication if the existing ancestor is a directory.
+
+An invalid destination exits 2 before replay. The preflight only inspects the
+filesystem. Protected workload, plan, route and credential inputs keep their
+existing alias checks, and the receipt is still written atomically after
+replay. The final save can fail if filesystem state or permissions change.
+
 ## Bounds and execution
 
 - 1-1,024 requests; at most 8 MiB of input/canonical JSON.

@@ -375,6 +375,35 @@ def accept(cwd: Path, env: dict) -> dict:
         wire = [r for r in calls[fleet_start:] if "message_hash" in r]
         assert Counter(r["message_hash"] for r in wire) == Counter(routed.keys())
         assert all(r["member"] == routed[r["message_hash"]] for r in wire)
+        fleet_source = directory / "fleet-messages.json"
+        routing = directory / "fleet-routes.json"
+        fleet_source.write_text(json.dumps([asdict(row) for row in fleet_rows]), encoding="utf-8")
+        routing.write_text(json.dumps([asdict(row) for row in routes]), encoding="utf-8")
+        held_inputs = {
+            path: path.read_bytes() for path in (source, plan_path, fleet_source, routing)
+        }
+        single = ["--model", MODEL, "--backend", "vllm", "--base-url", url]
+        plan_flags = ["--from-plan", str(plan_path), "--candidate-index", str(index)]
+        fleet_flags = [str(fleet_source), *plan_flags, "--routes", str(routing)]
+        for endpoint in endpoints:
+            fleet_flags += ["--endpoint", f"{endpoint.id}={endpoint.url}"]
+        destination = directory / "directory-is-not-a-receipt"
+        destination.mkdir()
+        preflight_cases = (
+            ("ordinary", ["trace", str(source), *single]),
+            ("plan", ["trace", str(fleet_source), *plan_flags, "--base-url", url]),
+            ("serial-campaign", ["trace-campaign", str(source), *single]),
+            ("fleet", ["trace-fleet", *fleet_flags]),
+            ("fleet-campaign", ["trace-fleet-campaign", *fleet_flags]),
+        )
+        output_preflight = []
+        for lane, args in preflight_cases:
+            before = len(calls)
+            error = json.loads(run_cli([*args, "--out", str(destination), "--json"], cwd, env, 2))
+            assert "receipt output" in error["error"] and len(calls) == before
+            output_preflight.append({"lane": lane, "exit_code": 2, "http_calls": 0})
+        assert destination.is_dir() and not list(destination.iterdir())
+        assert all(path.read_bytes() == value for path, value in held_inputs.items())
         before = len(calls)
         stopped = asyncio.Event()
         stopped.set()
@@ -420,6 +449,7 @@ def accept(cwd: Path, env: dict) -> dict:
         "oversized_stopped_receipt_refused_without_HTTP": True,
         "fleet": {"members": REPLICAS, "rows": 6, "native_completed": 6},
         "late_invalid_precontact": True,
+        "unusable_receipt_precontact": output_preflight,
         "wire_row_association": True,
         "per_member_routes_held": True,
         "source_bytes_held": True,

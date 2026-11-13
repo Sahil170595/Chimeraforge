@@ -59,10 +59,19 @@ ChimeraForge is an LLM inference benchmarking and deployment planning platform, 
 
 **Version:** 0.99.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
-Exporter readiness (0.99.0, unreleased): loopback GET/HEAD `/readyz`
+Exporter readiness (since 0.99.0): loopback GET/HEAD `/readyz`
 uses the existing immutable snapshot and request admission. Fresh cache
 returns 200, other cache states return 503; native qualification is separate.
 See [readiness](docs/fleet-exporter.md#cache-readiness).
+
+Saved check JUnit (since 0.98.0): `check --junit` and
+`bundle check --junit` publish bounded atomic XML with closed identifiers
+while retaining native stdout and exit semantics. See
+[JUnit outputs](docs/planning-api.md#saved-check-junit).
+
+Trace output preflight (since 0.97.0): trace CLI paths check destination
+shape before backend contact. Existing alias guards and atomic publication
+remain in place. See [receipt destinations](docs/trace-replay.md#receipt-destinations).
 
 Serving quote budget checks (since 0.96.0): `serving quote --max-monthly-usd`
 and typed `ServingQuoteBudgetPolicy` use exact dated whole-instance decimals

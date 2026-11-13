@@ -31,7 +31,9 @@ def trace_fleet(
     request_timeout: float = typer.Option(300, "--request-timeout"),
     trace_timeout: float = typer.Option(600, "--trace-timeout"),
     cleanup_timeout: float = typer.Option(2, "--cleanup-timeout"),
-    out: Path | None = typer.Option(None, "--out"),
+    out: Path | None = typer.Option(
+        None, "--out", help="Atomic receipt JSON in an existing parent directory."
+    ),
     json_output: bool = typer.Option(False, "--json"),
     secure: bool = typer.Option(False, "--secure", help="Verified HTTPS for all declared members."),
     bearer_env: list[str] | None = typer.Option(None, "--bearer-env", help="Repeat ID=ENV_NAME."),
@@ -43,6 +45,7 @@ def trace_fleet(
     from chimeraforge import api
     from chimeraforge.bench.fleet_trace import _replay_prepared
     from chimeraforge.bench.fleet_trace_inputs import prepare
+    from chimeraforge.commands._trace_output import TraceOutputError, preflight_trace_output
     from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
     from chimeraforge.plan_study import protect_output
 
@@ -116,12 +119,25 @@ def trace_fleet(
             signal.signal(signal.SIGINT, previous)
 
     try:
+        if out is not None:
+            preflight_trace_output(out)
         receipt = asyncio.run(execute())
         if out is not None:
             receipt.save(out)
         report = receipt.to_dict()
-    except (api.PlanError, MonitorConnectionError, OSError, ValueError, TypeError, RuntimeError):
-        message = "invalid or unavailable original-fleet trace"
+    except (
+        api.PlanError,
+        MonitorConnectionError,
+        OSError,
+        ValueError,
+        TypeError,
+        RuntimeError,
+    ) as exc:
+        message = (
+            str(exc)
+            if isinstance(exc, TraceOutputError)
+            else "invalid or unavailable original-fleet trace"
+        )
         typer.echo(json.dumps({"error": message}) if json_output else message)
         raise typer.Exit(2) from None
     if json_output:

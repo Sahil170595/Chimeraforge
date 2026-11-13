@@ -6,7 +6,7 @@ native fleet observation through a loopback Prometheus endpoint. Install the
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install "chimeraforge[exporter]==0.96.0"
+python -m pip install "chimeraforge[exporter]==0.99.0"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \
@@ -94,7 +94,7 @@ diagnostic, not signed freshness, server identity, capacity or SLO proof.
 
 ## Cache readiness
 
-In 0.99.0 (unreleased), GET or HEAD `/readyz` exposes a small cached-readiness
+Since 0.99.0, GET or HEAD `/readyz` exposes a small cached-readiness
 response. The Python service has a read-only `readiness_url` property.
 The CLI ready/closed records and `metrics_url` keep their existing shapes.
 

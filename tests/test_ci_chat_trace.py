@@ -17,4 +17,8 @@ def test_native_chat_actual_cli_all_backends_and_fleet_receiving(tmp_path):
     assert actual["native_diagnostic_API_CLI_text_equal"]
     assert actual["oversized_stopped_receipt_refused_without_HTTP"]
     assert actual["source_bytes_held"] and actual["late_invalid_precontact"]
+    assert actual["unusable_receipt_precontact"] == [
+        {"lane": lane, "exit_code": 2, "http_calls": 0}
+        for lane in ("ordinary", "plan", "serial-campaign", "fleet", "fleet-campaign")
+    ]
     assert actual["owned_HTTP_server_thread_joined"] and actual["owned_CLI_children_joined"]
