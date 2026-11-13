@@ -20,12 +20,25 @@ def check(
     hf_token: str = typer.Option(
         None, "--hf-token", help="HF token for this inspection only (else $HF_TOKEN); never saved."
     ),
+    junit: Path | None = typer.Option(
+        None, "--junit", help="Write a bounded JUnit report separately from stdout."
+    ),
 ) -> None:
     """Recheck saved inputs and modeled recommendations; offline unless --network."""
     from chimeraforge.api import PlanError, check_plan
 
     try:
+        if junit is not None:
+            from chimeraforge.plan_check_output import (
+                plan_input_paths,
+                protect_junit,
+                publish_junit,
+            )
+
+            protect_junit(junit, (plan_path,))
         report = check_plan(plan_path, allow_network=network, hf_token=hf_token).to_dict()
+        if junit is not None:
+            publish_junit(report, junit, (plan_path, *plan_input_paths(report)))
     except PlanError as exc:
         if json_output:
             typer.echo(json.dumps({"error": str(exc)}))

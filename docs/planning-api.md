@@ -93,6 +93,31 @@ unverified: an unchanged modeled result is not a performance acceptance test.
 Fingerprints detect edits, including context edits, but cannot authenticate a
 snapshot or turn unsigned quarantine data into trusted measurements.
 
+## Saved check JUnit
+
+Since 0.98.0, use `--junit` to write a separate XML report for CI.
+
+```bash
+chimeraforge check plan.json --junit check.xml --json
+chimeraforge bundle check handoff --junit handoff-check.xml --json
+```
+
+JUnit uses the same finalized check as stdout. Required changed or expired
+components are failures. Required unverified components are errors.
+Resolution, checkpoint and recommendation comparison changes remain failures
+when the native check treats them as actionable. Optional evidence, unused
+components and unavailable comparisons are skipped. Case names use fixed
+identifiers and ordinal model rows. XML excludes model names, paths, input
+values and native diagnostics.
+
+The commands keep the usual text or JSON and native exit 0 or 1. Invalid
+source or output exits 2. XML is limited to 64 KiB and written atomically.
+A refused export leaves an existing output file intact. Keep the report
+outside the source bundle. The destination cannot alias the checked plan,
+its known local check inputs or the checked bundle's members.
+Ordinary checks keep their existing explicit `--network` and `--hf-token`
+options. Bundle checks run offline.
+
 ## Frozen-context sensitivity
 
 For real endpoint requests with scheduled arrivals and queue-inclusive timing,
