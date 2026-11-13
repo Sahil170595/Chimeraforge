@@ -85,6 +85,17 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert receipt["gpu_devices"] == ["7", "3"]
     assert receipt["host_port"] == 9001
     assert receipt["source_plan_bytes_unchanged"]
+    assert receipt["systemd_verification"]["source_and_unit_held"]
+    assert receipt["systemd_verification"]["installed_api_and_cli"] == "passed"
+    assert [
+        receipt["systemd_verification"][key]
+        for key in (
+            "match_exit",
+            "drift_exit",
+            "invalid_exit",
+            "independent_executable_drift_exit",
+        )
+    ] == [0, 5, 1, 5]
     assert receipt["scope"] == "offline declaration only"
     assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
     fleet = receipt["homogeneous_fleet"]

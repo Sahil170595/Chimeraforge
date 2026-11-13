@@ -196,6 +196,7 @@ def accept(cwd: Path, env: dict, checkout: Path, checkpoint: dict) -> dict:
     from chimeraforge import api
     from chimeraforge.deploy import export_deployment
     from ci_kubernetes_export import accept as accept_kubernetes
+    from ci_deployment_verify import accept_systemd
 
     assert_installed_origin(api.__file__, checkout)
     saved = cwd / "placement-plan.json"
@@ -339,6 +340,7 @@ def accept(cwd: Path, env: dict, checkout: Path, checkpoint: dict) -> dict:
         "device_availability": "unverified",
         "cuda_rank_mapping": "unverified",
         "topology": "unverified",
+        "systemd_verification": accept_systemd(cwd, env, saved, unit_path, index, DEVICES),
         "homogeneous_fleet": _accept_fleet(cwd, env, checkpoint),
         "kubernetes": accept_kubernetes(cwd, env, saved, replicas=1),
     }

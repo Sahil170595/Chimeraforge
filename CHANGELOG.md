@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.100.0] - 2026-11-13
+
+### Offline systemd deployment verification
+
+- Add `deploy-verify --format systemd --executable` and typed `api.verify_systemd_deployment` for exact bounded native unit and required-companion comparisons against independently supplied plan/model/GPU intent. Reports expose categorical content drift and hashes.
+
 ## [0.99.0] - 2026-11-13
 
 ### Cached fleet exporter readiness
