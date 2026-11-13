@@ -5,11 +5,17 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.98.0] - Unreleased
+## [0.98.0] - 2026-11-13
 
 ### JUnit reports for saved checks
 
 - Add `--junit PATH` to `check` and `bundle check`. Write a bounded XML report from native comparison outcomes while keeping the usual stdout and exit codes. XML uses fixed labels and ordinal model rows.
+
+## [0.97.0] - 2026-11-13
+
+### Trace receipt destinations
+
+- Reject unusable `--out` paths for ordinary, plan-bound, fleet and campaign traces before any backend call. Keep protected-input checks and atomic receipt publication. Whole-fleet campaigns can still create missing parent directories when writing the receipt.
 
 ## [0.96.0] - 2026-11-06
 

@@ -95,7 +95,7 @@ snapshot or turn unsigned quarantine data into trusted measurements.
 
 ## Saved check JUnit
 
-In 0.98.0 (unreleased), use `--junit` to write a separate XML report for CI.
+Since 0.98.0, use `--junit` to write a separate XML report for CI.
 
 ```bash
 chimeraforge check plan.json --junit check.xml --json
