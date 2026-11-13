@@ -49,7 +49,7 @@ def trace(
         None, "--tpot-slo", help="Explicitly labeled mean decode interval, ms/token."
     ),
     out: Path | None = typer.Option(
-        None, "--out", help="Atomic receipt JSON; cannot replace the workload."
+        None, "--out", help="Atomic receipt JSON in an existing parent directory."
     ),
     json_output: bool = typer.Option(False, "--json"),
     secure: bool = typer.Option(
@@ -70,6 +70,7 @@ def trace(
 ) -> None:
     """Replay real requests; completion exit 0 does not imply an SLO pass."""
     from chimeraforge import api
+    from chimeraforge.commands._trace_output import TraceOutputError, preflight_trace_output
     from chimeraforge.plan_study import protect_output
     from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
 
@@ -140,6 +141,7 @@ def trace(
             if any(value is not None for value in (latency_slo, first_output_slo, tpot_slo)):
                 raise api.PlanError("explicit SLO flags cannot override saved --from-plan inputs")
         if out is not None:
+            preflight_trace_output(out)
             protect_output(
                 out,
                 [
@@ -155,7 +157,11 @@ def trace(
     except (api.PlanError, MonitorConnectionError, OSError) as exc:
         if not opted and isinstance(exc, OSError):
             raise
-        message = "secure trace input or output unavailable" if opted else str(exc)
+        message = (
+            str(exc)
+            if isinstance(exc, TraceOutputError) or not opted
+            else "secure trace input or output unavailable"
+        )
         typer.echo(json.dumps({"error": message}) if json_output else message)
         if opted:
             raise typer.Exit(2) from None

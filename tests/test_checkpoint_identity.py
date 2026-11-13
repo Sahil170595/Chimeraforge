@@ -357,6 +357,8 @@ def test_offline_check_never_contacts_hub_and_marks_alias_unknown(monkeypatch, t
 
 
 def test_network_check_reports_moving_alias_without_substitution(monkeypatch, tmp_path):
+    from xml.etree import ElementTree as ET
+
     artifact = saved(monkeypatch, tmp_path)
     old_get = httpx.get
 
@@ -374,6 +376,30 @@ def test_network_check_reports_moving_alias_without_substitution(monkeypatch, tm
     assert checked["checkpoint_view"][REPO]["pinned_metadata"]["state"] == "unchanged"
     assert checked["exit_code"] == 1
     assert artifact.spec(REPO).checkpoint["resolved_revision"] == COMMIT
+    path, junit = tmp_path / "private-plan.json", tmp_path / "check.xml"
+    artifact.save(path)
+    raw = path.read_bytes()
+    result = CliRunner().invoke(
+        app,
+        [
+            "check",
+            str(path),
+            "--network",
+            "--hf-token",
+            "private-hf-token",
+            "--junit",
+            str(junit),
+            "--json",
+        ],
+    )
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["checkpoint_view"][REPO]["requested_ref"]["state"] == "changed"
+    xml = junit.read_bytes()
+    assert REPO.encode() not in xml and b"private-hf-token" not in xml and NEXT.encode() not in xml
+    suite = ET.fromstring(xml)
+    assert suite.find(".//testcase[@name='checkpoint.1.requested_ref']/failure") is not None
+    assert suite.find(".//testcase[@name='checkpoint.1.served_weights']/skipped") is not None
+    assert path.read_bytes() == raw
 
 
 @pytest.mark.parametrize("backend", ["vllm", "tgi", "sglang"])

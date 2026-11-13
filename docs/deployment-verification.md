@@ -9,7 +9,7 @@ independently supplied saved plan and complete render intent. It reuses
 refusals and original multi-replica population. It never copies a fleet into a
 one-agent candidate or reconstructs expected options from the file being checked.
 
-In 0.100.0 (unreleased), explicit systemd verification also compares exact native
+Since 0.100.0, explicit systemd verification also compares exact native
 unit bytes with independent intent, as described below.
 
 ## Systemd units

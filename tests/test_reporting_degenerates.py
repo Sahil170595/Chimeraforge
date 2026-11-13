@@ -110,7 +110,7 @@ class TestSafetyExcludesEmptyReplies:
 
 
 class TestEvalDisclosesPlaceholderPredictions:
-    def test_json_marks_a_run_where_the_model_was_never_queried(self):
+    def test_json_marks_a_run_where_the_model_was_never_queried(self, _deterministic_evaluate):
         import json
 
         from typer.testing import CliRunner
@@ -122,6 +122,7 @@ class TestEvalDisclosesPlaceholderPredictions:
             ["eval", "--task", "general_knowledge", "--model", "llama3.2-3b", "--json"],
         )
         assert r.exit_code == 0, r.output
+        assert _deterministic_evaluate == ["rouge", "bertscore"]
         # Third-party FutureWarnings land in the captured output, so scan for the
         # first bracket that actually parses rather than assuming position.
         rows = None

@@ -19,4 +19,13 @@ def test_exporter_consumer_real_api_http_and_os_cli(tpot, tmp_path, monkeypatch)
     result = consumer.accept(tmp_path, dict(os.environ), path, indices["vllm"])
     assert result["api"]["scrape_backend_requests"] == 0
     assert result["os_cli"]["scrape_backend_requests"] == 0
+    assert (
+        result["api"]["readiness_http_codes"]
+        == result["secure_api"]["readiness_http_codes"]
+        == [200, 503]
+    )
+    assert result["os_cli"]["readiness_http_code"] == 200
+    assert all(
+        result[mode]["readiness_backend_requests"] == 0 for mode in ("api", "secure_api", "os_cli")
+    )
     assert result["source_bytes_held"] and result["late_invalid_precontact"]

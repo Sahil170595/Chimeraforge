@@ -2,9 +2,14 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.96.0.
+This document covers the public Python API for Chimeraforge 0.100.0.
 
-In 0.100.0 (unreleased), `api.verify_systemd_deployment(saved, config_path, *,
+Since 0.99.0, an owned `FleetExporter` also exposes a read-only
+`readiness_url`. GET/HEAD uses the same immutable cached snapshot as metrics
+and reports readiness separately from native qualification.
+See [the cached readiness contract](fleet-exporter.md#cache-readiness).
+
+Since 0.100.0, `api.verify_systemd_deployment(saved, config_path, *,
 executable, model=None, candidate_index=0, gpu_devices=None)` verifies bounded
 systemd unit bytes with the current native renderer and independent intent.
 It returns the existing typed `DeploymentVerification` result.

@@ -37,7 +37,9 @@ def trace_fleet_campaign(
     request_timeout: float = typer.Option(300, "--request-timeout"),
     trace_timeout: float = typer.Option(600, "--trace-timeout"),
     cleanup_timeout: float = typer.Option(2, "--cleanup-timeout"),
-    out: Path | None = typer.Option(None, "--out"),
+    out: Path | None = typer.Option(
+        None, "--out", help="Atomic campaign JSON; missing parents created during publication."
+    ),
     json_output: bool = typer.Option(False, "--json"),
     secure: bool = typer.Option(False, "--secure", help="Verified HTTPS for all declared members."),
     bearer_env: list[str] | None = typer.Option(None, "--bearer-env", help="Repeat ID=ENV_NAME."),
@@ -54,6 +56,7 @@ def trace_fleet_campaign(
     )
     from chimeraforge.bench.fleet_campaign_types import FleetTraceCampaignError
     from chimeraforge.bench.fleet_gate_output import _write
+    from chimeraforge.commands._trace_output import TraceOutputError, preflight_trace_output
     from chimeraforge.monitor_connection import MonitorConnection, MonitorConnectionError
     from chimeraforge.plan_study import protect_output
 
@@ -137,6 +140,8 @@ def trace_fleet_campaign(
 
     receipt = None
     try:
+        if out is not None:
+            preflight_trace_output(out, create_parents=True)
         receipt = asyncio.run(execute())
         raw = receipt.json_bytes() if json_output or out is not None else None
         if out is not None:
@@ -153,7 +158,11 @@ def trace_fleet_campaign(
         RuntimeError,
     ) as exc:
         LOG.info("fleet campaign CLI refused (%s)", type(exc).__name__)
-        message = "invalid, unavailable or over-limit whole-fleet campaign"
+        message = (
+            str(exc)
+            if isinstance(exc, TraceOutputError)
+            else "invalid, unavailable or over-limit whole-fleet campaign"
+        )
         diagnostic: dict[str, object] = {"error": message}
         if receipt is not None:
             diagnostic["native_exit_code"] = receipt.exit_code
