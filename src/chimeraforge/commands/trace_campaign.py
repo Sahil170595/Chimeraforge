@@ -53,12 +53,13 @@ def trace_campaign(
         None, "--tpot-slo", help="Labeled mean decode, ms/token."
     ),
     out: Path | None = typer.Option(
-        None, "--out", help="Atomic campaign JSON; protects the workload."
+        None, "--out", help="Atomic campaign JSON in an existing parent directory."
     ),
     json_output: bool = typer.Option(False, "--json"),
 ) -> None:
     """Serial native execution; exit 0 complete, 1 incomplete/stopped, 2 malformed/output."""
     from chimeraforge import api
+    from chimeraforge.commands._trace_output import preflight_trace_output
     from chimeraforge.plan_study import protect_output
 
     async def execute() -> api.TraceCampaign:
@@ -84,6 +85,7 @@ def trace_campaign(
 
     try:
         if out is not None:
+            preflight_trace_output(out)
             protect_output(out, [workload])
         result = asyncio.run(execute())
         if out is not None:
