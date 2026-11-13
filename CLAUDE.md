@@ -59,7 +59,7 @@ ChimeraForge is an LLM inference benchmarking and deployment planning platform, 
 
 **Version:** 0.97.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
-Trace output preflight (0.97.0, unreleased): trace CLI paths check destination
+Trace output preflight (since 0.97.0): trace CLI paths check destination
 shape before backend contact. Existing alias guards and atomic publication
 remain in place. See [receipt destinations](docs/trace-replay.md#receipt-destinations).
 

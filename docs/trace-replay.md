@@ -48,7 +48,7 @@ aliases of the input workload. CLI stdout and `--out` contain the same receipt.
 
 ## Receipt destinations
 
-In 0.97.0 (unreleased), `--out` for `trace`, `trace-fleet`,
+Since 0.97.0, `--out` for `trace`, `trace-fleet`,
 `trace-campaign` and `trace-fleet-campaign` is checked before backend
 contact. An existing directory or special-file destination is invalid.
 Ordinary and plan-bound `trace`, `trace-fleet` and `trace-campaign`
