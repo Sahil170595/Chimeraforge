@@ -5,6 +5,16 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.99.0] - 2026-11-13
+
+### Cached fleet exporter readiness
+
+- Add GET/HEAD `/readyz` to the loopback exporter. A bounded JSON response reports cache readiness, freshness, age, sequence and native exit separately. Readiness uses the existing immutable snapshot without polling upstream.
+
+### Deterministic evaluation tests
+
+- Reuse the existing opt-in metric fixture for the placeholder-evaluation CLI regression, retaining both native metric calls and disclosure assertions while avoiding model downloads in unit tests.
+
 ## [0.98.0] - 2026-11-13
 
 ### JUnit reports for saved checks

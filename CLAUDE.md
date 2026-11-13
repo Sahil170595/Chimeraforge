@@ -57,7 +57,12 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.98.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.99.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Exporter readiness (since 0.99.0): loopback GET/HEAD `/readyz`
+uses the existing immutable snapshot and request admission. Fresh cache
+returns 200, other cache states return 503; native qualification is separate.
+See [readiness](docs/fleet-exporter.md#cache-readiness).
 
 Saved check JUnit (since 0.98.0): `check --junit` and
 `bundle check --junit` publish bounded atomic XML with closed identifiers

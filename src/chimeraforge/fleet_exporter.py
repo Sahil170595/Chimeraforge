@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import replace
+import json
 import logging
 from pathlib import Path
 import threading
@@ -17,6 +18,7 @@ from chimeraforge.fleet_exporter_types import (
     FleetExporterConfig,
     FleetExporterError,
     FleetExporterSnapshot,
+    MAX_READINESS_BYTES,
     MAX_REQUEST_BYTES,
     MAX_REQUEST_PATH,
     STARTUP_POLL_SECONDS,
@@ -62,7 +64,8 @@ class FleetExporter:
             scope = value.scope
             if len(scope.get("raw_path", b"")) > MAX_REQUEST_PATH:
                 return response(status_code=414)
-            if scope.get("query_string") or scope.get("raw_path") != b"/metrics":
+            path = scope.get("raw_path")
+            if scope.get("query_string") or path not in (b"/metrics", b"/readyz"):
                 return response(status_code=404)
             if sum(len(k) + len(v) for k, v in scope["headers"]) > MAX_REQUEST_BYTES:
                 return response(status_code=431)
@@ -75,6 +78,33 @@ class FleetExporter:
             headers = {"cache-control": "no-store", "x-chimeraforge-snapshot-state": snapshot.state}
             if snapshot.age_seconds is not None:
                 headers["x-chimeraforge-snapshot-age-seconds"] = f"{snapshot.age_seconds:.6f}"
+            if path == b"/readyz":
+                ready = snapshot.state == "fresh"
+                body = (
+                    json.dumps(
+                        {
+                            "schema_version": 1,
+                            "kind": "chimeraforge.fleet-exporter-readiness",
+                            "ready": ready,
+                            "state": snapshot.state,
+                            "age_seconds": snapshot.age_seconds,
+                            "sequence": snapshot.sequence,
+                            "native_exit_code": snapshot.native_exit_code,
+                        },
+                        allow_nan=False,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                    + b"\n"
+                )
+                if len(body) > MAX_READINESS_BYTES:
+                    LOG.warning("exporter readiness response exceeds byte bound")
+                    return response(status_code=503, headers=headers)
+                return response(
+                    body,
+                    status_code=200 if ready else 503,
+                    media_type="application/json",
+                    headers=headers,
+                )
             return response(snapshot.body, media_type="text/plain; version=0.0.4", headers=headers)
 
         @asynccontextmanager
@@ -130,12 +160,17 @@ class FleetExporter:
         port = self._socket.getsockname()[1]
         host = "[::1]" if config.host == "::1" else config.host
         self.metrics_url = f"http://{host}:{port}/metrics"
+        self._readiness_url = f"http://{host}:{port}/readyz"
         self._thread = threading.Thread(
             target=self._thread_main, name="fleet-exporter", daemon=False
         )
 
     def snapshot(self) -> FleetExporterSnapshot:
         return self._cache.snapshot()
+
+    @property
+    def readiness_url(self) -> str:
+        return self._readiness_url
 
     async def _poll(self) -> None:
         assert self._stop is not None
