@@ -1,5 +1,9 @@
 # Installation Guide
 
+The current public release is **0.101.0** (`pip install "chimeraforge==0.101.0"`).
+The **0.102.0 source candidate** is unreleased; its optional trace-envelope JUnit
+requires installing the candidate checkout (`python -m pip install -e .`).
+
 Complete installation instructions for Chimeraforge, the benchmarking-only
 breakout from Banterhearts.
 

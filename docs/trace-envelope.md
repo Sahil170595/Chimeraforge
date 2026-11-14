@@ -126,6 +126,48 @@ cannot be authenticated or excluded. Digests do not prove preregistration time,
 private prompts, independent execution, physical hardware, served weights, cold
 caches, deployment, planner calibration or scientific GO.
 
+## JUnit (source candidate 0.102.0)
+
+This optional output is **unreleased 0.102.0 source**. Public installation remains
+**0.101.0**, whose existing assessment/JSON interface is unchanged.
+
+```bash
+chimeraforge trace-envelope --cases cases.json --policy envelope-policy.json \
+  --campaign slow=slow-campaign.json --campaign fast=fast-campaign.json \
+  --out envelope.json --junit envelope.xml --json
+```
+
+The same `--junit` option works with `--fleet --plan --candidate-index`.
+The API writes a previously finalized result without reading sources again:
+
+```python
+api.write_trace_envelope(decision, out="envelope.json", junit="envelope.xml")
+```
+
+At least one destination is required. Assessment happens once; native JSON,
+math and `0`/`1`/`3` assessment exits remain intact. There is one `overall` case,
+one `cell-I` case per original cell, and one `cell-I.execution-J` case per
+declared ordinary replica or fleet execution. Missing slots remain cases.
+Native fleet JSON retains every original member and request row.
+
+Required missing, unknown or incompatible evidence produces XML errors. Known
+breaches produce failures even alongside errors. A complete passing execution
+can pass inside a breach-only cell when compatibility is established. A missing
+higher cell leaves complete lower cases passing while overall remains native
+`3`. Unknown unrequired controls do not invent errors. Fleet cleanup, clock and
+workload compatibility facts summarized only at cell scope conservatively affect
+that cell's execution cases; no omitted execution facts are inferred from exit `0`.
+
+XML contains only fixed ordinal identifiers/messages and limited numeric,
+enum and hash properties. It excludes private cell/member/request names, paths,
+endpoints, raw blocker text and embedded receipts. Both complete buffers are
+admitted before either file is written, including a **64 KiB complete XML cap**.
+Oversize XML is refused without truncation or partial population publication.
+Destinations protect declared inputs before assessment and all consumed paths
+carried by the finalized result, including hard-link aliases and each other.
+Files are individually atomic; writing two files is not a pair transaction.
+Without `--junit`, the existing CLI save/default behavior remains unchanged.
+
 ## Whole-fleet campaigns
 
 Since 0.101.0, the explicit fleet mode receives saved native

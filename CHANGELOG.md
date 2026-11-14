@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.102.0] - Unreleased
+
+### Trace-envelope JUnit
+
+- Add optional `trace-envelope --junit PATH` and typed `api.write_trace_envelope` for ordinary and whole-fleet saved assessments. Closed ordinal cases retain every original cell/execution, lower passing points and known breaches alongside incomplete evidence; complete native JSON and native exits remain unchanged.
+- Admit both output buffers before separately atomic publication, with a 64 KiB complete XML limit and declared/consumed input alias guards. Extend the existing installed consumers and typing cohort.
+
 ## [0.101.0] - 2026-11-13
 
 ### Whole-fleet campaign load points

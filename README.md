@@ -39,7 +39,7 @@ checks a saved plan against a supplied NVIDIA CSV without a local GPU query.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.101.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This command set is shared by public Chimeraforge 0.101.0 and the unreleased 0.102.0 source candidate.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -88,6 +88,10 @@ pip install "chimeraforge[all]"       # everything
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
 **Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
+
+The **unreleased 0.102.0 source candidate** adds optional
+[`trace-envelope --junit` and `api.write_trace_envelope`](docs/trace-envelope.md#junit-source-candidate-01020).
+Public installation remains **0.101.0**; the new option requires this candidate source.
 
 ```bash
 pip install "chimeraforge[mcp]==0.101.0"
@@ -1170,6 +1174,12 @@ or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
 ### `trace-envelope` -- observed finite load points (since 0.69.0)
+
+The **0.102.0 source candidate** additionally accepts `--junit envelope.xml`
+alongside `--out envelope.json`, for ordinary and fleet mode. The
+[closed JUnit cases](docs/trace-envelope.md#junit-source-candidate-01020) preserve
+complete passing siblings, missing higher cells and known breaches. This option
+is unreleased; public 0.101.0 retains the JSON-only interface.
 
 Since 0.101.0, `trace-envelope --fleet --plan ORIGINAL --candidate-index N`
 and `api.assess_fleet_trace_envelope` also assess native whole-fleet campaigns.

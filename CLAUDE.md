@@ -57,7 +57,12 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.101.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.102.0 (unreleased source candidate; public 0.101.0) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Trace-envelope JUnit (0.102.0 source candidate): `trace-envelope --junit` and
+`api.write_trace_envelope` emit closed cases for the finalized whole population,
+with known breaches retained beside missing evidence. See
+[JUnit outputs](docs/trace-envelope.md#junit-source-candidate-01020).
 
 Whole-fleet load points (since 0.101.0): `trace-envelope --fleet --plan
 --candidate-index` and `api.assess_fleet_trace_envelope` use strict saved native

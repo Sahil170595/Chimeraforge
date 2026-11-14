@@ -1,5 +1,12 @@
 # Saved plans and the Python API
 
+The **unreleased 0.102.0 source candidate** adds
+`api.write_trace_envelope(result: RegressionGate, *, out=None, junit=None) -> None`
+for finalized ordinary and whole-fleet assessments. It writes complete JSON and
+[closed JUnit](trace-envelope.md#junit-source-candidate-01020) without repeating
+assessment. Public installation remains **0.101.0**. Native scientific limits and
+assessment exits are unchanged.
+
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
 Existing anonymous defaults and native metrics remain.

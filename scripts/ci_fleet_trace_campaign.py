@@ -316,8 +316,23 @@ def accept_envelope(
         "higher=" + str(paths["higher"]),
     ]
     output = cwd / (controls["backend"] + "-load-assessment.json")
-    cli = json.loads(run_raw([*full, "--out", str(output)], cwd, env, 0))
+    junit = cwd / (controls["backend"] + "-load-assessment.xml")
+    cli = json.loads(run_raw([*full, "--out", str(output), "--junit", str(junit)], cwd, env, 0))
     assert cli == json.loads(output.read_bytes())
+    suite = ET.fromstring(junit.read_bytes())
+    assert int(suite.attrib["tests"]) == 1 + 2 * (1 + EXECUTIONS)
+    assert suite.attrib["errors"] == suite.attrib["failures"] == "0"
+    assert all(
+        value.encode() not in junit.read_bytes()
+        for value in (
+            endpoints[0].url,
+            endpoints[0].id,
+            str(saved),
+            "private-envelope-prompt",
+            "lower",
+            "higher",
+        )
+    )
     for report in (direct, cli):
         assert (
             report["exit_code"] == 0
@@ -337,10 +352,15 @@ def accept_envelope(
         public = json.dumps(report)
         assert "private-envelope-prompt" not in public and endpoints[0].url not in public
         assert endpoints[0].id not in public and str(saved) not in public
-    missing = json.loads(run_raw(args, cwd, env, 3))
+    missing_junit = cwd / (controls["backend"] + "-load-missing.xml")
+    missing = json.loads(run_raw([*args, "--junit", str(missing_junit)], cwd, env, 3))
     assert missing["highest_observed_passing"] is None
     assert all(cell["outcome"] == "unknown" for cell in missing["cells"])
+    assert int(ET.fromstring(missing_junit.read_bytes()).attrib["errors"]) == 1 + 2 * (
+        1 + EXECUTIONS
+    )
     run_raw([*full, "--out", str(paths["higher"])], cwd, env, 2)
+    run_raw([*full, "--junit", str(paths["higher"])], cwd, env, 2)
     assert all(path.read_bytes() == raw for path, raw in held.items())
     assert len(contacts) == contact_count
     return {
