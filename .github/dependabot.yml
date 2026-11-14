@@ -13,6 +13,18 @@ updates:
     commit-message:
       prefix: "chore(deps)"
 
+  # Frozen reproduction inputs: preserve their bytes and keep alerts visible.
+  # Ignore automatic PRs, including security updates, only in these archives.
+  - package-ecosystem: pip
+    directories:
+      - "/experiments/TR117"
+      - "/experiments/research/tr117"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: "*"
+
   # The composite action pins actions of its own; Dependabot needs it listed
   # separately because it does not recurse into action directories.
   - package-ecosystem: github-actions
