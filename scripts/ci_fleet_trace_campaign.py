@@ -500,7 +500,8 @@ def accept(cwd: Path, env: dict, saved: Path, checkout: Path | None = None) -> d
                         ):
                             args += [flag, endpoint.id + "=" + str(flag_value)]
                 cli_env = dict(env, CF_CAMPAIGN_TOKEN84=token)
-                output = cwd / f"{backend}-{mode}.json"
+                output = cwd / f"{backend}-{mode}" / "nested" / "campaign.json"
+                assert not output.parent.exists()
                 raw = run_raw([*args, "--out", str(output)], cwd, cli_env, wanted)
                 assert raw == output.read_bytes() and b"\r\n" not in raw
                 cli = json.loads(raw)

@@ -79,8 +79,9 @@ def test_systemd_analyze_accepts_escaped_argv(tmp_path):
     analyze = shutil.which("systemd-analyze")
     if analyze is None:
         _missing_tool("systemd-analyze unavailable; Linux hosted CI validates native units")
+    saved = artifact(model='org/model${UNSET}%u;"\\quoted')
     result = export(
-        artifact(model='org/model${UNSET}%u;"\\quoted'),
+        saved,
         format="systemd",
         executable="/usr/bin/true",
     )
@@ -88,6 +89,9 @@ def test_systemd_analyze_accepts_escaped_argv(tmp_path):
     path.write_text(result.content, encoding="utf-8")
     checked = _run([analyze, "verify", "--man=no", "--generators=no", str(path)])
     assert checked.returncode == 0, checked.stderr
+    from chimeraforge import api
+
+    assert api.verify_systemd_deployment(saved, path, executable="/usr/bin/true").exit_code == 0
 
 
 @pytest.mark.parametrize(

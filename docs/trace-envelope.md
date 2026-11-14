@@ -128,7 +128,7 @@ caches, deployment, planner calibration or scientific GO.
 
 ## Whole-fleet campaigns
 
-In 0.101.0 (unreleased), the explicit fleet mode receives saved native
+Since 0.101.0, the explicit fleet mode receives saved native
 `trace-fleet-campaign` receipts and an independent original plan/candidate.
 It holds all inputs offline and reuses strict native campaign receiving,
 per-request SLO qualification, member conditions/cache checks and normalized

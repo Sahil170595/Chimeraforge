@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from chimeraforge.bench import plan_trace
 from chimeraforge.bench.fleet_campaign_receipt import held_campaign
@@ -71,7 +71,7 @@ def load_inputs(
     if type(candidate_index) is not int or candidate_index < 0:
         fail("invalid original candidate selection")
     if type(saved) is PlanArtifact:
-        _admit_receipt(saved._data, MAX_PLAN_BYTES)
+        _admit_receipt(cast("PlanArtifact", saved)._data, MAX_PLAN_BYTES)
     data, raw_sha, plan_paths = plan_trace._source(saved)
     candidate = PlanArtifact(data).candidate(candidate_index)
     selected = data["result"]["candidates"][candidate_index]

@@ -39,7 +39,7 @@ checks a saved plan against a supplied NVIDIA CSV without a local GPU query.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.96.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.101.0.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -87,10 +87,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.96.0 adds budget checks for dated serving quotes. It includes static passive fleet reports from 0.95.0, declaration-based Kubernetes inspection from 0.94.0, offline inventory arithmetic from 0.93.0 and the five workflows introduced in 0.92.0.
+**Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
 
 ```bash
-pip install "chimeraforge[mcp]==0.96.0"
+pip install "chimeraforge[mcp]==0.101.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -302,6 +302,10 @@ a new host for an `auto` plan. Exit 0 means required modeled components are
 unchanged, 1 means changed/expired/unverified required evidence, and 2 means
 malformed input. A stable modeled recommendation does not prove serving
 performance or identify immutable model weights. See [the API contract](docs/planning-api.md).
+
+Since 0.98.0, add `--junit check.xml` to `check` or `bundle check`
+to write native results for CI alongside the usual stdout. Write bundle JUnit
+outside the source bundle. See [JUnit outcomes and output rules](docs/planning-api.md#saved-check-junit).
 
 ### `bundle` -- portable saved-plan handoff
 
@@ -555,6 +559,10 @@ See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernet
 
 ### `deploy-verify` -- check offline declaration drift
 
+Since 0.100.0, use `--format systemd --executable /absolute/engine`
+to compare exact native unit bytes against the original saved plan and independently
+retained model/GPU intent. See [systemd verification](docs/deployment-verification.md#systemd-units).
+
 **Offline deployment verification (since 0.75.0).** Keep the
 original saved plan, candidate index and full render intent independently from
 the file being checked. For the single-replica export above:
@@ -691,7 +699,10 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.96.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.101.0"`.
+Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
+for cache freshness, separately from native fleet qualification. See
+[readiness responses](docs/fleet-exporter.md#cache-readiness).
 Repeat `--endpoint ID=URL` for every original saved member; supply
 `--from-plan fleet-plan.json --candidate-index "$FLEET_INDEX"`.
 `--interval 1 --observation-seconds 15 --poll-seconds 15 --stale-after-seconds 60`
@@ -864,7 +875,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.96.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.101.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -999,6 +1010,11 @@ Create a private `workload.json` with an explicit schedule and output caps:
 # Requires this model to be running on the named endpoint. Prompts are sent there.
 chimeraforge trace workload.json --model llama3.2-3b --backend ollama --concurrency 1 --latency-slo 2000 --first-output-slo 500 --tpot-slo 50 --out trace.json --json
 ```
+
+Since 0.97.0, trace commands check `--out` before backend contact.
+Ordinary, plan-bound, fleet and serial campaign saves require an existing parent
+directory. Whole-fleet campaign saves can create missing parents during final
+publication. See [receipt destination rules](docs/trace-replay.md#receipt-destinations).
 
 `trace` records every planned request, including failed, partial, cancelled and
 not-started requests. Actual client arrival, queue, first output and terminal
@@ -1155,7 +1171,7 @@ See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
 ### `trace-envelope` -- observed finite load points (since 0.69.0)
 
-In 0.101.0 (unreleased), `trace-envelope --fleet --plan ORIGINAL --candidate-index N`
+Since 0.101.0, `trace-envelope --fleet --plan ORIGINAL --candidate-index N`
 and `api.assess_fleet_trace_envelope` also assess native whole-fleet campaigns.
 Distinct [fleet cases and policy declarations](docs/trace-envelope.md#whole-fleet-campaigns)
 fix the original plan, all members, routing and executions across finite load cells.

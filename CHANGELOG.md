@@ -5,11 +5,40 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.101.0] - Unreleased
+## [0.101.0] - 2026-11-13
 
 ### Whole-fleet campaign load points
 
 - Add `trace-envelope --fleet --plan --candidate-index` and typed `api.assess_fleet_trace_envelope` to assess declared finite load cells from strict saved whole-fleet campaigns. Every execution, original member and request is retained with ordinal diagnostics, native SLO conditions and exact input provenance.
+- Include the fleet-envelope input and assessment modules in the existing hosted typecheck step.
+
+## [0.100.0] - 2026-11-13
+
+### Offline systemd deployment verification
+
+- Add `deploy-verify --format systemd --executable` and typed `api.verify_systemd_deployment` for exact bounded native unit and required-companion comparisons against independently supplied plan/model/GPU intent. Reports expose categorical content drift and hashes.
+
+## [0.99.0] - 2026-11-13
+
+### Cached fleet exporter readiness
+
+- Add GET/HEAD `/readyz` to the loopback exporter. A bounded JSON response reports cache readiness, freshness, age, sequence and native exit separately. Readiness uses the existing immutable snapshot without polling upstream.
+
+### Deterministic evaluation tests
+
+- Reuse the existing opt-in metric fixture for the placeholder-evaluation CLI regression, retaining both native metric calls and disclosure assertions while avoiding model downloads in unit tests.
+
+## [0.98.0] - 2026-11-13
+
+### JUnit reports for saved checks
+
+- Add `--junit PATH` to `check` and `bundle check`. Write a bounded XML report from native comparison outcomes while keeping the usual stdout and exit codes. XML uses fixed labels and ordinal model rows.
+
+## [0.97.0] - 2026-11-13
+
+### Trace receipt destinations
+
+- Reject unusable `--out` paths for ordinary, plan-bound, fleet and campaign traces before any backend call. Keep protected-input checks and atomic receipt publication. Whole-fleet campaigns can still create missing parent directories when writing the receipt.
 
 ## [0.96.0] - 2026-11-06
 

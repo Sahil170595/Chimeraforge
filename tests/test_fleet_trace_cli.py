@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import asdict
 import json
 import os
+import stat
 
 import pytest
 from typer.testing import CliRunner
@@ -36,6 +37,123 @@ def arguments(native_fleet, tmp_path):
     for endpoint in endpoints():
         args.extend(["--endpoint", f"{endpoint.id}={endpoint.url}"])
     return args, (plan, work, routing)
+
+
+LANES = ("ordinary", "plan", "serial-campaign", "fleet", "fleet-campaign")
+
+
+def _receipt_arguments(native_fleet, tmp_path, lane):
+    fleet_args, sources = arguments(native_fleet, tmp_path)
+    plan, work, _ = sources
+    single = [str(work), "--base-url", endpoints()[0].url, "--json"]
+    if lane == "fleet":
+        return fleet_args, sources
+    if lane == "fleet-campaign":
+        return ["trace-fleet-campaign", *fleet_args[1:], "--executions", "2"], sources
+    if lane == "plan":
+        return [
+            "trace",
+            *single,
+            "--from-plan",
+            str(plan),
+            "--candidate-index",
+            str(native_fleet[1]["vllm"]),
+        ], sources
+    if lane == "serial-campaign":
+        return [
+            "trace-campaign",
+            *single,
+            "--backend",
+            "vllm",
+            "--model",
+            "controlled",
+            "--replicates",
+            "2",
+        ], sources
+    return ["trace", *single, "--backend", "vllm", "--model", "controlled"], sources
+
+
+@pytest.mark.parametrize(
+    "lane,shape",
+    [
+        *((lane, "directory") for lane in LANES),
+        *((lane, "parent_file") for lane in LANES),
+        *((lane, "missing_parent") for lane in LANES[:-1]),
+    ],
+)
+def test_unusable_receipt_destination_refuses_before_backend(
+    native_fleet, scene, tmp_path, lane, shape
+):
+    args, sources = _receipt_arguments(native_fleet, tmp_path, lane)
+    before = [path.read_bytes() for path in sources]
+    anchor = tmp_path / "output-anchor"
+    if shape == "directory":
+        anchor.mkdir()
+        output = anchor
+    else:
+        if shape == "parent_file":
+            anchor.write_bytes(b"protected parent file")
+        output = anchor / "new-subdirectory" / "receipt.json"
+    result = CliRunner().invoke(app, [*args, "--out", str(output)])
+    assert not scene.created, "backend factory ran before refusing the destination"
+    assert result.exit_code == 2 and "receipt output" in json.loads(result.stdout)["error"]
+    assert [path.read_bytes() for path in sources] == before
+    if shape == "directory":
+        assert anchor.is_dir() and not list(anchor.iterdir())
+    elif shape == "parent_file":
+        assert anchor.read_bytes() == b"protected parent file"
+    else:
+        assert not anchor.exists()
+
+
+def test_special_receipt_destination_refuses_before_backend(native_fleet, scene, tmp_path):
+    args, _ = _receipt_arguments(native_fleet, tmp_path, "ordinary")
+    if os.name == "nt":
+        output = tmp_path / "COM1.json"
+    else:
+        output = tmp_path / "fifo"
+        os.mkfifo(output)
+    result = CliRunner().invoke(app, [*args, "--out", str(output)])
+    assert not scene.created
+    assert result.exit_code == 2 and "receipt output" in json.loads(result.stdout)["error"]
+    if os.name != "nt":
+        assert stat.S_ISFIFO(output.lstat().st_mode)
+
+
+def test_fleet_campaign_preserves_native_parent_creation_after_replay(
+    native_fleet, scene, tmp_path, monkeypatch
+):
+    from chimeraforge.bench import trace
+
+    args, sources = _receipt_arguments(native_fleet, tmp_path, "fleet-campaign")
+    before = [path.read_bytes() for path in sources]
+    parent = tmp_path / "created-by-writer"
+    output = parent / "nested" / "campaign.json"
+
+    def factory(*a, **kw):
+        assert not parent.exists()
+        return scene.factory(*a, **kw)
+
+    monkeypatch.setattr(trace, "get_backend", factory)
+    result = CliRunner().invoke(app, [*args, "--out", str(output)])
+    assert result.exit_code == 0, result.output
+    assert result.stdout.encode() == output.read_bytes()
+    assert len(scene.created) == 6 and all(node.closed for node in scene.created)
+    assert [path.read_bytes() for path in sources] == before
+
+
+def test_fleet_campaign_refuses_dangling_parent_link(native_fleet, scene, tmp_path):
+    args, _ = _receipt_arguments(native_fleet, tmp_path, "fleet-campaign")
+    missing = tmp_path / "missing-target"
+    parent = tmp_path / "parent-link"
+    try:
+        parent.symlink_to(missing, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlink creation unavailable")
+    output = parent / "nested" / "receipt.json"
+    result = CliRunner().invoke(app, [*args, "--out", str(output)])
+    assert result.exit_code == 2 and "receipt output" in json.loads(result.stdout)["error"]
+    assert not scene.created and parent.is_symlink() and not missing.exists()
 
 
 def test_complete_cli_uses_same_native_population(native_fleet, scene, tmp_path):

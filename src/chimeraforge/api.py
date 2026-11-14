@@ -301,6 +301,28 @@ def verify_deployment(
     )
 
 
+def verify_systemd_deployment(
+    saved: PlanArtifact | str | Path,
+    config_path: str | Path,
+    *,
+    executable: str,
+    model: str | None = None,
+    candidate_index: int = 0,
+    gpu_devices: list[str] | None = None,
+) -> DeploymentVerification:
+    """Compare exact bounded systemd unit bytes with independent native render intent."""
+    from chimeraforge.deployment_verify import verify_systemd_deployment as verify
+
+    return verify(
+        saved,
+        config_path,
+        executable=executable,
+        model=model,
+        candidate_index=candidate_index,
+        gpu_devices=gpu_devices,
+    )
+
+
 def gate_fleet_traces(
     baseline: FleetTraceReplay | dict | str | Path,
     candidate: FleetTraceReplay | dict | str | Path,

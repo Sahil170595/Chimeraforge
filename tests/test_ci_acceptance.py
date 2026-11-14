@@ -85,6 +85,17 @@ def test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan(tmp
     assert receipt["gpu_devices"] == ["7", "3"]
     assert receipt["host_port"] == 9001
     assert receipt["source_plan_bytes_unchanged"]
+    assert receipt["systemd_verification"]["source_and_unit_held"]
+    assert receipt["systemd_verification"]["installed_api_and_cli"] == "passed"
+    assert [
+        receipt["systemd_verification"][key]
+        for key in (
+            "match_exit",
+            "drift_exit",
+            "invalid_exit",
+            "independent_executable_drift_exit",
+        )
+    ] == [0, 5, 1, 5]
     assert receipt["scope"] == "offline declaration only"
     assert receipt["gpu_execution"] == receipt["device_availability"] == "unverified"
     fleet = receipt["homogeneous_fleet"]
@@ -587,6 +598,13 @@ def test_bundle_harness_cli_commands_in_source_protocol_fixture(tmp_path, monkey
     receipt = script.produce(tmp_path / "handoff", Path(__file__).resolve().parents[1])
     assert receipt["producer_paths_absent"] is True
     assert len(receipt["plan_sha256"]) == 64
+    assert receipt["junit_controls"] == {
+        "check_exit": 0,
+        "bundle_check_exit": 0,
+        "unavailable_original_exit": 1,
+        "plan_and_bundle_alias_exit": 2,
+        "source_members_unchanged": True,
+    }
 
 
 def test_mcp_http_acceptance_exercises_real_cli_and_closes_owned_process(tmp_path):

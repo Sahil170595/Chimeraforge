@@ -136,6 +136,71 @@ def test_current_snapshot_roundtrip_check_and_immutability(tmp_path):
     assert path.read_bytes() == raw and saved.to_dict() == before
 
 
+def test_saved_check_junit_preserves_native_json_and_tool_drift(tmp_path):
+    from xml.etree import ElementTree as ET
+
+    data = plan(PlanRequest(allow_network=False)).to_dict()
+    data["tool"]["version"] = "0.1.0"
+    path, junit = tmp_path / "private-source-plan.json", tmp_path / "check.xml"
+    signed(data).save(path)
+    original = path.read_bytes()
+    args = ["check", str(path), "--json"]
+    baseline = CliRunner().invoke(app, args)
+    result = CliRunner().invoke(app, [*args, "--junit", str(junit)])
+    assert result.exit_code == baseline.exit_code == 1, result.output
+    assert json.loads(result.stdout) == json.loads(baseline.stdout)
+    suite = ET.fromstring(junit.read_bytes())
+    assert suite.find(".//testcase[@name='component.tool']/failure") is not None
+    assert suite.find(".//testcase[@name='performance']/skipped") is not None
+    assert str(path) not in junit.read_text(encoding="utf-8")
+    assert path.read_bytes() == original
+    prose = CliRunner().invoke(app, args[:-1])
+    prose_junit = CliRunner().invoke(app, [*args[:-1], "--junit", str(junit)])
+    assert prose_junit.exit_code == prose.exit_code == 1
+    assert prose_junit.stdout == prose.stdout
+
+
+def test_saved_check_junit_aliases_and_byte_limit_preserve_files(tmp_path, monkeypatch):
+    import os
+
+    from chimeraforge import plan_check_output
+
+    path, junit = tmp_path / "plan.json", tmp_path / "check.xml"
+    plan(PlanRequest(allow_network=False)).save(path)
+    original = path.read_bytes()
+    args = ["check", str(path), "--json", "--junit"]
+    expected = plan_check_output.materialize(checked(path))
+    monkeypatch.setattr(plan_check_output, "MAX_JUNIT_BYTES", len(expected))
+    result = CliRunner().invoke(app, [*args, str(junit)])
+    assert result.exit_code == 0 and junit.read_bytes() == expected
+    monkeypatch.setattr(plan_check_output, "MAX_JUNIT_BYTES", len(expected) - 1)
+    junit.write_bytes(b"held")
+    result = CliRunner().invoke(app, [*args, str(junit)])
+    assert result.exit_code == 2 and "byte limit" in json.loads(result.stdout)["error"]
+    assert junit.read_bytes() == b"held"
+    alias = tmp_path / "hardlink.xml"
+    os.link(path, alias)
+    for output in (path, alias, tmp_path):
+        result = CliRunner().invoke(app, [*args, str(output)])
+        assert result.exit_code == 2 and "unsafe" in json.loads(result.stdout)["error"]
+    assert path.read_bytes() == alias.read_bytes() == original
+
+
+def test_optional_saved_check_evidence_remains_advisory_in_junit():
+    from xml.etree import ElementTree as ET
+
+    from chimeraforge.plan_check_output import materialize
+
+    report = checked(plan(PlanRequest(allow_network=False)))
+    # Simulate a native advisory state. It can change status text without failing the check.
+    report["components"]["hardware"].update(state="changed", required=False)
+    report["status"] = "changed"
+    assert report["exit_code"] == 0
+    suite = ET.fromstring(materialize(report))
+    assert suite.find(".//testcase[@name='component.hardware']/skipped") is not None
+    assert suite.attrib["failures"] == suite.attrib["errors"] == "0"
+
+
 def test_legacy_v1_is_loadable_and_reports_missing_binding(tmp_path):
     data = plan(PlanRequest(allow_network=False)).to_dict()
     data["schema_version"] = 1
@@ -204,6 +269,9 @@ def test_full_saved_geometry_replays_without_cache_substitution(monkeypatch, kin
 
 
 def test_changed_local_resolution_provenance_is_explicit_but_not_substituted(monkeypatch):
+    from xml.etree import ElementTree as ET
+
+    from chimeraforge.plan_check_output import materialize
     from chimeraforge.planner import resolver, service
 
     spec = resolver.ModelSpec("test/full", 3.0, 8, 8, 128, source=resolver.SOURCE_HF)
@@ -222,6 +290,11 @@ def test_changed_local_resolution_provenance_is_explicit_but_not_substituted(mon
     )
     assert report["comparison"]["added"] == report["comparison"]["removed"] == []
     assert report["exit_code"] == 1
+    assert report["resolution_view"][spec.name]["required"] is False
+    xml = materialize(report)
+    assert spec.name.encode() not in xml
+    suite = ET.fromstring(xml)
+    assert suite.find(".//testcase[@name='resolution.1']/failure") is not None
 
 
 def test_auto_unified_hardware_pins_original_host_and_applies_fraction_once(monkeypatch):
@@ -274,6 +347,10 @@ def test_relative_quality_uses_original_absolute_input_not_namesake(monkeypatch,
 
 
 def test_missing_original_quality_file_is_unverified_not_namesake(monkeypatch, tmp_path):
+    from xml.etree import ElementTree as ET
+
+    from chimeraforge.plan_check_output import materialize
+
     quality(tmp_path / "quality.json")
     monkeypatch.chdir(tmp_path)
     saved = plan(PlanRequest(quality_from="quality.json", allow_network=False))
@@ -282,6 +359,11 @@ def test_missing_original_quality_file_is_unverified_not_namesake(monkeypatch, t
     assert report["exit_code"] == 1
     assert report["components"]["quality"]["state"] == "unverified"
     assert report["comparison"] is None
+    xml = materialize(report)
+    suite = ET.fromstring(xml)
+    assert suite.find(".//testcase[@name='component.quality']/error") is not None
+    assert suite.find(".//testcase[@name='comparison']/skipped") is not None
+    assert b"quality.json" not in xml
 
 
 def test_noncloud_price_change_is_actionable_and_repriced_once(monkeypatch):
@@ -317,6 +399,9 @@ def test_unknown_predictions_remain_unknown_in_deltas():
 
 @pytest.mark.parametrize("age, state, exit_code", [(90, "unchanged", 0), (91, "expired", 1)])
 def test_cloud_existing_expiry_boundary(monkeypatch, age, state, exit_code):
+    from xml.etree import ElementTree as ET
+
+    from chimeraforge.plan_check_output import materialize
     from chimeraforge.planner import cloudprice
 
     captured = dt.date.fromisoformat(cloudprice.load_cloud_prices()["captured_at"])
@@ -326,6 +411,9 @@ def test_cloud_existing_expiry_boundary(monkeypatch, age, state, exit_code):
     report = checked(saved)
     assert report["components"]["cloud"]["state"] == state
     assert report["exit_code"] == exit_code
+    suite = ET.fromstring(materialize(report))
+    case = suite.find(".//testcase[@name='component.cloud']")
+    assert case is not None and (case.find("failure") is not None) == (age == 91)
 
 
 def test_cloud_is_not_read_or_expired_for_noncloud_plan(monkeypatch):
@@ -508,6 +596,9 @@ def test_contribution_membership_and_unsigned_provenance_are_bound(monkeypatch):
 
 
 def test_recommendation_order_identity_and_native_deltas(monkeypatch):
+    from xml.etree import ElementTree as ET
+
+    from chimeraforge.plan_check_output import materialize
     from chimeraforge.planner import service
 
     saved = plan(PlanRequest(allow_network=False))
@@ -523,6 +614,8 @@ def test_recommendation_order_identity_and_native_deltas(monkeypatch):
     report = checked(saved)
     comparison = report["comparison"]
     assert report["exit_code"] == 1 and comparison["ordering_changed"]
+    suite = ET.fromstring(materialize(report))
+    assert suite.find(".//testcase[@name='comparison']/failure") is not None
     assert comparison["recommendation_before"] != comparison["recommendation_after"]
     assert set(comparison["recommendation_before"]) == {
         "model",

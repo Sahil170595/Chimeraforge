@@ -59,10 +59,29 @@ ChimeraForge is an LLM inference benchmarking and deployment planning platform, 
 
 **Version:** 0.101.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
-Whole-fleet load points (0.101.0, unreleased): `trace-envelope --fleet --plan
+Whole-fleet load points (since 0.101.0): `trace-envelope --fleet --plan
 --candidate-index` and `api.assess_fleet_trace_envelope` use strict saved native
 campaigns, every original member/execution and native SLO/condition primitives.
 See [fleet envelope](docs/trace-envelope.md#whole-fleet-campaigns).
+
+Systemd verification (since 0.100.0): `deploy-verify --format systemd
+--executable /absolute/engine` and `api.verify_systemd_deployment` compare exact
+native unit bytes and required companions with independent saved intent.
+See [verification](docs/deployment-verification.md#systemd-units).
+
+Exporter readiness (since 0.99.0): loopback GET/HEAD `/readyz`
+uses the existing immutable snapshot and request admission. Fresh cache
+returns 200, other cache states return 503; native qualification is separate.
+See [readiness](docs/fleet-exporter.md#cache-readiness).
+
+Saved check JUnit (since 0.98.0): `check --junit` and
+`bundle check --junit` publish bounded atomic XML with closed identifiers
+while retaining native stdout and exit semantics. See
+[JUnit outputs](docs/planning-api.md#saved-check-junit).
+
+Trace output preflight (since 0.97.0): trace CLI paths check destination
+shape before backend contact. Existing alias guards and atomic publication
+remain in place. See [receipt destinations](docs/trace-replay.md#receipt-destinations).
 
 Serving quote budget checks (since 0.96.0): `serving quote --max-monthly-usd`
 and typed `ServingQuoteBudgetPolicy` use exact dated whole-instance decimals
