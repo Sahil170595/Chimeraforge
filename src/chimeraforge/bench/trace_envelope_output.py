@@ -161,7 +161,7 @@ def _fleet_execution(slot: dict, cell: dict, data: dict) -> tuple[bool, bool]:
     return bool(blocked or cell["blockers"]), breach
 
 
-def materialize(result: RegressionGate) -> tuple[bytes, bytes]:
+def materialize(result: RegressionGate, *, include_junit: bool = True) -> tuple[bytes, bytes]:
     if type(result) is not RegressionGate:
         fail("envelope output requires a finalized assessment")
     data = result.to_dict()
@@ -258,18 +258,24 @@ def materialize(result: RegressionGate) -> tuple[bytes, bytes]:
         if row["timing"][breach["target"]] != breach["observed"]:
             fail("envelope breach disagrees with native request evidence")
         failed.add((cell_index, execution_index))
-    suite = ET.Element(
-        "testsuite",
-        name="chimeraforge.trace-envelope",
-        tests=str(1 + len(cells) * (1 + executions)),
-        failures="0",
-        errors="0",
-        skipped="0",
+    suite = (
+        ET.Element(
+            "testsuite",
+            name="chimeraforge.trace-envelope",
+            tests=str(1 + len(cells) * (1 + executions)),
+            failures="0",
+            errors="0",
+            skipped="0",
+        )
+        if include_junit
+        else None
     )
     errors, failures = 0, 0
 
     def case(name: str, error: bool, breach: bool, properties: dict) -> None:
         nonlocal errors, failures
+        if suite is None:
+            return
         node = ET.SubElement(suite, "testcase", name=name, classname="trace-envelope")
         props = ET.SubElement(node, "properties")
         for key, value in properties.items():
@@ -336,11 +342,13 @@ def materialize(result: RegressionGate) -> tuple[bytes, bytes]:
                 (index, execution_index) in failed,
                 properties,
             )
-    suite.set("errors", str(errors))
-    suite.set("failures", str(failures))
-    xml = ET.tostring(suite, encoding="utf-8", xml_declaration=True) + b"\n"
-    if len(xml) > MAX_JUNIT_BYTES:
-        fail("complete envelope JUnit exceeds its byte profile")
+    xml = b""
+    if suite is not None:
+        suite.set("errors", str(errors))
+        suite.set("failures", str(failures))
+        xml = ET.tostring(suite, encoding="utf-8", xml_declaration=True) + b"\n"
+        if len(xml) > MAX_JUNIT_BYTES:
+            fail("complete envelope JUnit exceeds its byte profile")
     raw = (json.dumps(data, indent=2, allow_nan=False) + "\n").encode("utf-8")
     return raw, xml
 
@@ -348,14 +356,14 @@ def materialize(result: RegressionGate) -> tuple[bytes, bytes]:
 def write_trace_envelope(
     result: RegressionGate, *, out: str | Path | None = None, junit: str | Path | None = None
 ) -> None:
-    """Admit both buffers before separately atomic writes; this is not a transaction."""
+    """Admit requested buffers before separately atomic writes; not a transaction."""
     from chimeraforge.api import PlanError
     from chimeraforge.plan_study import protect_output
 
     if out is None and junit is None:
         fail("envelope output requires a destination")
     try:
-        raw, xml = materialize(result)
+        raw, xml = materialize(result, include_junit=junit is not None)
         outputs = [Path(value) for value in (out, junit) if value is not None]
         for index, path in enumerate(outputs):
             protect_output(

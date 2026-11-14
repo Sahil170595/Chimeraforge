@@ -64,3 +64,21 @@ Reproduce the selected test paths listed in `functional.json` with
 Run the exact lint/typing commands from `.github/workflows/ci.yml` and the native
 audit helper in a clean locked environment. Source hashes describe raw local
 bytes, with Git blob identifiers also recorded for newline-normalized review.
+
+## Independent-review correction: optional SDK output
+
+`functional.json` preserves the first candidate's 1,041-test result and hashes.
+Independent review then found that a JSON-only SDK call unnecessarily generated
+XML and enforced its cap. The real 16-cell by 16-execution fixture failed that
+new regression before the fix. The writer now validates the same finalized
+type/kind/fingerprint/population for either output mode, while constructing and
+bounding XML only when JUnit is requested. JSON-only publication succeeds with
+byte-equal native JSON and zero XML element construction; requesting both outputs
+still preserves both sentinels when complete XML exceeds its limit.
+
+`functional-b.json` records the corrected source hashes and the fresh **128-test**
+output/native/consumer selection, including **36 output controls**. The exact
+workflow Ruff/format paths and seven-file typing cohort passed again. The earlier
+1,041-test run remains evidence for the first candidate, rather than a claim that
+the full selection was repeated after this narrow fix. Previously documented
+environment diagnostics and pending hosted qualification remain unchanged.

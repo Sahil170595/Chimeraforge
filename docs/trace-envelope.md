@@ -144,7 +144,8 @@ The API writes a previously finalized result without reading sources again:
 api.write_trace_envelope(decision, out="envelope.json", junit="envelope.xml")
 ```
 
-At least one destination is required. Assessment happens once; native JSON,
+At least one destination is required. A JSON-only SDK call does not generate XML
+or enforce its XML byte limit. Assessment happens once; native JSON,
 math and `0`/`1`/`3` assessment exits remain intact. There is one `overall` case,
 one `cell-I` case per original cell, and one `cell-I.execution-J` case per
 declared ordinary replica or fleet execution. Missing slots remain cases.
@@ -160,8 +161,9 @@ that cell's execution cases; no omitted execution facts are inferred from exit `
 
 XML contains only fixed ordinal identifiers/messages and limited numeric,
 enum and hash properties. It excludes private cell/member/request names, paths,
-endpoints, raw blocker text and embedded receipts. Both complete buffers are
-admitted before either file is written, including a **64 KiB complete XML cap**.
+endpoints, raw blocker text and embedded receipts. When both outputs are requested,
+both complete buffers are admitted before either file is written, including a
+**64 KiB complete XML cap** when JUnit is requested.
 Oversize XML is refused without truncation or partial population publication.
 Destinations protect declared inputs before assessment and all consumed paths
 carried by the finalized result, including hard-link aliases and each other.

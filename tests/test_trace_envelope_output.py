@@ -257,7 +257,10 @@ def test_fleet_known_breach_does_not_fail_sibling_execution(
 @pytest.mark.parametrize(
     "mutation", ["fingerprint", "kind", "shape", "boolean", "target", "nonfinite"]
 )
-def test_invalid_finalized_assessment_refuses_before_either_write(tmp_path, mutation):
+@pytest.mark.parametrize("junit_requested", [False, True])
+def test_invalid_finalized_assessment_refuses_before_either_write(
+    tmp_path, mutation, junit_requested
+):
     data = assess().to_dict()
     if mutation == "fingerprint":
         data["fingerprint"] = "0" * 64
@@ -280,7 +283,9 @@ def test_invalid_finalized_assessment_refuses_before_either_write(tmp_path, muta
     out.write_bytes(b"original-json")
     junit.write_bytes(b"original-xml")
     with pytest.raises(api.PlanError, match="complete trace envelope") as error:
-        api.write_trace_envelope(RegressionGate(data), out=out, junit=junit)
+        api.write_trace_envelope(
+            RegressionGate(data), out=out, junit=junit if junit_requested else None
+        )
     assert "PRIVATE" not in str(error.value)
     assert out.read_bytes() == b"original-json" and junit.read_bytes() == b"original-xml"
 
@@ -295,9 +300,7 @@ def test_xml_cap_admits_complete_buffer_before_any_publication(tmp_path, monkeyp
     assert not out.exists()
 
 
-def test_real_complete_xml_limit_refuses_without_losing_population(tmp_path, monkeypatch):
-    from chimeraforge.bench import trace_envelope_output
-
+def large_native_envelope():
     cases, policy = declarations()
     cases["expected_replicates"] = 16
     cases["cells"] = [
@@ -311,6 +314,33 @@ def test_real_complete_xml_limit_refuses_without_losing_population(tmp_path, mon
     }
     result = assess(campaigns, cases=cases, policy=policy)
     assert result.to_dict()["exit_code"] == 0
+    return result
+
+
+def test_json_only_large_population_does_not_materialize_unrequested_xml(tmp_path, monkeypatch):
+    from chimeraforge.bench import trace_envelope_output
+
+    result = large_native_envelope()
+    expected = result.to_dict()
+    original_element = trace_envelope_output.ET.Element
+    created_xml = []
+
+    def track_xml(*args, **kwargs):
+        created_xml.append(1)
+        return original_element(*args, **kwargs)
+
+    monkeypatch.setattr(trace_envelope_output.ET, "Element", track_xml)
+    out = tmp_path / "assessment.json"
+    api.write_trace_envelope(result, out=out)
+    assert json.loads(out.read_bytes()) == expected == result.to_dict()
+    assert out.read_bytes() == (json.dumps(expected, indent=2, allow_nan=False) + "\n").encode()
+    assert not created_xml and not list(tmp_path.glob("*.xml"))
+
+
+def test_real_complete_xml_limit_refuses_without_losing_population(tmp_path, monkeypatch):
+    from chimeraforge.bench import trace_envelope_output
+
+    result = large_native_envelope()
     out, junit = tmp_path / "assessment.json", tmp_path / "assessment.xml"
     out.write_bytes(b"original-json")
     junit.write_bytes(b"original-xml")
@@ -338,6 +368,8 @@ def test_writer_requires_finalized_type_and_destination(tmp_path):
         api.write_trace_envelope(assess())
     with pytest.raises(api.PlanError):
         api.write_trace_envelope(api.PlanArtifact(assess().to_dict()), junit=tmp_path / "out.xml")
+    with pytest.raises(api.PlanError):
+        api.write_trace_envelope(api.PlanArtifact(assess().to_dict()), out=tmp_path / "out.json")
 
 
 @pytest.mark.parametrize("hardlink", [False, True])
@@ -352,7 +384,8 @@ def test_mutual_output_alias_refuses_without_overwriting(tmp_path, hardlink):
     assert out.read_bytes() == junit.read_bytes() == b"original"
 
 
-def test_late_consumed_input_guard_refuses_xml_source_alias(tmp_path):
+@pytest.mark.parametrize("destination", ["out", "junit"])
+def test_late_consumed_input_guard_refuses_source_alias(tmp_path, destination):
     cases, policy = declarations()
     source = tmp_path / "campaign.json"
     source.write_text(json.dumps(uniform()), encoding="utf-8")
@@ -361,7 +394,7 @@ def test_late_consumed_input_guard_refuses_xml_source_alias(tmp_path):
         cases, {"slow": source, "fast": uniform(0.05)}, policy=policy
     )
     with pytest.raises(api.PlanError):
-        api.write_trace_envelope(result, junit=source)
+        api.write_trace_envelope(result, **{destination: source})
     assert source.read_bytes() == original
 
 
