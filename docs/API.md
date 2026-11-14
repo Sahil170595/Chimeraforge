@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document covers the public Python API for Chimeraforge 0.100.0.
+This document covers the public Python API for Chimeraforge 0.101.0.
 
 Since 0.99.0, an owned `FleetExporter` also exposes a read-only
 `readiness_url`. GET/HEAD uses the same immutable cached snapshot as metrics
@@ -14,6 +14,11 @@ executable, model=None, candidate_index=0, gpu_devices=None)` verifies bounded
 systemd unit bytes with the current native renderer and independent intent.
 It returns the existing typed `DeploymentVerification` result.
 See [systemd input, drift and companion semantics](deployment-verification.md#systemd-units).
+
+Since 0.101.0, `api.assess_fleet_trace_envelope(saved, cases, campaigns,
+*, policy, candidate_index=0)` returns a defensive `RegressionGate` over finite
+observed load points from complete original-fleet campaigns. The explicit saved
+plan and candidate bind every cell. See [the fleet wire and outcomes](trace-envelope.md#whole-fleet-campaigns).
 
 Since 0.96.0, pass
 `budget_policy=api.ServingQuoteBudgetPolicy(max_monthly_usd, max_price_age_days=90)`
