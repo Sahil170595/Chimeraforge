@@ -66,3 +66,25 @@ commands from `.github/workflows/ci.yml` in a clean locked environment. Full
 hosted pytest, canonical typing, clean installed audit, CodeQL and installed
 consumers remain final-head requirements. Source records include raw local
 SHA-256 and newline-normalized Git blob identities.
+
+## Hosted integration expectation correction
+
+The initial 729-test selection above omitted `tests/test_ci_acceptance.py`.
+The full hosted Ubuntu/Python 3.12 and Windows/Python 3.14 runs then caught two
+failures: the native-plan integration assertion still expected three captured
+inventory cases, and the stderr diagnostic control exercises that same assertion.
+The consumer correctly returned the intended fourteen cases. Local reproduction
+failed both tests before the correction.
+
+The assertion now independently enumerates all fourteen exact native exit/XML
+error/failure tuples and checks every case's six original slots, eleven XML cases
+and supplied-CSV source. Exact mapping equality still rejects missing or extra
+cases. Native-plan controls and the stderr/stdout-contamination test logic remain
+unchanged. No production code, metadata, arithmetic or archive changed.
+
+`functional-b.json` records this red-to-green correction and preserved hosted log
+hashes. The fresh local selection passed **224 tests**, including the entire
+integration test file and relevant inventory/output/consumer suites, with one
+existing pynvml deprecation warning. Required Ruff/format paths passed. The earlier
+`functional.json` remains unchanged, and its 729 tests are not added to the new
+count. Fresh hosted qualification remains required for the corrected head.
