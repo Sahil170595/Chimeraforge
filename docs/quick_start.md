@@ -1,5 +1,9 @@
 # Quick Start Guide
 
+Public installation is **Chimeraforge 0.101.0**. Optional
+[`inventory-check --out/--junit`](inventory-check.md#outputs-source-candidate-01030)
+and `api.write_inventory_check` require the **unreleased 0.103.0 source candidate**.
+
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)
 and [operator-authored serving declarations](serving-declaration.md).

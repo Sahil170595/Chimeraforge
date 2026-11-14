@@ -32,14 +32,30 @@ def inventory_check(
     inventory_file: Path | None = typer.Option(
         None, "--inventory-file", help="Read a complete nvidia-smi CSV capture instead of querying."
     ),
+    out: Path | None = typer.Option(None, "--out", help="Complete native inventory JSON."),
+    junit: Path | None = typer.Option(None, "--junit", help="Bounded original-census JUnit."),
     output_json: bool = typer.Option(False, "--json"),
 ) -> None:
     """Compare reported inventory with saved resident memory; no deployment readiness."""
     from chimeraforge import api
     from chimeraforge.commands.deploy import _replica_groups
     from chimeraforge.deploy import DeploymentError
+    from chimeraforge.commands._trace_output import preflight_trace_output
+    from chimeraforge.plan_study import protect_output
 
     try:
+        outputs = [value for value in (out, junit) if value is not None]
+        for index, destination in enumerate(outputs):
+            protect_output(
+                destination,
+                [
+                    plan,
+                    *([inventory_file] if inventory_file is not None else []),
+                    *outputs[:index],
+                    *outputs[index + 1 :],
+                ],
+            )
+            preflight_trace_output(destination, create_parents=True)
         report = asyncio.run(
             api.check_inventory(
                 plan,
@@ -51,6 +67,16 @@ def inventory_check(
                 inventory_file=inventory_file,
             )
         )
+        if outputs:
+            api.write_inventory_check(report, out=out, junit=junit)
+    except api.PlanError as exc:
+        error = "Invalid inventory output destination or finalized report."
+        typer.echo(
+            json.dumps({"outcome": "invalid", "exit_code": 1, "error": error})
+            if output_json
+            else error
+        )
+        raise typer.Exit(1) from exc
     except (api.InventoryCheckError, DeploymentError) as exc:
         error = (
             "Invalid inventory memory basis; choose batch-one or selected-batch."

@@ -1,5 +1,11 @@
 # Saved plans and the Python API
 
+The **unreleased 0.103.0 source candidate** adds
+`api.write_inventory_check(result: InventoryCheck, *, out=None, junit=None) -> None`
+for one frozen original inventory census. It publishes complete JSON and/or
+[closed JUnit](inventory-check.md#outputs-source-candidate-01030) without another
+observation or memory calculation. Public installation remains **0.101.0**.
+
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
 Existing anonymous defaults and native metrics remain.

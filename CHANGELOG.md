@@ -5,6 +5,14 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.103.0] - Unreleased
+
+### Inventory check JSON/JUnit outputs
+
+- Add optional `inventory-check --out/--junit` and typed `api.write_inventory_check` for one finalized whole original selector census. Preserve native 0/4/5 priority and adequate-free passes when only total memory is unknown; retain failures alongside incomplete evidence.
+- Protect actual plan/CSV roles and mutual aliases before observation and publication. Private input/census metadata stays outside dataclass serialization and survives replacement. Requested outputs are admitted before separately atomic writes; XML has a complete 64 KiB cap.
+- Extend the existing supplied-CSV installed consumer, required typing and lint scopes without adding jobs or hardware requirements.
+
 ## [0.101.0] - 2026-11-13
 
 ### Whole-fleet campaign load points

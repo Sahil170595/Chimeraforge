@@ -89,6 +89,10 @@ Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The co
 
 **Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
 
+The **unreleased 0.103.0 source candidate** adds optional
+[`inventory-check --out/--junit` and `api.write_inventory_check`](docs/inventory-check.md#outputs-source-candidate-01030).
+Public installation remains **0.101.0**; those new outputs require this candidate checkout.
+
 ```bash
 pip install "chimeraforge[mcp]==0.101.0"
 ```
@@ -766,6 +770,11 @@ chimeraforge monitor --backend vllm --url https://inference.example:8000 \
 `--secure` selects verified anonymous HTTPS; private CA and client cert/key options are also available. Fleet settings are per ID and opt every declared slot into HTTPS. See [runtime trust, authentication and limits](docs/secure-monitoring.md).
 
 ### `inventory-check` -- compare queried selectors and saved B1 memory
+
+The **unreleased 0.103.0 source candidate** adds `--out inventory.json` and
+`--junit inventory.xml` for one finalized original census, including supplied
+CSV and selected-batch mode. See the [closed output contract](docs/inventory-check.md#outputs-source-candidate-01030).
+Public 0.101.0 retains its existing stdout-only interface.
 
 **Since 0.92.0:** add `--memory-basis selected-batch` to either form
 below to compare against the compatible saved effective B/context estimate.
