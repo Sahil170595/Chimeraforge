@@ -1,5 +1,9 @@
 # Quick Start Guide
 
+Public installation remains **0.101.0**. Operator-declared
+[`serving export|verify --format systemd`](serving-declaration.md#systemd-source-candidate-01040)
+requires the **unreleased 0.104.0 source candidate**.
+
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)
 and [operator-authored serving declarations](serving-declaration.md).

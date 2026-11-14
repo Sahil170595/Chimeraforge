@@ -1,5 +1,10 @@
 # Saved plans and the Python API
 
+The **unreleased 0.104.0 source candidate** adds `format="systemd"` and
+`executable=` to `api.export_serving_declaration` and
+`api.verify_serving_declaration`. This [operator declaration path](serving-declaration.md#systemd-source-candidate-01040)
+uses no saved plan, optimizer or engine execution. Public installation remains **0.101.0**.
+
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
 Existing anonymous defaults and native metrics remain.

@@ -89,6 +89,10 @@ Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The co
 
 **Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
 
+The **unreleased 0.104.0 source candidate** adds
+[`serving export|verify --format systemd --executable`](docs/serving-declaration.md#systemd-source-candidate-01040)
+for one operator-declared replica. Public installation remains **0.101.0**.
+
 ```bash
 pip install "chimeraforge[mcp]==0.101.0"
 ```
@@ -436,6 +440,11 @@ valid model-quality evidence remains measured. These are modeled alternatives,
 without probing this host, running inference or attesting hardware/weights.
 
 ### `serving` -- operator-authored serving intent
+
+The **unreleased 0.104.0 source candidate** adds
+[`serving export|verify --format systemd --executable`](docs/serving-declaration.md#systemd-source-candidate-01040)
+for one replica with explicit TP x PP devices and native loopback defaults.
+Public 0.101.0 retains its existing declaration formats.
 
 **Since 0.92.0.** Declare concrete settings without a predictive plan,
 model/corpus lookup or capacity claim. The example revision is an operator claim;

@@ -100,6 +100,86 @@ def _accept_budget(
     }
 
 
+def _accept_systemd(cwd: Path, env: dict) -> list[dict]:
+    from chimeraforge import api
+    from ci_installed_acceptance import run_cli
+
+    results = []
+    for backend in ("vllm", "sglang"):
+        held = api.declare_serving(
+            api.ServingRequest(
+                model="org/model",
+                revision="a" * 40,
+                backend=backend,
+                image="example/engine:1",
+                tensor_parallel=2,
+                pipeline_parallel=2,
+                context_length=8192,
+                batch_size=8,
+                kv_quant="q8",
+                prefix_caching=True,
+                max_num_batched_tokens=512 if backend == "vllm" else None,
+            )
+        )
+        source, output = cwd / f"{backend}-unit-declaration.json", cwd / f"{backend}.service"
+        held.save(source)
+        original = source.read_bytes()
+        devices = ["7", "3", "9", "2"]
+        flags = [
+            "--declaration",
+            str(source),
+            "--format",
+            "systemd",
+            "--executable",
+            "/usr/bin/true",
+        ]
+        for device in devices:
+            flags += ["--gpu-device", device]
+        run_cli(["serving", "export", *flags, "--out", str(output), "--json"], cwd, env)
+        native = api.export_serving_declaration(
+            held, format="systemd", executable="/usr/bin/true", gpu_devices=devices
+        )
+        assert output.read_bytes() == native.content.encode("utf-8")
+        direct = api.verify_serving_declaration(
+            held, output, format="systemd", executable="/usr/bin/true", gpu_devices=devices
+        )
+        cli = json.loads(
+            run_cli(["serving", "verify", *flags, "--config", str(output), "--json"], cwd, env)
+        )
+        assert direct.exit_code == cli["exit_code"] == 0 and cli["change_count"] == 0
+        changed = api.verify_serving_declaration(
+            held, output, format="systemd", executable="/different/engine", gpu_devices=devices
+        )
+        assert changed.exit_code == 5 and changed.to_dict()["changes"] == (
+            {"path": "/unit", "category": "content", "count": 1},
+        )
+        output.write_bytes(output.read_bytes() + b"# altered\n")
+        drift = json.loads(
+            run_cli(["serving", "verify", *flags, "--config", str(output), "--json"], cwd, env, 5)
+        )
+        assert drift["changes"] == [{"path": "/unit", "category": "content", "count": 1}]
+        output.write_bytes(b"[Service]\0\n")
+        run_cli(["serving", "verify", *flags, "--config", str(output), "--json"], cwd, env, 1)
+        run_cli(["serving", "export", *flags, "--out", str(source), "--json"], cwd, env, 1)
+        assert source.read_bytes() == original
+        results.append(
+            {
+                "backend": backend,
+                "replicas": 1,
+                "TP": 2,
+                "PP": 2,
+                "explicit_devices": 4,
+                "match_exit": 0,
+                "drift_exit": 5,
+                "invalid_exit": 1,
+                "independent_executable_drift_exit": 5,
+                "source_bytes_held": True,
+                "service_started": False,
+            }
+        )
+    return results
+
+
 def accept(cwd: Path, env: dict) -> dict:
     from chimeraforge import api
     from chimeraforge import serving_declaration, serving_export, serving_quote
@@ -292,6 +372,7 @@ def accept(cwd: Path, env: dict) -> dict:
         "logical_gpu_slots": 12,
         "replicas": 3,
         "profiles": profiles,
+        "systemd": _accept_systemd(directory, env),
         "quote_budget": quote_budget,
         "quote": {
             "instance_count": 2,

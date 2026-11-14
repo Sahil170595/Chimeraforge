@@ -409,6 +409,28 @@ def _systemd_arg(value: str) -> str:
     return '"' + escaped + '"'
 
 
+def _systemd_content(
+    backend: str,
+    argv: list[str],
+    environment: dict[str, str],
+    fingerprint: str,
+    *,
+    declaration: bool = False,
+) -> str:
+    source = "Serving declaration" if declaration else "Saved plan"
+    return (
+        f"# {source} {fingerprint}\n[Unit]\n"
+        f"Description=ChimeraForge {backend} inference\n"
+        "After=network.target\n\n[Service]\nType=simple\n"
+        + "".join(
+            f"Environment={_systemd_arg(key + '=' + value)}\n" for key, value in environment.items()
+        )
+        + "ExecStart="
+        + " ".join(_systemd_arg(value) for value in argv)
+        + "\nRestart=on-failure\n\n[Install]\nWantedBy=default.target\n"
+    )
+
+
 def _compose_value(value: Any) -> Any:
     if isinstance(value, str):
         return value.replace("$", "$$")
@@ -728,19 +750,7 @@ def export_deployment(
             if devices is not None
             else [str(index) for index in range(candidate.gpus_total)]
         )
-        content = (
-            f"# Saved plan {fingerprint}\n[Unit]\n"
-            f"Description=ChimeraForge {candidate.backend} inference\n"
-            "After=network.target\n\n[Service]\nType=simple\n"
-        )
-        content += "".join(
-            f"Environment={_systemd_arg(key + '=' + value)}\n" for key, value in env.items()
-        )
-        content += (
-            "ExecStart="
-            + " ".join(_systemd_arg(value) for value in argv)
-            + "\nRestart=on-failure\n\n[Install]\nWantedBy=default.target\n"
-        )
+        content = _systemd_content(candidate.backend, argv, env, fingerprint)
         provisioning.insert(
             0,
             "Install as a per-user service in ~/.config/systemd/user/; verify with "

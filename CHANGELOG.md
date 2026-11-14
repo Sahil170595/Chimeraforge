@@ -5,6 +5,14 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.104.0] - Unreleased
+
+### Operator-declared systemd units
+
+- Add `serving export|verify --format systemd --executable` and matching SDK controls for one declared vLLM/SGLang replica with explicit original TP x PP device selection. Preserve native argv/revision controls and loopback defaults without optimizer, executable probing, image pull or service start.
+- Reuse a pure native unit renderer while retaining exact old plan-unit bytes. Verify bounded held declaration/unit bytes with categorical `/unit` drift and native 0/5/1 outcomes.
+- Extend required Ubuntu systemd parser acceptance and existing installed declaration consumers; existing launch/Compose/Kubernetes exports retain their bytes.
+
 ## [0.101.0] - 2026-11-13
 
 ### Whole-fleet campaign load points
