@@ -6,6 +6,12 @@ installation remains **0.101.0**. It requires no other open feature. Raw control
 plans, protocol responses, stdout and diagnostic logs remain local witnesses;
 `functional.json` contains generated aggregate results and final source identities.
 
+This is the preserved initial record for commit `25964a52`. Independent review
+subsequently demonstrated two native cleanup failures that this initial suite
+missed. The separate [cleanup follow-up](cleanup-followup.md) records the red
+regressions, repair and validation of the changed source; the initial 701-test
+record and raw witnesses remain unchanged.
+
 Four initial native SDK/actual OS CLI tests failed because the policy, finite
 API/result and flag were absent. They passed after implementation. An expanded
 attempt passed 45 tests and failed one fixture expectation: a 1 ms threshold is

@@ -26,7 +26,7 @@ from chimeraforge.fleet_exporter_types import (
     STARTUP_POLL_SECONDS,
 )
 from chimeraforge.fleet_monitor import _admit, _source, _targets, monitor_fleet
-from chimeraforge.fleet_monitor_types import FleetMonitorRequest, MAX_ENDPOINTS
+from chimeraforge.fleet_monitor_types import FleetMonitorError, FleetMonitorRequest, MAX_ENDPOINTS
 from chimeraforge.monitor_connection import (
     MonitorConnection,
     MonitorConnectionError,
@@ -60,6 +60,7 @@ class FleetExporter:
         self._stop: asyncio.Event | None = None
         self._worker: asyncio.Task[None] | None = None
         self._failed = False
+        self._native_cleanup_failed = False
         self.closed = self.worker_joined = self.listener_joined = False
 
         async def scrape(value: Any) -> Any:
@@ -179,6 +180,7 @@ class FleetExporter:
             and self.worker_joined
             and not self._thread.is_alive()
             and not self._failed
+            and not self._native_cleanup_failed
             and (
                 worker is None
                 or worker.done()
@@ -203,9 +205,18 @@ class FleetExporter:
                         stop_event=self._stop,
                         connections=self._connections,
                     )
+                    if report.cleanup["state"] != "completed":
+                        self._native_cleanup_failed = True
+                        LOG.warning("exporter native poll cleanup incomplete")
                     if not self._stop.is_set():
                         self._cache.publish(report)
                 except Exception as exc:
+                    if (
+                        isinstance(exc, FleetMonitorError)
+                        and type(exc) is FleetMonitorError
+                        and exc._cleanup_failed is True
+                    ):
+                        self._native_cleanup_failed = True
                     LOG.warning("exporter native poll unavailable (%s)", type(exc).__name__)
                     self._cache.publish(None, "unavailable")
                 if not self._stop.is_set():

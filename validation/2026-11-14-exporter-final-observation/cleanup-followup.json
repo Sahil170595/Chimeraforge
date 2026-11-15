@@ -1,0 +1,191 @@
+{
+  "generated_at": "2026-11-15T01:37:34.203633+00:00",
+  "source_candidate": "0.106.0",
+  "public_release": "0.101.0",
+  "initial_head": "25964a524293b5bfe444593fe9bb2b774c1e606b",
+  "release_base": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Local editable-source cleanup follow-up; no hosted, clean artifact, provider or production claim",
+  "original_record": {
+    "path": "functional.json",
+    "unchanged_git_blob": "b3fac8aa7afff3fd9e8fa2fe923b64461d7a9b4f",
+    "passed": 701,
+    "status": "Prior to independently demonstrated cleanup gaps; not added to current test counts"
+  },
+  "demonstrated_causes": [
+    {
+      "case": "Returned native report after stop",
+      "red": {
+        "tests": 3,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cause": "A prior boundary PASS hid real transport close errors or exceeded cleanup allowance; the normal-return incomplete report was discarded after stop",
+      "completed_cancelled_control": "passed"
+    },
+    {
+      "case": "Native setup_failed raises after cleanup",
+      "red": {
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cause": "Ordinary exact FleetMonitorError lost known incomplete cleanup, allowing later real PASS to clear ownership failure",
+      "completed_cleanup_recovery_control": "passed"
+    }
+  ],
+  "repair": {
+    "private_sticky_exporter_flag": true,
+    "returned_cleanup_observed_before_stop_discard": true,
+    "setup_carrier": "Private typed boolean on existing FleetMonitorError, set only for known incomplete setup cleanup",
+    "exception_type_message_args": "unchanged",
+    "ordinary_completed_cleanup_unavailability": "remains native 4 and recoverable",
+    "boundary_replaced_or_replayed": false,
+    "new_polls_queries_callbacks_or_resources": 0
+  },
+  "broader_before_typing_narrowing": {
+    "counts": {
+      "tests": 227,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "paths": [
+      "tests/test_fleet_exporter.py",
+      "tests/test_fleet_exporter_http.py",
+      "tests/test_fleet_exporter_state.py",
+      "tests/test_fleet_exporter_tls.py",
+      "tests/test_fleet_exporter_run.py",
+      "tests/test_fleet_exporter_run_state.py",
+      "tests/test_fleet_exporter_run_cache.py",
+      "tests/test_fleet_exporter_run_cleanup.py",
+      "tests/test_ci_fleet_exporter.py",
+      "tests/test_fleet_monitor.py",
+      "tests/test_fleet_monitor_transport.py",
+      "tests/test_fleet_monitor_receipt.py"
+    ],
+    "following_change": "Explicit isinstance narrowing before the same exact native error type and True-marker admission; no native runtime arithmetic or receiving change"
+  },
+  "final_source_selected": {
+    "counts": {
+      "tests": 75,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "paths": [
+      "tests/test_fleet_exporter_run.py",
+      "tests/test_fleet_exporter_run_state.py",
+      "tests/test_fleet_exporter_run_cache.py",
+      "tests/test_fleet_exporter_run_cleanup.py",
+      "tests/test_ci_fleet_exporter.py"
+    ],
+    "cleanup_regressions": 12,
+    "existing_run_controls": 61,
+    "existing_consumer_profiles": 2,
+    "overlap": "The 75 includes prior controls and consumers; it is not added to 227 or 701"
+  },
+  "critical_followup_controls": [
+    "Real native close-error and allowance exceeded after captured PASS fail safely after all joins",
+    "Completed native cancelled shutdown remains clean and successful",
+    "Native returned incomplete cleanup remains sticky after a newer real PASS",
+    "Transient real setup plus incomplete cleanup remains failed after unavailable 4 and newer real PASS",
+    "Same setup error with completed cleanup remains unavailable 4 then recovers to PASS",
+    "Selected CLI maps known cleanup ownership failure to 1 after closed row without private text; default CLI retains two rows and clean process 0",
+    "All controlled transports and streams actually closed once; socket closed, thread dead, actual worker successful; no after-close contacts"
+  ],
+  "final_source_consumers": [
+    {
+      "default_rows": 2,
+      "selected_rows": 3,
+      "selected_exit": 0,
+      "population": 3,
+      "default_stdout_sha256": "c91a17236160ffb5157386c5ffbc08f0212774c991c2338752eba6e2dc64bf35",
+      "selected_stdout_sha256": "ab9a663e628f9dc2d3142606e5bdcd81798bad21f08a5453e2b0f428cd180a6a"
+    },
+    {
+      "default_rows": 2,
+      "selected_rows": 3,
+      "selected_exit": 0,
+      "population": 3,
+      "default_stdout_sha256": "5fcee827fbe4387018c1cb0bcaf7b87d5f7f9a8498b2b1a585ae20f4d57510eb",
+      "selected_stdout_sha256": "4a0fdd0fbe234f0d9e147b48f4bfc26efa7d654ae683adb1ae71d09678ecd39f"
+    }
+  ],
+  "local_static": {
+    "ruff_and_format": "Exact required workflow paths passed; 290 files formatted",
+    "owned_exporter_typing": "Five-file skip-import mypy passed",
+    "new_typing_adverse": "Exact type comparison did not narrow Exception for mypy; explicit isinstance plus exact type/True checks fixed it without cast or ignore",
+    "native_expanded_skip_imports": "Three Any-return diagnostics matched unchanged baseline source using supported mypy shadow-file; no introduced native diagnostic",
+    "baseline_attempt": "An initial copied-package check added missing-stub diagnostics; preserved and replaced by supported shadow-file comparison without source/environment mutation",
+    "canonical_hosted_typing": "required and pending"
+  },
+  "default_parity": "Original seven-case released-cache parity remains applicable to the unchanged exact cache blob; new default CLI adverse controls also preserve two rows/exit0",
+  "unchanged": [
+    "Public cache/Snapshot/body/readiness bytes",
+    "Default continuous/finite CLI protocol",
+    "Native report schema and monitoring/cleanup/math behavior",
+    "Original functional.json and raw 701-test witnesses",
+    "Archives, historical validation, dependencies, jobs, uploads and prior four feature refs"
+  ],
+  "source": {
+    "src/chimeraforge/fleet_exporter_types.py": {
+      "raw_sha256": "821c91c413fab4fa17db60d08c3ade04fd823ddf373bef069ce6418a6d2f136a",
+      "git_blob": "003ab9558dd1f07ebb78c5dc9ff17d675736e56e"
+    },
+    "src/chimeraforge/fleet_exporter_cache.py": {
+      "raw_sha256": "42d74c685880ab3fac07217a62820e4c7261c1e3a971cf544edafd44dc0cc3ab",
+      "git_blob": "907941c8882a7bd50ffb6d2db5120e6b5d9ac438"
+    },
+    "src/chimeraforge/fleet_exporter.py": {
+      "raw_sha256": "6549626c3290c63c5184bf5a66686383292f787d7af7787445e596a0c3fa5491",
+      "git_blob": "ebd678bfbb052b9d9004bfed99a7b0eb52b8e095"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "0dadd7e6391b02b6b91574ea0b83305323889da223846c6ef95022def5cc2f24",
+      "git_blob": "0114221358b0f61faca34f8cc5df204f40f237ec"
+    },
+    "src/chimeraforge/commands/monitor_fleet_exporter.py": {
+      "raw_sha256": "7240dd41ea1f8d3677ec933b8cdcc07b0c46588cc19b038c594700572083e112",
+      "git_blob": "5eb0540c26708ddd2c13652236067fbac1078acb"
+    },
+    "scripts/ci_fleet_exporter.py": {
+      "raw_sha256": "45ff60c6a623a1d37bf684d4e5317273148f1c6deeb47d4343b5b83983858291",
+      "git_blob": "4091bcc5ff9256d2c20be876cff2cc527862248c"
+    },
+    "tests/test_fleet_exporter_run.py": {
+      "raw_sha256": "c0106b4eade1c1e743c07a0f575f4fc1c78a0c202b9c40060f58407c143a213f",
+      "git_blob": "42e9bb2448b80008f0efc5dd01ec6d20bda4ce1a"
+    },
+    "tests/test_fleet_exporter_run_state.py": {
+      "raw_sha256": "59559b123f43fa2fce4d7e36d8374e1d18b52fbf06b029111c49273118e6d871",
+      "git_blob": "8de89380913ab59c844fd242f2bf307cddd36648"
+    },
+    "tests/test_fleet_exporter_run_cache.py": {
+      "raw_sha256": "3220353121a52cced6c3bf3ca29340d61f7b8f8dcf0401a3b4b155d922968b90",
+      "git_blob": "eead1adc8c0cdae124782f3ac2d9cca6af4c60fd"
+    },
+    "tests/test_ci_fleet_exporter.py": {
+      "raw_sha256": "e8b8878a1d7b83bfbb1246f5973a600ec601f75e87d02791c4e165a3e9a3cdf7",
+      "git_blob": "da99093f29631c7af8a9acfc24a0b1b23989f1fb"
+    },
+    "src/chimeraforge/fleet_monitor.py": {
+      "raw_sha256": "a2ab30c27b485f6214b5d17f3daa8825d016172995de62d277ad29d75426df0b",
+      "git_blob": "93913300f419518798cc0812d5a8b9ca391b785d"
+    },
+    "src/chimeraforge/fleet_monitor_types.py": {
+      "raw_sha256": "38348d09da7dfc1c46293cb7484d11b8e4508f02914954304f07a36bac9907e6",
+      "git_blob": "cb30f8d5255de4bfa9170e0d31509a62813047cf"
+    },
+    "tests/test_fleet_exporter_run_cleanup.py": {
+      "raw_sha256": "deba9c890034b1feef49f7aba07388720587e5616fd9bdd8c6017ff8ad319d74",
+      "git_blob": "3f8f079929fe34d8bc6ff908a6f40228c48a892e"
+    }
+  },
+  "pending": [
+    "Renewed independent review",
+    "Full final-head hosted CI and CodeQL",
+    "Canonical typing and clean installed artifact consumers/audit"
+  ]
+}

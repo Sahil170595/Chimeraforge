@@ -25,6 +25,8 @@ LOG = logging.getLogger(__name__)
 class FleetMonitorError(ValueError):
     """Invalid or unsupported fleet-monitor admission, before observation begins."""
 
+    _cleanup_failed: bool = False
+
 
 class FleetMonitorExportError(FleetMonitorError):
     """The complete native report cannot fit the supported JSON export profile."""
