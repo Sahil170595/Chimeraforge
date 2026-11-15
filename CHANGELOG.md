@@ -5,6 +5,14 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.105.0] - Unreleased
+
+### Optional study feasibility requirement
+
+- Add typed `StudyFeasibilityPolicy` and `study --require-all-feasible` for native candidate existence in the base and every original scenario. Retain all rows and traces under the existing offline frozen context without extra replay or source resolution.
+- Emit a separate complete ordinal requirement receipt and exit `1` when unmet; print/save it before exiting. Invalid input or output stays `2`. Omission, `None` and validated typed `False` preserve the old schema and completed-study exit `0`.
+- Extend existing saved-plan/bundle SDK and installed CLI consumers for required success, late infeasibility and protected outputs. This is modeled feasibility, without deployment or measured performance proof.
+
 ## [0.101.0] - 2026-11-13
 
 ### Whole-fleet campaign load points

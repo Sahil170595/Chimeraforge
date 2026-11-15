@@ -1,5 +1,9 @@
 # Installation Guide
 
+The current public release is **0.101.0** (`pip install "chimeraforge==0.101.0"`).
+The optional study feasibility requirement needs the **unreleased 0.105.0 source
+candidate**, installed from its checkout with `python -m pip install -e .`.
+
 Complete installation instructions for Chimeraforge, the benchmarking-only
 breakout from Banterhearts.
 

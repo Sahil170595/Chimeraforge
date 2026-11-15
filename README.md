@@ -89,6 +89,10 @@ Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The co
 
 **Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
 
+The **unreleased 0.105.0 source candidate** adds
+[`study --require-all-feasible`](docs/planning-api.md#all-feasible-requirement-source-candidate-01050)
+for the base and every original scenario. Public installation remains **0.101.0**.
+
 ```bash
 pip install "chimeraforge[mcp]==0.101.0"
 ```
@@ -370,6 +374,10 @@ scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
 
 ### `study` -- frozen-model workload, hardware and cost sensitivity
 
+The **unreleased 0.105.0 source candidate** adds
+[`--require-all-feasible`](docs/planning-api.md#all-feasible-requirement-source-candidate-01050)
+and typed `StudyFeasibilityPolicy`. Public 0.101.0 retains the default completed-study behavior.
+
 Available in the published 0.61.0 CLI.
 Compare explicit assumptions against one saved plan or portable bundle offline:
 
@@ -403,7 +411,7 @@ hold physical hardware fixed.
 `gpu_cost_per_hour` is an
 operator price assumption, is refused for cloud instance pricing, and zero
 keeps the native unknown-price behavior. Output cannot overwrite known inputs.
-Exit 0 means a completed modeled study, including infeasible cases; invalid or
+By default, exit 0 means a completed modeled study, including infeasible cases; invalid or
 unavailable inputs exit 2. No weights are downloaded or serving traffic generated.
 Integrity and modeled deltas do not authenticate inputs or qualify performance.
 See [the Python and case contract](docs/planning-api.md#frozen-context-sensitivity).

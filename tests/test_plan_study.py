@@ -685,3 +685,12 @@ def test_installed_study_command_wiring_in_source_protocol_fixture(tmp_path, sou
         row["original_bytes_unchanged"] and row["infeasible_retained"]
         for row in receipt["receipts"]
     )
+    assert all(
+        row["feasibility_requirement"]["unmet_exit"] == 1
+        and row["feasibility_requirement"]["met_exit"] == 0
+        and row["feasibility_requirement"]["invalid_output_exit"] == 2
+        and row["feasibility_requirement"]["unmet_original_rows"] == 4
+        and row["feasibility_requirement"]["met_original_rows"] == 3
+        and row["feasibility_requirement"]["original_native_rows_and_context_held"]
+        for row in receipt["receipts"]
+    )

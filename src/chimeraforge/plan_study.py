@@ -76,6 +76,13 @@ class PlanScenario:
 
 
 @dataclass(frozen=True)
+class StudyFeasibilityPolicy:
+    """Optionally require native candidates for the base and every requested scenario."""
+
+    require_all_feasible: bool = True
+
+
+@dataclass(frozen=True)
 class PlanStudy:
     """Modeled study receipt, never an attestation of serving performance."""
 
@@ -318,12 +325,51 @@ def _result(result: service.PlanResult, request: dict) -> dict:
     }
 
 
+def _feasibility_requirement(base: dict, scenarios: list[dict], *, expected_scenarios: int) -> dict:
+    rows = [
+        {"role": "base", "scenario_index": None, "feasible": base["feasible"]},
+        *(
+            {"role": "scenario", "scenario_index": index, "feasible": row["feasible"]}
+            for index, row in enumerate(scenarios)
+        ),
+    ]
+    expected_rows = 1 + expected_scenarios
+    feasible = sum(row["feasible"] for row in rows)
+    complete = len(rows) == expected_rows
+    met = complete and feasible == expected_rows
+    return {
+        "schema_version": 1,
+        "policy": {"require_all_feasible": True},
+        "scope": "base_and_all_requested_scenarios",
+        "basis": "native_feasible_candidate_exists",
+        "expected_rows": expected_rows,
+        "completed_rows": len(rows),
+        "coverage_complete": complete,
+        "feasible_rows": feasible,
+        "infeasible_rows": len(rows) - feasible,
+        "rows": rows,
+        "met": met,
+        "native_study_exit_code": 0,
+        "qualification_exit_code": 0 if met else 1,
+    }
+
+
 def study(
-    saved: PlanArtifact | PlanBundle | str | Path, scenarios: list[PlanScenario]
+    saved: PlanArtifact | PlanBundle | str | Path,
+    scenarios: list[PlanScenario],
+    *,
+    feasibility_policy: StudyFeasibilityPolicy | None = None,
 ) -> PlanStudy:
     from chimeraforge import api
 
     try:
+        require_all_feasible = False
+        if feasibility_policy is not None:
+            if type(feasibility_policy) is not StudyFeasibilityPolicy:
+                raise api.PlanError("feasibility_policy must be a StudyFeasibilityPolicy")
+            require_all_feasible = feasibility_policy.require_all_feasible
+            if type(require_all_feasible) is not bool:
+                raise api.PlanError("require_all_feasible must be a boolean")
         # Case shape/type checks precede source reads; values depend on recorded mode.
         if type(scenarios) is not list or not 1 <= len(scenarios) <= MAX_SCENARIOS:
             raise api.PlanError(f"supply between 1 and {MAX_SCENARIOS} scenarios")
@@ -332,6 +378,7 @@ def study(
         inputs = copy.deepcopy(data["inputs"])
         inputs["allow_network"] = False
         cases = _validate_cases(scenarios, inputs)
+        expected_scenarios = len(cases)
         if len(data["result"]["target_models"]) > MAX_STUDY_MODELS:
             raise api.PlanError(f"study supports at most {MAX_STUDY_MODELS} bound model targets")
         context = copy.deepcopy(data["result"]["replay_context"])
@@ -426,29 +473,33 @@ def study(
             protected.append(path)
             if path.is_dir():
                 protected.extend(path / name for name in ("manifest.json", *ROLE_PATHS.values()))
-        return PlanStudy(
-            {
-                "schema_version": 1,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "source_fingerprint": data["fingerprint"],
-                "producer_tool": data["tool"],
-                "producer_inputs": data["inputs"],
-                "tool": {"name": "chimeraforge", "version": api.__version__},
-                "frozen_context": receipt,
-                "base": base,
-                "scenarios": rows,
-                "exit_code": 0,
-                "source_authentication": "unverified",
-                "performance": {
-                    "state": "unverified",
-                    "detail": (
-                        "Native-unit modeled comparisons, not measured performance "
-                        "or sensitivity confidence bounds."
-                    ),
-                },
+        result_data = {
+            "schema_version": 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "source_fingerprint": data["fingerprint"],
+            "producer_tool": data["tool"],
+            "producer_inputs": data["inputs"],
+            "tool": {"name": "chimeraforge", "version": api.__version__},
+            "frozen_context": receipt,
+            "base": base,
+            "scenarios": rows,
+            "exit_code": 0,
+            "source_authentication": "unverified",
+            "performance": {
+                "state": "unverified",
+                "detail": (
+                    "Native-unit modeled comparisons, not measured performance "
+                    "or sensitivity confidence bounds."
+                ),
             },
-            tuple(protected),
-        )
+        }
+        if require_all_feasible:
+            requirement = _feasibility_requirement(
+                base, rows, expected_scenarios=expected_scenarios
+            )
+            result_data["feasibility_requirement"] = requirement
+            result_data["exit_code"] = requirement["qualification_exit_code"]
+        return PlanStudy(result_data, tuple(protected))
     except api.PlanError:
         raise
     except (OSError, ValueError, TypeError, KeyError, OverflowError, RecursionError) as exc:

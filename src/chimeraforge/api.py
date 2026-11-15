@@ -99,7 +99,7 @@ from chimeraforge.kubernetes_inspection_types import (
 )
 from chimeraforge.plan_check import PlanCheck
 from chimeraforge.plan_bundle import PlanBundle
-from chimeraforge.plan_study import PlanScenario, PlanStudy
+from chimeraforge.plan_study import PlanScenario, PlanStudy, StudyFeasibilityPolicy
 from chimeraforge.prediction_score import PredictionScorePolicy, PredictionScorecard
 from chimeraforge.prediction_bundle import PredictionBundle
 from chimeraforge.planner.engine import Candidate
@@ -848,12 +848,15 @@ def verify_serving_declaration(
 
 
 def study_plan(
-    saved: PlanArtifact | PlanBundle | str | Path, scenarios: list[PlanScenario]
+    saved: PlanArtifact | PlanBundle | str | Path,
+    scenarios: list[PlanScenario],
+    *,
+    feasibility_policy: StudyFeasibilityPolicy | None = None,
 ) -> PlanStudy:
-    """Compare bounded scenarios offline against one frozen source context."""
+    """Compare all scenarios offline; optionally require native feasibility of every row."""
     from chimeraforge.plan_study import study
 
-    return study(saved, scenarios)
+    return study(saved, scenarios, feasibility_policy=feasibility_policy)
 
 
 async def replay_trace(
