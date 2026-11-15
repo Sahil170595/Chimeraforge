@@ -1,0 +1,186 @@
+{
+  "generated_at": "2026-11-15T01:49:33.632223+00:00",
+  "source_candidate": "0.106.0",
+  "public_release": "0.101.0",
+  "prior_head": "f1d3cc685a0c788006ab2d9bb03a4a5c9758c939",
+  "release_base": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Local editable-source startup-template cleanup follow-up; no hosted, clean artifact, provider or production proof",
+  "demonstrated_cause": "The existing cancelled startup template owns three clients/backends and six pools. Its incomplete cleanup was lost when FleetExporter initialized the sticky flag False, allowing a later real PASS to qualify zero.",
+  "red": {
+    "counts": {
+      "tests": 2,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "failed_case": "Three real backend closes completed then raised; seed cleanup incomplete/resources_closed True/close_errors 3/owned and closed pools 6/joined endpoint tasks 0; later native PASS falsely qualified zero",
+    "positive": "Completed cancelled seed passed"
+  },
+  "repair": {
+    "production_lines_added": 2,
+    "source": "Compute cleanup failure from the already held template before socket construction, then initialize the same private sticky flag before listener start",
+    "extra_template_source_or_monitor_calls": 0,
+    "legacy_startup_rejection_added": false,
+    "boundary_or_public_cache_changed": false
+  },
+  "green_seed_controls": {
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "final_source_selected": {
+    "counts": {
+      "tests": 81,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "paths": [
+      "tests/test_fleet_exporter_run.py",
+      "tests/test_fleet_exporter_run_state.py",
+      "tests/test_fleet_exporter_run_cache.py",
+      "tests/test_fleet_exporter_run_cleanup.py",
+      "tests/test_ci_fleet_exporter.py"
+    ],
+    "new_seed_controls": 6,
+    "earlier_cleanup_controls": 12,
+    "existing_run_controls": 61,
+    "existing_consumer_profiles": 2,
+    "overlap": "81 includes the earlier controls and consumers; not added to 75, 227 or 701"
+  },
+  "seed_controls": [
+    "Known incomplete seed cleanup makes selected SDK fail safely after real later PASS and all joins",
+    "Completed cancelled seed remains a normal positive and never counts as a qualifying observation",
+    "Flag is initialized before listener start; legacy startup succeeds in both cases",
+    "Default CLI keeps two rows/exit0 for completed or incomplete seed; selected CLI gives 1 for incomplete and 0/third safe receipt for completed seed",
+    "Exactly one existing seed report; all three backend close callbacks completed, all clients and six pools closed, no endpoint request/task during seed",
+    "Actual worker successful, listener/socket closed, controlled streams/transports closed once, no SDK after-close contacts"
+  ],
+  "final_source_consumers": [
+    {
+      "default_rows": 2,
+      "selected_rows": 3,
+      "selected_exit": 0,
+      "population": 3,
+      "default_stdout_sha256": "3e342ff8c6bbdbedf836c63e92b880a7c405fdeaabe1d8474687048c5955f0b8",
+      "selected_stdout_sha256": "acc6ae918b175aaafa19097c1d14b11a2fe819d453f39609b22c70430931a83d"
+    },
+    {
+      "default_rows": 2,
+      "selected_rows": 3,
+      "selected_exit": 0,
+      "population": 3,
+      "default_stdout_sha256": "f6e9ad2eb78c164c5d7400a42f88faa59053f8a4984cb32852ab6922861f571e",
+      "selected_stdout_sha256": "6ac24d8d320ffb3b8bd6cef71bb342928be690ded8560c11b128da1e9fdd0478"
+    }
+  ],
+  "static": {
+    "ruff_and_format": "Exact required workflow paths passed, 290 files formatted",
+    "owned_typing": "Five-file skip-import mypy passed",
+    "native_typing": "Prior three baseline skip-import diagnostics and supported shadow-file proof remain preserved; native files unchanged, scope not repeated",
+    "canonical_hosted": "Required and pending"
+  },
+  "preserved": [
+    {
+      "path": "validation/2026-11-14-exporter-final-observation/functional.json",
+      "unchanged_blob": "b3fac8aa7afff3fd9e8fa2fe923b64461d7a9b4f"
+    },
+    {
+      "path": "validation/2026-11-14-exporter-final-observation/cleanup-followup.json",
+      "unchanged_blob": "3bf6f2e69dfebdb30ba381d0e4c82e30745a67e1"
+    },
+    {
+      "path": "src/chimeraforge/fleet_monitor.py",
+      "unchanged_blob": "93913300f419518798cc0812d5a8b9ca391b785d"
+    },
+    {
+      "path": "src/chimeraforge/fleet_monitor_types.py",
+      "unchanged_blob": "cb30f8d5255de4bfa9170e0d31509a62813047cf"
+    },
+    {
+      "path": "src/chimeraforge/fleet_exporter_cache.py",
+      "unchanged_blob": "907941c8882a7bd50ffb6d2db5120e6b5d9ac438"
+    },
+    {
+      "path": "src/chimeraforge/fleet_exporter_types.py",
+      "unchanged_blob": "003ab9558dd1f07ebb78c5dc9ff17d675736e56e"
+    },
+    {
+      "path": "src/chimeraforge/commands/monitor_fleet_exporter.py",
+      "unchanged_blob": "5eb0540c26708ddd2c13652236067fbac1078acb"
+    },
+    {
+      "path": "scripts/ci_fleet_exporter.py",
+      "unchanged_blob": "4091bcc5ff9256d2c20be876cff2cc527862248c"
+    },
+    {
+      "path": "uv.lock",
+      "unchanged_blob": "a228b0d4de40cf62bff726611136068d35df1c9c"
+    },
+    {
+      "path": "pyproject.toml",
+      "unchanged_blob": "2c9cea98bf6e584b74b444647c8925970bc32411"
+    }
+  ],
+  "source": {
+    "src/chimeraforge/fleet_exporter_types.py": {
+      "raw_sha256": "821c91c413fab4fa17db60d08c3ade04fd823ddf373bef069ce6418a6d2f136a",
+      "git_blob": "003ab9558dd1f07ebb78c5dc9ff17d675736e56e"
+    },
+    "src/chimeraforge/fleet_exporter_cache.py": {
+      "raw_sha256": "42d74c685880ab3fac07217a62820e4c7261c1e3a971cf544edafd44dc0cc3ab",
+      "git_blob": "907941c8882a7bd50ffb6d2db5120e6b5d9ac438"
+    },
+    "src/chimeraforge/fleet_exporter.py": {
+      "raw_sha256": "1c70ce13e08bbb756dfac770f3a8e063c1d115bd5ce432ca73b552126d8c6aee",
+      "git_blob": "0984a4bb3fdc25cbc655172a11d4d3105116db13"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "0dadd7e6391b02b6b91574ea0b83305323889da223846c6ef95022def5cc2f24",
+      "git_blob": "0114221358b0f61faca34f8cc5df204f40f237ec"
+    },
+    "src/chimeraforge/commands/monitor_fleet_exporter.py": {
+      "raw_sha256": "7240dd41ea1f8d3677ec933b8cdcc07b0c46588cc19b038c594700572083e112",
+      "git_blob": "5eb0540c26708ddd2c13652236067fbac1078acb"
+    },
+    "scripts/ci_fleet_exporter.py": {
+      "raw_sha256": "45ff60c6a623a1d37bf684d4e5317273148f1c6deeb47d4343b5b83983858291",
+      "git_blob": "4091bcc5ff9256d2c20be876cff2cc527862248c"
+    },
+    "tests/test_fleet_exporter_run.py": {
+      "raw_sha256": "c0106b4eade1c1e743c07a0f575f4fc1c78a0c202b9c40060f58407c143a213f",
+      "git_blob": "42e9bb2448b80008f0efc5dd01ec6d20bda4ce1a"
+    },
+    "tests/test_fleet_exporter_run_state.py": {
+      "raw_sha256": "59559b123f43fa2fce4d7e36d8374e1d18b52fbf06b029111c49273118e6d871",
+      "git_blob": "8de89380913ab59c844fd242f2bf307cddd36648"
+    },
+    "tests/test_fleet_exporter_run_cache.py": {
+      "raw_sha256": "3220353121a52cced6c3bf3ca29340d61f7b8f8dcf0401a3b4b155d922968b90",
+      "git_blob": "eead1adc8c0cdae124782f3ac2d9cca6af4c60fd"
+    },
+    "tests/test_ci_fleet_exporter.py": {
+      "raw_sha256": "e8b8878a1d7b83bfbb1246f5973a600ec601f75e87d02791c4e165a3e9a3cdf7",
+      "git_blob": "da99093f29631c7af8a9acfc24a0b1b23989f1fb"
+    },
+    "src/chimeraforge/fleet_monitor.py": {
+      "raw_sha256": "a2ab30c27b485f6214b5d17f3daa8825d016172995de62d277ad29d75426df0b",
+      "git_blob": "93913300f419518798cc0812d5a8b9ca391b785d"
+    },
+    "src/chimeraforge/fleet_monitor_types.py": {
+      "raw_sha256": "38348d09da7dfc1c46293cb7484d11b8e4508f02914954304f07a36bac9907e6",
+      "git_blob": "cb30f8d5255de4bfa9170e0d31509a62813047cf"
+    },
+    "tests/test_fleet_exporter_run_cleanup.py": {
+      "raw_sha256": "da295139137380241e943eb4840d34af683fa1a018ebc4a05046cd2f51c7f89c",
+      "git_blob": "17baab2e0b708ba7321ed1a573352e10b0274c15"
+    }
+  },
+  "limits": "Controlled CPU passive protocols and actual loopback listeners; no engine/GPU, model, physical independence, capacity, deployment or provider proof",
+  "pending": [
+    "Final independent source review",
+    "Exact final-head full hosted CI and CodeQL",
+    "Canonical typing, clean audit and installed artifact acceptance"
+  ]
+}

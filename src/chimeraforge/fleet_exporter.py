@@ -351,6 +351,7 @@ async def serve_fleet_exporter(
     template = await monitor_fleet(
         held, held_request, candidate_index=candidate_index, stop_event=stop, connections=prepared
     )
+    native_cleanup_failed = template.cleanup["state"] != "completed"
     from chimeraforge import __version__
     from chimeraforge.plan_check import identity
 
@@ -400,6 +401,7 @@ async def serve_fleet_exporter(
         Response,
         Route,
     )
+    service._native_cleanup_failed = native_cleanup_failed
     try:
         await service.start()
         yield service

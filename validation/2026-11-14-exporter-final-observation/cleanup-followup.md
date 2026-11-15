@@ -6,6 +6,11 @@ preserved. This separate [generated record](cleanup-followup.json) identifies th
 changed source and its own validation. Public installation remains 0.101.0;
 0.106.0 is an unreleased source candidate.
 
+This record preserves the first cleanup repair at `f1d3cc68`. Renewed review then
+demonstrated the startup-template omission recorded in the separate
+[seed cleanup follow-up](seed-cleanup-followup.md); the 75-test record remains
+unchanged.
+
 The first red regression used the real native monitor and real listener. A first
 poll passed; a second poll stalled until stop. The finite boundary captured PASS,
 then actual controlled transport closes completed and raised. Native cleanup

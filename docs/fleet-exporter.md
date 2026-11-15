@@ -112,7 +112,9 @@ joins the listener/worker. Joined flags alone are insufficient: listener failure
 a failed or cancelled worker task, or unsuccessful cleanup yields a safe SDK
 `FleetExporterError` and CLI exit `1`. A genuine late failure overrides an earlier
 captured PASS. Native cleanup failures remain sticky even when an in-flight poll
-finishes after stop or a later poll succeeds. Ordinary poll/setup unavailability
+finishes after stop or a later poll succeeds. This includes resources owned by
+the initial cancelled template; a completed template cleanup remains normal.
+Ordinary poll/setup unavailability
 with completed cleanup retains native unknown/recovery behavior. Cancellation
 propagates only after owned cleanup and never
 returns a qualified zero. Optional typed `stop_event` requests a clean early SDK
