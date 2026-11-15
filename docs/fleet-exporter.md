@@ -1,12 +1,16 @@
 # Continuous fleet exporter (since 0.92.0)
 
+Public installation remains **0.101.0**. The
+[finite final-observation requirement](#finite-final-observation-source-candidate-01060)
+needs the **unreleased 0.106.0 source candidate**.
+
 `api.serve_fleet_exporter` and `monitor-fleet-exporter` expose the latest bounded
 native fleet observation through a loopback Prometheus endpoint. Install the
 `exporter` extra for this workflow. Its reference stack is Starlette 1.7.0 and
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install "chimeraforge[exporter]==0.99.0"
+python -m pip install "chimeraforge[exporter]==0.101.0"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \
@@ -67,6 +71,74 @@ a finite diagnostic run; the default runs continuously. Ready and closed JSON
 lines describe listener ownership. Clean process exit **0 is not fleet
 qualification**; use the native qualification gauges or snapshot native exit code.
 Invalid/unavailable service setup exits 1; native Typer usage errors remain 2.
+
+## Finite final observation (source candidate 0.106.0)
+
+The new API and flag require **unreleased 0.106.0 source**. They reuse one existing
+service context without adding a backend request, source reload, monitoring retry,
+HTTP readiness probe or Prometheus parse at the qualification boundary:
+
+```python
+result = await api.run_fleet_exporter(
+    "fleet-plan.json", request, candidate_index=FLEET_INDEX, config=config,
+    policy=api.FleetExporterRunPolicy(run_seconds=30, require_final_observation=True),
+)
+print(result.to_dict())
+```
+
+For the CLI, add `--run-seconds 30 --require-final-observation` to the continuous
+example. The flag without a finite duration is invalid before service work.
+Duration starts after the existing context is ready, as in the old finite CLI.
+The exact policy type, exact boolean and finite numeric duration `0 < seconds <=
+86400` are admitted before optional service imports or resources; booleans as
+durations, enormous integers, NaN and infinity are refused.
+
+At the finite timeout, capture one immutable cache entry **before** shutdown
+publishes stopped. A private fact in that same entry binds the actual native
+report and every ordered original slot to the already held plan, selected
+candidate, endpoint IDs/URLs, backend/model, tool metadata and admitted controls.
+The expected population comes from original admission, not the seed template or
+the latest observed row count. No raw fresh report is retained in the entry.
+Initial, unavailable and stopped templates are not real observations.
+
+Qualification requires the timeout boundary, a real publication, exact original
+coverage and `0 <= raw monotonic age < stale_after_seconds`. Equality at the TTL,
+clock regression or non-finite age cannot pass. The existing public snapshot's
+age clamping, fields, Prometheus bytes and readiness contract are unchanged.
+Fresh readiness 200 alone never qualifies a fleet.
+
+The final result is produced **after** the existing shielded shutdown closes and
+joins the listener/worker. Joined flags alone are insufficient: listener failure,
+a failed or cancelled worker task, or unsuccessful cleanup yields a safe SDK
+`FleetExporterError` and CLI exit `1`. A genuine late failure overrides an earlier
+captured PASS. Cancellation propagates only after owned cleanup and never
+returns a qualified zero. Optional typed `stop_event` requests a clean early SDK
+stop; that boundary remains unqualified even if the last native report passed.
+
+| Selected qualification outcome | Exit |
+|---|---|
+| Fresh, complete, fully bound native `0`, timeout reached and clean joins | `0` |
+| Fresh, complete, bound native SLO breach | `3` |
+| Initial/stale/unavailable/partial/foreign evidence, native unknown, invalid clock or early stop | `4` |
+| Fresh, complete, bound native identity/configuration mismatch | `5` |
+| Invalid configuration, startup or shutdown failure | `1` |
+
+`FleetExporterRunResult` is frozen and emits a closed schema-1 receipt with finite
+duration, boundary/state, sequence/age, expected/observed counts, population-bound
+status, native observed code, qualification code and cleanup flags. It includes
+no backend URL, model, original ID, exception text or raw observation body.
+The original observed code remains separate when freshness or binding makes
+qualification unknown.
+
+With an exact `False` policy, the new SDK returns clean-close `0` with
+`qualification_requested=False` and `qualification_met=None`; this is not a
+qualified PASS. Existing continuous/finite CLI behavior keeps its ready and
+closed rows and `process_exit_is_qualification=False`. Only the selected flag
+sets that field true and appends a separate qualification receipt after closed.
+CLI signal handlers are restored on every path. Original request budgets and
+source/connection admission remain unchanged. These are passive client
+observations, without engine/GPU, physical-independence, capacity or deployment
+proof.
 
 ## Freshness and metric meaning
 

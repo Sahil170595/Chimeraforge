@@ -22,6 +22,7 @@ from ci_monitor_fleet import _histogram
 WAIT_SECONDS = 15
 CLI_RUN_SECONDS = 3
 POLL_SECONDS = 2
+FINITE_RUN_SECONDS = 1
 
 
 @contextmanager
@@ -160,6 +161,24 @@ async def _api(
     before = requests()
     await asyncio.sleep(0.03)
     assert requests() == before
+    finite = await api.run_fleet_exporter(
+        saved,
+        _request(urls),
+        candidate_index=index,
+        config=api.FleetExporterConfig(
+            port=0, poll_seconds=POLL_SECONDS, stale_after_seconds=WAIT_SECONDS
+        ),
+        connections=connections,
+        policy=api.FleetExporterRunPolicy(FINITE_RUN_SECONDS, True),
+    )
+    assert finite.exit_code == 0 and finite.qualification_met is True
+    assert finite.expected_replicas == finite.observed_replicas == 3 and finite.population_bound
+    assert finite.closed and finite.worker_joined and finite.listener_joined
+    finite_raw = json.dumps(finite.to_dict())
+    assert "private-slot" not in finite_raw and all(url not in finite_raw for url in urls)
+    after_finite = requests()
+    await asyncio.sleep(0.03)
+    assert requests() == after_finite
     return {
         "replicas": 3,
         "cache_scrapes": 5,
@@ -171,10 +190,20 @@ async def _api(
         "worker_joined": True,
         "readiness_http_codes": [200, 503],
         "readiness_backend_requests": 0,
+        "finite_run": finite.to_dict(),
     }
 
 
-def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: dict) -> dict:
+def _cli(
+    cwd: Path,
+    env: dict,
+    saved: Path,
+    index: int,
+    urls: list[str],
+    state: dict,
+    *,
+    required: bool = False,
+) -> dict:
     common = [
         "monitor-fleet-exporter",
         "--from-plan",
@@ -194,7 +223,8 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
     ]
     for i, url in enumerate(urls):
         common += ["--endpoint", f"private-slot-{i + 1}={url}"]
-    stdout, stderr = cwd / "exporter-cli.stdout", cwd / "exporter-cli.stderr"
+    stem = "exporter-qualified-cli" if required else "exporter-cli"
+    stdout, stderr = cwd / f"{stem}.stdout", cwd / f"{stem}.stderr"
     args = [
         sys.executable,
         "-I",
@@ -205,6 +235,8 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
         "--run-seconds",
         str(CLI_RUN_SECONDS),
     ]
+    if required:
+        args.append("--require-final-observation")
     with stdout.open("wb") as out, stderr.open("wb") as err:
         child = subprocess.Popen(
             args, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err
@@ -228,7 +260,7 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
                 "label_policy",
                 "process_exit_is_qualification",
             }
-            assert ready["replicas"] == 3 and ready["process_exit_is_qualification"] is False
+            assert ready["replicas"] == 3 and ready["process_exit_is_qualification"] is required
             with httpx.Client(trust_env=False, timeout=3) as client:
                 while time.monotonic() < deadline:
                     response = client.get(ready["metrics_url"])
@@ -257,11 +289,24 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
                 child.wait(WAIT_SECONDS)
     assert code == 0, stderr.read_bytes()
     rows = [json.loads(row) for row in stdout.read_text(encoding="utf-8").splitlines()]
-    assert len(rows) == 2 and rows[-1] == {
+    assert len(rows) == (3 if required else 2) and rows[1] == {
         "kind": "chimeraforge.fleet-exporter-closed",
         "listener_joined": True,
         "worker_joined": True,
     }
+    if required:
+        qualification = rows[2]
+        assert qualification["kind"] == "chimeraforge.fleet-exporter-run"
+        assert qualification["exit_code"] == 0 and qualification["qualification_met"]
+        assert qualification["expected_replicas"] == qualification["observed_replicas"] == 3
+        assert qualification["population_bound"] and qualification["observed_native_exit_code"] == 0
+        assert (
+            qualification["closed"]
+            and qualification["listener_joined"]
+            and qualification["worker_joined"]
+        )
+        assert "private-slot" not in json.dumps(qualification)
+        assert all(url not in json.dumps(qualification) for url in urls)
     assert b"Traceback" not in stderr.read_bytes()
     return {
         "process_exit": code,
@@ -271,6 +316,7 @@ def _cli(cwd: Path, env: dict, saved: Path, index: int, urls: list[str], state: 
         "child_joined": True,
         "readiness_http_code": 200,
         "readiness_backend_requests": 0,
+        "qualification_requested": required,
     }
 
 
@@ -293,6 +339,7 @@ def accept(cwd: Path, env: dict, saved: Path, index: int | None = None) -> dict:
     with _server(candidate["model"]) as (urls, state):
         direct = asyncio.run(_api(saved, index, urls, lambda: state["requests"]))
         cli = _cli(cwd, env, saved, index, urls, state)
+        qualified_cli = _cli(cwd, env, saved, index, urls, state, required=True)
         before_invalid = state["requests"]
         arguments = [
             "monitor-fleet-exporter",
@@ -341,6 +388,7 @@ def accept(cwd: Path, env: dict, saved: Path, index: int | None = None) -> dict:
         "kind": "chimeraforge.fleet-exporter-acceptance",
         "api": direct,
         "os_cli": cli,
+        "qualified_os_cli": qualified_cli,
         "secure_api": secure,
         "late_invalid_precontact": True,
         "source_sha256": hashlib.sha256(before).hexdigest(),

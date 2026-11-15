@@ -89,6 +89,10 @@ Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The co
 
 **Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
 
+The **unreleased 0.106.0 source candidate** adds
+[`monitor-fleet-exporter --require-final-observation`](docs/fleet-exporter.md#finite-final-observation-source-candidate-01060)
+and `api.run_fleet_exporter`. Public installation remains **0.101.0**.
+
 ```bash
 pip install "chimeraforge[mcp]==0.101.0"
 ```
@@ -697,6 +701,11 @@ On fully specified cells, decode is inside +-25% only **13%** of the time, with 
 Read a roofline decode figure on an HBM part as an upper bound. Regenerate the audit with `python scripts/build_validation_corpus.py --write --audit`. A test fails if the published audit goes stale or its error bands widen.
 
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
+
+The **unreleased 0.106.0 source candidate** adds
+[`--require-final-observation`](docs/fleet-exporter.md#finite-final-observation-source-candidate-01060)
+for an explicit finite run. Its receipt qualifies the captured original-population
+observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
 per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.101.0"`.

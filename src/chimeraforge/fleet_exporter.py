@@ -5,25 +5,27 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
-from dataclasses import replace
+from dataclasses import dataclass, replace
 import json
 import logging
+import math
 from pathlib import Path
 import threading
 from types import MappingProxyType
 from typing import Any, TYPE_CHECKING
 
-from chimeraforge.fleet_exporter_cache import SnapshotCache
+from chimeraforge.fleet_exporter_cache import SnapshotCache, _CapturedSnapshot, _PopulationBinding
 from chimeraforge.fleet_exporter_types import (
     FleetExporterConfig,
     FleetExporterError,
     FleetExporterSnapshot,
+    FleetExporterRunResult,
     MAX_READINESS_BYTES,
     MAX_REQUEST_BYTES,
     MAX_REQUEST_PATH,
     STARTUP_POLL_SECONDS,
 )
-from chimeraforge.fleet_monitor import _admit, _source, monitor_fleet
+from chimeraforge.fleet_monitor import _admit, _source, _targets, monitor_fleet
 from chimeraforge.fleet_monitor_types import FleetMonitorRequest, MAX_ENDPOINTS
 from chimeraforge.monitor_connection import (
     MonitorConnection,
@@ -169,6 +171,23 @@ class FleetExporter:
         return self._cache.snapshot()
 
     @property
+    def _clean_close(self) -> bool:
+        worker = self._worker
+        return (
+            self.closed
+            and self.listener_joined
+            and self.worker_joined
+            and not self._thread.is_alive()
+            and not self._failed
+            and (
+                worker is None
+                or worker.done()
+                and not worker.cancelled()
+                and worker.exception() is None
+            )
+        )
+
+    @property
     def readiness_url(self) -> str:
         return self._readiness_url
 
@@ -292,7 +311,7 @@ async def serve_fleet_exporter(
     from chimeraforge.deployment_verify import _source as held_plan
 
     held, _, _ = held_plan(saved)
-    _, candidate = _source(held, candidate_index)
+    data, candidate = _source(held, candidate_index)
     endpoints = _admit(request, candidate["n_agents"])
     held_request = replace(request, endpoints=endpoints)
     prepared = None
@@ -321,7 +340,43 @@ async def serve_fleet_exporter(
     template = await monitor_fleet(
         held, held_request, candidate_index=candidate_index, stop_event=stop, connections=prepared
     )
-    cache = SnapshotCache(template, config.stale_after_seconds)
+    from chimeraforge import __version__
+    from chimeraforge.plan_check import identity
+
+    targets, sources = _targets(data, held_request)
+    binding = _PopulationBinding(
+        candidate["backend"],
+        candidate["model"],
+        tuple((e.id, e.url) for e in endpoints),
+        {
+            "fingerprint": data["fingerprint"],
+            "candidate_index": candidate_index,
+            "identity": identity(candidate),
+            "tool_version": data["tool"]["version"],
+        },
+        __version__,
+        {
+            "schema_version": 1,
+            "endpoints": [{"id": e.id, "url": e.url} for e in endpoints],
+            **{
+                name: getattr(held_request, name)
+                for name in (
+                    "interval",
+                    "windows",
+                    "timeout",
+                    "observation_seconds",
+                    "cleanup_seconds",
+                    "concurrency",
+                    "max_requests",
+                    "max_body_bytes",
+                )
+            },
+            "targets": {"ttft_ms": targets["ttft_slo"], "tpot_ms": targets["tpot_slo"]},
+            "target_sources": dict(sources),
+        },
+        dict(sources),
+    )
+    cache = SnapshotCache(template, config.stale_after_seconds, binding=binding)
     service = FleetExporter(
         held,
         held_request,
@@ -348,3 +403,80 @@ async def serve_fleet_exporter(
                 cancelled = True
         if cancelled:
             raise asyncio.CancelledError
+
+
+@dataclass(frozen=True)
+class _RunBoundary:
+    deadline_reached: bool
+    run_seconds: float
+    observation: _CapturedSnapshot
+
+
+async def _await_run_boundary(
+    running: FleetExporter, run_seconds: float, stop: asyncio.Event
+) -> _RunBoundary:
+    deadline = False
+    try:
+        await asyncio.wait_for(stop.wait(), run_seconds)
+    except asyncio.TimeoutError:
+        deadline = True
+    return _RunBoundary(deadline, run_seconds, running._cache._capture())
+
+
+def _finish_run(
+    running: FleetExporter, boundary: _RunBoundary, required: bool
+) -> FleetExporterRunResult:
+    if not running._clean_close:
+        raise FleetExporterError("exporter startup or shutdown unavailable")
+    captured = boundary.observation
+    snapshot, fact, raw_age = captured.snapshot, captured.observation, captured.raw_age
+    valid_age = raw_age is not None and math.isfinite(raw_age) and raw_age >= 0
+    state = (
+        snapshot.state
+        if snapshot.state in ("initial", "fresh", "stale", "unavailable", "stopped")
+        else "unavailable"
+    )
+    if raw_age is not None and not valid_age:
+        state = "invalid_clock"
+    bound = (
+        fact is not None
+        and fact.bound
+        and fact.expected == captured.expected
+        and fact.observed == captured.expected
+    )
+    observed_code = (
+        captured.native_code
+        if fact is not None
+        and type(captured.native_code) is int
+        and captured.native_code in (0, 3, 4, 5)
+        else None
+    )
+    qualified_code = (
+        observed_code
+        if boundary.deadline_reached
+        and snapshot.sequence > 0
+        and state == "fresh"
+        and valid_age
+        and raw_age is not None
+        and raw_age < captured.ttl
+        and bound
+        and observed_code is not None
+        else 4
+    )
+    return FleetExporterRunResult(
+        qualification_requested=required,
+        qualification_met=qualified_code == 0 if required else None,
+        exit_code=qualified_code if required else 0,
+        run_seconds=boundary.run_seconds,
+        boundary="deadline" if boundary.deadline_reached else "stopped",
+        snapshot_state=state,
+        age_seconds=raw_age if valid_age else None,
+        sequence=snapshot.sequence,
+        observed_native_exit_code=observed_code,
+        expected_replicas=captured.expected,
+        observed_replicas=fact.observed if fact is not None else 0,
+        population_bound=bound,
+        closed=running.closed,
+        listener_joined=running.listener_joined,
+        worker_joined=running.worker_joined,
+    )
