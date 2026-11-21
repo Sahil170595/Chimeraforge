@@ -126,10 +126,9 @@ cannot be authenticated or excluded. Digests do not prove preregistration time,
 private prompts, independent execution, physical hardware, served weights, cold
 caches, deployment, planner calibration or scientific GO.
 
-## JUnit (source candidate 0.102.0)
+## JUnit (since 0.102.0)
 
-This optional output is **unreleased 0.102.0 source**. Public installation remains
-**0.101.0**, whose existing assessment/JSON interface is unchanged.
+Use the optional JUnit output alongside the existing JSON assessment.
 
 ```bash
 chimeraforge trace-envelope --cases cases.json --policy envelope-policy.json \
