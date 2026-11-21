@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.109.0] - Unreleased
+
+### Saved benchmark report consistency
+
+- Validate, count, and render the same loaded benchmark snapshot in the CLI. The SDK also binds a generated report to the files it consumed.
+- Reject report destinations that alias benchmark inputs, including files collected through `--results-dir`, and replace standalone reports atomically.
+
 ## [0.106.0] - 2026-11-20
 
 ### Finite exporter final-observation requirement

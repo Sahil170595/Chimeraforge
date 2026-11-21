@@ -1286,6 +1286,8 @@ chimeraforge report --results-dir ./results/ --format markdown --output report.m
 
 Markdown (GitHub-compatible) and self-contained, XSS-safe HTML; statistical analysis (RMSE, MAE, MAPE, R^2) with per-config percentile tables.
 
+The 0.109.0 candidate uses the same loaded benchmark results for validation, `--json` counts, and rendering. `--output` accepts standalone report files and refuses destinations that alias any benchmark input, including files loaded through `--results-dir`.
+
 Chimeraforge 0.86.0 adds strict native trace diagnostics while keeping benchmark defaults:
 
 ```bash
