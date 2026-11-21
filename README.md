@@ -919,6 +919,8 @@ chimeraforge catalog                 # list the cached catalog
 
 Persists resolved specs so `suggest --source catalog` ranks a known-good set fully offline.
 
+The 0.110.0 candidate publishes successful refreshes atomically. A partial refresh publishes the resolved models and lists unresolved identifiers. A total resolution failure or a failed write exits `1` and preserves the previous catalog. `catalog --build --json` sends one JSON document to stdout with a `status` of `complete`, `partial`, or `failed`.
+
 ### `safety` -- live refusal screen
 
 ```bash
