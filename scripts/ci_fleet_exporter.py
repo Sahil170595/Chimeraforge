@@ -20,9 +20,11 @@ import httpx
 from ci_monitor_fleet import _histogram
 
 WAIT_SECONDS = 15
-CLI_RUN_SECONDS = 3
 POLL_SECONDS = 2
-FINITE_RUN_SECONDS = 1
+OBSERVATION_SECONDS = 5
+# Complete one observation and allow time for the HTTP probes before shutdown.
+FINITE_RUN_SECONDS = OBSERVATION_SECONDS + POLL_SECONDS
+FINITE_POLL_SECONDS = WAIT_SECONDS
 
 
 @contextmanager
@@ -79,7 +81,7 @@ def _request(urls: list[str]) -> Any:
         tuple(api.FleetEndpoint(f"private-slot-{i + 1}", url) for i, url in enumerate(urls)),
         interval=0.01,
         ttft_slo=500,
-        observation_seconds=5,
+        observation_seconds=OBSERVATION_SECONDS,
     )
 
 
@@ -166,12 +168,12 @@ async def _api(
         _request(urls),
         candidate_index=index,
         config=api.FleetExporterConfig(
-            port=0, poll_seconds=POLL_SECONDS, stale_after_seconds=WAIT_SECONDS
+            port=0, poll_seconds=FINITE_POLL_SECONDS, stale_after_seconds=WAIT_SECONDS
         ),
         connections=connections,
         policy=api.FleetExporterRunPolicy(FINITE_RUN_SECONDS, True),
     )
-    assert finite.exit_code == 0 and finite.qualification_met is True
+    assert finite.exit_code == 0 and finite.qualification_met is True, finite.to_dict()
     assert finite.expected_replicas == finite.observed_replicas == 3 and finite.population_bound
     assert finite.closed and finite.worker_joined and finite.listener_joined
     finite_raw = json.dumps(finite.to_dict())
@@ -213,13 +215,13 @@ def _cli(
         "--interval",
         "0.01",
         "--observation-seconds",
-        "5",
+        str(OBSERVATION_SECONDS),
         "--ttft-slo",
         "500",
         "--listen-port",
         "0",
         "--poll-seconds",
-        str(POLL_SECONDS),
+        str(FINITE_POLL_SECONDS),
     ]
     for i, url in enumerate(urls):
         common += ["--endpoint", f"private-slot-{i + 1}={url}"]
@@ -233,7 +235,7 @@ def _cli(
         "chimeraforge",
         *common,
         "--run-seconds",
-        str(CLI_RUN_SECONDS),
+        str(FINITE_RUN_SECONDS),
     ]
     if required:
         args.append("--require-final-observation")
@@ -287,8 +289,8 @@ def _cli(
             if child.poll() is None:
                 child.terminate()
                 child.wait(WAIT_SECONDS)
-    assert code == 0, stderr.read_bytes()
     rows = [json.loads(row) for row in stdout.read_text(encoding="utf-8").splitlines()]
+    assert code == 0, (rows, stderr.read_bytes())
     assert len(rows) == (3 if required else 2) and rows[1] == {
         "kind": "chimeraforge.fleet-exporter-closed",
         "listener_joined": True,

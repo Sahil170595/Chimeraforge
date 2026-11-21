@@ -42,6 +42,15 @@ async def test_fresh_readiness_does_not_qualify_native_nonpass(
     scene = Scene(monkeypatch)
     scene.mode = mode
     handles, ready = watch(monkeypatch)
+    probed = asyncio.Event()
+    native_boundary = fleet_exporter._await_run_boundary
+
+    async def boundary_after_probe(running, seconds, stop):
+        # Keep the listener open until the observation has actually been read.
+        await probed.wait()
+        return await native_boundary(running, seconds, stop)
+
+    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary_after_probe)
     saved, indices = native_fleet
     task = asyncio.create_task(
         api.run_fleet_exporter(
@@ -52,12 +61,15 @@ async def test_fresh_readiness_does_not_qualify_native_nonpass(
             policy=api.FleetExporterRunPolicy(0.3, True),
         )
     )
-    await ready.wait()
-    fresh = await changed(handles[0])
-    async with httpx.AsyncClient(trust_env=False) as client:
-        response = await client.get(handles[0].readiness_url)
-    assert response.status_code == 200 and fresh.native_exit_code == code
-    result = await task
+    try:
+        await asyncio.wait_for(ready.wait(), timeout=5)
+        fresh = await changed(handles[0])
+        async with httpx.AsyncClient(trust_env=False) as client:
+            response = await client.get(handles[0].readiness_url)
+        assert response.status_code == 200 and fresh.native_exit_code == code
+    finally:
+        probed.set()
+        result = await asyncio.wait_for(task, timeout=10)
     assert result.exit_code == result.observed_native_exit_code == code
     assert not result.qualification_met and result.population_bound
     assert result.closed and result.worker_joined and result.listener_joined
@@ -65,6 +77,14 @@ async def test_fresh_readiness_does_not_qualify_native_nonpass(
 
 @pytest.mark.asyncio
 async def test_native_slo_breach_keeps_three(native_fleet, monkeypatch):
+    native_boundary = fleet_exporter._await_run_boundary
+
+    async def boundary_after_observation(running, seconds, stop):
+        # Exercise the breach mapping after a full real observation arrives.
+        await changed(running)
+        return await native_boundary(running, seconds, stop)
+
+    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary_after_observation)
     saved, indices = native_fleet
     with fleet_server(ttft=0.7) as (urls, _):
         result = await api.run_fleet_exporter(
