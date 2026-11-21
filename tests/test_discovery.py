@@ -7,7 +7,11 @@ implicitly via the resolver's error contract.
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
+
+import pytest
 
 from chimeraforge.planner.discovery import (
     best_per_model,
@@ -149,9 +153,128 @@ class TestCatalog:
         assert specs == {}
         assert errors == []
 
+    def test_total_failure_keeps_the_last_catalog(self, tmp_path, monkeypatch):
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
+        prior = {"prior/model": _offreg("prior/model", 1.5)}
+        discovery._write_catalog(prior)
+        path = discovery._catalog_path()
+        before = path.read_bytes()
+        monkeypatch.setattr(discovery, "load_seed_catalog", lambda: ["new/model"])
+        errors = [("new/model", "fixture unavailable")]
+        monkeypatch.setattr(discovery, "resolve_many", lambda ids, **kwargs: ({}, errors))
+        assert build_catalog() == ({}, errors)
+        assert path.read_bytes() == before and load_catalog() == prior
+
 
 class TestCommandsOffline:
     """CLI surface checks that need no network."""
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            [],
+            {"models": None},
+            {"error": "fixture failure"},
+            {"models": [0]},
+            {"models": [{"name": 7}]},
+        ],
+    )
+    def test_unusable_ollama_tags_cannot_replace_the_catalog(self, tmp_path, monkeypatch, payload):
+        import httpx
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
+        discovery._write_catalog({"prior/model": _offreg("prior/model", 1.5)})
+        index = discovery._catalog_path()
+        before = index.read_bytes()
+        monkeypatch.setattr(discovery, "load_seed_catalog", lambda: ["seed/model"])
+        monkeypatch.setattr(discovery, "_httpx", lambda: httpx)
+
+        def tags(url, **kwargs):
+            assert url.endswith("/api/tags")
+            return httpx.Response(200, json=payload, request=httpx.Request("GET", url))
+
+        monkeypatch.setattr(httpx, "get", tags)
+
+        def resolve(*args, **kwargs):
+            pytest.fail("catalog resolved seed after requested discovery failed")
+
+        monkeypatch.setattr(discovery, "resolve_many", resolve)
+        result = CliRunner().invoke(app, ["catalog", "--build", "--with-ollama", "--json"])
+        assert result.exit_code == 1
+        assert json.loads(result.stdout)["status"] == "failed"
+        assert index.read_bytes() == before
+
+    def test_empty_ollama_inventory_is_valid(self, monkeypatch):
+        import httpx
+
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setattr(discovery, "_httpx", lambda: httpx)
+        monkeypatch.setattr(
+            httpx,
+            "get",
+            lambda url, **kwargs: httpx.Response(
+                200, json={"models": []}, request=httpx.Request("GET", url)
+            ),
+        )
+        assert discovery.fetch_ollama_tags() == []
+
+    @pytest.mark.parametrize("outcome", ["complete", "partial", "outage", "write_failure"])
+    def test_catalog_refresh_reports_publication_and_has_one_json_document(
+        self, tmp_path, monkeypatch, outcome
+    ):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
+        prior = {"prior/model": _offreg("prior/model", 1.5)}
+        discovery._write_catalog(prior)
+        path = discovery._catalog_path()
+        before = path.read_bytes()
+        requested = ["new/model", "other/model"]
+        known = {name: _offreg(name, 1.5) for name in requested}
+        if outcome == "partial":
+            known.pop("other/model")
+        elif outcome == "outage":
+            known.clear()
+        errors = [(name, "fixture unavailable") for name in requested if name not in known]
+
+        def resolve(ids, **kwargs):
+            assert ids == requested
+            return known, errors
+
+        monkeypatch.setattr(discovery, "load_seed_catalog", lambda: requested)
+        monkeypatch.setattr(discovery, "resolve_many", resolve)
+        if outcome == "write_failure":
+            replace = Path.replace
+
+            def refuse(source, target):
+                if Path(target) == path:
+                    raise PermissionError("fixture publication failure")
+                return replace(source, target)
+
+            monkeypatch.setattr(Path, "replace", refuse)
+
+        result = CliRunner().invoke(app, ["catalog", "--build", "--json"])
+        failed = outcome in {"outage", "write_failure"}
+        assert result.exit_code == (1 if failed else 0), result.output
+        report = json.loads(result.stdout)
+        assert report["status"] == ("failed" if failed else outcome)
+        if failed:
+            assert report["models"] == {} and report["errors"]
+            assert path.read_bytes() == before and load_catalog() == prior
+        else:
+            assert set(report["models"]) == set(known) and load_catalog() == known
+            assert [row["id"] for row in report["errors"]] == [model for model, _ in errors]
+        assert not list(tmp_path.glob("*.tmp"))
 
     def test_catalog_help(self):
         from typer.testing import CliRunner
