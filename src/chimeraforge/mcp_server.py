@@ -16,7 +16,7 @@ from dataclasses import asdict
 from chimeraforge import __version__
 from chimeraforge.mcp_transport import MCPHTTPSettings
 from chimeraforge.planner.engine import summarize_trace
-from chimeraforge.planner.constants import DEFAULT_ELECTRICITY_RATE, WORKLOAD_CV2
+from chimeraforge.planner.constants import WORKLOAD_CV2
 from chimeraforge.planner.hardware import AUTO_HARDWARE, GPU_DB, get_gpu, known_or_none
 from chimeraforge.planner.launch import build_launch_command
 from chimeraforge.planner.resolver import (
@@ -24,7 +24,7 @@ from chimeraforge.planner.resolver import (
     ResolverError,
     resolve_spec,
 )
-from chimeraforge.planner.service import run_plan, validate_plan_inputs
+from chimeraforge.planner.service import run_plan
 
 # Written to out-compete the model's own parametric guess (Anthropic tool-writing
 # guidance): state the grounding and the provenance contract explicitly.
@@ -194,28 +194,15 @@ def plan_deployment(
             "hint": f"call chimeraforge_list_hardware; known GPUs include: {known}, ...",
         }
     try:
-        validate_plan_inputs(
-            request_rate=request_rate,
-            avg_tokens=avg_output_tokens,
-            reasoning_tokens=reasoning_tokens,
-            prompt_tokens=prompt_tokens,
-            prefix_cache_hit_rate=prefix_cache_hit_rate,
-            duty_cycle=duty_cycle,
-            gpu_price_multiplier=gpu_price_multiplier,
-            host_bandwidth_gbps=host_bandwidth_gbps,
-            ttft_slo=ttft_slo_ms,
-            tpot_slo=tpot_slo_ms,
-            electricity_rate=DEFAULT_ELECTRICITY_RATE,
-            kv_quant=kv_quant,
-            latency_slo=latency_slo_ms,
-            context_length=context_length,
-            mode=mode,
-        )
-    except ValueError as exc:
-        return {"ok": False, "error": str(exc)}
+        from chimeraforge.api import PlanRequest
 
-    try:
-        result = run_plan(
+        # The native CLI and older MCP calls use zero to mean unchunked prefill.
+        chunk_budget = (
+            None
+            if type(max_num_batched_tokens) is int and max_num_batched_tokens == 0
+            else max_num_batched_tokens
+        )
+        request = PlanRequest(
             models=[model] if model else None,
             model_size=model_size,
             hardware=hardware,
@@ -234,7 +221,7 @@ def plan_deployment(
             platform=platform,
             unified_memory_fraction=unified_memory_fraction,
             quality_from=quality_from,
-            max_num_batched_tokens=max_num_batched_tokens,
+            max_num_batched_tokens=chunk_budget,
             context_length=context_length,
             kv_quant=kv_quant,
             tensor_parallel=tensor_parallel,
@@ -257,6 +244,8 @@ def plan_deployment(
             allow_network=allow_network,
             model_revisions=model_revisions,
         )
+        request.validate()
+        result = run_plan(**asdict(request))
     except ResolverError as exc:
         return {
             "ok": False,

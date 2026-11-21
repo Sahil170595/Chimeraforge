@@ -60,12 +60,25 @@ async def exercise(
                         "hardware": "RTX 4080 12GB",
                         "model_size": "3b",
                         "request_rate": 0.01,
+                        "max_num_batched_tokens": 0,
                         "allow_network": False,
                     },
                 )
             )
             assert plan["ok"] and plan["recommended"] and plan["recommended"]["provenance"]
             assert plan["recommended"]["total_throughput_tps"] > 0
+            nonfinite = tool_payload(
+                await session.call_tool(
+                    "chimeraforge_plan",
+                    {
+                        "hardware": "RTX 4080 12GB",
+                        "model": "ci/not-resolved",
+                        "request_rate": "nan",
+                        "allow_network": False,
+                    },
+                )
+            )
+            assert nonfinite["ok"] is False and "finite" in nonfinite["error"]
             if checkpoint_request is not None:
                 repo, commit = checkpoint_request["repo"], checkpoint_request["commit"]
                 bound = tool_payload(

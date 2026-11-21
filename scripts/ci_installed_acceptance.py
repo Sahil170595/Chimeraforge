@@ -128,6 +128,26 @@ def main(argv: list[str] | None = None) -> int:
         assert (
             registered and registered[0]["provenance"] and registered[0]["total_throughput_tps"] > 0
         )
+        invalid = json.loads(
+            run_cli(
+                [
+                    "plan",
+                    "--model",
+                    "ci/not-resolved",
+                    "--electricity-rate",
+                    "nan",
+                    "--measure",
+                    "--ollama-url",
+                    "http://127.0.0.1:1",
+                    "--no-network",
+                    "--json",
+                ],
+                cwd,
+                env,
+                1,
+            )
+        )
+        assert "finite" in invalid["error"]
         snapshot_path = cwd / "saved-plan.json"
         saved_candidates = json.loads(
             run_cli(["plan", "--model-size", "3b", *common, "--save", str(snapshot_path)], cwd, env)

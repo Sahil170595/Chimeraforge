@@ -493,8 +493,13 @@ class PlanRequest:
             raise PlanError("think_time_s must be non-negative")
         if (self.think_time_s is None) != (self.session_turns is None):
             raise PlanError("think_time_s and session_turns must be supplied together")
-        if self.platform is not None and self.platform not in ("linux", "windows", "wsl2", "macos"):
-            raise PlanError("platform must be linux, windows, wsl2 or macos")
+        if self.platform is not None:
+            from chimeraforge.planner.platform_support import PlatformError, plan_platform_key
+
+            try:
+                plan_platform_key(self.platform, vendor="")
+            except PlatformError as exc:
+                raise PlanError(str(exc)) from exc
 
 
 def _validate_overrides(values: dict | None, annotations: dict, positive: set[str]) -> None:

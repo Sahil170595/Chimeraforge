@@ -19,6 +19,17 @@ from chimeraforge.planner.service import PlanResult, run_plan
 
 
 class TestRunPlanService:
+    def test_sdk_nonfinite_plan_fails_before_search(self, monkeypatch):
+        from chimeraforge import api
+
+        def unexpected_search(**kwargs):
+            pytest.fail("SDK requested planner search for a non-finite input")
+
+        monkeypatch.setattr(api, "run_plan", unexpected_search)
+        request = api.PlanRequest(models=["fixture/off-registry"], electricity_rate=float("nan"))
+        with pytest.raises(api.PlanError, match="finite"):
+            api.plan(request)
+
     def test_size_class_search(self):
         r = run_plan(model_size="8b", hardware="RTX 4090 24GB", request_rate=2.0, budget=5000)
         assert isinstance(r, PlanResult)
@@ -51,6 +62,49 @@ class TestRunPlanService:
 
 
 class TestMcpTools:
+    @pytest.mark.parametrize(
+        ("option", "value"),
+        [
+            ("request_rate", float("nan")),
+            ("ttft_slo_ms", float("inf")),
+            ("gpu_price_multiplier", float("inf")),
+            ("budget_usd_month", float("inf")),
+            ("think_time_s", float("nan")),
+        ],
+    )
+    def test_nonfinite_plans_fail_before_search(self, monkeypatch, option, value):
+        from chimeraforge import mcp_server
+
+        def unexpected_search(**kwargs):
+            pytest.fail("MCP requested planner search for a non-finite input")
+
+        monkeypatch.setattr(mcp_server, "run_plan", unexpected_search)
+        result = plan_deployment(
+            hardware="RTX 4080 12GB", model="fixture/off-registry", **{option: value}
+        )
+        assert result["ok"] is False and "finite" in result["error"]
+
+    def test_zero_batched_token_limit_is_unchunked(self):
+        request = {
+            "hardware": "RTX 4080 12GB",
+            "model_size": "3b",
+            "request_rate": 0.01,
+            "allow_network": False,
+        }
+        default = plan_deployment(**request)
+        assert default["ok"] and default["recommended"]
+        assert plan_deployment(**request, max_num_batched_tokens=0) == default
+
+    def test_negative_batched_token_limit_fails_before_search(self, monkeypatch):
+        from chimeraforge import mcp_server
+
+        def unexpected_search(**kwargs):
+            pytest.fail("MCP requested planner search with a negative batch limit")
+
+        monkeypatch.setattr(mcp_server, "run_plan", unexpected_search)
+        result = plan_deployment(hardware="RTX 4080 12GB", max_num_batched_tokens=-1)
+        assert result["ok"] is False and "max_num_batched_tokens" in result["error"]
+
     def test_list_hardware(self):
         h = list_hardware()
         assert h["ok"] and h["count"] == len(GPU_DB)
