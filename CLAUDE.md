@@ -57,7 +57,12 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.104.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.105.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Study requirement (since 0.105.0): `study --require-all-feasible`
+and typed `StudyFeasibilityPolicy` retain the base and every original native row,
+then qualify candidate existence with exit 0/1. Default completion stays 0.
+See [the requirement](docs/planning-api.md#all-feasible-requirement-since-01050).
 
 Declared systemd units (since 0.104.0): `serving export|verify
 --format systemd --executable` reuses native unit/byte-verification primitives

@@ -87,10 +87,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.104.0 adds systemd export and verification for operator-declared serving. It includes saved trace-envelope JUnit and the earlier planning, deployment, monitoring and serving workflows.
+**Release scope.** Chimeraforge 0.105.0 adds the all-feasible requirement for saved plan studies. It includes saved trace-envelope JUnit and the earlier planning, deployment, monitoring and serving workflows.
 
 ```bash
-pip install "chimeraforge[mcp]==0.104.0"
+pip install "chimeraforge[mcp]==0.105.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -370,6 +370,10 @@ scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
 
 ### `study` -- frozen-model workload, hardware and cost sensitivity
 
+Chimeraforge 0.105.0 adds
+[`--require-all-feasible`](docs/planning-api.md#all-feasible-requirement-since-01050)
+and typed `StudyFeasibilityPolicy`.
+
 Available in the published 0.61.0 CLI.
 Compare explicit assumptions against one saved plan or portable bundle offline:
 
@@ -403,7 +407,7 @@ hold physical hardware fixed.
 `gpu_cost_per_hour` is an
 operator price assumption, is refused for cloud instance pricing, and zero
 keeps the native unknown-price behavior. Output cannot overwrite known inputs.
-Exit 0 means a completed modeled study, including infeasible cases; invalid or
+By default, exit 0 means a completed modeled study, including infeasible cases; invalid or
 unavailable inputs exit 2. No weights are downloaded or serving traffic generated.
 Integrity and modeled deltas do not authenticate inputs or qualify performance.
 See [the Python and case contract](docs/planning-api.md#frozen-context-sensitivity).
@@ -703,7 +707,7 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.104.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.105.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -883,7 +887,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.104.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.105.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

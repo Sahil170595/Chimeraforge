@@ -117,6 +117,118 @@ def validate_hardware(report: dict, original: dict) -> dict:
     }
 
 
+def _accept_feasibility(
+    cwd: Path, env: dict, source: Path, index: int, cases: Path, original_report: dict
+) -> dict:
+    from ci_installed_acceptance import run_cli
+    from chimeraforge import api
+
+    policy = api.StudyFeasibilityPolicy()
+    negative_cases = [
+        api.PlanScenario("same", {}),
+        api.PlanScenario("half-duty", {"duty_cycle": 0.5}),
+        api.PlanScenario("no-budget", {"budget": 0}),
+    ]
+    native = api.study_plan(source, negative_cases, feasibility_policy=policy).to_dict()
+    negative_output = cwd / f"required-study-{index}.json"
+    cli = json.loads(
+        run_cli(
+            [
+                "study",
+                str(source),
+                "--cases",
+                str(cases),
+                "--require-all-feasible",
+                "--out",
+                str(negative_output),
+                "--json",
+            ],
+            cwd,
+            env,
+            1,
+        )
+    )
+    assert cli == json.loads(negative_output.read_bytes())
+    for report in (native, cli):
+        assert report["base"] == original_report["base"]
+        assert report["scenarios"] == original_report["scenarios"]
+        assert report["frozen_context"] == original_report["frozen_context"]
+        requirement = report["feasibility_requirement"]
+        assert report["exit_code"] == requirement["qualification_exit_code"] == 1
+        assert requirement["native_study_exit_code"] == 0 and not requirement["met"]
+        assert requirement["expected_rows"] == requirement["completed_rows"] == 4
+        assert requirement["coverage_complete"]
+        assert requirement["feasible_rows"] == 3
+        assert [row["feasible"] for row in requirement["rows"]] == [True, True, True, False]
+        assert requirement["rows"][-1]["scenario_index"] == 2
+        assert report["performance"]["state"] == "unverified"
+    positive_cases = cwd / f"feasible-cases-{index}.json"
+    positive_cases.write_text(
+        json.dumps([{"name": row.name, "changes": row.changes} for row in negative_cases[:2]]),
+        encoding="utf-8",
+    )
+    positive_output = cwd / f"all-feasible-study-{index}.json"
+    positive_cli = json.loads(
+        run_cli(
+            [
+                "study",
+                str(source),
+                "--cases",
+                str(positive_cases),
+                "--require-all-feasible",
+                "--out",
+                str(positive_output),
+                "--json",
+            ],
+            cwd,
+            env,
+        )
+    )
+    assert positive_cli == json.loads(positive_output.read_bytes())
+    positive_native = api.study_plan(
+        source, negative_cases[:2], feasibility_policy=policy
+    ).to_dict()
+    for report in (positive_native, positive_cli):
+        requirement = report["feasibility_requirement"]
+        assert report["exit_code"] == requirement["qualification_exit_code"] == 0
+        assert requirement["met"] and requirement["feasible_rows"] == 3
+        assert requirement["expected_rows"] == requirement["completed_rows"] == 3
+        assert requirement["coverage_complete"]
+        assert report["base"] == original_report["base"]
+        assert report["scenarios"] == original_report["scenarios"][:2]
+        assert report["performance"]["state"] == "unverified"
+    plan_path = source / "plan.json" if source.is_dir() else source
+    invalid = json.loads(
+        run_cli(
+            [
+                "study",
+                str(source),
+                "--cases",
+                str(cases),
+                "--require-all-feasible",
+                "--out",
+                str(plan_path),
+                "--json",
+            ],
+            cwd,
+            env,
+            2,
+        )
+    )
+    assert invalid["error"]
+    return {
+        "scope": "base_and_all_requested_scenarios",
+        "unmet_exit": 1,
+        "met_exit": 0,
+        "invalid_output_exit": 2,
+        "unmet_original_rows": 4,
+        "met_original_rows": 3,
+        "original_native_rows_and_context_held": True,
+        "SDK_and_actual_CLI": "passed",
+        "performance": "unverified",
+    }
+
+
 def accept(cwd: Path, env: dict, checkout: Path, saved: Path, bundle: Path) -> dict:
     from ci_installed_acceptance import assert_installed_origin, run_cli
     from chimeraforge import api
@@ -169,6 +281,8 @@ def accept(cwd: Path, env: dict, checkout: Path, saved: Path, bundle: Path) -> d
         validate(report, json.loads(original_bytes))
         assert original_bytes == plan_path.read_bytes()
         assert report == json.loads(output.read_text(encoding="utf-8"))
+        required = _accept_feasibility(cwd, env, source, index, cases, report)
+        assert original_bytes == plan_path.read_bytes()
         public = api.study_plan(source, [api.PlanScenario("same", {})]).to_dict()
         assert public["base"]["candidates"] == report["base"]["candidates"]
         hardware_output = cwd / f"installed-hardware-study-{index}.json"
@@ -225,6 +339,7 @@ def accept(cwd: Path, env: dict, checkout: Path, saved: Path, bundle: Path) -> d
                 "native_duty_delta": "tokens/month",
                 "original_bytes_unchanged": True,
                 "installed_cli_and_python": "passed",
+                "feasibility_requirement": required,
                 "hardware_alternative": {
                     "canonical_name": ALTERNATIVE_HARDWARE,
                     "hardware": hardware_report["scenarios"][0]["hardware"],

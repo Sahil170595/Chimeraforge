@@ -1,0 +1,241 @@
+{
+  "generated_at": "2026-11-15T00:14:54.702784+00:00",
+  "source_candidate": "0.105.0",
+  "public_release": "0.101.0",
+  "base_commit": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Selected local editable-source qualification; full hosted tests/typing/audit/installed artifacts pending",
+  "initial_red": {
+    "failed": 4,
+    "reason": "Missing typed policy/API keyword and CLI flag"
+  },
+  "broader_before_coverage_followup": {
+    "passed": 783,
+    "skipped": 1,
+    "failed": 0,
+    "errors": 0,
+    "test_file_counts": {
+      "tests.test_plan_study": 59,
+      "tests.test_plan_study_hardware": 38,
+      "tests.test_plan_study_feasibility": 36,
+      "tests.test_plan_bundle": 63,
+      "tests.test_plan_check": 54,
+      "tests.test_plan_artifact": 31,
+      "tests.test_repo_conventions": 420,
+      "tests.test_repo_conventions.TestReadmeTracksTheCode": 6,
+      "tests.test_repo_conventions.TestGlamaJson": 5,
+      "tests.test_repo_conventions.TestServerJsonStaysInSync": 7,
+      "tests.test_ci_acceptance": 65
+    },
+    "warnings": 6,
+    "scope": "Before the small original-case-count binding follow-up; not summed with other selections",
+    "paths": [
+      "tests/test_plan_study.py",
+      "tests/test_plan_study_hardware.py",
+      "tests/test_plan_study_feasibility.py",
+      "tests/test_plan_bundle.py",
+      "tests/test_plan_check.py",
+      "tests/test_plan_artifact.py",
+      "tests/test_repo_conventions.py",
+      "tests/test_ci_acceptance.py"
+    ],
+    "unavailable_check": "test_bundle_rejects_symlink_member_or_directory: OS does not permit symlinks; mandatory Linux CI exercises this"
+  },
+  "final_after_coverage_followup": {
+    "passed": 135,
+    "skipped": 0,
+    "failed": 0,
+    "errors": 0,
+    "test_file_counts": {
+      "tests.test_plan_study": 59,
+      "tests.test_plan_study_hardware": 38,
+      "tests.test_plan_study_feasibility": 38
+    },
+    "paths": [
+      "tests/test_plan_study.py",
+      "tests/test_plan_study_hardware.py",
+      "tests/test_plan_study_feasibility.py"
+    ],
+    "new_requirement_controls": 38,
+    "change": "Expected count snapshotted from admitted original cases, actual completed count retained separately, exact coverage required; no native replay/math change"
+  },
+  "critical_controls": [
+    "Base plus all16 original scenarios; late failure retains all rows and1+N native replays",
+    "Early failure still computes later scenarios",
+    "Infeasible base cannot pass through a feasible scenario",
+    "Unknown price retains native False and trace without physical-infeasibility claim",
+    "A native row with rejected alternatives and any feasible candidate passes",
+    "Omitted/None/exactFalse old bytes with clock/version fixed; True only changes requirement and exit",
+    "Exact policy type and exact boolean admitted before source/freeze/native work; enabled value captured once",
+    "No extra source/freeze/geometry resolution/native replay",
+    "Wrong shorter/longer observed population cannot redefine original coverage",
+    "Source/case/corpus/quality/bundle output guards and hard links retain bytes",
+    "Output failure2 precedes unmet1; print/save complete receipt before qualification exit"
+  ],
+  "compatibility": {
+    "scope": "Final compatibility with fixed clock/tool version, not performance proof",
+    "source_candidate": "0.105.0",
+    "frozen_version": "0.101.0",
+    "frozen_clock": "2026-11-14T12:00:00+00:00",
+    "before_default_sha256": "c4cc4464b1244e7d27988ea25b73931a55026201f5c7a8fb966917413058e63e",
+    "default_none_false_exact_original_bytes": true,
+    "enabled_changes_only_requirement_and_exit": true,
+    "expected_rows_bound_to_original_cases": 4,
+    "completed_rows": 4,
+    "enabled_qualification_exit": 1
+  },
+  "actual_OS_CLI_and_SDK": {
+    "source_candidate": "0.105.0",
+    "scope": "Final original-coverage binding through actual OS CLI/SDK native helper using local editable source",
+    "clean_installed_distribution_proof": false,
+    "outer_installed_origin_guard": "Unchanged; remains a hosted installed-distribution requirement",
+    "results": [
+      {
+        "source_kind": "saved_plan",
+        "source_bytes_held": true,
+        "required": {
+          "scope": "base_and_all_requested_scenarios",
+          "unmet_exit": 1,
+          "met_exit": 0,
+          "invalid_output_exit": 2,
+          "unmet_original_rows": 4,
+          "met_original_rows": 3,
+          "original_native_rows_and_context_held": true,
+          "SDK_and_actual_CLI": "passed",
+          "performance": "unverified"
+        }
+      },
+      {
+        "source_kind": "bundle",
+        "source_bytes_held": true,
+        "required": {
+          "scope": "base_and_all_requested_scenarios",
+          "unmet_exit": 1,
+          "met_exit": 0,
+          "invalid_output_exit": 2,
+          "unmet_original_rows": 4,
+          "met_original_rows": 3,
+          "original_native_rows_and_context_held": true,
+          "SDK_and_actual_CLI": "passed",
+          "performance": "unverified"
+        }
+      }
+    ]
+  },
+  "adverse_origin_attempt": {
+    "result": "Outer installed-origin guard correctly refused editable-source origin",
+    "action": "Guard left unchanged; local native helper exercised separately, not installed artifact proof"
+  },
+  "lint_and_format": {
+    "scope": "Exact required workflow paths, now including existing and new study tests",
+    "result": "passed",
+    "formatted_files": 288
+  },
+  "local_typing": {
+    "files": 3,
+    "follow_imports": "skip",
+    "result": "failed",
+    "current_diagnostics": 1,
+    "diagnostic": "Unchanged _policy_identity returns skipped imported digest as Any under this local mode",
+    "helper_body_AST_and_source_identical_to_released_main": true,
+    "new_code_additional_diagnostics": 0,
+    "relocated_base_attempt": "Also reproduced helper diagnostic but added15 import-resolution diagnostics due to relocation; not a clean like-for-like gate",
+    "no_casts_ignores_warning_relaxation_or_dependency_changes": true,
+    "canonical_hosted_silent_imports": "pending"
+  },
+  "known_environment_limitations": "Known broad NumPy target-version and unrelated ambient installed-audit failures were not repeated; this local typing result is not reported as passing",
+  "universal_lock_advisory_lookup": {
+    "pairs": 130,
+    "layer_counts": [
+      127,
+      3
+    ],
+    "exit_codes": [
+      0,
+      0
+    ],
+    "scope": "Native lock-only lookup, not clean ambient installed audit"
+  },
+  "lock_check": "uv0.13.7 --check --offline --no-cache passed; root project version only changed",
+  "links": {
+    "checked": 5,
+    "result": "resolved",
+    "links": [
+      {
+        "source": "CLAUDE.md",
+        "target": "docs/planning-api.md#all-feasible-requirement-source-candidate-01050"
+      },
+      {
+        "source": "README.md",
+        "target": "docs/planning-api.md#all-feasible-requirement-source-candidate-01050"
+      },
+      {
+        "source": "README.md",
+        "target": "docs/planning-api.md#all-feasible-requirement-source-candidate-01050"
+      },
+      {
+        "source": "docs/planning-api.md",
+        "target": "#all-feasible-requirement-source-candidate-01050"
+      },
+      {
+        "source": "docs/quick_start.md",
+        "target": "planning-api.md#all-feasible-requirement-source-candidate-01050"
+      }
+    ]
+  },
+  "metadata_and_help": "Candidate0.105/publicinstall0.101; CLI --require-all-feasible help checked",
+  "unchanged": [
+    "Native shared search/replay/math, candidate/trace/comparison/frozen-context payloads",
+    "Default completed-study schema/exit",
+    "Existing source/case/bundle protection and artifact writer",
+    "Archives and historical validation"
+  ],
+  "proof_limits": "Native conditional modeled candidate existence; no weights, GPU/host probes, providers, serving traffic, deployment or performance measurement",
+  "evidence_sha256": {
+    "cf-105-red.xml": "739db345527748852a4c61a33eed83d609465134ff3ff3a321c7fa9fd953256c",
+    "cf-105-final.xml": "fb88794a8c40f248a7d6e03c6326cbcbe03cf26c0cd54b9142c733996760747b",
+    "cf-105-coverage.xml": "c1df4269357b2e9172a98c4fe34bae5462c63c2b65e831b6a565f48485208b81",
+    "cf-105-type.log": "741369c75398a83d41291070ffc86b8c4653e8c63d590b35efc90fff9e22d6c9",
+    "cf-105-type-base.log": "dd38aa9d84448e0eac9519146018d463192fd3cbd9ee3a45362f14cc4ec8403d",
+    "cf-105-type-final.log": "741369c75398a83d41291070ffc86b8c4653e8c63d590b35efc90fff9e22d6c9",
+    "cf-105-parity-final.json": "ba165eacb0976b27f23d10252eaa6216cbbc8680fe491a8a6d6f80018c67737f",
+    "cf-105-os-consumer-final.json": "aafd24e588906c41afe6fada030e0419d7f8b3e19749231e6189664887dd4f23",
+    "cf-105-lock-audit.log": "3bbd50e9bd2a5da9da70c47d6aff2d9724b8afea58905eeca8e0fc647f58d861"
+  },
+  "source": {
+    ".github/workflows/ci.yml": {
+      "raw_sha256": "ee491dc3d410b330f5dd7410d0bbfa76f5e1f9b0ca80c91e75426fbf43eb56fb",
+      "git_blob": "680beecf9f49c351de32dac6310c6876b1a5eb99"
+    },
+    "src/chimeraforge/plan_study.py": {
+      "raw_sha256": "da1ac40404c504d641f394eedd1ee9a9070bc302a0c1fb491f69d0368971c96f",
+      "git_blob": "55f0da5ef27312098c9d7b6f18e770debf5f59c0"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "82dc13dd93651acd0e6de0c769f5dc5dfe446af992b4051f6ffb71bd04e3bd0e",
+      "git_blob": "54b9858faad956a01221532b4e9c71a9fdd77bb9"
+    },
+    "src/chimeraforge/commands/study.py": {
+      "raw_sha256": "d093fd95ce41e7f491004d308afffdec09bc6fee55222f6a99fc72b2950b1660",
+      "git_blob": "a4bda376529ee145ce81c0bc74c01051d7d4ff96"
+    },
+    "scripts/ci_plan_study.py": {
+      "raw_sha256": "995dcf1fe1fcc5bd4d6b0559ebd304a9d53c9eaf54fc994f4f6271d60abd9a2d",
+      "git_blob": "56b52ea0387d524241923d45aae8cd5daad49066"
+    },
+    "tests/test_plan_study.py": {
+      "raw_sha256": "98054f00a23c9a9c179a552c5c2f79ee61bf2bdc498393dd63b623527b5ff373",
+      "git_blob": "4da5b9bb6b986f4ee5da9bf35dce3984e164076c"
+    },
+    "tests/test_plan_study_feasibility.py": {
+      "raw_sha256": "54d3f300666b83209f6d9428687cd7b83f3f4e45116484d3f8e8c3a41993eb05",
+      "git_blob": "c714fb9cf01bc1142e8e89379e81ffc2bc2849f3"
+    }
+  },
+  "pending": [
+    "Independent review",
+    "Full hosted pytest and CodeQL",
+    "Canonical required typing",
+    "Clean installed dependency audit",
+    "Installed wheel/sdist consumers"
+  ]
+}

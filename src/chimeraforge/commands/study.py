@@ -14,6 +14,11 @@ def study(
     out: Path | None = typer.Option(
         None, "--out", help="Optional study JSON; cannot replace input files."
     ),
+    require_all_feasible: bool = typer.Option(
+        False,
+        "--require-all-feasible",
+        help="Require native feasible candidates for the base and every original scenario.",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emit native-unit modeled comparisons."),
 ) -> None:
     """Compare explicit scenarios offline; infeasible cases remain in the completed study."""
@@ -23,7 +28,11 @@ def study(
     try:
         if out is not None:
             protect_output(out, [saved, cases])
-        report = api.study_plan(saved, load_cases(cases))
+        report = api.study_plan(
+            saved,
+            load_cases(cases),
+            feasibility_policy=api.StudyFeasibilityPolicy() if require_all_feasible else None,
+        )
         if out is not None:
             report.save(out)
         data = report.to_dict()
@@ -38,4 +47,13 @@ def study(
                 f"{row['name']}: {'feasible' if row['feasible'] else 'infeasible'}; "
                 f"configuration switch {row['configuration_switch']}"
             )
+        if "feasibility_requirement" in data:
+            requirement = data["feasibility_requirement"]
+            state = "met" if requirement["met"] else "unmet"
+            typer.echo(
+                f"All-feasible requirement {state}: "
+                f"{requirement['feasible_rows']}/{requirement['expected_rows']} original rows."
+            )
         typer.echo("Modeled sensitivity; served weights and performance remain unverified.")
+    if data["exit_code"] != 0:
+        raise typer.Exit(data["exit_code"])
