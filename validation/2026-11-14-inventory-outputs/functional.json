@@ -1,0 +1,164 @@
+{
+  "generated_at": "2026-11-14T22:28:51.566154+00:00",
+  "source_candidate": "0.103.0",
+  "public_release": "0.101.0",
+  "base_commit": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Selected local editable-source qualification; no hosted/installed-distribution or GPU qualification",
+  "initial_feature_red": {
+    "failed": 3,
+    "reason": "Writer, CLI outputs and private metadata absent"
+  },
+  "intermediate_adverse_attempts": [
+    {
+      "passed": 46,
+      "failed": 1,
+      "reason": "CLI alias fixture omitted CSV declaration"
+    },
+    {
+      "passed": 49,
+      "failed": 1,
+      "reason": "Owned hardlink fixture lifetime triggered native multi-link input refusal"
+    },
+    {
+      "checker": "ruff",
+      "reason": "E501 fixed with byte-equivalent adjacent string literals"
+    }
+  ],
+  "final_selected_pytest": {
+    "passed": 729,
+    "failed": 0,
+    "errors": 0,
+    "output_controls": 54,
+    "warnings": 5,
+    "paths": [
+      "tests/test_inventory_output.py",
+      "tests/test_inventory_check.py",
+      "tests/test_inventory_selected_batch.py",
+      "tests/test_inventory_process.py",
+      "tests/test_ci_inventory_selected_batch.py",
+      "tests/test_deploy_fleets.py",
+      "tests/test_planner_cli.py",
+      "tests/test_plan_check.py",
+      "tests/test_repo_conventions.py",
+      "tests/test_cli_fail_loud.py"
+    ]
+  },
+  "installed_capture_consumer_source_run": {
+    "cases": 14,
+    "original_slots": 6,
+    "memory_bases": [
+      "batch-one",
+      "selected-batch"
+    ],
+    "native_exits": [
+      0,
+      4,
+      5
+    ],
+    "xml_cases_per_assessment": 11,
+    "uses_actual_OS_CLI": true,
+    "installed_distribution_proof": false
+  },
+  "census_controls": {
+    "native_layouts": [
+      [
+        2,
+        2,
+        3
+      ],
+      [
+        16,
+        8,
+        8
+      ]
+    ],
+    "large_native": {
+      "slots": 1024,
+      "native_exit_code": 0,
+      "native_observation_state": "complete",
+      "json_bytes": 836636
+    },
+    "complete_large_XML_cases": 1042,
+    "complete_XML_exceeds_64_KiB": true,
+    "both_sentinels_preserved_on_cap_refusal": true,
+    "JSON_only_success": true
+  },
+  "privacy_and_roles": {
+    "dataclass_fields_asdict_to_dict_unchanged": true,
+    "replace_retains_private_roles_and_dimensions": true,
+    "PlanArtifact_invents_no_source_path": true,
+    "XML_closed_ordinals_enums_counts_hashes_only": true
+  },
+  "lint_and_format": "Exact required workflow paths passed",
+  "typing": {
+    "owned_files": 8,
+    "local_follow_imports": "skip",
+    "result": "passed",
+    "canonical_workflow_follow_imports": "silent",
+    "canonical_hosted_result": "pending"
+  },
+  "lock_check": "uv 0.13.7 lock --check --offline --no-cache passed; root project version only changed",
+  "universal_lock_advisory_lookup": {
+    "version_pairs": 130,
+    "layers": [
+      127,
+      3
+    ],
+    "result": "No known vulnerabilities",
+    "scope": "Exact universal-lock versions only; not ambient installed audit"
+  },
+  "added_markdown_links": {
+    "checked": 5,
+    "result": "resolved"
+  },
+  "environment": {
+    "python": "3.13.1",
+    "numpy": "2.5.3",
+    "mypy": "2.3.1",
+    "ruff": "0.16.10",
+    "pytest": "9.1.1"
+  },
+  "known_environment_limitations": "Previously demonstrated NumPy-stub target-version and unrelated ambient package audit failures were preserved as limitations, not repeated, bypassed or repaired globally",
+  "pending": [
+    "Independent review",
+    "Full hosted pytest",
+    "Canonical hosted typing",
+    "Clean installed audit",
+    "CodeQL",
+    "Installed wheel/sdist consumers"
+  ],
+  "source": {
+    ".github/workflows/ci.yml": {
+      "raw_sha256": "0b9703c0fb5b9da6f9a72eed63e04d8b8a0c6c58488efebbb189f083126f2db3",
+      "git_blob": "b057cb508157e43349a7b77479057e4e40b3d6ef"
+    },
+    "src/chimeraforge/inventory_types.py": {
+      "raw_sha256": "2778615caabe02ad0e9723ba870b53ab4a4f696070d59ee31b272fcb2d9bbd0e",
+      "git_blob": "d6d776e2d6e8bc71914edbf933eb51cffc5f3c9d"
+    },
+    "src/chimeraforge/inventory_check.py": {
+      "raw_sha256": "0a3e58e0f7b77fb29e62ac16c0f5de0df6c2c9206fad82f73a9da202e45bf457",
+      "git_blob": "1deaa59051f26f602c0808c4ef739dac92aebfc9"
+    },
+    "src/chimeraforge/inventory_output.py": {
+      "raw_sha256": "ee3b7d4edacb0a5ceb105e50ae52a8b6dfaa262ac02049015eb74880d73d9ff1",
+      "git_blob": "36be77db9fb8501d0d9037cd053df10875ecd8b7"
+    },
+    "src/chimeraforge/commands/inventory_check.py": {
+      "raw_sha256": "3789e2f66103b29b1b29fae99336fb7b31cdac97f851c2a1956db1723efcdb6d",
+      "git_blob": "8536c3ee2aeda98a6357ae3d628f5236c37df8de"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "e1d438af7e382bea0041fa0b5fad2154200b23a1d13ece592dff2b72dc1b91a2",
+      "git_blob": "222e1601ab97d0a0108ee3871d8c3dc0fc485dc0"
+    },
+    "scripts/ci_inventory_check.py": {
+      "raw_sha256": "aa60651811b28c79e3d90529871fc22f9f8754bf5286e8efe048bb3ff6e417e6",
+      "git_blob": "0e94fd03126558bde62d3571dc34682b913df945"
+    },
+    "tests/test_inventory_output.py": {
+      "raw_sha256": "31b77506dee6bd93dabca8404e37ec9779dff64840b1bdf8ecd3e944178ca819",
+      "git_blob": "e14cb398b7ca188aa01d9edcaa8e0aa52d164016"
+    }
+  }
+}

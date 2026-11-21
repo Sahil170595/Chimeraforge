@@ -87,12 +87,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.102.0 adds optional JUnit for saved trace envelopes. It includes saved whole-fleet campaign load envelopes from 0.101.0, canonical systemd verification from 0.100.0 and the earlier planning, deployment, monitoring and serving workflows.
-
-Use [`trace-envelope --junit` and `api.write_trace_envelope`](docs/trace-envelope.md#junit-since-01020) for ordinary and fleet assessments.
+**Release scope.** Chimeraforge 0.103.0 adds optional JSON and JUnit for inventory checks. It includes saved trace-envelope JUnit and the earlier planning, deployment, monitoring and serving workflows.
 
 ```bash
-pip install "chimeraforge[mcp]==0.102.0"
+pip install "chimeraforge[mcp]==0.103.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -701,7 +699,7 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.102.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.103.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -768,6 +766,10 @@ chimeraforge monitor --backend vllm --url https://inference.example:8000 \
 `--secure` selects verified anonymous HTTPS; private CA and client cert/key options are also available. Fleet settings are per ID and opt every declared slot into HTTPS. See [runtime trust, authentication and limits](docs/secure-monitoring.md).
 
 ### `inventory-check` -- compare queried selectors and saved B1 memory
+
+Chimeraforge 0.103.0 adds `--out inventory.json` and
+`--junit inventory.xml` for one finalized original census, including supplied
+CSV and selected-batch mode. See the [closed output contract](docs/inventory-check.md#outputs-since-01030).
 
 **Since 0.92.0:** add `--memory-basis selected-batch` to either form
 below to compare against the compatible saved effective B/context estimate.
@@ -877,7 +879,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.102.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.103.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

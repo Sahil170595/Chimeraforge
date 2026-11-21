@@ -1162,6 +1162,15 @@ async def check_inventory(
     )
 
 
+def write_inventory_check(
+    result: InventoryCheck, *, out: str | Path | None = None, junit: str | Path | None = None
+) -> None:
+    """Publish requested outputs from one finalized whole-census inventory check."""
+    from chimeraforge.inventory_output import write_inventory_check as write
+
+    write(result, out=out, junit=junit)
+
+
 async def monitor_fleet(
     saved: PlanArtifact | str | Path,
     request: FleetMonitorRequest,

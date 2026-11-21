@@ -1,7 +1,6 @@
 # Quick Start Guide
 
-Chimeraforge 0.102.0 adds optional [`trace-envelope --junit`](trace-envelope.md#junit-since-01020)
-and `api.write_trace_envelope` for saved ordinary and whole-fleet assessments.
+Chimeraforge 0.103.0 adds optional JSON and JUnit for inventory checks. See [`inventory-check --out/--junit`](inventory-check.md#outputs-since-01030).
 
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)
