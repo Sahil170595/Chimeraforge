@@ -71,6 +71,23 @@ class TestGroupByKey:
 
 
 class TestCompareResults:
+    def test_mixed_native_ttft_samples_stay_unavailable(self, tmp_path: Path):
+        from dataclasses import asdict
+
+        from chimeraforge.bench.metrics import RunMetrics, aggregate_runs
+        from chimeraforge.compare import compare_results
+
+        base, cand = tmp_path / "base.json", tmp_path / "cand.json"
+        for path, ttfts in ((base, [100, 100]), (cand, [-1, 100])):
+            row = _make_result()
+            aggregate = aggregate_runs([RunMetrics(10, 40, ttft, 500, 0, 250) for ttft in ttfts])
+            row["aggregate"] = asdict(aggregate)
+            _write_bench_json(path, [row])
+        comparison = compare_results(base, [cand])[0]
+        assert comparison.baseline_ttft == 100
+        assert comparison.candidate_ttft is None and comparison.delta_ttft_pct is None
+        assert comparison.delta_throughput_pct == 0.0
+
     def test_matching_configs(self, tmp_path: Path):
         from chimeraforge.compare.comparator import compare_results
 

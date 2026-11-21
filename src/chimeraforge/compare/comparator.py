@@ -131,7 +131,13 @@ def _safe_delta_pct(base: float | None, cand: float | None) -> float | None:
 
 def _metric(aggregate: dict, name: str) -> float | None:
     stats = aggregate.get(name)
-    mean = stats.get("mean") if isinstance(stats, dict) else None
+    if not isinstance(stats, dict):
+        return None
+    # Native summaries can mix a negative unavailable sample into a positive mean.
+    minimum = stats.get("min")
+    if isinstance(minimum, (int, float)) and minimum < 0:
+        return None
+    mean = stats.get("mean")
     if not isinstance(mean, (int, float)) or isinstance(mean, bool) or mean < 0:
         return None
     try:

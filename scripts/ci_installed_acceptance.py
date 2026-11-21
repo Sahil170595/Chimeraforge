@@ -92,14 +92,18 @@ def accept_compare(cwd: Path, env: dict) -> None:
     baseline, first, second = (
         cwd / name for name in ("baseline.json", "candidate-a.json", "candidate-b.json")
     )
-    for path, throughput, ttft in ((baseline, 40, 100), (first, 50, -1), (second, 20, 200)):
+    for path, throughput, ttft, minimum in (
+        (baseline, 40, 100, 100),
+        (first, 50, 49.5, -1),
+        (second, 20, 200, 200),
+    ):
         row = {
             "model": "ci/compare",
             "backend": "vllm",
             "aggregate": {
-                "count": 1,
+                "count": 2,
                 "throughput_tps": {"mean": throughput},
-                "ttft_ms": {"mean": ttft},
+                "ttft_ms": {"mean": ttft, "min": minimum},
                 "total_duration_ms": {"mean": 500},
             },
         }
