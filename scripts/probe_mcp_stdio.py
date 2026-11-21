@@ -60,6 +60,7 @@ async def exercise(
                         "hardware": "RTX 4080 12GB",
                         "model_size": "3b",
                         "request_rate": 0.01,
+                        "max_num_batched_tokens": 0,
                         "allow_network": False,
                     },
                 )

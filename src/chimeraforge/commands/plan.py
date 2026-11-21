@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json as json_mod
-from dataclasses import asdict
 import re
+from dataclasses import asdict
 from pathlib import Path
+from typing import NoReturn
 
 import typer
 from rich.console import Console
@@ -503,7 +504,7 @@ def plan(
 
     # Fail loud with a clean message. Under --json, emit {"error": ...} so an
     # automated consumer parsing stdout gets JSON on failure, not Rich-styled text.
-    def _fail(msg: str) -> None:
+    def _fail(msg: str) -> NoReturn:
         if output_json:
             import json as _json
 
@@ -654,29 +655,6 @@ def plan(
         if measure_first:
             _fail("--measure uses Ollama and cannot attest an HF checkpoint; measure separately")
 
-    # Optionally benchmark the model(s) live first, folding real throughput +
-    # scaling into the local corpus so the plan below runs on measured numbers.
-    if measure_first and model:
-        import asyncio
-
-        from chimeraforge.commands._deps import require_extra
-
-        require_extra("bench", "httpx")  # --measure runs the bench backends (httpx)
-
-        from chimeraforge.measure import measure_model
-
-        for ident in model:
-            console.print(f"[dim]Measuring {ident} on ollama (live)...[/]")
-            try:
-                mres = asyncio.run(measure_model(ident, backend="ollama", ollama_url=ollama_url))
-            except RuntimeError as exc:
-                console.print(f"[red]Error measuring '{escape(ident)}':[/] {escape(str(exc))}")
-                raise typer.Exit(code=1)
-            console.print(
-                f"[green]Measured[/] {ident}: {mres.tps_n1} tok/s"
-                + (f", eta(N={mres.n_concurrent})={mres.eta_at_n}" if mres.eta_at_n else "")
-            )
-
     # A measured profile replaces the typed-in guesses -- but only where the caller
     # did NOT type something. An explicit flag is a deliberate scenario ("what if
     # traffic tripled"), and silently overwriting it with yesterday's measurement
@@ -811,6 +789,26 @@ def plan(
             plan_request.validate()
         except ValueError as exc:
             _fail(escape(str(exc)))
+        if measure_first and model:
+            import asyncio
+
+            from chimeraforge.commands._deps import require_extra
+            from chimeraforge.measure import measure_model
+
+            require_extra("bench", "httpx")
+            progress = err_console if output_json else console
+            for ident in model:
+                progress.print(f"[dim]Measuring {escape(ident)} on ollama (live)...[/]")
+                try:
+                    mres = asyncio.run(
+                        measure_model(ident, backend="ollama", ollama_url=ollama_url)
+                    )
+                except RuntimeError as exc:
+                    _fail(f"could not measure '{escape(ident)}' ({escape(str(exc))})")
+                progress.print(
+                    f"[green]Measured[/] {escape(ident)}: {mres.tps_n1} tok/s"
+                    + (f", eta(N={mres.n_concurrent})={mres.eta_at_n}" if mres.eta_at_n else "")
+                )
         result = run_plan(**asdict(plan_request))
         if save:
             if fleet:

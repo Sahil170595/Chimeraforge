@@ -196,6 +196,12 @@ def plan_deployment(
     try:
         from chimeraforge.api import PlanRequest
 
+        # The native CLI and older MCP calls use zero to mean unchunked prefill.
+        chunk_budget = (
+            None
+            if type(max_num_batched_tokens) is int and max_num_batched_tokens == 0
+            else max_num_batched_tokens
+        )
         request = PlanRequest(
             models=[model] if model else None,
             model_size=model_size,
@@ -215,7 +221,7 @@ def plan_deployment(
             platform=platform,
             unified_memory_fraction=unified_memory_fraction,
             quality_from=quality_from,
-            max_num_batched_tokens=max_num_batched_tokens,
+            max_num_batched_tokens=chunk_budget,
             context_length=context_length,
             kv_quant=kv_quant,
             tensor_parallel=tensor_parallel,

@@ -244,7 +244,7 @@ chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --launch          #
 chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 ```
 
-The 0.111.0 candidate applies the same `PlanRequest` validation to terminal plans, JSON plans, saved plans, and MCP calls. Invalid request values such as `nan` or `inf` fail before model resolution or search.
+The 0.111.0 candidate applies the same `PlanRequest` validation to terminal plans, JSON plans, saved plans, and MCP calls. Invalid request values such as `nan` or `inf` fail before measurement, model resolution, or search.
 
 - Plans **any** model: registry size class, HF repo (`org/name`), Ollama tag, or manual overrides (`--params-b/--n-layers/...`).
 - Searches (model x quantization x backend x N-replicas x batch/GPU) through a 5-gate pipeline: VRAM -> quality -> safety (opt-in) -> latency -> budget.

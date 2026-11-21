@@ -13,6 +13,7 @@ from chimeraforge.planner.engine import Candidate, enumerate_candidates
 
 
 class TestCLIPlan:
+    @pytest.mark.parametrize("measure_first", [False, True])
     @pytest.mark.parametrize(
         ("option", "value"),
         [
@@ -23,23 +24,70 @@ class TestCLIPlan:
         ],
     )
     def test_nonfinite_plans_fail_before_search_in_either_output_mode(
-        self, monkeypatch, option, value
+        self, monkeypatch, option, value, measure_first
     ):
         from typer.testing import CliRunner
 
+        from chimeraforge import measure
         from chimeraforge.cli import app
         from chimeraforge.planner import service
 
         def unexpected_search(**kwargs):
             pytest.fail("planner began search for a non-finite request")
 
+        async def unexpected_measurement(*args, **kwargs):
+            pytest.fail("planner began measurement for a non-finite request")
+
         monkeypatch.setattr(service, "run_plan", unexpected_search)
+        monkeypatch.setattr(measure, "measure_model", unexpected_measurement)
         args = ["plan", "--model", "fixture/off-registry", option, value]
+        if measure_first:
+            args.append("--measure")
         runner = CliRunner()
         summary = runner.invoke(app, args)
         structured = runner.invoke(app, [*args, "--json"])
         assert summary.exit_code == structured.exit_code == 1
         assert "finite" in summary.output and "finite" in json.loads(structured.stdout)["error"]
+
+    def test_valid_measurement_still_runs_before_search_and_has_clean_json(self, monkeypatch):
+        from types import SimpleNamespace
+
+        from typer.testing import CliRunner
+
+        from chimeraforge import measure
+        from chimeraforge.cli import app
+        from chimeraforge.planner import service
+
+        stages = []
+        original_plan = service.run_plan
+
+        async def measured(model, **kwargs):
+            stages.append("measure")
+            assert model == "llama3.2-3b" and kwargs["backend"] == "ollama"
+            return SimpleNamespace(tps_n1=50, n_concurrent=1, eta_at_n=None)
+
+        def ordered_search(**kwargs):
+            stages.append("plan")
+            return original_plan(**kwargs)
+
+        monkeypatch.setattr(measure, "measure_model", measured)
+        monkeypatch.setattr(service, "run_plan", ordered_search)
+        result = CliRunner().invoke(
+            app,
+            [
+                "plan",
+                "--model",
+                "llama3.2-3b",
+                "--measure",
+                "--no-network",
+                "--request-rate",
+                "0.01",
+                "--json",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        assert stages == ["measure", "plan"]
+        assert json.loads(result.stdout) and "Measured" in result.stderr
 
     @staticmethod
     def _strip_ansi(text: str) -> str:

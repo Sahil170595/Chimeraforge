@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planner request validation
 
-- Use the typed SDK request validation for terminal, JSON, artifact, and MCP planning requests. Reject non-finite input before model resolution or planner search.
+- Use the typed SDK request validation for terminal, JSON, artifact, and MCP planning requests. Reject non-finite input before live measurement, model resolution, or search.
 - Exercise refusal through installed CLI and MCP stdio, alongside valid plans and saved-plan replay.
 
 ## [0.106.0] - 2026-11-20

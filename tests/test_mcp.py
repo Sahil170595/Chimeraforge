@@ -84,6 +84,27 @@ class TestMcpTools:
         )
         assert result["ok"] is False and "finite" in result["error"]
 
+    def test_zero_batched_token_limit_is_unchunked(self):
+        request = {
+            "hardware": "RTX 4080 12GB",
+            "model_size": "3b",
+            "request_rate": 0.01,
+            "allow_network": False,
+        }
+        default = plan_deployment(**request)
+        assert default["ok"] and default["recommended"]
+        assert plan_deployment(**request, max_num_batched_tokens=0) == default
+
+    def test_negative_batched_token_limit_fails_before_search(self, monkeypatch):
+        from chimeraforge import mcp_server
+
+        def unexpected_search(**kwargs):
+            pytest.fail("MCP requested planner search with a negative batch limit")
+
+        monkeypatch.setattr(mcp_server, "run_plan", unexpected_search)
+        result = plan_deployment(hardware="RTX 4080 12GB", max_num_batched_tokens=-1)
+        assert result["ok"] is False and "max_num_batched_tokens" in result["error"]
+
     def test_list_hardware(self):
         h = list_hardware()
         assert h["ok"] and h["count"] == len(GPU_DB)
