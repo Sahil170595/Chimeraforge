@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import argparse
+import csv
 from datetime import datetime, timezone
 import hashlib
 import json
+import io
 import os
 from pathlib import Path
 import sys
 import tempfile
+from xml.etree import ElementTree as ET
 
 
 def _accept_captured_inventory(cwd: Path, env: dict, arguments: list[str], raw: str) -> dict:
@@ -18,19 +21,61 @@ def _accept_captured_inventory(cwd: Path, env: dict, arguments: list[str], raw: 
     from ci_installed_acceptance import run_cli
 
     capture = cwd / "inventory-input.csv"
-    supplied = raw.encode("utf-8")
     controls = {}
-    for label, basis, bad_tail, code in (
-        ("batch_one", "batch-one", False, 0),
-        ("selected_batch", "selected-batch", False, 0),
-        ("invalid_tail", "selected-batch", True, 4),
-    ):
+    cases = [
+        ("batch_one", "batch-one", "complete", 0),
+        ("selected_batch", "selected-batch", "complete", 0),
+        ("invalid_tail", "selected-batch", "late_invalid", 4),
+        ("batch_one_invalid_tail", "batch-one", "late_invalid", 4),
+    ]
+    cases.extend(
+        (prefix + "_" + scenario, basis, scenario, code)
+        for prefix, basis in (("batch_one", "batch-one"), ("selected_batch", "selected-batch"))
+        for scenario, code in (
+            ("missing", 5),
+            ("shortfall", 5),
+            ("free_unknown", 4),
+            ("mixed", 5),
+            ("total_unknown", 0),
+        )
+    )
+    for label, basis, scenario, code in cases:
         private = "PRIVATE_CAPTURE_TAIL_FIXTURE"
-        held = supplied + (private.encode() + b"\n" if bad_tail else b"")
+        rows = list(csv.reader(io.StringIO(raw), skipinitialspace=True))
+        if scenario == "missing":
+            rows.pop()
+        if scenario in ("shortfall", "mixed"):
+            rows[0][4] = "0"
+        if scenario in ("free_unknown", "mixed"):
+            rows[1 if scenario == "mixed" else 0][4] = "N/A"
+        if scenario == "total_unknown":
+            for row in rows:
+                row[3] = "N/A"
+        stream = io.StringIO(newline="")
+        csv.writer(stream, lineterminator="\n").writerows(rows)
+        held = stream.getvalue().encode() + (
+            private.encode() + b"\n" if scenario == "late_invalid" else b""
+        )
         capture.write_bytes(held)
         cli = [*arguments, "--memory-basis", basis, "--inventory-file", str(capture), "--json"]
-        stdout = run_cli(cli, cwd, env, code)
+        out, junit = cwd / f"inventory-{label}.json", cwd / f"inventory-{label}.xml"
+        stdout = run_cli([*cli, "--out", str(out), "--junit", str(junit)], cwd, env, code)
         report = json.loads(stdout)
+        assert report == json.loads(out.read_bytes())
+        suite = ET.fromstring(junit.read_bytes())
+        assert suite.attrib["tests"] == "11"
+        expected_errors = (
+            11 if scenario == "late_invalid" else 3 if scenario in ("free_unknown", "mixed") else 0
+        )
+        expected_failures = 3 if scenario in ("missing", "shortfall", "mixed") else 0
+        assert (int(suite.attrib["errors"]), int(suite.attrib["failures"])) == (
+            expected_errors,
+            expected_failures,
+        )
+        assert all(
+            value.encode() not in junit.read_bytes()
+            for value in (private, "GPU-", "protocol fixture", str(capture), str(cwd))
+        )
         observation = report["observation"]
         assert report["schema_version"] == 3 and report["exit_code"] == code
         assert report["deployment_ready"] is None
@@ -41,7 +86,7 @@ def _accept_captured_inventory(cwd: Path, env: dict, arguments: list[str], raw: 
         )
         assert str(capture) not in stdout and private not in stdout
         assert capture.read_bytes() == held
-        if bad_tail:
+        if scenario == "late_invalid":
             assert observation["state"] == "unknown" and observation["devices"] == []
             assert observation["capture_sha256"] is None
             assert report["declared_coverage"] == {
@@ -51,15 +96,37 @@ def _accept_captured_inventory(cwd: Path, env: dict, arguments: list[str], raw: 
                 "unknown": 6,
             }
         else:
-            assert observation["state"] == "complete" and len(observation["devices"]) == 6
+            assert observation["state"] == "complete" and len(observation["devices"]) == (
+                5 if scenario == "missing" else 6
+            )
             assert observation["capture_sha256"] == hashlib.sha256(held).hexdigest()
             assert report["declared_coverage"] == {
                 "expected": 6,
-                "present": 6,
-                "absent": 0,
+                "present": 5 if scenario == "missing" else 6,
+                "absent": 1 if scenario == "missing" else 0,
                 "unknown": 0,
             }
-        controls[label] = {"exit_code": code, "original_slots": 6, "source": observation["source"]}
+        if label == "batch_one":
+            for sink in (capture, Path(arguments[arguments.index("--plan") + 1])):
+                run_cli([*cli, "--out", str(sink)], cwd, env, 1)
+                run_cli([*cli, "--junit", str(sink)], cwd, env, 1)
+            alias = cwd / "inventory-hardlink.csv"
+            os.link(capture, alias)
+            try:
+                run_cli([*cli, "--junit", str(alias)], cwd, env, 1)
+            finally:
+                alias.unlink()
+            same = cwd / "inventory-mutual-output"
+            run_cli([*cli, "--out", str(same), "--junit", str(same)], cwd, env, 1)
+            assert not same.exists() and capture.read_bytes() == held
+        controls[label] = {
+            "exit_code": code,
+            "original_slots": 6,
+            "source": observation["source"],
+            "junit_cases": 11,
+            "junit_errors": expected_errors,
+            "junit_failures": expected_failures,
+        }
     return controls
 
 

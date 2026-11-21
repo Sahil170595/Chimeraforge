@@ -57,12 +57,26 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.105.0 (unreleased source candidate; public 0.101.0) | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.105.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
 
-Study requirement (0.105.0 source candidate): `study --require-all-feasible`
+Study requirement (since 0.105.0): `study --require-all-feasible`
 and typed `StudyFeasibilityPolicy` retain the base and every original native row,
 then qualify candidate existence with exit 0/1. Default completion stays 0.
-See [the requirement](docs/planning-api.md#all-feasible-requirement-source-candidate-01050).
+See [the requirement](docs/planning-api.md#all-feasible-requirement-since-01050).
+
+Declared systemd units (since 0.104.0): `serving export|verify
+--format systemd --executable` reuses native unit/byte-verification primitives
+without a saved plan or runtime execution. See
+[contract](docs/serving-declaration.md#systemd-since-01040).
+
+Inventory outputs (since 0.103.0): `inventory-check --out/--junit`
+and `api.write_inventory_check` retain the original selector census and native
+memory decisions. See [output contract](docs/inventory-check.md#outputs-since-01030).
+
+Trace-envelope JUnit (since 0.102.0): `trace-envelope --junit` and
+`api.write_trace_envelope` emit closed cases for the finalized whole population,
+with known breaches retained beside missing evidence. See
+[JUnit outputs](docs/trace-envelope.md#junit-since-01020).
 
 Whole-fleet load points (since 0.101.0): `trace-envelope --fleet --plan
 --candidate-index` and `api.assess_fleet_trace_envelope` use strict saved native

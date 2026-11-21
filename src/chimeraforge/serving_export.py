@@ -12,9 +12,11 @@ from chimeraforge.deploy import (
     _compose_service,
     _compose_value,
     _device_selection,
+    _executable,
     _hf_argv,
     _image,
     _replica_layout,
+    _systemd_content,
     _validate_fidelity,
 )
 from chimeraforge.kubernetes_options import KubernetesOptions, admit_options
@@ -27,7 +29,7 @@ from chimeraforge.serving_declaration import (
     receive,
 )
 
-FORMATS = ("launch", "compose", "kubernetes")
+FORMATS = ("launch", "compose", "kubernetes", "systemd")
 _NOTES = [
     "Operator declaration only: no model/config/corpus lookup, optimizer feasibility, "
     "measured throughput, quality, memory fit or SLO proof.",
@@ -42,6 +44,7 @@ def export_serving_declaration(
     declaration: ServingDeclaration | str | Path,
     *,
     format: str,
+    executable: str | None = None,
     gpu_devices: list[str] | None = None,
     host_port: int | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
@@ -52,7 +55,16 @@ def export_serving_declaration(
     from chimeraforge.kubernetes_export import render
 
     if format not in FORMATS:
-        raise ServingDeclarationError("serving format must be launch, compose or kubernetes")
+        raise ServingDeclarationError(
+            "serving format must be launch, compose, kubernetes or systemd"
+        )
+    if executable is not None and format != "systemd":
+        raise ServingDeclarationError("executable applies only to systemd")
+    if format == "systemd" and any(
+        value is not None
+        for value in (host_port, replica_gpu_devices, replica_host_ports, kubernetes)
+    ):
+        raise ServingDeclarationError("systemd uses singular devices and the native loopback port")
     if kubernetes is not None and format != "kubernetes":
         raise ServingDeclarationError("Kubernetes options apply only to Kubernetes")
     if format == "kubernetes" and any(
@@ -67,6 +79,7 @@ def export_serving_declaration(
     ):
         raise ServingDeclarationError("singular and replica placement options cannot mix")
     try:
+        installed_executable = _executable(executable) if format == "systemd" else None
         held = receive(declaration)
         target, settings = projection(held)
         request = held.request
@@ -79,10 +92,32 @@ def export_serving_declaration(
             None,
             request.model,
             settings,
-            "127.0.0.1" if format == "launch" else "0.0.0.0",
+            "127.0.0.1" if format in ("launch", "systemd") else "0.0.0.0",
             claimed_revision=request.revision,
         )
-        if format == "kubernetes":
+        if format == "systemd":
+            devices = _device_selection(
+                gpu_devices, target.tensor_parallel * target.pipeline_parallel
+            )
+            if devices is None:
+                raise ServingDeclarationError(
+                    "systemd needs every explicit original device selector"
+                )
+            assert installed_executable is not None
+            argv[0] = installed_executable
+            content = _systemd_content(
+                target.backend,
+                argv,
+                {"CUDA_VISIBLE_DEVICES": ",".join(devices)},
+                held.fingerprint,
+                declaration=True,
+            )
+            notes.append(
+                "One operator-declared user service; executable is an unprobed lexical POSIX path. "
+                "Image is declaration provenance only; no image pull, service start "
+                "or runtime proof."
+            )
+        elif format == "kubernetes":
             options = kubernetes or KubernetesOptions()
             if isinstance(options, KubernetesOptions) and options.name_prefix is None:
                 options = replace(options, name_prefix=f"cf-{held.fingerprint[:12]}-serving")
@@ -161,9 +196,10 @@ def export_serving_declaration(
                     + "\n"
                 )
         encoded = content.encode("utf-8")
-        if len(encoded) > MAX_CONFIG_BYTES:
+        if not 0 < len(encoded) <= MAX_CONFIG_BYTES or b"\0" in encoded:
             raise ServingDeclarationError("serving configuration exceeds native byte bound")
-        _admit(json.loads(encoded), MAX_CONFIG_BYTES)
+        if format != "systemd":
+            _admit(json.loads(encoded), MAX_CONFIG_BYTES)
     except ServingDeclarationError:
         raise
     except (DeploymentError, OSError, ValueError, TypeError, KeyError, OverflowError, UnicodeError):
@@ -195,6 +231,7 @@ def verify_serving_declaration(
     config_path: str | Path,
     *,
     format: str = "compose",
+    executable: str | None = None,
     gpu_devices: list[str] | None = None,
     host_port: int | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
@@ -221,6 +258,7 @@ def verify_serving_declaration(
         expected = export_serving_declaration(
             held,
             format=format,
+            executable=executable,
             gpu_devices=gpu_devices,
             host_port=host_port,
             replica_gpu_devices=replica_gpu_devices,

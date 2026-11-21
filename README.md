@@ -39,7 +39,7 @@ checks a saved plan against a supplied NVIDIA CSV without a local GPU query.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`. This is the command set for Chimeraforge 0.101.0.
+**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -87,14 +87,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.101.0 adds saved whole-fleet campaign load envelopes. It includes canonical systemd verification from 0.100.0, cached exporter readiness from 0.99.0, saved check JUnit from 0.98.0, trace receipt destination checks from 0.97.0 and the earlier planning, deployment, monitoring and serving workflows.
-
-The **unreleased 0.105.0 source candidate** adds
-[`study --require-all-feasible`](docs/planning-api.md#all-feasible-requirement-source-candidate-01050)
-for the base and every original scenario. Public installation remains **0.101.0**.
+**Release scope.** Chimeraforge 0.105.0 adds the all-feasible requirement for saved plan studies. It includes saved trace-envelope JUnit and the earlier planning, deployment, monitoring and serving workflows.
 
 ```bash
-pip install "chimeraforge[mcp]==0.101.0"
+pip install "chimeraforge[mcp]==0.105.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -374,9 +370,9 @@ scoring retains existing exits 0 within band, 1 comparable breach, 2 invalid,
 
 ### `study` -- frozen-model workload, hardware and cost sensitivity
 
-The **unreleased 0.105.0 source candidate** adds
-[`--require-all-feasible`](docs/planning-api.md#all-feasible-requirement-source-candidate-01050)
-and typed `StudyFeasibilityPolicy`. Public 0.101.0 retains the default completed-study behavior.
+Chimeraforge 0.105.0 adds
+[`--require-all-feasible`](docs/planning-api.md#all-feasible-requirement-since-01050)
+and typed `StudyFeasibilityPolicy`.
 
 Available in the published 0.61.0 CLI.
 Compare explicit assumptions against one saved plan or portable bundle offline:
@@ -444,6 +440,10 @@ valid model-quality evidence remains measured. These are modeled alternatives,
 without probing this host, running inference or attesting hardware/weights.
 
 ### `serving` -- operator-authored serving intent
+
+Chimeraforge 0.104.0 adds
+[`serving export|verify --format systemd --executable`](docs/serving-declaration.md#systemd-since-01040)
+for one replica with explicit TP x PP devices and native loopback defaults.
 
 **Since 0.92.0.** Declare concrete settings without a predictive plan,
 model/corpus lookup or capacity claim. The example revision is an operator claim;
@@ -707,7 +707,7 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.101.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.105.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -774,6 +774,10 @@ chimeraforge monitor --backend vllm --url https://inference.example:8000 \
 `--secure` selects verified anonymous HTTPS; private CA and client cert/key options are also available. Fleet settings are per ID and opt every declared slot into HTTPS. See [runtime trust, authentication and limits](docs/secure-monitoring.md).
 
 ### `inventory-check` -- compare queried selectors and saved B1 memory
+
+Chimeraforge 0.103.0 adds `--out inventory.json` and
+`--junit inventory.xml` for one finalized original census, including supplied
+CSV and selected-batch mode. See the [closed output contract](docs/inventory-check.md#outputs-since-01030).
 
 **Since 0.92.0:** add `--memory-basis selected-batch` to either form
 below to compare against the compatible saved effective B/context estimate.
@@ -883,7 +887,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.101.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.105.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -1178,6 +1182,11 @@ or output failure. Serial runs do not prove independence or cold cache behavior.
 See the [campaign API and lifecycle contract](docs/trace-campaign.md).
 
 ### `trace-envelope` -- observed finite load points (since 0.69.0)
+
+Since 0.102.0, the command also accepts `--junit envelope.xml`
+alongside `--out envelope.json`, for ordinary and fleet mode. The
+[closed JUnit cases](docs/trace-envelope.md#junit-since-01020) preserve
+complete passing siblings, missing higher cells and known breaches.
 
 Since 0.101.0, `trace-envelope --fleet --plan ORIGINAL --candidate-index N`
 and `api.assess_fleet_trace_envelope` also assess native whole-fleet campaigns.

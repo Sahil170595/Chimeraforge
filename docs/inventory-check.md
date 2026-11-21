@@ -1,5 +1,52 @@
 # Queried inventory and saved baseline arithmetic
 
+## Outputs (since 0.103.0)
+
+Use one finalized inventory census to write optional JSON and JUnit artifacts.
+
+```bash
+chimeraforge inventory-check --plan fleet.json --candidate-index 0 \
+  --replica-devices 0,1 --replica-devices 2,3 --replica-devices 4,5 \
+  --inventory-file inventory.csv --memory-basis selected-batch \
+  --out inventory.json --junit inventory.xml --json
+```
+
+```python
+from chimeraforge import api
+
+# `result` is the InventoryCheck returned by the existing async check_inventory.
+api.write_inventory_check(result, out="inventory.json", junit="inventory.xml")
+```
+
+The writer requires at least one destination. It uses the frozen result without
+another observation, plan lookup or memory calculation. Native JSON keeps every
+original N x TP x PP selector slot and the separate batch-one/selected-batch
+baseline. Native priority remains observation/cleanup incomplete `4`, otherwise
+any absent selector/free-memory shortfall `5`, otherwise empty/unknown required
+comparison `4`, otherwise `0`. Invalid inputs or outputs use CLI `1`.
+
+JUnit has fixed `overall`, `observation`, `replica-I` and
+`replica-I.device-J` cases. Adequate free memory passes; absence or shortfall
+fails; missing or required unknown/incomplete evidence errors. Known failures
+remain failures alongside errors, including a native `5` mixed with unknown free
+comparisons or native `4` from incomplete cleanup. Unknown total memory and its
+diagnostic reasons do not spoil an adequate-FREE pass. JSON and XML do not imply
+deployment readiness, actual allocation or physical independence.
+
+XML properties contain only closed enums, counts, ordinals and hashes; selectors,
+UUIDs, device/driver names, query commands, CSV, paths and raw errors are excluded.
+When requested, the complete XML must fit **64 KiB** without truncation. JSON-only
+SDK output neither generates XML nor applies that cap. Every requested buffer is
+admitted before any write; each file is atomic, with no two-file transaction.
+
+Both CLI sinks protect the supplied plan, CSV and each other, including canonical
+and hard-link aliases, before the event loop or query starts. Destination checks
+match the writer's parent-creation policy without opening a sink. The SDK repeats
+these guards against private retained input roles and original numeric census.
+Those roles stay outside `asdict`/`to_dict` and survive `dataclasses.replace`.
+An in-memory `PlanArtifact` contributes no invented saved-file path. Supplying a
+real plan path retains that exact role for later SDK publication guards.
+
 Chimeraforge 0.92.0 adds optional selected-batch memory preflight. Batch-one
 behavior remains the default.
 

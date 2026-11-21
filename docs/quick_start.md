@@ -1,8 +1,6 @@
 # Quick Start Guide
 
-Public installation remains **0.101.0**. The optional
-[`study --require-all-feasible`](planning-api.md#all-feasible-requirement-source-candidate-01050)
-flag requires the **unreleased 0.105.0 source candidate**.
+Chimeraforge 0.105.0 adds the all-feasible requirement for saved plan studies. See [`study --require-all-feasible`](planning-api.md#all-feasible-requirement-since-01050).
 
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)

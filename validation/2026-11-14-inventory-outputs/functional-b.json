@@ -1,0 +1,161 @@
+{
+  "generated_at": "2026-11-14T22:58:08.987235+00:00",
+  "source_candidate": "0.103.0",
+  "public_release": "0.101.0",
+  "previous_candidate_commit": "9ef5c1b71fd8ca579ac451673bf522992cf7a180",
+  "scope": "Test-only hosted integration expectation correction; no production or metadata changes",
+  "demonstrated_cause": "The consumer expanded to fourteen intended cases, while one exact-three-case assertion was exercised by two integration tests omitted from the initial local selection",
+  "preserved_hosted_failure_logs": {
+    "cf-181-ubuntu312-failed.log": {
+      "raw_sha256": "01423e9ede0d8ce70c186f4819221e100a35b6687b1b3a3aad003bae73b85545",
+      "bytes": 56128
+    },
+    "cf-181-win314-failed.log": {
+      "raw_sha256": "04dd3234eacb5e2dab30902e42b58ebc0c5d141307dce3ba0b3f7d4b62181880",
+      "bytes": 56621
+    }
+  },
+  "local_red": {
+    "tests": 2,
+    "failed": 2,
+    "reason": "Exact-three-case integration assertion rejects eleven additional intended cases"
+  },
+  "current_exact_expected_capture_exit_error_failure": {
+    "batch_one": [
+      0,
+      0,
+      0
+    ],
+    "selected_batch": [
+      0,
+      0,
+      0
+    ],
+    "invalid_tail": [
+      4,
+      11,
+      0
+    ],
+    "batch_one_invalid_tail": [
+      4,
+      11,
+      0
+    ],
+    "batch_one_missing": [
+      5,
+      0,
+      3
+    ],
+    "batch_one_shortfall": [
+      5,
+      0,
+      3
+    ],
+    "batch_one_free_unknown": [
+      4,
+      3,
+      0
+    ],
+    "batch_one_mixed": [
+      5,
+      3,
+      3
+    ],
+    "batch_one_total_unknown": [
+      0,
+      0,
+      0
+    ],
+    "selected_batch_missing": [
+      5,
+      0,
+      3
+    ],
+    "selected_batch_shortfall": [
+      5,
+      0,
+      3
+    ],
+    "selected_batch_free_unknown": [
+      4,
+      3,
+      0
+    ],
+    "selected_batch_mixed": [
+      5,
+      3,
+      3
+    ],
+    "selected_batch_total_unknown": [
+      0,
+      0,
+      0
+    ]
+  },
+  "per_case_original_slots": 6,
+  "per_case_xml_cases": 11,
+  "per_case_source": "supplied_nvidia_smi_csv",
+  "green": {
+    "passed": 224,
+    "failed": 0,
+    "errors": 0,
+    "test_file_counts": {
+      "tests.test_ci_acceptance": 65,
+      "tests.test_inventory_output": 54,
+      "tests.test_inventory_check": 34,
+      "tests.test_inventory_selected_batch": 59,
+      "tests.test_inventory_process": 6,
+      "tests.test_ci_inventory_selected_batch": 6
+    },
+    "paths": [
+      "tests/test_ci_acceptance.py",
+      "tests/test_inventory_output.py",
+      "tests/test_inventory_check.py",
+      "tests/test_inventory_selected_batch.py",
+      "tests/test_inventory_process.py",
+      "tests/test_ci_inventory_selected_batch.py"
+    ],
+    "warnings": 1
+  },
+  "critical_controls_passed": [
+    "test_installed_placement_source_protocol_uses_actual_native_two_gpu_plan",
+    "test_source_protocol_uses_stdout_without_masking_stdout_contamination[stderr]",
+    "test_source_protocol_uses_stdout_without_masking_stdout_contamination[stdout]"
+  ],
+  "stdout_contamination_and_native_plan_logic": "Unchanged; exact mapping equality retains missing/extra-case refusal",
+  "lint_and_format": "Exact required workflow Ruff paths passed",
+  "earlier_qualification": "functional.json unchanged; prior 729 selected tests remain prior-head evidence, not added to this run",
+  "unchanged_scope": [
+    "src/",
+    "scripts/",
+    "project version and lock",
+    "native memory arithmetic",
+    "archives and existing historical validation"
+  ],
+  "pending": [
+    "Independent review",
+    "Fresh hosted full CI and CodeQL"
+  ],
+  "source": {
+    "tests\\test_ci_acceptance.py": {
+      "raw_sha256": "215abb25d0d3229e9698d4b992c133ce1e298a907773c9fda150d4449690110d",
+      "git_blob": "b2fea063413e125e76a76c748d8fbb5654dc7841"
+    }
+  },
+  "complete_hosted_failure_packet": {
+    "run_id": 43649503871,
+    "source_commit": "9ef5c1b71fd8ca579ac451673bf522992cf7a180",
+    "receipt": {
+      "name": "cf-181-9ef5c1b71fd8-hosted-failure.json",
+      "raw_sha256": "fe1407023bf7726e8cd21afbe70f678fe3fc3738d9bc8ee03ec2f85cf7bf5e58",
+      "bytes": 108379
+    },
+    "all_failed_log": {
+      "name": "cf-181-9ef5c1b71fd8-all-failed.log",
+      "raw_sha256": "6575489975d6b9f12f4776a4b3667629779cd977f04f1d29b5a437411d123a55",
+      "bytes": 434962
+    },
+    "reported_scope": "All seven full source matrix axes and coverage failed only the same two stale-assertion tests; all other substantive jobs and CodeQL passed on the previous source head",
+    "public_review": "https://github.com/Sahil170595/Chimeraforge/pull/181#pullrequestreview-5907615319"
+  }
+}

@@ -385,6 +385,18 @@ def assess_trace_envelope(
     return assess(cases, campaigns, policy=policy)
 
 
+def write_trace_envelope(
+    result: RegressionGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Write closed JUnit and complete JSON for one finalized load-envelope assessment."""
+    from chimeraforge.bench.trace_envelope_output import write_trace_envelope as write
+
+    write(result, out=out, junit=junit)
+
+
 @dataclass(frozen=True)
 class PlanRequest:
     """Typed options for the shared planner; network use is explicit in callers."""
@@ -801,6 +813,7 @@ def export_serving_declaration(
     declaration: ServingDeclaration | str | Path,
     *,
     format: str,
+    executable: str | None = None,
     gpu_devices: list[str] | None = None,
     host_port: int | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
@@ -813,6 +826,7 @@ def export_serving_declaration(
     return export(
         declaration,
         format=format,
+        executable=executable,
         gpu_devices=gpu_devices,
         host_port=host_port,
         replica_gpu_devices=replica_gpu_devices,
@@ -826,6 +840,7 @@ def verify_serving_declaration(
     config_path: str | Path,
     *,
     format: str = "compose",
+    executable: str | None = None,
     gpu_devices: list[str] | None = None,
     host_port: int | None = None,
     replica_gpu_devices: list[list[str]] | None = None,
@@ -839,6 +854,7 @@ def verify_serving_declaration(
         declaration,
         config_path,
         format=format,
+        executable=executable,
         gpu_devices=gpu_devices,
         host_port=host_port,
         replica_gpu_devices=replica_gpu_devices,
@@ -1151,6 +1167,15 @@ async def check_inventory(
         memory_basis=memory_basis,
         inventory_file=inventory_file,
     )
+
+
+def write_inventory_check(
+    result: InventoryCheck, *, out: str | Path | None = None, junit: str | Path | None = None
+) -> None:
+    """Publish requested outputs from one finalized whole-census inventory check."""
+    from chimeraforge.inventory_output import write_inventory_check as write
+
+    write(result, out=out, junit=junit)
 
 
 async def monitor_fleet(
