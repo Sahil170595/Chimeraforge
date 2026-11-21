@@ -4,6 +4,53 @@
 declares concrete serving settings without running an optimizer, resolving a model,
 loading a coefficient corpus or claiming that the configuration can serve traffic.
 
+## Systemd (since 0.104.0)
+
+This format exports a systemd user unit from a saved serving declaration.
+
+Create a declaration for **one** vLLM or SGLang replica, then supply the installed
+engine or Python interpreter's lexical absolute POSIX path and every original
+TP x PP selector in one supported namespace:
+
+```bash
+chimeraforge serving declare --model org/model --revision aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --backend vllm --image example/engine:1 --replicas 1 --tp 2 --pp 1 \
+  --out single.serving.json
+chimeraforge serving export --declaration single.serving.json --format systemd \
+  --executable /opt/engine/bin/vllm --gpu-device 7 --gpu-device 3 \
+  --out inference.service --json
+chimeraforge serving verify --declaration single.serving.json --format systemd \
+  --executable /opt/engine/bin/vllm --gpu-device 7 --gpu-device 3 \
+  --config inference.service --json
+```
+
+The same SDK functions accept `format="systemd", executable="/opt/engine/bin/vllm",
+gpu_devices=["7", "3"]`. The declaration supplies TP/PP, dtype, KV/cache/chunked
+prefill settings and the claimed revision to the existing native argv builder.
+For SGLang the executable replaces the interpreter while retaining
+`-m sglang.launch_server`. Arguments and environment tokens use the existing
+systemd escaping; no shell command is evaluated.
+
+Units bind loopback at the backend's native port (vLLM 8000, SGLang 30000).
+Selection is explicit: no ordinal range, host assignment or GPU availability is
+inferred. More than one replica, host-port overrides, replica matrices/ports and
+Kubernetes options are refused. Other formats refuse `executable`. The image
+remains required declaration provenance; it is neither pulled nor authenticated.
+The executable is not statted, resolved or executed. No optimizer, saved plan,
+model/config/corpus lookup, service installation or service start occurs.
+
+Verification holds the original declaration bytes, independently renders the
+expected unit using the supplied executable/selectors and compares bounded exact
+UTF-8 bytes. NUL, malformed/unreadable/oversize files and source/config aliases
+are refused. Export retains exclusive output creation. Reports retain
+`ServingVerification`, `declaration_sha256` and categorical `/unit` changes:
+match `0`, drift `5`, invalid `1`. Actual unit values never become verifier intent.
+
+The existing plan-unit renderer is shared without changing old plan-unit bytes.
+Required Ubuntu `systemd-analyze` acceptance parses both declared backends using
+`/usr/bin/true` as a parser fixture. It never starts a unit or establishes engine
+compatibility, model access, allocation, fit, capacity or SLO performance.
+
 ## Declare, save and receive
 
 ```python

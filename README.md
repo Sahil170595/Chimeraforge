@@ -87,10 +87,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.103.0 adds optional JSON and JUnit for inventory checks. It includes saved trace-envelope JUnit and the earlier planning, deployment, monitoring and serving workflows.
+**Release scope.** Chimeraforge 0.104.0 adds systemd export and verification for operator-declared serving. It includes saved trace-envelope JUnit and the earlier planning, deployment, monitoring and serving workflows.
 
 ```bash
-pip install "chimeraforge[mcp]==0.103.0"
+pip install "chimeraforge[mcp]==0.104.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -437,6 +437,10 @@ without probing this host, running inference or attesting hardware/weights.
 
 ### `serving` -- operator-authored serving intent
 
+Chimeraforge 0.104.0 adds
+[`serving export|verify --format systemd --executable`](docs/serving-declaration.md#systemd-since-01040)
+for one replica with explicit TP x PP devices and native loopback defaults.
+
 **Since 0.92.0.** Declare concrete settings without a predictive plan,
 model/corpus lookup or capacity claim. The example revision is an operator claim;
 the image is an explicit mutable tag, not verified runtime compatibility.
@@ -699,7 +703,7 @@ Read a roofline decode figure on an HBM part as an upper bound. Regenerate the a
 ### `monitor-fleet-exporter` -- continuously serve cached native gauges
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.103.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.104.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -879,7 +883,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.103.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.104.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

@@ -94,6 +94,49 @@ def test_systemd_analyze_accepts_escaped_argv(tmp_path):
     assert api.verify_systemd_deployment(saved, path, executable="/usr/bin/true").exit_code == 0
 
 
+@pytest.mark.parametrize("backend", ["vllm", "sglang"])
+def test_systemd_analyze_accepts_operator_declaration_without_starting_service(tmp_path, backend):
+    from chimeraforge import api
+
+    analyze = shutil.which("systemd-analyze")
+    if analyze is None:
+        _missing_tool(
+            "systemd-analyze unavailable; required Ubuntu gate validates declaration units"
+        )
+    declaration = api.declare_serving(
+        api.ServingRequest(
+            model="org/model",
+            revision="a" * 40,
+            backend=backend,
+            image="example/engine:1",
+            tensor_parallel=2,
+            pipeline_parallel=2,
+            context_length=8192,
+            batch_size=8,
+            kv_quant="q8",
+            prefix_caching=True,
+            max_num_batched_tokens=512 if backend == "vllm" else None,
+        )
+    )
+    unit = api.export_serving_declaration(
+        declaration, format="systemd", executable="/usr/bin/true", gpu_devices=list("0123")
+    )
+    path = tmp_path / f"declaration-{backend}.service"
+    path.write_bytes(unit.content.encode("utf-8"))
+    checked = _run([analyze, "verify", "--man=no", "--generators=no", str(path)])
+    assert checked.returncode == 0, checked.stderr
+    assert (
+        api.verify_serving_declaration(
+            declaration,
+            path,
+            format="systemd",
+            executable="/usr/bin/true",
+            gpu_devices=list("0123"),
+        ).exit_code
+        == 0
+    )
+
+
 @pytest.mark.parametrize(
     "devices",
     [

@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Chimeraforge 0.103.0 adds optional JSON and JUnit for inventory checks. See [`inventory-check --out/--junit`](inventory-check.md#outputs-since-01030).
+Chimeraforge 0.104.0 adds systemd export and verification for operator-declared serving. See [`serving export|verify --format systemd`](serving-declaration.md#systemd-since-01040).
 
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)

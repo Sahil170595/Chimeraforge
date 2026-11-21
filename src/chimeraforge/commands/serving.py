@@ -133,7 +133,10 @@ def quote(
 @serving_app.command("export")
 def export(
     declaration: Path = typer.Option(..., "--declaration"),
-    format: str = typer.Option(..., "--format", help="launch, compose or kubernetes."),
+    format: str = typer.Option(..., "--format", help="launch, compose, kubernetes or systemd."),
+    executable: str | None = typer.Option(
+        None, "--executable", help="Absolute POSIX engine/interpreter for systemd."
+    ),
     out: Path = typer.Option(..., "--out"),
     gpu_device: list[str] | None = typer.Option(None, "--gpu-device"),
     host_port: int | None = typer.Option(None, "--host-port"),
@@ -144,7 +147,7 @@ def export(
     node_selector: list[str] | None = typer.Option(None, "--node-selector"),
     output_json: bool = typer.Option(False, "--json"),
 ) -> None:
-    """Write explicit per-replica launch or native Compose/Kubernetes config, never execute it."""
+    """Write operator intent as native config; never start an engine or service."""
     from chimeraforge.api import export_serving_declaration
     from chimeraforge.commands.deploy import _replica_groups, _kubernetes_options
     from chimeraforge.deployment_verify import _absolute, _aliases
@@ -154,6 +157,7 @@ def export(
         result = export_serving_declaration(
             declaration,
             format=format,
+            executable=executable,
             gpu_devices=gpu_device,
             host_port=host_port,
             replica_gpu_devices=_replica_groups(replica_devices),
@@ -176,6 +180,9 @@ def verify(
     declaration: Path = typer.Option(..., "--declaration"),
     config: Path = typer.Option(..., "--config"),
     format: str = typer.Option("compose", "--format"),
+    executable: str | None = typer.Option(
+        None, "--executable", help="Independent POSIX engine/interpreter for systemd."
+    ),
     gpu_device: list[str] | None = typer.Option(None, "--gpu-device"),
     host_port: int | None = typer.Option(None, "--host-port"),
     replica_devices: list[str] | None = typer.Option(None, "--replica-devices"),
@@ -194,6 +201,7 @@ def verify(
             declaration,
             config,
             format=format,
+            executable=executable,
             gpu_devices=gpu_device,
             host_port=host_port,
             replica_gpu_devices=_replica_groups(replica_devices),

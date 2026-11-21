@@ -57,7 +57,12 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.103.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.104.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Declared systemd units (since 0.104.0): `serving export|verify
+--format systemd --executable` reuses native unit/byte-verification primitives
+without a saved plan or runtime execution. See
+[contract](docs/serving-declaration.md#systemd-since-01040).
 
 Inventory outputs (since 0.103.0): `inventory-check --out/--junit`
 and `api.write_inventory_check` retain the original selector census and native

@@ -1,5 +1,10 @@
 # Saved plans and the Python API
 
+Chimeraforge 0.104.0 adds `format="systemd"` and
+`executable=` to `api.export_serving_declaration` and
+`api.verify_serving_declaration`. This [operator declaration path](serving-declaration.md#systemd-since-01040)
+uses no saved plan, optimizer or engine execution.
+
 Chimeraforge 0.103.0 adds
 `api.write_inventory_check(result: InventoryCheck, *, out=None, junit=None) -> None`
 for one frozen original inventory census. It publishes complete JSON and/or
