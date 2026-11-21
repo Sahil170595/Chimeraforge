@@ -1,8 +1,6 @@
 # Quick Start Guide
 
-Public installation remains **0.101.0**. The optional
-[finite exporter qualification](fleet-exporter.md#finite-final-observation-source-candidate-01060)
-requires the **unreleased 0.106.0 source candidate**.
+Chimeraforge 0.106.0 adds final observation qualification for finite fleet exporter runs. See [`monitor-fleet-exporter --require-final-observation`](fleet-exporter.md#finite-final-observation-since-01060).
 
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)

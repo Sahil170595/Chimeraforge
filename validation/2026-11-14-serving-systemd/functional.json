@@ -1,0 +1,214 @@
+{
+  "generated_at": "2026-11-14T23:37:57.229166+00:00",
+  "source_candidate": "0.104.0",
+  "public_release": "0.101.0",
+  "base_commit": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Selected local editable-source qualification; no installed distribution, native systemd parser or runtime/deployment proof",
+  "initial_red": {
+    "failed": 4,
+    "reason": "API/OS CLI lacked systemd declaration format/executable controls"
+  },
+  "intermediate_adverse_attempts": [
+    {
+      "passed": 2,
+      "failed": 2,
+      "reason": "CLI tests expected an invented state field; native category/count schema retained"
+    },
+    {
+      "passed": 33,
+      "failed": 1,
+      "reason": "Test assumed vLLM KV dtype for SGLang; native pinned fp8_e5m2 mapping retained"
+    },
+    {
+      "checker": "ruff",
+      "reason": "Long literal wrapped without changing bytes"
+    }
+  ],
+  "selected_pytest": {
+    "passed": 877,
+    "skipped": 6,
+    "failed": 0,
+    "errors": 0,
+    "warnings": 6,
+    "test_file_counts": {
+      "tests.test_serving_systemd": 34,
+      "tests.test_serving_declaration": 80,
+      "tests.test_ci_serving_declaration": 1,
+      "tests.test_deploy": 70,
+      "tests.test_deploy_placement": 64,
+      "tests.test_deploy_fleets": 41,
+      "tests.test_deployment_verify": 54,
+      "tests.test_deployment_verify_systemd": 33,
+      "tests.test_ci_acceptance": 65,
+      "tests.test_repo_conventions": 420,
+      "tests.test_repo_conventions.TestReadmeTracksTheCode": 6,
+      "tests.test_repo_conventions.TestGlamaJson": 5,
+      "tests.test_repo_conventions.TestServerJsonStaysInSync": 7,
+      "tests.test_deploy_acceptance": 3
+    },
+    "paths": [
+      "tests/test_serving_systemd.py",
+      "tests/test_serving_declaration.py",
+      "tests/test_ci_serving_declaration.py",
+      "tests/test_deploy.py",
+      "tests/test_deploy_placement.py",
+      "tests/test_deploy_fleets.py",
+      "tests/test_deployment_verify.py",
+      "tests/test_deployment_verify_systemd.py",
+      "tests/test_ci_acceptance.py",
+      "tests/test_repo_conventions.py",
+      "tests/test_deploy_acceptance.py::test_systemd_analyze_accepts_escaped_argv",
+      "tests/test_deploy_acceptance.py::test_systemd_analyze_accepts_operator_declaration_without_starting_service"
+    ]
+  },
+  "explicit_unavailable_checks": [
+    {
+      "class": "tests.test_deployment_verify",
+      "name": "test_unsafe_files_are_invalid_without_resolving_links[symlink]",
+      "reason": "Host cannot create this link fixture: OSError"
+    },
+    {
+      "class": "tests.test_deployment_verify",
+      "name": "test_unsafe_files_are_invalid_without_resolving_links[parent-link]",
+      "reason": "Host cannot create this link fixture: OSError"
+    },
+    {
+      "class": "tests.test_deployment_verify",
+      "name": "test_unsafe_files_are_invalid_without_resolving_links[broken-companion]",
+      "reason": "Host cannot create this link fixture: OSError"
+    },
+    {
+      "class": "tests.test_deploy_acceptance",
+      "name": "test_systemd_analyze_accepts_escaped_argv",
+      "reason": "systemd-analyze unavailable; Linux hosted CI validates native units"
+    },
+    {
+      "class": "tests.test_deploy_acceptance",
+      "name": "test_systemd_analyze_accepts_operator_declaration_without_starting_service[vllm]",
+      "reason": "systemd-analyze unavailable; required Ubuntu gate validates declaration units"
+    },
+    {
+      "class": "tests.test_deploy_acceptance",
+      "name": "test_systemd_analyze_accepts_operator_declaration_without_starting_service[sglang]",
+      "reason": "systemd-analyze unavailable; required Ubuntu gate validates declaration units"
+    }
+  ],
+  "exact_legacy_parity": {
+    "old_plan_units": 12,
+    "old_plan_companions_equal": true,
+    "existing_serving_configs": 6,
+    "all_bytes_equal": true,
+    "current_version": "0.104.0",
+    "before_manifest_sha256": "d43534f15aecf9e0213ddc0b0aa3074cc80f7412134f486218e9af21ca99edfa"
+  },
+  "installed_consumer_source_run": {
+    "backends": [
+      "vllm",
+      "sglang"
+    ],
+    "replicas": 1,
+    "TP": 2,
+    "PP": 2,
+    "explicit_devices": 4,
+    "native_exits": [
+      0,
+      5,
+      1
+    ],
+    "independent_executable_drift_exit": 5,
+    "actual_OS_CLI_and_SDK": true,
+    "installed_distribution_proof": false,
+    "service_started": false
+  },
+  "native_Ubuntu_parser_gate": {
+    "existing_test_file": "tests/test_deploy_acceptance.py",
+    "new_backend_cases": 2,
+    "required_env": "CHIMERAFORGE_DEPLOY_ACCEPTANCE=1",
+    "missing_tool_fails": true,
+    "fixture_executable": "/usr/bin/true",
+    "local_result": "Unavailable, not passing",
+    "hosted_result": "pending"
+  },
+  "lint_and_format": "Exact required workflow Ruff paths passed",
+  "owned_typing": {
+    "files": 7,
+    "follow_imports": "skip",
+    "result": "passed",
+    "canonical_hosted_silent_imports": "pending"
+  },
+  "lock_check": "uv 0.13.7 lock --check --offline --no-cache passed; root version only changed",
+  "universal_lock_advisory_lookup": {
+    "pairs": 130,
+    "layer_counts": [
+      127,
+      3
+    ],
+    "result": "No known vulnerabilities; lock-only, not ambient installed audit"
+  },
+  "added_Markdown_links": {
+    "checked": 5,
+    "result": "resolved"
+  },
+  "CLI_help": "Current systemd/executable and no-start text checked",
+  "environment": {
+    "python": "3.13.1",
+    "numpy": "2.5.3",
+    "mypy": "2.3.1",
+    "ruff": "0.16.10",
+    "pytest": "9.1.1"
+  },
+  "known_environment_limitations": "Known broad NumPy-stub target-version and unrelated ambient installed-audit failures were not repeated; no dependency changes or ignores introduced",
+  "unchanged": [
+    "archives",
+    "historical validation",
+    "original serving declaration/target/quote receiving",
+    "native held verification receiver"
+  ],
+  "pending": [
+    "Independent review",
+    "Full hosted pytest",
+    "Canonical typing",
+    "Clean installed audit",
+    "CodeQL",
+    "Installed consumers",
+    "Required Ubuntu systemd-analyze"
+  ],
+  "source": {
+    ".github/workflows/ci.yml": {
+      "raw_sha256": "dfc8c8b48d5eaa813d77fddf6536d4ce9cc2a8c6dc2a980aff808e59dbedfd5b",
+      "git_blob": "a725d85463d5e2c32203d53c7988c00f4f3be4d5"
+    },
+    "src/chimeraforge/deploy.py": {
+      "raw_sha256": "379b153092aebda541ec96de5038868342b8b586b6e657fab81484fc55ded1fd",
+      "git_blob": "6308e584ccf762286980b2154ee63c90e0c3d89f"
+    },
+    "src/chimeraforge/serving_export.py": {
+      "raw_sha256": "3b45620a7fa119717d34bb31686a3c363ce9a00a86a0b31bc45696b4a97c914f",
+      "git_blob": "74a92e36fdc719060e97b5f7f743446361a4aad5"
+    },
+    "src/chimeraforge/commands/serving.py": {
+      "raw_sha256": "88279ba2a5ad571d65a539f08b8fc801033432707df587482ad79c8991676f7b",
+      "git_blob": "8f2522a56b2a977a8349cb85faedc9aff85f5b47"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "d0297313cb19f83cfd99c0b4ca096f75db53c01a387353cab1460f773aa4ae75",
+      "git_blob": "6d872ae96f1252dd4d1f918ada2c39afc4230063"
+    },
+    "scripts/ci_serving_declaration.py": {
+      "raw_sha256": "155fba103ddad6d15f8989a55828f2a88b975f7dfeaf55d22b095ded50e77c69",
+      "git_blob": "51fffc86683c11a8bb4e3e0f0b84c431380662db"
+    },
+    "tests/test_serving_systemd.py": {
+      "raw_sha256": "8c65b781244513f8c24a042d054e64865fcf795b9371290281b3199989fe4033",
+      "git_blob": "c09796bbd86da57ce48a474ced6cb7a0c3ec5ec8"
+    },
+    "tests/test_ci_serving_declaration.py": {
+      "raw_sha256": "89a191fbdf5bd1f21d8da9f6b877d709b9280ed04f72a701e90b44207462b5b3",
+      "git_blob": "c24e5c9e61042e3e67e6359bcb28f83c9c494167"
+    },
+    "tests/test_deploy_acceptance.py": {
+      "raw_sha256": "3f99bf028d67009af6e2246fb8111f539b4acdaef9c30a7bc0519cedd96be049",
+      "git_blob": "bf907228df98ddda42dd9dec44366c418927b972"
+    }
+  }
+}

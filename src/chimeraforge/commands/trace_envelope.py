@@ -22,6 +22,9 @@ def trace_envelope(
         help="CELL=PATH; CELL excludes '='; PATH may contain '='. Repeat per cell.",
     ),
     out: Path | None = typer.Option(None, "--out", help="Atomic assessment; protects all inputs."),
+    junit: Path | None = typer.Option(
+        None, "--junit", help="Bounded JUnit for the whole population."
+    ),
     json_output: bool = typer.Option(False, "--json"),
 ) -> None:
     """Exit 0 conditional pass, 1 SLO breach, 2 invalid, 3 incomplete/incompatible."""
@@ -46,9 +49,18 @@ def trace_envelope(
             if name in supplied:
                 raise api.PlanError("--campaign cannot repeat a cell name")
             supplied[name] = Path(filename)
-        if out is not None:
+        outputs = [value for value in (out, junit) if value is not None]
+        for index, output in enumerate(outputs):
             protect_output(
-                out, [cases, policy, *supplied.values(), *([plan] if plan is not None else [])]
+                output,
+                [
+                    cases,
+                    policy,
+                    *supplied.values(),
+                    *([plan] if plan is not None else []),
+                    *outputs[:index],
+                    *outputs[index + 1 :],
+                ],
             )
         if fleet:
             assert plan is not None
@@ -61,7 +73,9 @@ def trace_envelope(
             )
         else:
             result = api.assess_trace_envelope(cases, supplied, policy=policy)
-        if out is not None:
+        if junit is not None:
+            api.write_trace_envelope(result, out=out, junit=junit)
+        elif out is not None:
             result.save(out)
         report = result.to_dict()
     except api.PlanError as exc:

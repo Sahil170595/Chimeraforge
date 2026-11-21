@@ -5,7 +5,7 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.106.0] - Unreleased
+## [0.106.0] - 2026-11-20
 
 ### Finite exporter final-observation requirement
 
@@ -14,6 +14,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retain native cleanup failures across stop-discarded or later successful polls, including setup failures that raise after cleanup and the cancelled startup template. Completed-cleanup poll failures keep their existing unknown/recovery behavior.
 - Preserve default public cache/readiness bytes and continuous/finite CLI records. Ungated SDK clean-close zero has `qualification_met=None`; selected CLI appends a safe count/state qualification receipt. No model, GPU, physical independence or deployment proof is claimed.
 - Extend existing native/OS CLI/mTLS installed consumers and adverse clock/population/cancellation controls without new jobs, uploads or dependencies.
+
+## [0.105.0] - 2026-11-20
+
+### Optional study feasibility requirement
+
+- Add typed `StudyFeasibilityPolicy` and `study --require-all-feasible` for native candidate existence in the base and every original scenario. Retain all rows and traces under the existing offline frozen context without extra replay or source resolution.
+- Emit a separate complete ordinal requirement receipt and exit `1` when unmet; print/save it before exiting. Invalid input or output stays `2`. Omission, `None` and validated typed `False` preserve the old schema and completed-study exit `0`.
+- Extend existing saved-plan/bundle SDK and installed CLI consumers for required success, late infeasibility and protected outputs. This is modeled feasibility, without deployment or measured performance proof.
+
+## [0.104.0] - 2026-11-20
+
+### Operator-declared systemd units
+
+- Add `serving export|verify --format systemd --executable` and matching SDK controls for one declared vLLM/SGLang replica with explicit original TP x PP device selection. Preserve native argv/revision controls and loopback defaults without optimizer, executable probing, image pull or service start.
+- Reuse a pure native unit renderer while retaining exact old plan-unit bytes. Verify bounded held declaration/unit bytes with categorical `/unit` drift and native 0/5/1 outcomes.
+- Extend required Ubuntu systemd parser acceptance and existing installed declaration consumers; existing launch/Compose/Kubernetes exports retain their bytes.
+
+## [0.103.0] - 2026-11-20
+
+### Inventory check JSON/JUnit outputs
+
+- Add optional `inventory-check --out/--junit` and typed `api.write_inventory_check` for one finalized whole original selector census. Preserve native 0/4/5 priority and adequate-free passes when only total memory is unknown; retain failures alongside incomplete evidence.
+- Protect actual plan/CSV roles and mutual aliases before observation and publication. Private input/census metadata stays outside dataclass serialization and survives replacement. Requested outputs are admitted before separately atomic writes; XML has a complete 64 KiB cap.
+- Extend the existing supplied-CSV installed consumer, required typing and lint scopes without adding jobs or hardware requirements.
+
+## [0.102.0] - 2026-11-20
+
+### Trace-envelope JUnit
+
+- Add optional `trace-envelope --junit PATH` and typed `api.write_trace_envelope` for ordinary and whole-fleet saved assessments. Closed ordinal cases retain every original cell/execution, lower passing points and known breaches alongside incomplete evidence; complete native JSON and native exits remain unchanged.
+- Admit both output buffers before separately atomic publication, with a 64 KiB complete XML limit and declared/consumed input alias guards. Extend the existing installed consumers and typing cohort.
 
 ## [0.101.0] - 2026-11-13
 

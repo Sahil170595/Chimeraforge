@@ -1,9 +1,28 @@
 # Saved plans and the Python API
 
-The **unreleased 0.106.0 source candidate** adds typed `FleetExporterRunPolicy`,
+Chimeraforge 0.106.0 adds typed `FleetExporterRunPolicy`,
 `FleetExporterRunResult` and
-[`api.run_fleet_exporter`](fleet-exporter.md#finite-final-observation-source-candidate-01060).
-Public installation remains **0.101.0**.
+[`api.run_fleet_exporter`](fleet-exporter.md#finite-final-observation-since-01060).
+
+Chimeraforge 0.105.0 adds typed `StudyFeasibilityPolicy`
+and [`study --require-all-feasible`](#all-feasible-requirement-since-01050).
+
+Chimeraforge 0.104.0 adds `format="systemd"` and
+`executable=` to `api.export_serving_declaration` and
+`api.verify_serving_declaration`. This [operator declaration path](serving-declaration.md#systemd-since-01040)
+uses no saved plan, optimizer or engine execution.
+
+Chimeraforge 0.103.0 adds
+`api.write_inventory_check(result: InventoryCheck, *, out=None, junit=None) -> None`
+for one frozen original inventory census. It publishes complete JSON and/or
+[closed JUnit](inventory-check.md#outputs-since-01030) without another
+observation or memory calculation.
+
+Chimeraforge 0.102.0 adds
+`api.write_trace_envelope(result: RegressionGate, *, out=None, junit=None) -> None`
+for finalized ordinary and whole-fleet assessments. It writes complete JSON and
+[closed JUnit](trace-envelope.md#junit-since-01020) without repeating
+assessment. The writer uses the existing native assessment and exit status.
 
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
@@ -240,13 +259,62 @@ context length, KV quantization and the fixed batched-token setting; a context
 or batch change is visible even when model/quant/backend/replica identity stays
 the same. These are planned settings, not observations of a deployed server.
 Known source/case/bundle member files cannot be overwritten by `--out`; writes
-are atomic through the existing artifact writer. Exit 0 means the study
+are atomic through the existing artifact writer. By default, exit 0 means the study
 completed, even when cases are infeasible; malformed, unavailable or unsupported
 inputs and changing policies exit 2.
 
 This performs no network resolution, host probe, model download or serving
 requests. Sensitivity is conditional modeled arithmetic, not measurement,
 confidence intervals, immutable served-weight proof or a performance guarantee.
+
+### All-feasible requirement (since 0.105.0)
+
+Use the same source and case file with an explicit feasibility requirement:
+
+```bash
+chimeraforge study plan.json --cases cases.json --require-all-feasible \
+  --out required-study.json --json
+```
+
+```python
+from chimeraforge.api import PlanScenario, StudyFeasibilityPolicy, study_plan
+
+result = study_plan(
+    "plan.json",
+    [PlanScenario("peak", {"request_rate": 2}), PlanScenario("no-budget", {"budget": 0})],
+    feasibility_policy=StudyFeasibilityPolicy(require_all_feasible=True),
+)
+result.save("required-study.json")
+print(result.to_dict()["exit_code"])
+```
+
+The policy checks the **base and every original requested scenario**, including
+all sixteen cases when declared. Each row passes exactly when the existing native
+search retained at least one feasible candidate. Rejected alternatives do not
+fail a row that has a feasible candidate. The policy does not inspect only the
+recommendation, Pareto frontier or a passing prefix, and never stops at an early
+failure. All rows are computed once under the existing held offline context;
+there is no additional replay, source resolution, provider call or host probe.
+
+Enabled results retain the original schema, base/scenario data, candidates,
+traces, comparisons and frozen context. A separate `feasibility_requirement`
+projection records its schema, policy, native-candidate basis, original base and
+zero-based scenario ordinals, expected/completed/feasible/infeasible row counts,
+exact `coverage_complete`, `met`, native completed-study exit `0` and qualification exit.
+The expected count is snapshotted from the admitted original cases; observed rows
+cannot redefine it. The top-level
+`exit_code` is `0` when all required rows are feasible and `1` otherwise.
+The CLI prints and saves the complete receipt before returning that exit.
+Invalid inputs, unsupported/changed policies and output failures retain exit `2`.
+Existing source/case/bundle alias guards and per-file atomic writing apply.
+
+Omitting the policy, passing `None`, or passing a typed policy with exact boolean
+`False` retains the existing JSON schema and completed-study exit `0`, including
+infeasible rows. The exact policy type and exact boolean are validated before
+source reads or study work. Unknown price remains native unknown/infeasible and
+fails an enabled requirement; that is not evidence of physical infeasibility.
+This checks conditional modeled candidate existence, without measured performance,
+allocation, deployment, sensitivity-confidence or SLO proof.
 
 ## Portable plan bundles
 

@@ -1,8 +1,7 @@
 # Continuous fleet exporter (since 0.92.0)
 
-Public installation remains **0.101.0**. The
-[finite final-observation requirement](#finite-final-observation-source-candidate-01060)
-needs the **unreleased 0.106.0 source candidate**.
+Chimeraforge 0.106.0 adds the optional
+[finite final-observation requirement](#finite-final-observation-since-01060).
 
 `api.serve_fleet_exporter` and `monitor-fleet-exporter` expose the latest bounded
 native fleet observation through a loopback Prometheus endpoint. Install the
@@ -10,7 +9,7 @@ native fleet observation through a loopback Prometheus endpoint. Install the
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install "chimeraforge[exporter]==0.101.0"
+python -m pip install "chimeraforge[exporter]==0.106.0"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \
@@ -72,9 +71,9 @@ lines describe listener ownership. Clean process exit **0 is not fleet
 qualification**; use the native qualification gauges or snapshot native exit code.
 Invalid/unavailable service setup exits 1; native Typer usage errors remain 2.
 
-## Finite final observation (source candidate 0.106.0)
+## Finite final observation (since 0.106.0)
 
-The new API and flag require **unreleased 0.106.0 source**. They reuse one existing
+The API and flag reuse one existing
 service context without adding a backend request, source reload, monitoring retry,
 HTTP readiness probe or Prometheus parse at the qualification boundary:
 
