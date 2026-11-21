@@ -1,9 +1,8 @@
 # Queried inventory and saved baseline arithmetic
 
-## Outputs (source candidate 0.103.0)
+## Outputs (since 0.103.0)
 
-These optional outputs require **unreleased 0.103.0 source**. Public installation
-remains **0.101.0**; existing stdout-only defaults are unchanged.
+Use one finalized inventory census to write optional JSON and JUnit artifacts.
 
 ```bash
 chimeraforge inventory-check --plan fleet.json --candidate-index 0 \

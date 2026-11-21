@@ -1,0 +1,111 @@
+{
+  "generated_at": "2026-11-14T21:32:22.961483+00:00",
+  "source_candidate": "0.102.0",
+  "public_release": "0.101.0",
+  "base_commit": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Selected local editable-source qualification; no release or installed-distribution proof",
+  "environment": {
+    "python": "3.13.1",
+    "numpy": "2.5.3",
+    "mypy": "2.3.1",
+    "ruff": "0.16.10",
+    "pytest": "9.1.1"
+  },
+  "initial_feature_red": {
+    "failed": 3,
+    "reason": "Absent API writer and CLI --junit"
+  },
+  "intermediate_adverse_attempt": {
+    "passed": 23,
+    "failed": 1,
+    "reason": "Test-helper ImportError; corrected with actual native mixed fleet generation"
+  },
+  "final_selected_pytest": {
+    "passed": 1041,
+    "failed": 0,
+    "errors": 0,
+    "new_output_tests": 28,
+    "paths": [
+      "tests/test_trace_envelope.py",
+      "tests/test_trace_envelope_cli.py",
+      "tests/test_fleet_trace_envelope.py",
+      "tests/test_trace_envelope_output.py",
+      "tests/test_ci_trace_envelope.py",
+      "tests/test_ci_fleet_trace_campaign.py",
+      "tests/test_planner_core.py",
+      "tests/test_planner_engine.py",
+      "tests/test_planner_cli.py",
+      "tests/test_plan_check.py",
+      "tests/test_plan_study.py",
+      "tests/test_regression_gate.py",
+      "tests/test_trace_gate.py",
+      "tests/test_fleet_trace_gate.py",
+      "tests/test_fleet_trace_campaign_gate.py",
+      "tests/test_repo_conventions.py",
+      "tests/test_cli_fail_loud.py"
+    ]
+  },
+  "lint_and_format": "Exact workflow Ruff paths passed",
+  "configured_envelope_mypy": {
+    "files": 7,
+    "result": "passed"
+  },
+  "lock_check": "uv 0.13.7 lock --check --offline --no-cache passed; root version only changed",
+  "universal_lock_advisory_lookup": {
+    "pairs": 130,
+    "layers": 2,
+    "result": "No known vulnerabilities in either layer",
+    "scope": "Lock-only native layers; not a clean-installed environment audit"
+  },
+  "added_markdown_links": {
+    "checked": 5,
+    "result": "resolved"
+  },
+  "known_local_environment_diagnostics": [
+    "Configured base and inherited fleet mypy stop before source checking: locked NumPy 2.5.3 stubs use PEP 695 under Python 3.13 while configured target is Python 3.11; hosted lint uses Python 3.12 / locked NumPy 2.4.6",
+    "Native installed+lock audit fails on unrelated global/private packages visible through borrowed system-site-packages env; no global package changes"
+  ],
+  "pending": [
+    "Full hosted pytest matrix",
+    "Canonical hosted base and inherited fleet typing",
+    "Clean installed+universal-lock audit",
+    "CodeQL",
+    "Installed wheel/sdist consumers",
+    "Independent review"
+  ],
+  "source": {
+    ".github/workflows/ci.yml": {
+      "raw_sha256": "d2a2abfe2d6a714ce2377d3d708cb63c59c194b08f7de23f3905397d716ddca6",
+      "git_blob": "4cfb366a439135407d9f60bb03cfb7924d2df801"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "833be30aa17506ff9a224b87890b6f60319ecdc0fa66897ba2e66c2c2ac5f6e0",
+      "git_blob": "593692bd3298681d439cc1d886a85a06993ff6e8"
+    },
+    "src/chimeraforge/commands/trace_envelope.py": {
+      "raw_sha256": "509085243dc82ec72a8effbd2afe7e761b90d282c4192b5fcffebe0f403b4dc0",
+      "git_blob": "255ef94e1eb7adc908fc3a68bd84de812ee66cff"
+    },
+    "src/chimeraforge/bench/trace_envelope_output.py": {
+      "raw_sha256": "1a920ebe7065d2aa3e370ac57d62baa31fb0fb215d1c3431ace8a646a38892a5",
+      "git_blob": "af6dee58fe9a8212c2a74355fe2cadda4c26d763"
+    },
+    "scripts/ci_trace_envelope.py": {
+      "raw_sha256": "ed92274a426bec91bfd39db1ad6d18fe9302e2efc4a5fe97c5951e0f49343089",
+      "git_blob": "32dd82df87b73805ba385a213adbe88d7b7df519"
+    },
+    "scripts/ci_fleet_trace_campaign.py": {
+      "raw_sha256": "a73dc1d13ad99c9169bbfd75cf97a3f1c6e3583b7c376f9239aa5f89a7fa0253",
+      "git_blob": "450f2ea53788b4994c2e6c7aefb64bb71c90df0c"
+    },
+    "tests/test_trace_envelope_output.py": {
+      "raw_sha256": "7df285dc70a6b04a5dba0e99f0c82a70c617a66f66252a70c0955c80bd894d0f",
+      "git_blob": "05856962e8a7656b471d2ea69178a3568f8d0eb5"
+    }
+  },
+  "additional_feature_red": {
+    "failed": 1,
+    "reason": "Already-incomplete fleet member skipped blocker-list shape validation; final unconditional validation closes it"
+  },
+  "corrected_lint_diagnostic": "Ruff F811 for imported pytest fixture; explicit fixture alias retained"
+}

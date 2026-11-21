@@ -1,10 +1,16 @@
 # Saved plans and the Python API
 
-The **unreleased 0.103.0 source candidate** adds
+Chimeraforge 0.103.0 adds
 `api.write_inventory_check(result: InventoryCheck, *, out=None, junit=None) -> None`
 for one frozen original inventory census. It publishes complete JSON and/or
-[closed JUnit](inventory-check.md#outputs-source-candidate-01030) without another
-observation or memory calculation. Public installation remains **0.101.0**.
+[closed JUnit](inventory-check.md#outputs-since-01030) without another
+observation or memory calculation.
+
+Chimeraforge 0.102.0 adds
+`api.write_trace_envelope(result: RegressionGate, *, out=None, junit=None) -> None`
+for finalized ordinary and whole-fleet assessments. It writes complete JSON and
+[closed JUnit](trace-envelope.md#junit-since-01020) without repeating
+assessment. The writer uses the existing native assessment and exit status.
 
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.
