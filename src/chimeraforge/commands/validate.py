@@ -8,6 +8,8 @@ per-provenance-class error scorecard.
 from __future__ import annotations
 
 import json as json_mod
+import re
+from pathlib import Path
 
 import typer
 from rich.console import Console
@@ -58,7 +60,7 @@ def validate(
         None,
         "--expect-fingerprint",
         metavar="HASH",
-        help="Fail unless the matrix hashes to this value. Without it the "
+        help="Require the full 64-character SHA-256 fingerprint. Without it the "
         "fingerprint is recomputed from whatever matrix was loaded and merely "
         "printed, so editing the matrix after seeing results yields a report that "
         "matches itself perfectly. Pass the hash recorded at pre-registration to "
@@ -80,6 +82,7 @@ def validate(
     Each prediction is already labeled measured / estimated / unknown. This checks
     how wrong each of those labels actually is, and publishes every cell.
     """
+    from chimeraforge.bench.fleet_gate_output import _write
     from chimeraforge.validate import (
         Matrix,
         ValidationError,
@@ -92,7 +95,7 @@ def validate(
 
     def _fail(msg: str) -> None:
         if output_json:
-            console.print(json_mod.dumps({"error": msg}), highlight=False, soft_wrap=True)
+            typer.echo(json_mod.dumps({"error": msg}))
         else:
             console.print(f"[red]Error:[/] {msg}")
         raise typer.Exit(code=1)
@@ -117,14 +120,12 @@ def validate(
     except ValidationError as exc:
         _fail(str(exc))
 
-    if expect_fingerprint:
-        # The point of pre-registration: the hash is checked against what was
-        # committed BEFORE any result was seen. Recomputing it from the loaded
-        # matrix and printing it proves only that the file hashes to its own hash,
-        # so editing a cell after seeing results produced a self-consistent report.
-        actual = matrix.fingerprint()
+    if expect_fingerprint is not None:
         want = expect_fingerprint.strip().lower()
-        if not actual.lower().startswith(want):
+        if re.fullmatch(r"[0-9a-f]{64}", want) is None:
+            _fail("expected matrix fingerprint must be a full SHA-256 hex digest")
+        actual = matrix.fingerprint()
+        if actual != want:
             _fail(
                 f"matrix fingerprint {actual[:16]} does not match the expected "
                 f"{want}: this is not the matrix that was pre-registered."
@@ -160,29 +161,57 @@ def validate(
             )
         return _measure_cell(cell, ollama_url, runs, err_console), "live measurement failed"
 
+    json_path = Path(output) if output else None
+    markdown_path = Path(report) if report else None
+    destinations = [path for path in (json_path, markdown_path) if path is not None]
     with models_file(models_path) as effective_models_path:
+        protected = [
+            path for path in (matrix_path, measurements_path, effective_models_path) if path
+        ]
+        try:
+            _admit_output_paths(destinations, protected)
+        except (ValueError, OSError, RuntimeError):
+            _fail("audit output destinations must be valid, distinct files outside the inputs")
         outcomes = audit_cells(
             matrix, captured, effective_models_path, measure=_live if measure_live else None
         )
+        audit = build_audit(
+            matrix, outcomes, models_basis=models_path if models_path else "bundled"
+        )
+        audit_json = None
+        try:
+            if json_path is not None or output_json:
+                audit_json = json_mod.dumps(audit.to_dict(), indent=2, allow_nan=False)
+            buffers = []
+            if json_path is not None and audit_json is not None:
+                buffers.append((json_path, audit_json.encode("utf-8")))
+            if markdown_path is not None:
+                buffers.append((markdown_path, format_markdown(audit).encode("utf-8")))
+            _admit_output_paths(destinations, protected)
+            for path, raw in buffers:
+                _write(path, raw)
+        except (ValueError, OSError, RuntimeError):
+            _fail("could not render or publish the requested audit output")
 
-    audit = build_audit(matrix, outcomes, models_basis=models_path if models_path else "bundled")
-
-    if output:
-        from pathlib import Path
-
-        Path(output).write_text(json_mod.dumps(audit.to_dict(), indent=2), encoding="utf-8")
+    if json_path is not None:
         err_console.print(f"[dim]audit JSON -> {output}[/]")
-    if report:
-        from pathlib import Path
-
-        Path(report).write_text(format_markdown(audit), encoding="utf-8")
+    if markdown_path is not None:
         err_console.print(f"[dim]report -> {report}[/]")
 
     if output_json:
-        console.print(json_mod.dumps(audit.to_dict(), indent=2), highlight=False, soft_wrap=True)
+        typer.echo(audit_json)
         return
 
     _print_table(audit)
+
+
+def _admit_output_paths(destinations: list[Path], protected: list[str]) -> None:
+    from chimeraforge.commands._trace_output import preflight_trace_output
+    from chimeraforge.plan_study import protect_output
+
+    for index, path in enumerate(destinations):
+        protect_output(path, (*protected, *destinations[:index], *destinations[index + 1 :]))
+        preflight_trace_output(path)
 
 
 def _measure_cell(cell, ollama_url: str, runs: int, err):

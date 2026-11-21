@@ -203,6 +203,135 @@ class TestPreRegistrationIsARealGate:
         r = self._run("--matrix", str(m), "--measurements", str(cap), "--expect-fingerprint", fp)
         assert r.exit_code == 0, r.output
 
+    @pytest.mark.parametrize("supplied", ["", "   ", "prefix"])
+    def test_a_supplied_fingerprint_must_be_complete(self, tmp_path, supplied):
+        from chimeraforge.validate import Matrix
+
+        matrix = self._matrix(tmp_path)
+        capture = tmp_path / "capture.json"
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        value = Matrix.load(matrix).fingerprint()[:12] if supplied == "prefix" else supplied
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--expect-fingerprint",
+            value,
+            "--json",
+        )
+        assert result.exit_code == 1
+        assert "full SHA-256" in json.loads(result.output)["error"]
+
+    @pytest.mark.parametrize(
+        "role",
+        ["matrix", "capture", "capture_hardlink", "corpus", "other_output", "missing_parent"],
+    )
+    def test_both_outputs_are_admitted_before_writing(self, tmp_path, role):
+        matrix = self._matrix(tmp_path)
+        capture, corpus, prior = (
+            tmp_path / name for name in ("capture.json", "fitted.json", "prior.json")
+        )
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        corpus.write_bytes((ROOT / "src/chimeraforge/planner/data/fitted_models.json").read_bytes())
+        prior.write_bytes(b"previous audit")
+        held = {p: p.read_bytes() for p in (matrix, capture, corpus, prior)}
+        alias = tmp_path / "capture.link"
+        if role == "capture_hardlink":
+            try:
+                alias.hardlink_to(capture)
+            except OSError:
+                pytest.skip("test filesystem does not support hard links")
+        destination = {
+            "matrix": matrix,
+            "capture": capture,
+            "capture_hardlink": alias,
+            "corpus": corpus,
+            "other_output": prior,
+            "missing_parent": tmp_path / "missing" / "output.md",
+        }[role]
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--models-path",
+            str(corpus),
+            "--output",
+            str(prior),
+            "--report",
+            str(destination),
+            "--json",
+        )
+        assert result.exit_code == 1
+        assert "output" in json.loads(result.output)["error"]
+        assert all(path.read_bytes() == value for path, value in held.items())
+
+    def test_markdown_render_failure_preserves_prior_json(self, tmp_path, monkeypatch):
+        from chimeraforge import validate as audit_module
+
+        matrix = self._matrix(tmp_path)
+        capture, prior, markdown = (
+            tmp_path / name for name in ("capture.json", "prior.json", "audit.md")
+        )
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        prior.write_bytes(b"previous audit")
+
+        def fail_render(audit):
+            raise ValueError("fixture renderer failure")
+
+        monkeypatch.setattr(audit_module, "format_markdown", fail_render)
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--output",
+            str(prior),
+            "--report",
+            str(markdown),
+            "--json",
+        )
+        assert result.exit_code == 1
+        assert "output" in json.loads(result.output)["error"]
+        assert prior.read_bytes() == b"previous audit" and not markdown.exists()
+
+    def test_both_outputs_keep_the_full_matrix_fingerprint(self, tmp_path):
+        from chimeraforge.validate import Matrix
+
+        matrix = self._matrix(tmp_path)
+        capture, audit, markdown = (
+            tmp_path / name for name in ("capture.json", "audit.json", "audit.md")
+        )
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        digest = Matrix.load(matrix).fingerprint()
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--expect-fingerprint",
+            digest,
+            "--output",
+            str(audit),
+            "--report",
+            str(markdown),
+            "--json",
+        )
+        assert result.exit_code == 0, result.output
+        document = json.loads(audit.read_text(encoding="utf-8"))
+        assert json.loads(result.stdout) == document
+        assert document["matrix_fingerprint"] == digest
+        assert len(document["cells"]) == 1 and digest in markdown.read_text(encoding="utf-8")
+
     def test_an_edited_matrix_fails(self, tmp_path):
         """Without this the fingerprint was recomputed from whatever matrix was
         loaded and merely printed, so editing a cell after seeing results yielded a
