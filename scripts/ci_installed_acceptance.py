@@ -55,6 +55,61 @@ def assert_installed_modules(checkout: str | Path) -> dict[str, object]:
     return {"count": len(names), "modules": sorted(names)}
 
 
+def accept_validation_audit(cwd: Path, env: dict) -> None:
+    """Exercise full fingerprint and output admission through the installed CLI."""
+    from chimeraforge.validate import Matrix
+
+    matrix, capture, audit, markdown = (
+        cwd / name
+        for name in (
+            "audit-matrix.json",
+            "audit-capture.json",
+            "audit-output.json",
+            "audit-report.md",
+        )
+    )
+    matrix.write_text(
+        json.dumps(
+            {
+                "registered_at": "2026-11-01",
+                "hardware": "RTX 4080 12GB",
+                "cells": [{"model": "llama3.2-3b", "backend": "ollama", "quant": "FP16"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    capture.write_text(
+        '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+    )
+    digest = Matrix.load(matrix).fingerprint()
+    original = matrix.read_bytes(), capture.read_bytes()
+    common = [
+        "validate",
+        "--matrix",
+        str(matrix),
+        "--measurements",
+        str(capture),
+        "--output",
+        str(audit),
+        "--json",
+    ]
+    too_short = json.loads(run_cli([*common, "--expect-fingerprint", digest[:16]], cwd, env, 1))
+    assert "full SHA-256" in too_short["error"] and not audit.exists()
+    alias = json.loads(
+        run_cli([*common, "--expect-fingerprint", digest, "--report", str(capture)], cwd, env, 1)
+    )
+    assert "audit output" in alias["error"] and not audit.exists()
+    report = json.loads(
+        run_cli([*common, "--expect-fingerprint", digest, "--report", str(markdown)], cwd, env)
+    )
+    assert json.loads(audit.read_text(encoding="utf-8")) == report
+    assert report["matrix_fingerprint"] == digest and len(report["cells"]) == 1
+    assert digest in markdown.read_text(encoding="utf-8") and original == (
+        matrix.read_bytes(),
+        capture.read_bytes(),
+    )
+
+
 def run_cli(
     arguments: list[str],
     cwd: Path,
@@ -137,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
         saved = load_plan(snapshot_path)
         assert saved.to_dict()["result"]["candidates"] == saved_candidates
         assert public_plan(PlanRequest(allow_network=False)).candidate().provenance
+        accept_validation_audit(cwd, env)
         manual = json.loads(
             run_cli(
                 [

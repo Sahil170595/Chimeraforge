@@ -675,6 +675,8 @@ chimeraforge validate --matrix matrix.json --measurements captured.json
 
 Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent). Pass that hash back with `--expect-fingerprint <hash>` and the command fails unless the matrix still hashes to it, so a matrix edited after seeing results cannot be passed off as the one that was registered -- pre-registration, not post-hoc selection. Without the flag the fingerprint is recomputed from whatever matrix was loaded and only printed, which proves nothing on its own. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
 
+The 0.108.0 candidate requires the full 64-character SHA-256 digest for `--expect-fingerprint` and includes it in the Markdown audit. The requested JSON and Markdown files must be distinct from one another and from the matrix, measurements, and planner corpus. Both documents are rendered before publication, and each file is replaced atomically.
+
 Measurements are sourced records, not bare numbers. Each cell states:
 
 - who measured it: `own-rig-measured` or `third-party-measured`, which are separate scorecard rows and never averaged together;
