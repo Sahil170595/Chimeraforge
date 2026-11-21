@@ -1,5 +1,7 @@
 # Installation Guide
 
+Install **0.102.0** with `pip install "chimeraforge==0.102.0"`.
+
 Complete installation instructions for Chimeraforge, the benchmarking-only
 breakout from Banterhearts.
 
