@@ -115,22 +115,32 @@ def _admit(
         ) from None
 
 
-def _capture(inventory_file: str | Path, source_path: Path | None) -> InventoryCaptureObservation:
+def _capture(
+    inventory_file: str | Path, source_path: Path | None, *, blocked_reason: str | None = None
+) -> tuple[InventoryCaptureObservation, Path | None]:
     from chimeraforge.deployment_verify import _absolute, _aliases
     from chimeraforge.plan_bundle import _read
 
+    path = None
     try:
         path = _absolute(inventory_file)
+        if blocked_reason is not None:
+            return InventoryCaptureObservation("not_started", reason=blocked_reason), path
         if source_path is not None:
             _aliases([source_path, path])
         raw = _read(path, inventory_process.MAX_STDOUT_BYTES)
         devices = inventory_process.parse_inventory(raw)
     except (OSError, TypeError, ValueError, csv.Error) as exc:
         logger.info("supplied inventory unavailable (%s)", type(exc).__name__)
-        return InventoryCaptureObservation("unknown", reason="supplied_inventory_invalid")
+        return (
+            InventoryCaptureObservation("not_started", reason=blocked_reason)
+            if blocked_reason is not None
+            else InventoryCaptureObservation("unknown", reason="supplied_inventory_invalid"),
+            path,
+        )
     return InventoryCaptureObservation(
         "complete", devices=devices, capture_sha256=hashlib.sha256(raw).hexdigest()
-    )
+    ), path
 
 
 async def check_inventory(
@@ -183,6 +193,7 @@ async def check_inventory(
             ),
         )
     observation: InventoryObservation | InventoryCaptureObservation
+    source_paths = [] if source_path is None else [source_path]
     if inventory_file is None:
         observation = (
             await inventory_process.observe(timeout)
@@ -190,11 +201,9 @@ async def check_inventory(
             else InventoryObservation("not_started", inventory_process.COMMAND, reason=reason)
         )
     else:
-        observation = (
-            _capture(inventory_file, source_path)
-            if reason is None
-            else InventoryCaptureObservation("not_started", reason=reason)
-        )
+        observation, capture_path = _capture(inventory_file, source_path, blocked_reason=reason)
+        if capture_path is not None:
+            source_paths.append(capture_path)
     by_id = {key: row for row in observation.devices for key in (row.ordinal, row.uuid)}
     slots = []
     for replica, group in enumerate(layout):
@@ -253,6 +262,12 @@ async def check_inventory(
             observation,
             tuple(slots),
             schema_version=3,
+            _source_paths=tuple(source_paths),
+            _population=(
+                candidate.n_agents,
+                candidate.tensor_parallel,
+                candidate.pipeline_parallel,
+            ),
             scope=(
                 "supplied_inventory_and_selected_batch_memory"
                 if memory_basis == "selected-batch"
@@ -268,8 +283,21 @@ async def check_inventory(
             observation,
             tuple(slots),
             schema_version=2,
+            _source_paths=tuple(source_paths),
+            _population=(
+                candidate.n_agents,
+                candidate.tensor_parallel,
+                candidate.pipeline_parallel,
+            ),
             scope="queried_inventory_and_selected_batch_memory",
         )
     return InventoryCheck(
-        __version__, data["fingerprint"], candidate_index, baseline, observation, tuple(slots)
+        __version__,
+        data["fingerprint"],
+        candidate_index,
+        baseline,
+        observation,
+        tuple(slots),
+        _source_paths=tuple(source_paths),
+        _population=(candidate.n_agents, candidate.tensor_parallel, candidate.pipeline_parallel),
     )

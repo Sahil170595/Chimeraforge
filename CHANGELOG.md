@@ -5,13 +5,28 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.104.0] - Unreleased
+## [0.104.0] - 2026-11-20
 
 ### Operator-declared systemd units
 
 - Add `serving export|verify --format systemd --executable` and matching SDK controls for one declared vLLM/SGLang replica with explicit original TP x PP device selection. Preserve native argv/revision controls and loopback defaults without optimizer, executable probing, image pull or service start.
 - Reuse a pure native unit renderer while retaining exact old plan-unit bytes. Verify bounded held declaration/unit bytes with categorical `/unit` drift and native 0/5/1 outcomes.
 - Extend required Ubuntu systemd parser acceptance and existing installed declaration consumers; existing launch/Compose/Kubernetes exports retain their bytes.
+
+## [0.103.0] - 2026-11-20
+
+### Inventory check JSON/JUnit outputs
+
+- Add optional `inventory-check --out/--junit` and typed `api.write_inventory_check` for one finalized whole original selector census. Preserve native 0/4/5 priority and adequate-free passes when only total memory is unknown; retain failures alongside incomplete evidence.
+- Protect actual plan/CSV roles and mutual aliases before observation and publication. Private input/census metadata stays outside dataclass serialization and survives replacement. Requested outputs are admitted before separately atomic writes; XML has a complete 64 KiB cap.
+- Extend the existing supplied-CSV installed consumer, required typing and lint scopes without adding jobs or hardware requirements.
+
+## [0.102.0] - 2026-11-20
+
+### Trace-envelope JUnit
+
+- Add optional `trace-envelope --junit PATH` and typed `api.write_trace_envelope` for ordinary and whole-fleet saved assessments. Closed ordinal cases retain every original cell/execution, lower passing points and known breaches alongside incomplete evidence; complete native JSON and native exits remain unchanged.
+- Admit both output buffers before separately atomic publication, with a 64 KiB complete XML limit and declared/consumed input alias guards. Extend the existing installed consumers and typing cohort.
 
 ## [0.101.0] - 2026-11-13
 

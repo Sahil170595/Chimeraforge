@@ -4,10 +4,9 @@
 declares concrete serving settings without running an optimizer, resolving a model,
 loading a coefficient corpus or claiming that the configuration can serve traffic.
 
-## Systemd (source candidate 0.104.0)
+## Systemd (since 0.104.0)
 
-This format requires **unreleased 0.104.0 source**. Public installation remains
-**0.101.0**; the existing launch/Compose/Kubernetes formats keep their behavior.
+This format exports a systemd user unit from a saved serving declaration.
 
 Create a declaration for **one** vLLM or SGLang replica, then supply the installed
 engine or Python interpreter's lexical absolute POSIX path and every original

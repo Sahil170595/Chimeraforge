@@ -1,9 +1,21 @@
 # Saved plans and the Python API
 
-The **unreleased 0.104.0 source candidate** adds `format="systemd"` and
+Chimeraforge 0.104.0 adds `format="systemd"` and
 `executable=` to `api.export_serving_declaration` and
-`api.verify_serving_declaration`. This [operator declaration path](serving-declaration.md#systemd-source-candidate-01040)
-uses no saved plan, optimizer or engine execution. Public installation remains **0.101.0**.
+`api.verify_serving_declaration`. This [operator declaration path](serving-declaration.md#systemd-since-01040)
+uses no saved plan, optimizer or engine execution.
+
+Chimeraforge 0.103.0 adds
+`api.write_inventory_check(result: InventoryCheck, *, out=None, junit=None) -> None`
+for one frozen original inventory census. It publishes complete JSON and/or
+[closed JUnit](inventory-check.md#outputs-since-01030) without another
+observation or memory calculation.
+
+Chimeraforge 0.102.0 adds
+`api.write_trace_envelope(result: RegressionGate, *, out=None, junit=None) -> None`
+for finalized ordinary and whole-fleet assessments. It writes complete JSON and
+[closed JUnit](trace-envelope.md#junit-since-01020) without repeating
+assessment. The writer uses the existing native assessment and exit status.
 
 Chimeraforge 0.82.0 adds [authenticated active benchmarks and traces](authenticated-active.md)
 with runtime-only `connection` settings and matching CLI secure flags.

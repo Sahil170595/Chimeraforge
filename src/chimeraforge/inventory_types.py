@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from dataclasses import InitVar, asdict, dataclass, field
+from pathlib import Path
+from typing import Any, Literal, cast
 
 MemoryBasis = Literal["batch-one", "selected-batch"]
 MemoryComparison = Literal[
@@ -134,6 +135,23 @@ class InventoryCheck:
     ] = "queried_inventory_and_saved_b1_memory"
     deployment_ready: None = None
     unassessed: tuple[str, ...] = UNASSESSED
+    _source_paths: InitVar[tuple[Path, ...]] = field(default=(), kw_only=True)
+    _population: InitVar[tuple[int, int, int] | None] = field(default=None, kw_only=True)
+
+    def __post_init__(
+        self, _source_paths: tuple[Path, ...], _population: tuple[int, int, int] | None
+    ) -> None:
+        # InitVars stay outside fields/asdict; retaining their names also preserves replace().
+        object.__setattr__(self, "_source_paths", _source_paths)
+        object.__setattr__(self, "_population", _population)
+
+    @property
+    def _protected_paths(self) -> tuple[Path, ...]:
+        return cast(tuple[Path, ...], self.__dict__["_source_paths"])
+
+    @property
+    def _declared_population(self) -> tuple[int, int, int] | None:
+        return cast(tuple[int, int, int] | None, self.__dict__["_population"])
 
     @property
     def exit_code(self) -> int:

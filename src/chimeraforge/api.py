@@ -385,6 +385,18 @@ def assess_trace_envelope(
     return assess(cases, campaigns, policy=policy)
 
 
+def write_trace_envelope(
+    result: RegressionGate,
+    *,
+    out: str | Path | None = None,
+    junit: str | Path | None = None,
+) -> None:
+    """Write closed JUnit and complete JSON for one finalized load-envelope assessment."""
+    from chimeraforge.bench.trace_envelope_output import write_trace_envelope as write
+
+    write(result, out=out, junit=junit)
+
+
 @dataclass(frozen=True)
 class PlanRequest:
     """Typed options for the shared planner; network use is explicit in callers."""
@@ -1152,6 +1164,15 @@ async def check_inventory(
         memory_basis=memory_basis,
         inventory_file=inventory_file,
     )
+
+
+def write_inventory_check(
+    result: InventoryCheck, *, out: str | Path | None = None, junit: str | Path | None = None
+) -> None:
+    """Publish requested outputs from one finalized whole-census inventory check."""
+    from chimeraforge.inventory_output import write_inventory_check as write
+
+    write(result, out=out, junit=junit)
 
 
 async def monitor_fleet(

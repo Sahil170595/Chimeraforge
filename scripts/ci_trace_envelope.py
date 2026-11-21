@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from xml.etree import ElementTree as ET
 
 PRIVATE_INPUT = "private-envelope-input-sentinel"
 PRIVATE_DIAGNOSTIC = "private-envelope-diagnostic-sentinel"
@@ -206,8 +207,28 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
     def receive(label: str, supplied: dict[str, Path], code: int) -> dict:
         supplied_bytes = {name: path.read_bytes() for name, path in supplied.items()}
         output = cwd / f"envelope-{label}-assessment.json"
-        report = json.loads(run_cli([*arguments(supplied), "--out", str(output)], cwd, env, code))
+        junit = cwd / f"envelope-{label}-assessment.xml"
+        report = json.loads(
+            run_cli(
+                [*arguments(supplied), "--out", str(output), "--junit", str(junit)], cwd, env, code
+            )
+        )
         assert report == json.loads(output.read_bytes())
+        suite = ET.fromstring(junit.read_bytes())
+        assert int(suite.attrib["tests"]) == 1 + len(cases["cells"]) * (
+            1 + cases["expected_replicates"]
+        )
+        assert int(suite.attrib["errors"]) == (2 + cases["expected_replicates"] if code == 3 else 0)
+        assert int(suite.attrib["failures"]) == (3 if code == 1 else 0)
+        nodes = {case.attrib["name"]: case for case in suite}
+        assert nodes["cell-0"].find("error") is None
+        if code == 1:
+            assert nodes["cell-1.execution-0"].find("error") is None
+            assert nodes["cell-1.execution-0"].find("failure") is None
+        assert all(
+            value.encode() not in junit.read_bytes()
+            for value in (PRIVATE_INPUT, PRIVATE_DIAGNOSTIC, "lower", "higher", str(cwd))
+        )
         counts = _validate(
             report,
             cases,
@@ -218,7 +239,10 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
         )
         assert all(path.read_bytes() == supplied_bytes[name] for name, path in supplied.items())
         assert report["exit_code"] == code
-        return {"assessment": report, "counts": counts}
+        return {
+            "assessment": report,
+            "counts": {**counts, "junit_cases": int(suite.attrib["tests"])},
+        }
 
     supplied = {name: paths[name] for name in campaigns}
     full = receive("full", supplied, 0)
@@ -267,9 +291,14 @@ def accept(cwd: Path, env: dict, checkout: Path) -> dict:
     refuse(arguments({"lower": paths["lower"], "higher": invalid_path}))
     for path in original:
         refuse([*arguments(supplied), "--out", str(path)])
+        refuse([*arguments(supplied), "--junit", str(path)])
     alias = cwd / "envelope-outside-input-alias.json"
     os.link(paths["lower"], alias)
     refuse([*arguments(supplied), "--out", str(alias)])
+    refuse([*arguments(supplied), "--junit", str(alias)])
+    same_output = cwd / "envelope-same-output.json"
+    refuse([*arguments(supplied), "--out", str(same_output), "--junit", str(same_output)])
+    assert not same_output.exists()
     assert all(path.read_bytes() == raw for path, raw in original.items())
 
     def summary(result: dict) -> dict:
