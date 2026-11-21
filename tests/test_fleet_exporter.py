@@ -16,14 +16,22 @@ from chimeraforge.cli import app
 from chimeraforge.fleet_monitor_types import FleetEndpoint
 from test_fleet_monitor import fleet_server, native_fleet as native_fleet, request
 
+NATIVE_OBSERVATION_SECONDS = 5
+NATIVE_TIMEOUT_SECONDS = 2
+
 
 @pytest.mark.asyncio
 async def test_existing_finite_native_observer_retains_original_population(native_fleet):
     saved, indices = native_fleet
     with fleet_server() as (urls, calls):
-        value = replace(request(urls), interval=0.02, observation_seconds=2)
+        value = replace(
+            request(urls),
+            interval=0.02,
+            timeout=NATIVE_TIMEOUT_SECONDS,
+            observation_seconds=NATIVE_OBSERVATION_SECONDS,
+        )
         result = await api.monitor_fleet(saved, value, candidate_index=indices["vllm"])
-    assert result.exit_code == 0 and len(result.slots) == 3
+    assert result.exit_code == 0 and len(result.slots) == 3, result.to_dict()
     assert result.cleanup["state"] == "completed" and calls
 
 
@@ -36,15 +44,15 @@ async def test_native_exporter_cached_scrapes_and_joined_shutdown(native_fleet):
             request(urls),
             endpoints=tuple(FleetEndpoint(f"private-id-{i}", url) for i, url in enumerate(urls)),
             interval=0.02,
-            observation_seconds=2,
+            timeout=NATIVE_TIMEOUT_SECONDS,
+            observation_seconds=NATIVE_OBSERVATION_SECONDS,
         )
         async with api.serve_fleet_exporter(
             saved, value, config=config, candidate_index=indices["vllm"]
         ) as running:
-            for _ in range(200):
-                if running.snapshot().state == "fresh":
-                    break
-                await asyncio.sleep(0.01)
+            async with asyncio.timeout(NATIVE_OBSERVATION_SECONDS + NATIVE_TIMEOUT_SECONDS):
+                while running.snapshot().state != "fresh":
+                    await asyncio.sleep(0.01)
             snapshot = running.snapshot()
             assert snapshot.state == "fresh" and snapshot.native_exit_code == 0
             before = len(calls)

@@ -11,7 +11,10 @@ import sys
 import pytest
 
 from chimeraforge import api
+from test_fleet_exporter import NATIVE_OBSERVATION_SECONDS, NATIVE_TIMEOUT_SECONDS
 from test_fleet_monitor import fleet_server, native_fleet as native_fleet, request
+
+RUN_SECONDS = NATIVE_OBSERVATION_SECONDS + NATIVE_TIMEOUT_SECONDS
 
 
 def config():
@@ -27,16 +30,20 @@ async def test_real_three_replica_sdk_boundary_pass_is_finalized_after_all_joins
     with fleet_server(backend=backend) as (urls, calls):
         result = await api.run_fleet_exporter(
             saved,
-            request(urls),
+            replace(
+                request(urls),
+                timeout=NATIVE_TIMEOUT_SECONDS,
+                observation_seconds=NATIVE_OBSERVATION_SECONDS,
+            ),
             candidate_index=indices[backend],
             config=config(),
-            policy=api.FleetExporterRunPolicy(1.0, require_final_observation=True),
+            policy=api.FleetExporterRunPolicy(RUN_SECONDS, require_final_observation=True),
         )
         after = len(calls)
         await asyncio.sleep(0.03)
         assert len(calls) == after and calls
     data = result.to_dict()
-    assert data["exit_code"] == 0 and data["qualification_met"] is True
+    assert data["exit_code"] == 0 and data["qualification_met"] is True, data
     assert data["qualification_requested"] and data["process_exit_is_qualification"]
     assert data["boundary"] == "deadline" and data["snapshot_state"] == "fresh"
     assert data["observed_native_exit_code"] == 0 and data["population_bound"]
@@ -104,15 +111,15 @@ def test_actual_os_cli_selected_path_keeps_ready_closed_then_safe_qualification(
             "--interval",
             "0.01",
             "--timeout",
-            "1",
+            str(NATIVE_TIMEOUT_SECONDS),
             "--observation-seconds",
-            "3",
+            str(NATIVE_OBSERVATION_SECONDS),
             "--cleanup-seconds",
             "1",
             "--poll-seconds",
             "10",
             "--run-seconds",
-            "1",
+            str(RUN_SECONDS),
             "--require-final-observation",
             "--ttft-slo",
             "500",
@@ -120,7 +127,7 @@ def test_actual_os_cli_selected_path_keeps_ready_closed_then_safe_qualification(
         for index, url in enumerate(urls):
             args += ["--endpoint", f"private-id-{index}={url}"]
         child = subprocess.run(args, cwd=tmp_path, capture_output=True, timeout=30)
-    assert child.returncode == 0, child.stderr
+    assert child.returncode == 0, (child.stdout, child.stderr)
     rows = [json.loads(row) for row in child.stdout.splitlines()]
     assert len(rows) == 3 and rows[0]["process_exit_is_qualification"] is True
     assert rows[1] == {
