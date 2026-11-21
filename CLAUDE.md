@@ -57,7 +57,13 @@ artifact and is handled like one.
 
 ChimeraForge is an LLM inference benchmarking and deployment planning platform, broken out from the Banterhearts program. It provides quantified, reproducible answers to LLM deployment decisions, backed by ~204,000 real measurements on consumer GPUs. Ships both research artifacts (32 technical reports, TR108-TR137 + TR142/TR146) and production CLI tools (`chimeraforge plan` and `chimeraforge bench`).
 
-**Version:** 0.105.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+**Version:** 0.106.0 | **License:** MIT | **Python:** >=3.11 | **Rust:** >=1.70
+
+Finite exporter requirement (since 0.106.0): typed
+`FleetExporterRunPolicy` / `api.run_fleet_exporter` and optional CLI
+`--require-final-observation` capture once at the timeout and qualify only after
+clean joins. Default readiness/process semantics remain unchanged. See
+[contract](docs/fleet-exporter.md#finite-final-observation-since-01060).
 
 Study requirement (since 0.105.0): `study --require-all-feasible`
 and typed `StudyFeasibilityPolicy` retain the base and every original native row,

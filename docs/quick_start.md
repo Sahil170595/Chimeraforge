@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Chimeraforge 0.105.0 adds the all-feasible requirement for saved plan studies. See [`study --require-all-feasible`](planning-api.md#all-feasible-requirement-since-01050).
+Chimeraforge 0.106.0 adds final observation qualification for finite fleet exporter runs. See [`monitor-fleet-exporter --require-final-observation`](fleet-exporter.md#finite-final-observation-since-01060).
 
 Chimeraforge **0.92.0** adds [continuous fleet export](fleet-exporter.md),
 [whole-campaign diagnostics](campaign-diagnostics.md), [native chat replay](chat-trace-replay.md)

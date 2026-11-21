@@ -1,5 +1,9 @@
 # Saved plans and the Python API
 
+Chimeraforge 0.106.0 adds typed `FleetExporterRunPolicy`,
+`FleetExporterRunResult` and
+[`api.run_fleet_exporter`](fleet-exporter.md#finite-final-observation-since-01060).
+
 Chimeraforge 0.105.0 adds typed `StudyFeasibilityPolicy`
 and [`study --require-all-feasible`](#all-feasible-requirement-since-01050).
 

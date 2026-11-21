@@ -433,9 +433,12 @@ async def monitor_fleet(
         if direct_cancel:
             raise asyncio.CancelledError
         if setup_failed:
-            raise FleetMonitorError(
+            error = FleetMonitorError(
                 "fleet observation resources could not be initialized or coordinated"
-            ) from None
+            )
+            if cleanup["state"] != "completed":
+                error._cleanup_failed = True
+            raise error from None
         for row in resources:
             row.slot.binding = assemble_binding(
                 data,

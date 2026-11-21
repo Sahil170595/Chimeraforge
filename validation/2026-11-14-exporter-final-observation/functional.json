@@ -1,0 +1,275 @@
+{
+  "generated_at": "2026-11-15T01:08:22.868847+00:00",
+  "source_candidate": "0.106.0",
+  "public_release": "0.101.0",
+  "base_commit": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+  "scope": "Selected local editable-source qualification; full hosted/installed artifact proof remains separate",
+  "initial_red": {
+    "failed": 4,
+    "reason": "SDK policy/run/result and CLI requirement flag absent"
+  },
+  "intermediate_adverse": {
+    "passed": 45,
+    "failed": 1,
+    "cause": "Test assumed1ms implied breach for native0-100ms bucket; nativeunknown4 was correct",
+    "correction": "Used existing real0.7s/400ms native breach fixture; no native arithmetic change"
+  },
+  "typing_adverse": {
+    "diagnostics": 8,
+    "cause": "Optional report needed explicit None admission for skipped-import typing",
+    "correction": "Explicit None refusal, no cast/ignore/relaxed warning",
+    "final_result": "Success: no issues found in5 source files"
+  },
+  "final_selected": {
+    "passed": 701,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "warnings": 6,
+    "new_run_controls": 61,
+    "test_file_counts": {
+      "tests.test_fleet_exporter": 4,
+      "tests.test_fleet_exporter_http": 12,
+      "tests.test_fleet_exporter_state": 16,
+      "tests.test_fleet_exporter_tls": 9,
+      "tests.test_fleet_exporter_run": 5,
+      "tests.test_fleet_exporter_run_state": 46,
+      "tests.test_fleet_exporter_run_cache": 10,
+      "tests.test_ci_fleet_exporter": 2,
+      "tests.test_fleet_monitor": 38,
+      "tests.test_fleet_monitor_receipt": 54,
+      "tests.test_repo_conventions": 422,
+      "tests.test_repo_conventions.TestReadmeTracksTheCode": 6,
+      "tests.test_repo_conventions.TestGlamaJson": 5,
+      "tests.test_repo_conventions.TestServerJsonStaysInSync": 7,
+      "tests.test_ci_acceptance": 65
+    },
+    "paths": [
+      "tests/test_fleet_exporter.py",
+      "tests/test_fleet_exporter_http.py",
+      "tests/test_fleet_exporter_state.py",
+      "tests/test_fleet_exporter_tls.py",
+      "tests/test_fleet_exporter_run.py",
+      "tests/test_fleet_exporter_run_state.py",
+      "tests/test_fleet_exporter_run_cache.py",
+      "tests/test_ci_fleet_exporter.py",
+      "tests/test_fleet_monitor.py",
+      "tests/test_fleet_monitor_receipt.py",
+      "tests/test_repo_conventions.py",
+      "tests/test_ci_acceptance.py"
+    ],
+    "overlap": "Earlier4/45/56/61/2 selections are not added"
+  },
+  "critical_controls": [
+    "Real3-replica vLLM+SGLang SDK and OSCLI deadlinePASS0 after cleanup",
+    "Deadline before first publication4; SDKFalseclean0 with qualification_metNone",
+    "Fresh readiness200 plus native5/4 does not becomePASS; genuineSLO3 retained",
+    "Native0 empty/partial/extra/reordered/foreign plan/index/identity/tool/model/IDs/URLs/controls/type refused4",
+    "Latest nativeerror/missing/mismatch/unavailable replaces previousPASS",
+    "TTL equality/regressed/nonfinite clocks cannot pass; original defaultclamping retained",
+    "Capture+fact/nativecode/sequence tied atomically to one immutableEntry under publicationrace",
+    "Genuine lateworker/listener failure after capturedPASS overrides joinedflags; failedworker examined independently of_failed",
+    "Cancellation duringwait/close propagates only aftershielded cleanup and noafterclosecontacts",
+    "Typed earlystop4 despite previousPASS; exactpolicy/duration/bool/stop admission beforework",
+    "Held plan file readonce and not reloaded at boundary",
+    "Qualification fields exclude URLs/model/IDs/exceptions/rawbody"
+  ],
+  "default_cache_parity": {
+    "source_candidate": "0.106.0",
+    "runtime_version": "0.106.0",
+    "baseline_commit": "a688af5a604aea0e77d5600b94cb0a1bf8043c0e",
+    "baseline_cache_source_sha256": "c15431d56e5b433a70acedc7bd0601b57b9ba344382eb54fc2cde2d82578c2fd",
+    "scope": "Same controlled native report/time inputs through released vs current public cache; no runtime/performance claim",
+    "all_equal": true,
+    "controls": [
+      {
+        "control": "initial",
+        "state": "initial",
+        "body_sha256": "4391adffef56a36abe0318f229217541f9546ca506362683268c7633ddcbecfd",
+        "public_fields": 7
+      },
+      {
+        "control": "fresh",
+        "state": "fresh",
+        "body_sha256": "75444b5d0f69ca1601c905a2c45a202578b7d1febd2272fbbc9160b1517ef2f0",
+        "public_fields": 7
+      },
+      {
+        "control": "TTL-equality-stale",
+        "state": "stale",
+        "body_sha256": "74a76e2f0d70bc69994c8a48ceffd83f9bc78da6419108c071c110c609357616",
+        "public_fields": 7
+      },
+      {
+        "control": "regressed-clock-existing-clamp",
+        "state": "fresh",
+        "body_sha256": "75444b5d0f69ca1601c905a2c45a202578b7d1febd2272fbbc9160b1517ef2f0",
+        "public_fields": 7
+      },
+      {
+        "control": "NaN-existing-clamp",
+        "state": "fresh",
+        "body_sha256": "75444b5d0f69ca1601c905a2c45a202578b7d1febd2272fbbc9160b1517ef2f0",
+        "public_fields": 7
+      },
+      {
+        "control": "unavailable",
+        "state": "unavailable",
+        "body_sha256": "11c7f0c0f96010b21f3c36f8350262d18683fa3af9d77aa293eb9b40591ad23b",
+        "public_fields": 7
+      },
+      {
+        "control": "stopped",
+        "state": "stopped",
+        "body_sha256": "425bb8f56d83e2f366fe6b13ee436390df3d029826e8c73aa1867394aed35c65",
+        "public_fields": 7
+      }
+    ],
+    "native_original_replicas": 3,
+    "default_public_fields_unchanged": true
+  },
+  "existing_consumer": {
+    "profiles": 2,
+    "saved_tpot_controls": [
+      null,
+      1000
+    ],
+    "SDK_direct_and_mTLS_finite_pass": true,
+    "actual_OS_CLI_default_and_selected": [
+      {
+        "default_rows": 2,
+        "default_process_exit_is_qualification": false,
+        "selected_rows": 3,
+        "selected_exit": 0,
+        "selected_population": 3,
+        "selected_after_closed": true,
+        "raw_default_stdout_sha256": "4419d66513523e5a5076d73cb7ac8f261ca272fcc269f6bda06b020809c3a9e4",
+        "raw_selected_stdout_sha256": "a6551a749a37b02608e4600711d307b8380fbcd5f54d063b9377a8fa3646ec0d"
+      },
+      {
+        "default_rows": 2,
+        "default_process_exit_is_qualification": false,
+        "selected_rows": 3,
+        "selected_exit": 0,
+        "selected_population": 3,
+        "selected_after_closed": true,
+        "raw_default_stdout_sha256": "45ae55a1de8b6fd43e0cf1e6d21d886471f233ee4988bf84afbab3be764ceaec",
+        "raw_selected_stdout_sha256": "076b7727acd4283725bcfe5a8edad79f2447ffc18efedb4f821556369e4b0a69"
+      }
+    ],
+    "source_only": "Native helper executed from editable source; clean wheel/sdist imports remain hosted gate",
+    "no_new_jobs_or_uploads": true
+  },
+  "local_lint_format": {
+    "result": "passed",
+    "files": 289,
+    "scope": "Exact required workflow paths including existing fleet_exporter test glob"
+  },
+  "local_typing": {
+    "result": "passed",
+    "files": 5,
+    "follow_imports": "skip",
+    "canonical_hosted_silent_imports": "pending"
+  },
+  "lock_check": "uv0.13.7 --check --offline --no-cache passed; rootprojectversion only changed",
+  "universal_lock_advisory_lookup": {
+    "pairs": 130,
+    "layer_counts": [
+      127,
+      3
+    ],
+    "exit_codes": [
+      0,
+      0
+    ],
+    "scope": "Native lock-only lookup, not ambient installed audit"
+  },
+  "links": {
+    "checked": 6,
+    "result": "resolved",
+    "links": [
+      {
+        "source": "CLAUDE.md",
+        "target": "docs/fleet-exporter.md#finite-final-observation-source-candidate-01060"
+      },
+      {
+        "source": "README.md",
+        "target": "docs/fleet-exporter.md#finite-final-observation-source-candidate-01060"
+      },
+      {
+        "source": "README.md",
+        "target": "docs/fleet-exporter.md#finite-final-observation-source-candidate-01060"
+      },
+      {
+        "source": "docs/fleet-exporter.md",
+        "target": "#finite-final-observation-source-candidate-01060"
+      },
+      {
+        "source": "docs/planning-api.md",
+        "target": "fleet-exporter.md#finite-final-observation-source-candidate-01060"
+      },
+      {
+        "source": "docs/quick_start.md",
+        "target": "fleet-exporter.md#finite-final-observation-source-candidate-01060"
+      }
+    ]
+  },
+  "CLI_help": "Current finite requirement and explicit opt-in help checked",
+  "known_environment_limitations": "Known broad Python3.13 NumPy-stub/target-version and unrelated ambient installed audit scopes were not repeated or silenced; no dependency changes",
+  "unchanged": [
+    "Native monitoring/assessment/replay math and source receiving",
+    "Public FleetExporterSnapshot fields, cache/body/readinessbytes/defaultclamping",
+    "Default continuous/finite CLI ready/closed protocol",
+    "Archives and historical validation"
+  ],
+  "limits": "CPU controlled passive protocols, not inference engines, physical independence, weights, provider behavior, performance/deployment or production proof",
+  "source": {
+    "src/chimeraforge/fleet_exporter_types.py": {
+      "raw_sha256": "821c91c413fab4fa17db60d08c3ade04fd823ddf373bef069ce6418a6d2f136a",
+      "git_blob": "003ab9558dd1f07ebb78c5dc9ff17d675736e56e"
+    },
+    "src/chimeraforge/fleet_exporter_cache.py": {
+      "raw_sha256": "42d74c685880ab3fac07217a62820e4c7261c1e3a971cf544edafd44dc0cc3ab",
+      "git_blob": "907941c8882a7bd50ffb6d2db5120e6b5d9ac438"
+    },
+    "src/chimeraforge/fleet_exporter.py": {
+      "raw_sha256": "c204c3b9c9610b4784e238005bcd12b79fe6768f7f0870e92c7c94de2b116096",
+      "git_blob": "2dbc473f7d1d92f954c3ae7ce20622cc85a9012b"
+    },
+    "src/chimeraforge/api.py": {
+      "raw_sha256": "0dadd7e6391b02b6b91574ea0b83305323889da223846c6ef95022def5cc2f24",
+      "git_blob": "0114221358b0f61faca34f8cc5df204f40f237ec"
+    },
+    "src/chimeraforge/commands/monitor_fleet_exporter.py": {
+      "raw_sha256": "7240dd41ea1f8d3677ec933b8cdcc07b0c46588cc19b038c594700572083e112",
+      "git_blob": "5eb0540c26708ddd2c13652236067fbac1078acb"
+    },
+    "scripts/ci_fleet_exporter.py": {
+      "raw_sha256": "45ff60c6a623a1d37bf684d4e5317273148f1c6deeb47d4343b5b83983858291",
+      "git_blob": "4091bcc5ff9256d2c20be876cff2cc527862248c"
+    },
+    "tests/test_fleet_exporter_run.py": {
+      "raw_sha256": "c0106b4eade1c1e743c07a0f575f4fc1c78a0c202b9c40060f58407c143a213f",
+      "git_blob": "42e9bb2448b80008f0efc5dd01ec6d20bda4ce1a"
+    },
+    "tests/test_fleet_exporter_run_state.py": {
+      "raw_sha256": "59559b123f43fa2fce4d7e36d8374e1d18b52fbf06b029111c49273118e6d871",
+      "git_blob": "8de89380913ab59c844fd242f2bf307cddd36648"
+    },
+    "tests/test_fleet_exporter_run_cache.py": {
+      "raw_sha256": "3220353121a52cced6c3bf3ca29340d61f7b8f8dcf0401a3b4b155d922968b90",
+      "git_blob": "eead1adc8c0cdae124782f3ac2d9cca6af4c60fd"
+    },
+    "tests/test_ci_fleet_exporter.py": {
+      "raw_sha256": "e8b8878a1d7b83bfbb1246f5973a600ec601f75e87d02791c4e165a3e9a3cdf7",
+      "git_blob": "da99093f29631c7af8a9acfc24a0b1b23989f1fb"
+    }
+  },
+  "pending": [
+    "Independent review",
+    "Full hosted pytest and CodeQL",
+    "Canonical required typing",
+    "Clean installed audit",
+    "Installed wheel/sdist consumers"
+  ]
+}

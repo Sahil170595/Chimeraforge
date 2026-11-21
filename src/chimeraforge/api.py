@@ -66,6 +66,8 @@ from chimeraforge.fleet_exporter_types import (
     FleetExporterConfig as FleetExporterConfig,
     FleetExporterSnapshot as FleetExporterSnapshot,
     FleetExporterError as FleetExporterError,
+    FleetExporterRunPolicy as FleetExporterRunPolicy,
+    FleetExporterRunResult as FleetExporterRunResult,
 )
 from chimeraforge.fleet_exporter import FleetExporter as FleetExporter
 from chimeraforge.fleet_monitor_gate_types import (
@@ -1212,6 +1214,31 @@ def serve_fleet_exporter(
     return serve(
         saved, request, config=config, candidate_index=candidate_index, connections=connections
     )
+
+
+async def run_fleet_exporter(
+    saved: PlanArtifact | str | Path,
+    request: FleetMonitorRequest,
+    *,
+    policy: FleetExporterRunPolicy,
+    config: FleetExporterConfig = FleetExporterConfig(),
+    candidate_index: int = 0,
+    connections: Mapping[str, MonitorConnection] | None = None,
+    stop_event: asyncio.Event | None = None,
+) -> FleetExporterRunResult:
+    """Run once to a finite boundary and qualify only after owned resources close."""
+    from chimeraforge.fleet_exporter_types import _admit_run_policy
+
+    seconds, required = _admit_run_policy(policy)
+    if stop_event is not None and type(stop_event) is not asyncio.Event:
+        raise FleetExporterError("invalid exporter stop event")
+    from chimeraforge.fleet_exporter import _await_run_boundary, _finish_run
+
+    async with serve_fleet_exporter(
+        saved, request, config=config, candidate_index=candidate_index, connections=connections
+    ) as running:
+        boundary = await _await_run_boundary(running, seconds, stop_event or asyncio.Event())
+    return _finish_run(running, boundary, required)
 
 
 def load_fleet_monitor(

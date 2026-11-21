@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import math
 from pathlib import Path
 import signal
 
@@ -27,6 +26,11 @@ def monitor_fleet_exporter(
     run_seconds: float | None = typer.Option(
         None, "--run-seconds", help="Optional bounded run; default is continuous."
     ),
+    require_final_observation: bool = typer.Option(
+        False,
+        "--require-final-observation",
+        help="Require a fresh complete bound native final observation after clean shutdown.",
+    ),
     interval: float = typer.Option(30.0, "--interval", help="Native two-scrape sampling interval."),
     timeout: float = typer.Option(10.0, "--timeout"),
     observation_seconds: float = typer.Option(60.0, "--observation-seconds"),
@@ -42,7 +46,7 @@ def monitor_fleet_exporter(
     client_cert: list[str] | None = typer.Option(None, "--client-cert"),
     client_key: list[str] | None = typer.Option(None, "--client-key"),
 ) -> None:
-    """Serve cached ordinal-labelled gauges; clean exit0 is not fleet qualification."""
+    """Serve cached gauges; finite final-observation qualification is explicitly opt-in."""
     from chimeraforge import api
     from chimeraforge.fleet_monitor_types import (
         FleetEndpoint,
@@ -57,10 +61,11 @@ def monitor_fleet_exporter(
         request: FleetMonitorRequest,
         config: api.FleetExporterConfig,
         connections: dict[str, MonitorConnection] | None,
-    ) -> None:
+    ) -> int:
         stop = asyncio.Event()
         signals = [signal.SIGINT, signal.SIGTERM]
         previous = {value: signal.getsignal(value) for value in signals}
+        boundary = None
         for value in signals:
             signal.signal(value, lambda *_: stop.set())
         try:
@@ -78,11 +83,16 @@ def monitor_fleet_exporter(
                             "metrics_url": running.metrics_url,
                             "replicas": len(request.endpoints),
                             "label_policy": "ordinal/configured-model",
-                            "process_exit_is_qualification": False,
+                            "process_exit_is_qualification": require_final_observation,
                         }
                     )
                 )
-                if run_seconds is None:
+                if require_final_observation:
+                    from chimeraforge.fleet_exporter import _await_run_boundary
+
+                    assert run_seconds is not None
+                    boundary = await _await_run_boundary(running, run_seconds, stop)
+                elif run_seconds is None:
                     await stop.wait()
                 else:
                     try:
@@ -98,11 +108,25 @@ def monitor_fleet_exporter(
                     }
                 )
             )
+            if require_final_observation:
+                from chimeraforge.fleet_exporter import _finish_run
+
+                assert boundary is not None
+                result = _finish_run(running, boundary, True)
+                typer.echo(json.dumps(result.to_dict(), allow_nan=False))
+                return result.exit_code
+            return 0
         finally:
             for value, handler in previous.items():
                 signal.signal(value, handler)
 
     try:
+        if require_final_observation and run_seconds is None:
+            raise ValueError
+        if run_seconds is not None:
+            from chimeraforge.fleet_exporter_types import _admit_run_policy
+
+            _admit_run_policy(api.FleetExporterRunPolicy(run_seconds, require_final_observation))
         if not 1 <= len(endpoint) <= MAX_ENDPOINTS:
             raise ValueError
         values = []
@@ -115,10 +139,6 @@ def monitor_fleet_exporter(
                 raise ValueError
             name, url = item.split("=", 1)
             values.append(FleetEndpoint(name, url))
-        if run_seconds is not None and (
-            not math.isfinite(run_seconds) or not 0 < run_seconds <= 86400
-        ):
-            raise ValueError
         config = api.FleetExporterConfig(
             host=listen_host,
             port=listen_port,
@@ -163,7 +183,9 @@ def monitor_fleet_exporter(
             connections = {
                 v.id: MonitorConnection.from_env(v.url, **settings[v.id]) for v in values
             }
-        asyncio.run(operation(request, config, connections))
+        exit_code = asyncio.run(operation(request, config, connections))
     except (ValueError, OSError, RuntimeError):
         typer.echo("Error: invalid, unsupported or unavailable fleet exporter", err=True)
         raise typer.Exit(1) from None
+    if exit_code:
+        raise typer.Exit(exit_code)

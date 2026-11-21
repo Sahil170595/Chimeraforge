@@ -5,6 +5,16 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.106.0] - 2026-11-20
+
+### Finite exporter final-observation requirement
+
+- Add typed `FleetExporterRunPolicy` / `FleetExporterRunResult`, async `api.run_fleet_exporter` and optional CLI `--require-final-observation`. Capture the timeout boundary once, then qualify native freshness and every original bound slot after clean owned shutdown.
+- Bind private population facts to the same immutable cache entry using held source/candidate intent; preserve raw clock uncertainty and native 3/4/5 priorities. A genuine late worker/listener failure overrides a captured PASS; joined flags alone do not prove success.
+- Retain native cleanup failures across stop-discarded or later successful polls, including setup failures that raise after cleanup and the cancelled startup template. Completed-cleanup poll failures keep their existing unknown/recovery behavior.
+- Preserve default public cache/readiness bytes and continuous/finite CLI records. Ungated SDK clean-close zero has `qualification_met=None`; selected CLI appends a safe count/state qualification receipt. No model, GPU, physical independence or deployment proof is claimed.
+- Extend existing native/OS CLI/mTLS installed consumers and adverse clock/population/cancellation controls without new jobs, uploads or dependencies.
+
 ## [0.105.0] - 2026-11-20
 
 ### Optional study feasibility requirement
