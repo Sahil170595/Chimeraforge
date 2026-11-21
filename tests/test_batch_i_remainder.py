@@ -332,6 +332,51 @@ class TestPreRegistrationIsARealGate:
         assert document["matrix_fingerprint"] == digest
         assert len(document["cells"]) == 1 and digest in markdown.read_text(encoding="utf-8")
 
+    def test_output_cannot_replace_a_directory_link_used_by_the_matrix(self, tmp_path):
+        matrix_root = tmp_path / "source"
+        matrix_root.mkdir()
+        matrix = self._matrix(matrix_root)
+        alias = tmp_path / "source-link"
+        try:
+            alias.symlink_to(matrix_root, target_is_directory=True)
+        except OSError:
+            pytest.skip("test filesystem does not support directory symlinks")
+        capture = tmp_path / "capture.json"
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        original = matrix.read_bytes()
+        result = self._run(
+            "--matrix",
+            str(alias / matrix.name),
+            "--measurements",
+            str(capture),
+            "--report",
+            str(alias),
+            "--json",
+        )
+        assert result.exit_code == 1
+        assert alias.is_symlink() and (alias / matrix.name).read_bytes() == original
+
+    def test_output_can_update_a_standalone_file_through_its_link(self, tmp_path):
+        matrix = self._matrix(tmp_path)
+        capture, original, alias = (
+            tmp_path / name for name in ("capture.json", "prior.json", "audit.json")
+        )
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        original.write_bytes(b"previous audit")
+        try:
+            alias.symlink_to(original)
+        except OSError:
+            pytest.skip("test filesystem does not support file symlinks")
+        result = self._run(
+            "--matrix", str(matrix), "--measurements", str(capture), "--output", str(alias)
+        )
+        assert result.exit_code == 0, result.output
+        assert alias.is_symlink() and json.loads(original.read_bytes())["matrix_fingerprint"]
+
     def test_an_edited_matrix_fails(self, tmp_path):
         """Without this the fingerprint was recomputed from whatever matrix was
         loaded and merely printed, so editing a cell after seeing results yielded a

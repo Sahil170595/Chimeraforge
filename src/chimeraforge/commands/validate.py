@@ -184,11 +184,11 @@ def validate(
                 audit_json = json_mod.dumps(audit.to_dict(), indent=2, allow_nan=False)
             buffers = []
             if json_path is not None and audit_json is not None:
-                buffers.append((json_path, audit_json.encode("utf-8")))
+                buffers.append(audit_json.encode("utf-8"))
             if markdown_path is not None:
-                buffers.append((markdown_path, format_markdown(audit).encode("utf-8")))
-            _admit_output_paths(destinations, protected)
-            for path, raw in buffers:
+                buffers.append(format_markdown(audit).encode("utf-8"))
+            admitted = _admit_output_paths(destinations, protected)
+            for path, raw in zip(admitted, buffers, strict=True):
                 _write(path, raw)
         except (ValueError, OSError, RuntimeError):
             _fail("could not render or publish the requested audit output")
@@ -205,13 +205,15 @@ def validate(
     _print_table(audit)
 
 
-def _admit_output_paths(destinations: list[Path], protected: list[str]) -> None:
+def _admit_output_paths(destinations: list[Path], protected: list[str]) -> list[Path]:
     from chimeraforge.commands._trace_output import preflight_trace_output
     from chimeraforge.plan_study import protect_output
 
-    for index, path in enumerate(destinations):
-        protect_output(path, (*protected, *destinations[:index], *destinations[index + 1 :]))
+    resolved = [path.resolve() for path in destinations]
+    for index, path in enumerate(resolved):
+        protect_output(path, (*protected, *resolved[:index], *resolved[index + 1 :]))
         preflight_trace_output(path)
+    return resolved
 
 
 def _measure_cell(cell, ollama_url: str, runs: int, err):
