@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Transactional catalog refresh
 
 - Publish nonempty refreshes atomically. Keep the previous catalog on total resolution or publication failure so offline ranking can continue.
+- Validate Ollama discovery responses before resolving or publishing the requested catalog.
 - Report complete, partial, or failed refreshes as one JSON document. Failed refreshes return exit `1`.
 
 ## [0.106.0] - 2026-11-20

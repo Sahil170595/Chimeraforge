@@ -171,6 +171,60 @@ class TestCatalog:
 class TestCommandsOffline:
     """CLI surface checks that need no network."""
 
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            [],
+            {"models": None},
+            {"error": "fixture failure"},
+            {"models": [0]},
+            {"models": [{"name": 7}]},
+        ],
+    )
+    def test_unusable_ollama_tags_cannot_replace_the_catalog(self, tmp_path, monkeypatch, payload):
+        import httpx
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
+        discovery._write_catalog({"prior/model": _offreg("prior/model", 1.5)})
+        index = discovery._catalog_path()
+        before = index.read_bytes()
+        monkeypatch.setattr(discovery, "load_seed_catalog", lambda: ["seed/model"])
+        monkeypatch.setattr(discovery, "_httpx", lambda: httpx)
+
+        def tags(url, **kwargs):
+            assert url.endswith("/api/tags")
+            return httpx.Response(200, json=payload, request=httpx.Request("GET", url))
+
+        monkeypatch.setattr(httpx, "get", tags)
+
+        def resolve(*args, **kwargs):
+            pytest.fail("catalog resolved seed after requested discovery failed")
+
+        monkeypatch.setattr(discovery, "resolve_many", resolve)
+        result = CliRunner().invoke(app, ["catalog", "--build", "--with-ollama", "--json"])
+        assert result.exit_code == 1
+        assert json.loads(result.stdout)["status"] == "failed"
+        assert index.read_bytes() == before
+
+    def test_empty_ollama_inventory_is_valid(self, monkeypatch):
+        import httpx
+
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setattr(discovery, "_httpx", lambda: httpx)
+        monkeypatch.setattr(
+            httpx,
+            "get",
+            lambda url, **kwargs: httpx.Response(
+                200, json={"models": []}, request=httpx.Request("GET", url)
+            ),
+        )
+        assert discovery.fetch_ollama_tags() == []
+
     @pytest.mark.parametrize("outcome", ["complete", "partial", "outage", "write_failure"])
     def test_catalog_refresh_reports_publication_and_has_one_json_document(
         self, tmp_path, monkeypatch, outcome

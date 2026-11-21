@@ -48,11 +48,21 @@ def fetch_ollama_tags(base_url: str = DEFAULT_OLLAMA_URL) -> list[str]:
     try:
         resp = httpx.get(base_url.rstrip("/") + "/api/tags", timeout=_NETWORK_TIMEOUT_S)
         resp.raise_for_status()
-        return [m["name"] for m in resp.json().get("models", []) if m.get("name")]
+        payload = resp.json()
     except httpx.HTTPError as exc:
         raise ResolverError(f"could not list Ollama models at {base_url}: {exc}") from exc
     except ValueError as exc:  # non-JSON 200 body
         raise ResolverError(f"Ollama returned a non-JSON tag list at {base_url}: {exc}") from exc
+    rows = payload.get("models") if isinstance(payload, dict) and "error" not in payload else None
+    if not isinstance(rows, list):
+        raise ResolverError("Ollama returned an invalid model list")
+    tags = []
+    for row in rows:
+        name = row.get("name") if isinstance(row, dict) else None
+        if not isinstance(name, str) or not name.strip():
+            raise ResolverError("Ollama returned an invalid model name")
+        tags.append(name)
+    return tags
 
 
 def fetch_hf_text_generation(
