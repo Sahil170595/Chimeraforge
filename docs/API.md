@@ -391,13 +391,16 @@ for name in list_tasks():
 Diff benchmark results across runs.
 
 ```python
-from chimeraforge.compare import load_results, compare_results, format_comparison_json
+from pathlib import Path
 
-base = load_results("results/run1.json")
-cand = load_results("results/run2.json")
-rows = compare_results(base, cand)
+from chimeraforge.compare import compare_results, format_comparison_json
+
+base = Path("results/run1.json")
+rows = compare_results(base, [Path("results/run2.json")])
 print(format_comparison_json(rows))
 ```
+
+The 0.107.0 candidate adds `compare_candidates(base, paths)`. Each returned `CandidateComparison` holds the candidate path, its matched `rows`, and the unmatched `baseline_only` and `candidate_only` keys. `compare_results` returns the matched rows in candidate-file order. Unavailable observations and undefined deltas are `None`.
 
 ### Key types
 

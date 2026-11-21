@@ -38,7 +38,8 @@ def compare(
     from pathlib import Path
 
     from chimeraforge.compare.comparator import (
-        compare_results,
+        compare_candidates,
+        format_candidate_groups_json,
         format_comparison_json,
         format_comparison_summary,
         format_comparison_table,
@@ -63,15 +64,25 @@ def compare(
         candidate_paths.append(p)
 
     try:
-        rows = compare_results(baseline_path, candidate_paths)
-    except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
-        console.print(f"[red]Error:[/] failed to read result file(s): {exc}")
+        comparisons = compare_candidates(baseline_path, candidate_paths)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"Error: failed to read result file(s): {exc}", err=True)
         raise typer.Exit(code=1)
 
     if output_json:
-        # highlight=False + soft_wrap: valid JSON for `--json | jq` (Rich otherwise
-        # reflows long values at width 79 when piped and corrupts them).
-        console.print(format_comparison_json(rows), highlight=False, soft_wrap=True)
-    else:
-        format_comparison_table(rows, console)
-        format_comparison_summary(rows, console)
+        typer.echo(
+            format_comparison_json(comparisons[0].rows)
+            if len(comparisons) == 1
+            else format_candidate_groups_json(baseline_path, comparisons)
+        )
+        return
+
+    for group in comparisons:
+        console.print(f"Candidate: {group.candidate}", markup=False)
+        format_comparison_table(group.rows, console)
+        format_comparison_summary(group.rows, console)
+        if group.baseline_only or group.candidate_only:
+            console.print(
+                f"Baseline-only configurations: {len(group.baseline_only)}. "
+                f"Candidate-only configurations: {len(group.candidate_only)}."
+            )

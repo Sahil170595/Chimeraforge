@@ -71,6 +71,23 @@ class TestGroupByKey:
 
 
 class TestCompareResults:
+    def test_mixed_native_ttft_samples_stay_unavailable(self, tmp_path: Path):
+        from dataclasses import asdict
+
+        from chimeraforge.bench.metrics import RunMetrics, aggregate_runs
+        from chimeraforge.compare import compare_results
+
+        base, cand = tmp_path / "base.json", tmp_path / "cand.json"
+        for path, ttfts in ((base, [100, 100]), (cand, [-1, 100])):
+            row = _make_result()
+            aggregate = aggregate_runs([RunMetrics(10, 40, ttft, 500, 0, 250) for ttft in ttfts])
+            row["aggregate"] = asdict(aggregate)
+            _write_bench_json(path, [row])
+        comparison = compare_results(base, [cand])[0]
+        assert comparison.baseline_ttft == 100
+        assert comparison.candidate_ttft is None and comparison.delta_ttft_pct is None
+        assert comparison.delta_throughput_pct == 0.0
+
     def test_matching_configs(self, tmp_path: Path):
         from chimeraforge.compare.comparator import compare_results
 
@@ -166,6 +183,13 @@ class TestComparisonRow:
 
         assert _safe_delta_pct(-1.0, 850.0) is None
 
+    def test_missing_candidate_is_undefined_but_measured_zero_is_retained(self):
+        from chimeraforge.compare.comparator import _safe_delta_pct
+
+        assert _safe_delta_pct(100.0, -1.0) is None
+        assert _safe_delta_pct(100.0, float("nan")) is None
+        assert _safe_delta_pct(100.0, 0.0) == -100.0
+
     def test_an_undefined_delta_renders_as_na(self):
         from chimeraforge.compare.comparator import _delta_style
 
@@ -243,6 +267,30 @@ class TestFormatComparisonJson:
 
 
 class TestFormatComparisonSummary:
+    def test_totals_use_only_comparable_pairs(self, tmp_path: Path):
+        from io import StringIO
+
+        from chimeraforge.compare import compare_results, format_comparison_summary
+
+        base, cand = tmp_path / "base.json", tmp_path / "cand.json"
+        _write_bench_json(
+            base,
+            [
+                _make_result(model="a", throughput_mean=40),
+                _make_result(model="b", throughput_mean=0),
+            ],
+        )
+        _write_bench_json(
+            cand,
+            [
+                _make_result(model="a", throughput_mean=50),
+                _make_result(model="b", throughput_mean=1000),
+            ],
+        )
+        out = StringIO()
+        format_comparison_summary(compare_results(base, [cand]), Console(file=out, width=100))
+        assert "Total throughput delta: +25.0%" in out.getvalue()
+
     def test_non_empty(self, tmp_path: Path):
         from chimeraforge.compare.comparator import compare_results, format_comparison_summary
 
@@ -268,6 +316,72 @@ class TestFormatComparisonSummary:
 
 
 class TestCLICompare:
+    def test_each_candidate_keeps_its_rows_and_missing_configurations(self, tmp_path: Path):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+        from chimeraforge.compare import compare_results, make_key
+
+        base, first, second, no_match = [
+            tmp_path / name for name in ("base", "[first]", "second", "other")
+        ]
+        row = _make_result(model="shared", throughput_mean=40, ttft_mean=100)
+        base_only, candidate_only = (
+            _make_result(model="base-only"),
+            _make_result(model="candidate-only"),
+        )
+        _write_bench_json(base, [row, base_only])
+        _write_bench_json(first, [_make_result(model="shared", throughput_mean=50, ttft_mean=-1)])
+        _write_bench_json(second, [_make_result(model="shared", throughput_mean=20, ttft_mean=200)])
+        _write_bench_json(no_match, [candidate_only])
+        runner = CliRunner()
+        command = ["compare", "--baseline", str(base), "--candidate"]
+        result = runner.invoke(app, [*command, f"{first},{second},{no_match}", "--json"])
+        assert result.exit_code == 0, result.output
+        report = json.loads(result.output)
+        assert report["schema_version"] == 1 and report["baseline"] == str(base)
+        candidates = report["candidates"]
+        assert [value["candidate"] for value in candidates] == [
+            str(first),
+            str(second),
+            str(no_match),
+        ]
+        assert [value["rows"][0]["delta_throughput_pct"] for value in candidates[:2]] == [
+            25.0,
+            -50.0,
+        ]
+        assert candidates[0]["rows"][0]["delta_ttft_pct"] is None
+        assert candidates[0]["rows"][0]["candidate_ttft"] is None
+        assert candidates[1]["rows"][0]["delta_ttft_pct"] == 100.0
+        assert candidates[2] == {
+            "candidate": str(no_match),
+            "rows": [],
+            "baseline_only": [make_key(row), make_key(base_only)],
+            "candidate_only": [make_key(candidate_only)],
+        }
+        assert candidates[0]["baseline_only"] == [make_key(base_only)]
+        assert [row.candidate_throughput for row in compare_results(base, [first, second])] == [
+            50,
+            20,
+        ]
+        single = runner.invoke(app, [*command, str(first), "--json"])
+        assert json.loads(single.output) == candidates[0]["rows"]
+
+    @pytest.mark.parametrize("side", ["baseline", "candidate"])
+    def test_duplicate_configuration_is_rejected(self, tmp_path: Path, side: str):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        base, cand = tmp_path / "base.json", tmp_path / "cand.json"
+        _write_bench_json(base, [_make_result()] * (2 if side == "baseline" else 1))
+        _write_bench_json(cand, [_make_result()] * (2 if side == "candidate" else 1))
+        result = CliRunner().invoke(
+            app, ["compare", "--baseline", str(base), "--candidate", str(cand), "--json"]
+        )
+        assert result.exit_code == 1
+        assert "duplicate configuration" in result.output
+
     @staticmethod
     def _strip_ansi(text: str) -> str:
         import re
