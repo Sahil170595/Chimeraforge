@@ -8,8 +8,10 @@ and outputs a Rich table or JSON summary.
 from __future__ import annotations
 
 import json
+import math
 from collections import defaultdict
-from dataclasses import dataclass
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -31,10 +33,10 @@ def load_results(paths: list[Path]) -> list[dict]:
     for p in paths:
         with open(p, encoding="utf-8") as f:
             data = json.load(f)
-        if isinstance(data, list):
-            all_results.extend(data)
-        else:
-            all_results.append(data)
+        results = data if isinstance(data, list) else [data]
+        if any(not isinstance(row, dict) for row in results):
+            raise ValueError(f"{p}: expected benchmark result objects")
+        all_results.extend(results)
     return all_results
 
 
@@ -81,21 +83,30 @@ class ComparisonRow:
     workload: str
     context_length: int
     # Baseline (first file)
-    baseline_throughput: float
-    baseline_ttft: float
-    baseline_duration: float
+    baseline_throughput: float | None
+    baseline_ttft: float | None
+    baseline_duration: float | None
     baseline_runs: int
     # Candidate (second file)
-    candidate_throughput: float
-    candidate_ttft: float
-    candidate_duration: float
+    candidate_throughput: float | None
+    candidate_ttft: float | None
+    candidate_duration: float | None
     candidate_runs: int
     # Deltas
-    # None when the baseline could not support a percentage (zero, or the -1.0
-    # "not measurable" TTFT sentinel). Distinct from 0.0, which means no change.
+    # None when either observation is missing or the baseline cannot be divided.
     delta_throughput_pct: float | None
     delta_ttft_pct: float | None
     delta_duration_pct: float | None
+
+
+@dataclass
+class CandidateComparison:
+    """One candidate file, with matched rows and each side's unmatched keys."""
+
+    candidate: Path
+    rows: list[ComparisonRow]
+    baseline_only: list[str]
+    candidate_only: list[str]
 
 
 # ---------------------------------------------------------------------------
@@ -105,87 +116,110 @@ class ComparisonRow:
 
 def _ratio_delta_pct(base_total: float, cand_total: float) -> float | None:
     """Aggregate change as a ratio of totals, which is what a summary should be."""
-    if base_total <= 0:
+    return _safe_delta_pct(base_total, cand_total)
+
+
+def _safe_delta_pct(base: float | None, cand: float | None) -> float | None:
+    """Calculate a percentage only for two usable observations and a positive baseline."""
+    if base is None or cand is None or base <= 0 or cand < 0:
         return None
-    return (cand_total - base_total) / base_total * 100
-
-
-def _safe_delta_pct(base: float, cand: float) -> float | None:
-    """Percentage change, or None when the baseline cannot support one.
-
-    Returns None rather than 0.0 for a zero baseline: "no change" is a claim, and
-    0 -> 850ms is an unbounded regression, not a flat line. Also None for a
-    negative baseline, which only arises from the -1.0 "not measurable" TTFT
-    sentinel -- feeding that through produced -85,100%, rendered green as an
-    85,100% improvement.
-    """
-    if base <= 0:
+    if not math.isfinite(base) or not math.isfinite(cand):
         return None
-    return (cand - base) / base * 100
+    delta = (cand - base) / base * 100
+    return delta if math.isfinite(delta) else None
 
 
-def _extract_metrics(result: dict) -> tuple[float, float, float, int]:
+def _metric(aggregate: dict, name: str) -> float | None:
+    stats = aggregate.get(name)
+    mean = stats.get("mean") if isinstance(stats, dict) else None
+    if not isinstance(mean, (int, float)) or isinstance(mean, bool) or mean < 0:
+        return None
+    try:
+        value = float(mean)
+    except OverflowError:
+        return None
+    return value if math.isfinite(value) else None
+
+
+def _extract_metrics(result: dict) -> tuple[float | None, float | None, float | None, int]:
     """Pull throughput, ttft, duration, and run count from a result dict."""
     agg = result.get("aggregate", {})
-    throughput = agg.get("throughput_tps", {}).get("mean", 0.0)
-    ttft = agg.get("ttft_ms", {}).get("mean", 0.0)
-    duration = agg.get("total_duration_ms", {}).get("mean", 0.0)
+    if not isinstance(agg, dict):
+        raise ValueError("expected a benchmark aggregate object")
     count = agg.get("count", 0)
-    return throughput, ttft, duration, count
+    return (
+        _metric(agg, "throughput_tps"),
+        _metric(agg, "ttft_ms"),
+        _metric(agg, "total_duration_ms"),
+        count if type(count) is int and count >= 0 else 0,
+    )
+
+
+def _load_unique(path: Path) -> dict[str, dict]:
+    groups = group_by_key(load_results([path]))
+    for key, rows in groups.items():
+        if key.count("|") != 4:
+            raise ValueError(f"{path}: invalid comparison configuration {key!r}")
+        if len(rows) != 1:
+            raise ValueError(f"{path}: duplicate configuration {key!r}")
+    return {key: rows[0] for key, rows in groups.items()}
+
+
+def _compare_row(key: str, base: dict, cand: dict) -> ComparisonRow:
+    b_tp, b_ttft, b_dur, b_runs = _extract_metrics(base)
+    c_tp, c_ttft, c_dur, c_runs = _extract_metrics(cand)
+    return ComparisonRow(
+        key=key,
+        model=str(base.get("model", "")),
+        backend=str(base.get("backend", "")),
+        quant=str(base.get("quant") or "default"),
+        workload=str(base.get("workload", "single")),
+        context_length=int(str(base.get("context_length", 2048))),
+        baseline_throughput=b_tp,
+        baseline_ttft=b_ttft,
+        baseline_duration=b_dur,
+        baseline_runs=b_runs,
+        candidate_throughput=c_tp,
+        candidate_ttft=c_ttft,
+        candidate_duration=c_dur,
+        candidate_runs=c_runs,
+        delta_throughput_pct=_safe_delta_pct(b_tp, c_tp),
+        delta_ttft_pct=_safe_delta_pct(b_ttft, c_ttft),
+        delta_duration_pct=_safe_delta_pct(b_dur, c_dur),
+    )
+
+
+def compare_candidates(
+    baseline_path: Path, candidate_paths: list[Path]
+) -> list[CandidateComparison]:
+    """Compare each candidate file independently in caller order."""
+    baseline = _load_unique(baseline_path)
+    comparisons = []
+    for path in candidate_paths:
+        candidate = _load_unique(path)
+        comparisons.append(
+            CandidateComparison(
+                candidate=path,
+                rows=[
+                    _compare_row(key, base, candidate[key])
+                    for key, base in baseline.items()
+                    if key in candidate
+                ],
+                baseline_only=[key for key in baseline if key not in candidate],
+                candidate_only=[key for key in candidate if key not in baseline],
+            )
+        )
+    return comparisons
 
 
 def compare_results(
     baseline_path: Path,
     candidate_paths: list[Path],
 ) -> list[ComparisonRow]:
-    """Compare baseline against one or more candidate result files.
-
-    Matches by ``(model, backend, quant, workload, context_length)``.
-    Returns :class:`ComparisonRow` for matched configs only.
-    """
-    base_results = load_results([baseline_path])
-    cand_results = load_results(candidate_paths)
-
-    base_by_key = group_by_key(base_results)
-    cand_by_key = group_by_key(cand_results)
-
-    rows: list[ComparisonRow] = []
-    for key, base_list in base_by_key.items():
-        if key not in cand_by_key:
-            continue
-        cand_list = cand_by_key[key]
-
-        # Use first result in each group
-        base = base_list[0]
-        cand = cand_list[0]
-
-        b_tp, b_ttft, b_dur, b_runs = _extract_metrics(base)
-        c_tp, c_ttft, c_dur, c_runs = _extract_metrics(cand)
-
-        parts = key.split("|")
-        rows.append(
-            ComparisonRow(
-                key=key,
-                model=parts[0] if len(parts) > 0 else "",
-                backend=parts[1] if len(parts) > 1 else "",
-                quant=parts[2] if len(parts) > 2 else "default",
-                workload=parts[3] if len(parts) > 3 else "single",
-                context_length=int(parts[4]) if len(parts) > 4 else 2048,
-                baseline_throughput=b_tp,
-                baseline_ttft=b_ttft,
-                baseline_duration=b_dur,
-                baseline_runs=b_runs,
-                candidate_throughput=c_tp,
-                candidate_ttft=c_ttft,
-                candidate_duration=c_dur,
-                candidate_runs=c_runs,
-                delta_throughput_pct=_safe_delta_pct(b_tp, c_tp),
-                delta_ttft_pct=_safe_delta_pct(b_ttft, c_ttft),
-                delta_duration_pct=_safe_delta_pct(b_dur, c_dur),
-            )
-        )
-
-    return rows
+    """Return matched rows in candidate-file order. Use compare_candidates for the census."""
+    return [
+        row for group in compare_candidates(baseline_path, candidate_paths) for row in group.rows
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +238,10 @@ def _delta_style(value: float | None, higher_is_better: bool = True) -> str:
     else:
         colour = "red" if value > 0 else ("green" if value < 0 else "dim")
     return f"[{colour}]{sign}{value:.1f}%[/{colour}]"
+
+
+def _metric_style(value: float | None) -> str:
+    return "[dim]n/a[/dim]" if value is None else f"{value:.1f}"
 
 
 def format_comparison_table(rows: list[ComparisonRow], console: Console) -> None:
@@ -235,14 +273,14 @@ def format_comparison_table(rows: list[ComparisonRow], console: Console) -> None
         label = f"{row.model}|{row.quant}"
         table.add_row(
             label,
-            f"{row.baseline_throughput:.1f}",
-            f"{row.candidate_throughput:.1f}",
+            _metric_style(row.baseline_throughput),
+            _metric_style(row.candidate_throughput),
             _delta_style(row.delta_throughput_pct, higher_is_better=True),
-            f"{row.baseline_ttft:.1f}",
-            f"{row.candidate_ttft:.1f}",
+            _metric_style(row.baseline_ttft),
+            _metric_style(row.candidate_ttft),
             _delta_style(row.delta_ttft_pct, higher_is_better=False),
-            f"{row.baseline_duration:.1f}",
-            f"{row.candidate_duration:.1f}",
+            _metric_style(row.baseline_duration),
+            _metric_style(row.candidate_duration),
             _delta_style(row.delta_duration_pct, higher_is_better=False),
         )
 
@@ -251,30 +289,39 @@ def format_comparison_table(rows: list[ComparisonRow], console: Console) -> None
 
 def format_comparison_json(rows: list[ComparisonRow]) -> str:
     """Serialize comparison rows to JSON."""
-    data = []
-    for row in rows:
-        data.append(
-            {
-                "key": row.key,
-                "model": row.model,
-                "backend": row.backend,
-                "quant": row.quant,
-                "workload": row.workload,
-                "context_length": row.context_length,
-                "baseline_throughput": row.baseline_throughput,
-                "baseline_ttft": row.baseline_ttft,
-                "baseline_duration": row.baseline_duration,
-                "baseline_runs": row.baseline_runs,
-                "candidate_throughput": row.candidate_throughput,
-                "candidate_ttft": row.candidate_ttft,
-                "candidate_duration": row.candidate_duration,
-                "candidate_runs": row.candidate_runs,
-                "delta_throughput_pct": row.delta_throughput_pct,
-                "delta_ttft_pct": row.delta_ttft_pct,
-                "delta_duration_pct": row.delta_duration_pct,
-            }
-        )
-    return json.dumps(data, indent=2)
+    return json.dumps([asdict(row) for row in rows], indent=2, allow_nan=False)
+
+
+def format_candidate_groups_json(baseline: Path, comparisons: list[CandidateComparison]) -> str:
+    """Serialize the ordered multi-candidate comparison document."""
+    return json.dumps(
+        {
+            "schema_version": 1,
+            "baseline": str(baseline),
+            "candidates": [
+                {
+                    "candidate": str(group.candidate),
+                    "rows": [asdict(row) for row in group.rows],
+                    "baseline_only": group.baseline_only,
+                    "candidate_only": group.candidate_only,
+                }
+                for group in comparisons
+            ],
+        },
+        indent=2,
+        allow_nan=False,
+    )
+
+
+def _comparable_totals(
+    pairs: Iterable[tuple[float | None, float | None]],
+) -> tuple[float, float]:
+    baseline = candidate = 0.0
+    for before, after in pairs:
+        if before is not None and after is not None and _safe_delta_pct(before, after) is not None:
+            baseline += before
+            candidate += after
+    return baseline, candidate
 
 
 def format_comparison_summary(rows: list[ComparisonRow], console: Console) -> None:
@@ -290,10 +337,10 @@ def format_comparison_summary(rows: list[ComparisonRow], console: Console) -> No
     # meaningful aggregate: 100->50 paired with 50->100 is no net change, but the
     # mean of -50% and +100% reports +25% and renders it green.
     agg_tp = _ratio_delta_pct(
-        sum(r.baseline_throughput for r in rows), sum(r.candidate_throughput for r in rows)
+        *_comparable_totals((r.baseline_throughput, r.candidate_throughput) for r in rows)
     )
     agg_dur = _ratio_delta_pct(
-        sum(r.baseline_duration for r in rows), sum(r.candidate_duration for r in rows)
+        *_comparable_totals((r.baseline_duration, r.candidate_duration) for r in rows)
     )
     improvements = sum(1 for r in rows if (r.delta_throughput_pct or 0) > 0)
     regressions = sum(1 for r in rows if (r.delta_throughput_pct or 0) < 0)
@@ -307,7 +354,7 @@ def format_comparison_summary(rows: list[ComparisonRow], console: Console) -> No
     ]
     if undefined:
         lines.append(
-            f"[yellow]{undefined} config(s) had no comparable baseline[/yellow] "
-            "(zero or unmeasured) and are excluded from the totals."
+            f"[yellow]{undefined} config(s) had undefined throughput deltas[/yellow] "
+            "and are excluded from the throughput total."
         )
     console.print(Panel("\n".join(lines), title="Summary", border_style="blue"))
