@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json as json_mod
+from dataclasses import asdict
 import re
 from pathlib import Path
 
@@ -756,7 +757,9 @@ def plan(
 
     # Core search runs through the shared service (same path the MCP server uses).
     try:
-        plan_inputs = dict(
+        from chimeraforge.api import PlanRequest
+
+        plan_request = PlanRequest(
             models=list(model) if model else None,
             model_size=model_size,
             hardware=hardware,
@@ -804,17 +807,17 @@ def plan(
             allow_network=not no_network,
             overrides=overrides,
         )
-        if save:
-            from chimeraforge.api import PlanRequest
-
-            PlanRequest(**plan_inputs).validate()
-        result = run_plan(**plan_inputs)
+        try:
+            plan_request.validate()
+        except ValueError as exc:
+            _fail(escape(str(exc)))
+        result = run_plan(**asdict(plan_request))
         if save:
             if fleet:
                 _fail("--save does not yet support heterogeneous fleets")
-            from chimeraforge.api import PlanRequest, snapshot
+            from chimeraforge.api import snapshot
 
-            snapshot(PlanRequest(**plan_inputs), result).save(save)
+            snapshot(plan_request, result).save(save)
     except FileNotFoundError:
         _fail(f"models file not found: {models_path}")
     except ResolverError as exc:

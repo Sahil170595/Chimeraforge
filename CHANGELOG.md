@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.111.0] - Unreleased
+
+### Planner request validation
+
+- Use the typed SDK request validation for terminal, JSON, artifact, and MCP planning requests. Reject non-finite input before model resolution or planner search.
+- Exercise refusal through installed CLI and MCP stdio, alongside valid plans and saved-plan replay.
+
 ## [0.106.0] - 2026-11-20
 
 ### Finite exporter final-observation requirement

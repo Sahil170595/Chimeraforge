@@ -45,6 +45,8 @@ hardware, quality, parallelism, cloud and session settings. `allow_network=False
 keeps model resolution offline. An empty candidate list means no feasible plan;
 `candidate()` then raises `PlanError`.
 
+The 0.111.0 candidate uses `PlanRequest` validation for the CLI and `chimeraforge_plan` MCP tool as well. Both return their existing structured error shape before resolving model metadata for an invalid request.
+
 The CLI also saves the effective inputs after workload-profile overrides:
 
 ```bash

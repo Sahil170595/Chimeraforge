@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 
 from chimeraforge.planner.engine import Candidate, enumerate_candidates
 
@@ -12,6 +13,34 @@ from chimeraforge.planner.engine import Candidate, enumerate_candidates
 
 
 class TestCLIPlan:
+    @pytest.mark.parametrize(
+        ("option", "value"),
+        [
+            ("--request-rate", "nan"),
+            ("--electricity-rate", "nan"),
+            ("--gpu-price-multiplier", "inf"),
+            ("--ttft-slo", "inf"),
+        ],
+    )
+    def test_nonfinite_plans_fail_before_search_in_either_output_mode(
+        self, monkeypatch, option, value
+    ):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+        from chimeraforge.planner import service
+
+        def unexpected_search(**kwargs):
+            pytest.fail("planner began search for a non-finite request")
+
+        monkeypatch.setattr(service, "run_plan", unexpected_search)
+        args = ["plan", "--model", "fixture/off-registry", option, value]
+        runner = CliRunner()
+        summary = runner.invoke(app, args)
+        structured = runner.invoke(app, [*args, "--json"])
+        assert summary.exit_code == structured.exit_code == 1
+        assert "finite" in summary.output and "finite" in json.loads(structured.stdout)["error"]
+
     @staticmethod
     def _strip_ansi(text: str) -> str:
         import re
