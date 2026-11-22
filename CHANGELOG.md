@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validate Ollama discovery responses before resolving or publishing the requested catalog.
 - Report complete, partial, or failed refreshes as one JSON document. Failed refreshes return exit `1`.
 
+## [0.106.2] - 2026-11-22
+
+- Synchronize the native exporter cleanup test with a real published observation before starting the finite deadline. This stabilizes hosted Windows validation.
+- Ship the exporter, systemd, benchmark, catalog, and output protection fixes listed under 0.106.1. The 0.106.1 GitHub tag was created, and its PyPI publication stopped at hosted validation.
+
 ## [0.106.1] - 2026-11-22
 
 ### Fixes from independent review
