@@ -162,7 +162,8 @@ class TestCatalog:
         assert result.exit_code == 1
         document = json.loads(result.stdout)
         assert (
-            set(document) == {"models", "errors"}
+            set(document) == {"models", "errors", "status"}
+            and document["status"] == "failed"
             and document["models"] == {}
             and document["errors"]
         )
@@ -387,7 +388,8 @@ class TestCommandsOffline:
 
         assert result.exit_code == 1, result.output
         payload = json.loads(result.stdout)
-        assert set(payload) == {"models", "errors"}
+        assert set(payload) == {"models", "errors", "status"}
+        assert payload["status"] == "failed"
         assert payload["models"] == {} and payload["errors"]
         assert path.read_bytes() == original
         assert discovery.load_catalog() == previous
