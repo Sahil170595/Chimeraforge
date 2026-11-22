@@ -100,7 +100,10 @@ The expected population comes from original admission, not the seed template or
 the latest observed row count. No raw fresh report is retained in the entry.
 Initial, unavailable and stopped templates are not real observations.
 
-Qualification requires the timeout boundary, a real publication, exact original
+Qualification requires an observation committed to the cache by the monotonic
+cutoff, including time spent assembling its output. A publication committed
+after the cutoff retains its observed native code and yields qualification exit 4.
+Eligible entries use age at the cutoff. Qualification also requires exact original
 coverage and `0 <= raw monotonic age < stale_after_seconds`. Equality at the TTL,
 clock regression or non-finite age cannot pass. The existing public snapshot's
 age clamping, fields, Prometheus bytes and readiness contract are unchanged.
