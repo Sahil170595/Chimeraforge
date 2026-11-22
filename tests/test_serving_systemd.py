@@ -114,6 +114,11 @@ def test_actual_os_cli_systemd_uses_original_declaration_and_independent_intent(
         {"executable": "/bad\nExecStart=evil"},
         {"executable": "/bad\\engine"},
         {"executable": " /engine"},
+        {"executable": "/opt/engine/bin/"},
+        {"executable": "/opt/engine/bin/."},
+        {"executable": "/opt/engine/bin/.."},
+        {"executable": '/opt/engine"quoted'},
+        {"executable": "/opt/engine'quoted"},
         {"executable": "/bad\0engine"},
     ],
 )
@@ -187,11 +192,11 @@ def test_multiple_original_replicas_never_collapse_into_one_unit():
 @pytest.mark.parametrize("backend", ["vllm", "sglang"])
 def test_all_native_serving_controls_and_literal_executable_escaping(backend):
     held = declaration(backend, dtype="BF16")
-    executable = '/not/installed $HOME%u"engine'
+    executable = "/not/installed $HOME%u-engine"
     text = api.export_serving_declaration(
         held, format="systemd", executable=executable, gpu_devices=list("0123")
     ).content
-    assert 'ExecStart="/not/installed $$HOME%%u\\"engine"' in text
+    assert 'ExecStart=:"/not/installed $HOME%%u-engine"' in text
     assert '"--dtype" "bfloat16"' in text
     pairs = (
         [

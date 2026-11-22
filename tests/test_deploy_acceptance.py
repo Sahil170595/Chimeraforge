@@ -75,15 +75,18 @@ def test_docker_compose_config_accepts_export(tmp_path, backend, selection):
         assert any("${UNSET}" in arg and "$(id)%u" in arg for arg in service["command"])
 
 
-def test_systemd_analyze_accepts_escaped_argv(tmp_path):
+@pytest.mark.parametrize("executable_name", ["true", "true$literal"])
+def test_systemd_analyze_accepts_escaped_argv(tmp_path, executable_name):
     analyze = shutil.which("systemd-analyze")
     if analyze is None:
         _missing_tool("systemd-analyze unavailable; Linux hosted CI validates native units")
+    executable = tmp_path / executable_name
+    executable.symlink_to("/usr/bin/true")
     saved = artifact(model='org/model${UNSET}%u;"\\quoted')
     result = export(
         saved,
         format="systemd",
-        executable="/usr/bin/true",
+        executable=str(executable),
     )
     path = tmp_path / "chimeraforge-acceptance.service"
     path.write_text(result.content, encoding="utf-8")
@@ -91,7 +94,7 @@ def test_systemd_analyze_accepts_escaped_argv(tmp_path):
     assert checked.returncode == 0, checked.stderr
     from chimeraforge import api
 
-    assert api.verify_systemd_deployment(saved, path, executable="/usr/bin/true").exit_code == 0
+    assert api.verify_systemd_deployment(saved, path, executable=str(executable)).exit_code == 0
 
 
 @pytest.mark.parametrize("backend", ["vllm", "sglang"])
