@@ -7,7 +7,11 @@ implicitly via the resolver's error contract.
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
+
+import pytest
 
 from chimeraforge.planner.discovery import (
     best_per_model,
@@ -171,6 +175,45 @@ class TestCommandsOffline:
         result = CliRunner().invoke(app, ["catalog"])
         assert result.exit_code == 0
         assert "empty" in _strip_ansi(result.output).lower()
+
+    @pytest.mark.parametrize("failure", ["unresolved", "publish"])
+    def test_catalog_failed_build_preserves_existing_index(self, tmp_path, monkeypatch, failure):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+        from chimeraforge.planner import discovery
+
+        monkeypatch.setenv("CHIMERAFORGE_CACHE", str(tmp_path))
+        previous = {"cached/model": _offreg("cached/model", 7.0)}
+        discovery._write_catalog(previous)
+        path = discovery._catalog_path()
+        original = path.read_bytes()
+
+        if failure == "unresolved":
+
+            def resolve(*args, **kwargs):
+                return {}, [("seed/model", "metadata unavailable")]
+        else:
+
+            def resolve(*args, **kwargs):
+                return {"new/model": _offreg("new/model", 9.0)}, []
+
+            def refuse_replacement(self, target):
+                assert target == path.resolve()
+                raise OSError("injected atomic replacement failure")
+
+            monkeypatch.setattr(Path, "replace", refuse_replacement)
+        monkeypatch.setattr(discovery, "resolve_many", resolve)
+
+        result = CliRunner().invoke(app, ["catalog", "--build", "--json"])
+
+        assert result.exit_code == 1, result.output
+        payload = json.loads(result.stdout)
+        assert set(payload) == {"models", "errors"}
+        assert payload["models"] == {} and payload["errors"]
+        assert path.read_bytes() == original
+        assert discovery.load_catalog() == previous
+        assert not list(path.parent.glob("*.tmp"))
 
     def test_suggest_bad_source(self):
         from typer.testing import CliRunner
