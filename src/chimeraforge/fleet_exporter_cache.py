@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+import math
 import threading
 import time
 
@@ -110,6 +111,7 @@ class _Entry:
     code: int
     monotonic: float | None
     wall: float | None
+    committed_at: float | None = None
     observation: _ObservationFact | None = None
 
 
@@ -121,6 +123,7 @@ class _CapturedSnapshot:
     native_code: int
     expected: int
     ttl: float
+    in_time: bool
 
 
 class SnapshotCache:
@@ -145,11 +148,18 @@ class SnapshotCache:
         observation = self._binding.observe(report, state) if self._binding is not None else None
         body = _body(selected, state, sequence, wall, self._ttl)
         stale = _body(self._template, "stale", sequence, wall, self._ttl)
-        entry = _Entry(
-            body, stale, state, sequence, selected.exit_code, monotonic, wall, observation
-        )
         with self._lock:
-            self._entry = entry
+            self._entry = _Entry(
+                body,
+                stale,
+                state,
+                sequence,
+                selected.exit_code,
+                monotonic,
+                wall,
+                committed_at=time.monotonic(),
+                observation=observation,
+            )
 
     def snapshot(self) -> FleetExporterSnapshot:
         with self._lock:
@@ -170,10 +180,21 @@ class SnapshotCache:
             entry.wall,
         )
 
-    def _capture(self) -> _CapturedSnapshot:
+    def _capture(self, *, cutoff: float | None = None) -> _CapturedSnapshot:
         with self._lock:
             entry = self._entry
-            raw_age = time.monotonic() - entry.monotonic if entry.monotonic is not None else None
+            captured_at = time.monotonic()
+            in_time = cutoff is None or (
+                entry.monotonic is not None
+                and entry.committed_at is not None
+                and math.isfinite(captured_at)
+                and math.isfinite(cutoff)
+                and entry.monotonic <= entry.committed_at <= captured_at
+                and entry.committed_at <= cutoff
+            )
+            if in_time and cutoff is not None:
+                captured_at = cutoff
+            raw_age = captured_at - entry.monotonic if entry.monotonic is not None else None
             return _CapturedSnapshot(
                 self._view(entry, raw_age),
                 entry.observation,
@@ -181,4 +202,5 @@ class SnapshotCache:
                 entry.code,
                 len(self._binding.endpoints) if self._binding is not None else 0,
                 self._ttl,
+                in_time,
             )

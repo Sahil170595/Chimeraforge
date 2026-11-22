@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import FrozenInstanceError, fields, replace
 import math
 import threading
@@ -152,3 +153,53 @@ async def test_unavailable_and_stopped_templates_are_not_real_observations(
         assert result.exit_code == 4 and result.observed_native_exit_code is None
         assert result.observed_replicas == 0 and result.expected_replicas == 3
         assert not result.population_bound and report.exit_code == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "assembly_at,commit_at,wake_at,qualified",
+    [
+        (10.05, 10.1, 10.35, True),
+        (10.25, 10.3, 10.35, False),
+        (10.05, 10.3, 10.35, False),
+        (10.05, 10.1, 20.35, True),
+    ],
+)
+async def test_finite_cutoff_uses_cache_commit_time(
+    native_fleet, monkeypatch, assembly_at, commit_at, wake_at, qualified
+):
+    running, report, _ = await prepared(native_fleet, monkeypatch)
+    clock = [10.0]
+    controlled_time = SimpleNamespace(time=lambda: 100.0, monotonic=lambda: clock[0])
+    monkeypatch.setattr(fleet_exporter_cache, "time", controlled_time)
+    monkeypatch.setattr(fleet_exporter, "time", controlled_time, raising=False)
+    materialize = fleet_exporter_cache._body
+
+    def finish_assembly(*args):
+        body = materialize(*args)
+        clock[0] = commit_at
+        return body
+
+    async def delayed_timeout(waiter, _seconds):
+        # Run the publication while the caller's timeout has not resumed.
+        waiter.close()
+        clock[0] = assembly_at
+        running._cache.publish(report)
+        clock[0] = wake_at
+        raise asyncio.TimeoutError
+
+    monkeypatch.setattr(fleet_exporter_cache, "_body", finish_assembly)
+    monkeypatch.setattr(
+        fleet_exporter,
+        "asyncio",
+        SimpleNamespace(wait_for=delayed_timeout, TimeoutError=asyncio.TimeoutError),
+    )
+    boundary = await fleet_exporter._await_run_boundary(running, 0.2, asyncio.Event())
+    result = fleet_exporter._finish_run(running, boundary, True)
+    assert result.exit_code == (0 if qualified else 4)
+    assert result.qualification_met is qualified and result.population_bound
+    assert result.observed_native_exit_code == 0 and result.snapshot_state == "fresh"
+    assert result.age_seconds == pytest.approx((10.2 if qualified else wake_at) - assembly_at)
+    public = running.snapshot()
+    assert public.age_seconds == pytest.approx(wake_at - assembly_at)
+    assert public.state == ("stale" if public.age_seconds >= 10 else "fresh")

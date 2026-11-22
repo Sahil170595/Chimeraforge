@@ -45,20 +45,25 @@ def catalog(
         format="%(asctime)s %(name)s %(levelname)s  %(message)s",
     )
 
-    from chimeraforge.planner.discovery import build_catalog, load_catalog
+    from chimeraforge.planner.discovery import CatalogBuildError, build_catalog, load_catalog
+    from chimeraforge.planner.resolver import ResolverError
 
     errors: list[tuple[str, str]] = []
     if build:
-        with console.status("Building catalog (resolving models)..."):
-            specs, errors = build_catalog(
-                include_seed=True,
-                include_ollama=include_ollama,
-                ollama_url=ollama_url,
-                hf_token=hf_token,
-            )
-        console.print(
-            f"[green]Built catalog:[/] {len(specs)} models resolved, {len(errors)} failed."
-        )
+        try:
+            with err_console.status("Building catalog (resolving models)..."):
+                specs, errors = build_catalog(
+                    include_seed=True,
+                    include_ollama=include_ollama,
+                    ollama_url=ollama_url,
+                    hf_token=hf_token,
+                )
+        except CatalogBuildError as exc:
+            specs, errors = {}, [("catalog", str(exc))]
+        except ResolverError:
+            specs, errors = {}, [("catalog", "catalog source discovery failed")]
+        if not specs and not errors:
+            errors = [("catalog", "no models were resolved")]
     else:
         specs = load_catalog()
         if not specs:
@@ -86,8 +91,17 @@ def catalog(
             "models": {k: v.to_dict() for k, v in specs.items()},
             "errors": [{"id": i, "error": m} for i, m in errors],
         }
-        console.print(json_mod.dumps(out, indent=2), highlight=False, soft_wrap=True)
+        typer.echo(json_mod.dumps(out, indent=2))
+    if build and not specs:
+        if not output_json:
+            err_console.print(f"Catalog refresh failed. {errors[0][1]}", markup=False)
+        raise typer.Exit(code=1)
+    if output_json:
         return
+    if build:
+        console.print(
+            f"[green]Built catalog:[/] {len(specs)} models resolved, {len(errors)} failed."
+        )
 
     table = Table(title=f"Model catalog ({len(specs)} models)")
     table.add_column("Model")

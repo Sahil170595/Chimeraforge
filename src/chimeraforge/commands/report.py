@@ -138,9 +138,9 @@ def report(
 
     from chimeraforge.report.generator import (
         ReportConfig,
+        _load_report_inputs,
+        _render_loaded_report,
         format_report_rich,
-        generate_report,
-        load_results,
         save_report,
     )
 
@@ -175,8 +175,8 @@ def report(
 
     config = ReportConfig(title=title, format=fmt)
     try:
-        results = load_results(paths)
-    except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
+        results, inputs = _load_report_inputs(paths)
+    except (OSError, ValueError, RuntimeError) as exc:
         console.print(f"[red]Error:[/] failed to read result file(s): {exc}")
         raise typer.Exit(code=1)
 
@@ -187,22 +187,29 @@ def report(
         )
         raise typer.Exit(code=1)
 
-    rpt = generate_report(paths, config)
-
-    if output:
-        out_path = Path(output)
-        saved = save_report(rpt, out_path)
-        console.print(f"[green]Report saved to:[/] {saved}")
-    elif output_json:
-        import json as json_mod
-
-        meta = {
-            "title": rpt.title,
-            "format": rpt.format,
-            "n_results": rpt.n_results,
-            "timestamp": rpt.timestamp,
-        }
-        # highlight=False + soft_wrap: valid JSON for `--json | jq`.
-        console.print(json_mod.dumps(meta, indent=2), highlight=False, soft_wrap=True)
-    else:
+    if not output and not output_json:
         format_report_rich(results, console)
+        return
+
+    rpt = _render_loaded_report(results, config, inputs)
+    if output:
+        try:
+            saved = save_report(rpt, Path(output))
+        except (OSError, ValueError, RuntimeError):
+            typer.echo(
+                "Report output requires a writable file distinct from every accepted input.",
+                err=True,
+            )
+            raise typer.Exit(code=1) from None
+        console.print(f"[green]Report saved to:[/] {saved}")
+        return
+
+    import json as json_mod
+
+    meta = {
+        "title": rpt.title,
+        "format": rpt.format,
+        "n_results": rpt.n_results,
+        "timestamp": rpt.timestamp,
+    }
+    typer.echo(json_mod.dumps(meta, indent=2))
