@@ -458,3 +458,35 @@ class TestCLICompare:
             ],
         )
         assert result.exit_code == 0
+
+    @pytest.mark.parametrize("unavailable", ["mixed", "negative", "missing"])
+    def test_json_compares_each_candidate_and_only_measured_ttft(self, tmp_path, unavailable):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        base, first, second = (tmp_path / f"{name}.json" for name in ("base", "first", "second"))
+        _write_bench_json(base, [_make_result(throughput_mean=100.0, ttft_mean=100.0)])
+        unusable = _make_result(throughput_mean=140.0, ttft_mean=120.0)
+        ttft = unusable["aggregate"]["ttft_ms"]
+        if unavailable == "mixed":
+            ttft["min"] = -1.0
+        elif unavailable == "negative":
+            ttft.update(mean=-1.0, min=-1.0)
+        else:
+            del unusable["aggregate"]["ttft_ms"]
+        _write_bench_json(first, [unusable])
+        _write_bench_json(second, [_make_result(throughput_mean=70.0, ttft_mean=70.0)])
+
+        result = CliRunner().invoke(
+            app, ["compare", "-b", str(base), "-c", f"{first},{second}", "--json"]
+        )
+
+        assert result.exit_code == 0, result.output
+        rows = json.loads(result.stdout)
+        assert isinstance(rows, list)
+        assert [row["candidate_throughput"] for row in rows] == [140.0, 70.0]
+        assert rows[0]["candidate_ttft"] == -1.0 and rows[0]["delta_ttft_pct"] is None
+        assert rows[1]["candidate_ttft"] == 70.0 and rows[1]["delta_ttft_pct"] == pytest.approx(
+            -30.0
+        )

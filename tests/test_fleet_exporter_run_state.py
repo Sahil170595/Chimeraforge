@@ -200,22 +200,34 @@ async def test_newer_native_nonpass_replaces_pass_at_boundary(native_fleet, monk
     scene = Scene(monkeypatch)
     handles, ready = watch(monkeypatch)
     saved, indices = native_fleet
+    observed = asyncio.Event()
+    native_boundary = fleet_exporter._await_run_boundary
+
+    async def boundary_after_nonpass(running, seconds, stop):
+        # Set the finite deadline after the replacement becomes visible.
+        await observed.wait()
+        return await native_boundary(running, seconds, stop)
+
+    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary_after_nonpass)
     task = asyncio.create_task(
         api.run_fleet_exporter(
             saved,
             controls(),
             candidate_index=indices["vllm"],
-            config=replace(config(), poll_seconds=0.02),
-            policy=api.FleetExporterRunPolicy(0.6, True),
+            config=replace(config(), poll_seconds=1.0),
+            policy=api.FleetExporterRunPolicy(0.2, True),
         )
     )
-    await ready.wait()
-    first = await changed(handles[0])
-    assert first.native_exit_code == 0
-    scene.mode = mode
-    later = await changed(handles[0], first.sequence)
-    assert later.native_exit_code == (5 if mode == "mismatch" else 4)
-    result = await task
+    try:
+        await asyncio.wait_for(ready.wait(), timeout=5)
+        first = await changed(handles[0])
+        assert first.native_exit_code == 0
+        scene.mode = mode
+        later = await changed(handles[0], first.sequence)
+        assert later.native_exit_code == (5 if mode == "mismatch" else 4)
+    finally:
+        observed.set()
+        result = await asyncio.wait_for(task, timeout=10)
     assert result.exit_code == (5 if mode == "mismatch" else 4)
     assert result.sequence > first.sequence and not result.qualification_met
 

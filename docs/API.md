@@ -445,12 +445,16 @@ throughput_not_empty, quant_fp16_is_one, latency_has_entries.
 Generate Markdown/HTML reports from bench results.
 
 ```python
-from chimeraforge.report import generate_report, save_report, ReportConfig
+from pathlib import Path
+
+from chimeraforge.report import ReportConfig, generate_report, save_report
 
 config = ReportConfig(title="My Benchmark Report", format="html")
-report = generate_report(results, config)
+report = generate_report([Path("results/bench.json")], config)
 save_report(report, Path("report.html"))
 ```
+
+Since 0.106.1, a generated report protects the benchmark files it consumed. `save_report` replaces a distinct report file atomically.
 
 ### Key types
 
