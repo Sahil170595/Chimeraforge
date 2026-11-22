@@ -35,6 +35,10 @@ SOURCE_CATALOG = "catalog"
 DEFAULT_HF_LIMIT = 8
 
 
+class CatalogBuildError(RuntimeError):
+    """A resolved catalog could not be published."""
+
+
 # -- Network discovery -------------------------------------------------
 
 
@@ -44,11 +48,21 @@ def fetch_ollama_tags(base_url: str = DEFAULT_OLLAMA_URL) -> list[str]:
     try:
         resp = httpx.get(base_url.rstrip("/") + "/api/tags", timeout=_NETWORK_TIMEOUT_S)
         resp.raise_for_status()
-        return [m["name"] for m in resp.json().get("models", []) if m.get("name")]
+        payload = resp.json()
     except httpx.HTTPError as exc:
         raise ResolverError(f"could not list Ollama models at {base_url}: {exc}") from exc
     except ValueError as exc:  # non-JSON 200 body
         raise ResolverError(f"Ollama returned a non-JSON tag list at {base_url}: {exc}") from exc
+    rows = payload.get("models") if isinstance(payload, dict) and "error" not in payload else None
+    if not isinstance(rows, list):
+        raise ResolverError("Ollama returned an invalid model list")
+    tags = []
+    for row in rows:
+        name = row.get("name") if isinstance(row, dict) else None
+        if not isinstance(name, str) or not name.strip():
+            raise ResolverError("Ollama returned an invalid model name")
+        tags.append(name)
+    return tags
 
 
 def fetch_hf_text_generation(
@@ -188,9 +202,8 @@ def build_catalog(
 ) -> tuple[dict[str, ModelSpec], list[tuple[str, str]]]:
     """Resolve the catalog's models (seed +/- installed Ollama) and persist them.
 
-    Returns (resolved specs, errors). Writes the index to ``_catalog_path()`` so
-    later ``load_catalog()`` calls (and ``suggest --source catalog``) need no
-    network.
+    Returns (resolved specs, errors). An empty result leaves the previous
+    index available to offline readers. Failed publication raises CatalogBuildError.
     """
     ids: list[str] = []
     if include_seed:
@@ -201,18 +214,22 @@ def build_catalog(
     ids = list(dict.fromkeys(ids))
 
     specs, errors = resolve_many(ids, ollama_url=ollama_url, hf_token=hf_token)
-    _write_catalog(specs)
+    if specs:
+        _write_catalog(specs)
     return specs, errors
 
 
 def _write_catalog(specs: dict[str, ModelSpec]) -> None:
+    from chimeraforge.bench.fleet_gate_output import _write
+
     path = _catalog_path()
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
         payload = {"models": {k: v.to_dict() for k, v in specs.items()}}
-        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    except OSError as exc:
+        raw = json.dumps(payload, indent=2, allow_nan=False).encode("utf-8")
+        _write(path.resolve(), raw)
+    except (OSError, ValueError, RuntimeError, TypeError) as exc:
         log.warning("could not write catalog %s: %s", path, exc)
+        raise CatalogBuildError("could not publish the catalog index") from exc
 
 
 def load_catalog() -> dict[str, ModelSpec]:

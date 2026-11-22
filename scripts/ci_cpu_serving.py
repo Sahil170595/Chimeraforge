@@ -567,6 +567,7 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
     )
     files = list(results.glob("bench_*.json"))
     assert len(files) == 1, f"expected exactly one saved benchmark, found {files}"
+    original_benchmark = files[0].read_bytes()
     benchmark = json.loads(files[0].read_text(encoding="utf-8"))
     assert json.loads(benchmark_stdout) == benchmark, "stdout and saved JSON disagree"
     assert len(benchmark) == 1
@@ -593,6 +594,10 @@ def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> 
         )
         report = destination.read_text(encoding="utf-8")
         assert marker in report and MODEL_NAME in report
+    metadata = json.loads(run_cli(["report", "--results-dir", str(results), "--json"], cwd, env))
+    assert metadata["n_results"] == len(benchmark)
+    run_cli(["report", "--results-dir", str(results), "--output", str(files[0])], cwd, env, 1)
+    assert files[0].read_bytes() == original_benchmark
     log = stream_requests(client, cwd)
     profile_path = cwd / "workload.json"
     profile = json.loads(
