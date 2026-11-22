@@ -15,11 +15,28 @@ from chimeraforge import fleet_monitor
 from chimeraforge.cli import app
 from chimeraforge.fleet_monitor_types import FleetMonitorError
 from test_fleet_monitor import native_fleet as native_fleet
-from test_fleet_exporter_state import Scene, controls
+from test_fleet_exporter_state import Scene, changed, controls
 from test_fleet_monitor_transport import Transport
 
 NORMAL_CLEANUP_SECONDS = 1.0
 SHORT_CLEANUP_SECONDS = 0.1
+RECOVERY_OBSERVATION_SECONDS = 3.0
+RECOVERY_SCENARIO_SECONDS = 10.0
+
+
+def _capture_after_recovery(monkeypatch, boundaries, *, after_sequence):
+    native_boundary = fleet_exporter._await_run_boundary
+
+    async def boundary(running, seconds, stop):
+        recovered = await changed(running, after_sequence)
+        assert recovered.native_exit_code == 0
+        value = await native_boundary(running, seconds, stop)
+        assert value.observation.snapshot.sequence == recovered.sequence
+        assert value.observation.in_time
+        boundaries.append(value)
+        return value
+
+    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary)
 
 
 def native_shutdown(monkeypatch, fault, *, recover=False):
@@ -203,12 +220,22 @@ def native_setup(monkeypatch, fail_close):
     native_backend = fleet_monitor.get_backend
     native_cleanup = fleet_monitor._cleanup
     native_serve = api.serve_fleet_exporter
-    native_boundary = fleet_exporter._await_run_boundary
+    native_publish = fleet_exporter.SnapshotCache.publish
     facts = {
         name: []
-        for name in ("created", "closed", "cleanup", "owners", "errors", "handles", "boundaries")
+        for name in (
+            "created",
+            "closed",
+            "cleanup",
+            "owners",
+            "errors",
+            "handles",
+            "boundaries",
+            "publications",
+        )
     }
     polls, building = [0], [0]
+    recovery_committed = False
 
     def backend(*args, **kwargs):
         if polls[0] == 2 and building[0] == 2:
@@ -236,7 +263,12 @@ def native_setup(monkeypatch, fail_close):
         return result
 
     async def monitor(*args, **kwargs):
-        if not kwargs["stop_event"].is_set():
+        stop = kwargs["stop_event"]
+        if recovery_committed:
+            # A stopped native monitor owns no additional requests.
+            await stop.wait()
+            return await native_monitor(*args, **kwargs)
+        if not stop.is_set():
             polls[0] += 1
         try:
             return await native_monitor(*args, **kwargs)
@@ -244,26 +276,31 @@ def native_setup(monkeypatch, fail_close):
             facts["errors"].append(error)
             raise
 
+    def publish(cache, report, state="fresh"):
+        nonlocal recovery_committed
+        native_publish(cache, report, state)
+        snapshot = cache.snapshot()
+        facts["publications"].append((snapshot.sequence, snapshot.state, snapshot.native_exit_code))
+        if polls[0] >= 3 and state == "fresh":
+            recovery_committed = True
+
     @asynccontextmanager
     async def serving(*args, **kwargs):
         async with native_serve(*args, **kwargs) as running:
             facts["handles"].append(running)
             yield running
 
-    async def boundary(*args):
-        value = await native_boundary(*args)
-        facts["boundaries"].append(value)
-        return value
-
     monkeypatch.setattr(fleet_monitor, "get_backend", backend)
     monkeypatch.setattr(fleet_monitor, "_cleanup", cleanup)
     monkeypatch.setattr(fleet_exporter, "monitor_fleet", monitor)
     monkeypatch.setattr(api, "serve_fleet_exporter", serving)
-    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary)
+    monkeypatch.setattr(fleet_exporter.SnapshotCache, "publish", publish)
+    _capture_after_recovery(monkeypatch, facts["boundaries"], after_sequence=2)
     return scene, facts
 
 
 def assert_setup_cleanup(scene, facts, fail_close):
+    assert facts["publications"][1:3] == [(2, "unavailable", 4), (3, "fresh", 0)]
     cleanup = facts["cleanup"][0]
     assert cleanup["state"] == ("incomplete" if fail_close else "completed")
     assert cleanup["resources_closed"] and not cleanup["allowance_exceeded"]
@@ -292,28 +329,20 @@ def assert_setup_cleanup(scene, facts, fail_close):
 async def test_real_setup_cleanup_error_survives_unavailable_then_newer_pass(
     native_fleet, monkeypatch, fail_close
 ):
-    from test_fleet_exporter_state import changed
-
     scene, facts = native_setup(monkeypatch, fail_close)
     saved, indices = native_fleet
     result, error = None, None
-    task = asyncio.create_task(
-        api.run_fleet_exporter(
-            saved,
-            controls(),
-            candidate_index=indices["vllm"],
-            config=api.FleetExporterConfig(port=0, poll_seconds=0.1, stale_after_seconds=10),
-            policy=api.FleetExporterRunPolicy(0.6, True),
-        )
-    )
-    while not facts["handles"]:
-        await asyncio.sleep(0.01)
-    unavailable = await changed(facts["handles"][0], state="unavailable")
-    assert unavailable.native_exit_code == 4
-    recovered = await changed(facts["handles"][0], unavailable.sequence)
-    assert recovered.native_exit_code == 0
     try:
-        result = await task
+        result = await asyncio.wait_for(
+            api.run_fleet_exporter(
+                saved,
+                replace(controls(), observation_seconds=RECOVERY_OBSERVATION_SECONDS),
+                candidate_index=indices["vllm"],
+                config=api.FleetExporterConfig(port=0, poll_seconds=0.1, stale_after_seconds=10),
+                policy=api.FleetExporterRunPolicy(0.6, True),
+            ),
+            RECOVERY_SCENARIO_SECONDS,
+        )
     except api.FleetExporterError as caught:
         error = caught
     assert_setup_cleanup(scene, facts, fail_close)
@@ -345,7 +374,7 @@ def test_cli_transient_setup_failure_preserves_native_cleanup_ownership(
         "--interval",
         "0.01",
         "--observation-seconds",
-        "0.5",
+        str(RECOVERY_OBSERVATION_SECONDS),
         "--poll-seconds",
         "0.1",
         "--run-seconds",
@@ -369,15 +398,15 @@ def test_cli_transient_setup_failure_preserves_native_cleanup_ownership(
         assert rows[2]["qualification_met"] is True and not result.stderr
 
 
-def native_seed(monkeypatch, fail_close):
+def native_seed(monkeypatch, fail_close, *, hold_recovery=True):
     scene = Scene(monkeypatch)
     native_monitor = fleet_exporter.monitor_fleet
     native_backend = fleet_monitor.get_backend
     native_cleanup = fleet_monitor._cleanup
     native_serve = api.serve_fleet_exporter
     native_start = fleet_exporter.FleetExporter.start
-    native_boundary = fleet_exporter._await_run_boundary
     seeded = [False]
+    recovered = False
     facts = {
         name: [] for name in ("reports", "closed", "owners", "handles", "starts", "boundaries")
     }
@@ -403,11 +432,18 @@ def native_seed(monkeypatch, fail_close):
         return result
 
     async def monitor(*args, **kwargs):
-        seeded[0] = kwargs["stop_event"].is_set()
+        nonlocal recovered
+        stop = kwargs["stop_event"]
+        if recovered:
+            await stop.wait()
+            return await native_monitor(*args, **kwargs)
+        seeded[0] = stop.is_set()
         seed = seeded[0]
         report = await native_monitor(*args, **kwargs)
         if seed:
             facts["reports"].append(report)
+        elif hold_recovery and report.exit_code == 0:
+            recovered = True
         return report
 
     @asynccontextmanager
@@ -420,17 +456,13 @@ def native_seed(monkeypatch, fail_close):
         facts["starts"].append(self._native_cleanup_failed)
         await native_start(self)
 
-    async def boundary(*args):
-        value = await native_boundary(*args)
-        facts["boundaries"].append(value)
-        return value
-
     monkeypatch.setattr(fleet_monitor, "get_backend", backend)
     monkeypatch.setattr(fleet_monitor, "_cleanup", cleanup)
     monkeypatch.setattr(fleet_exporter, "monitor_fleet", monitor)
     monkeypatch.setattr(api, "serve_fleet_exporter", serving)
     monkeypatch.setattr(fleet_exporter.FleetExporter, "start", start)
-    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary)
+    if hold_recovery:
+        _capture_after_recovery(monkeypatch, facts["boundaries"], after_sequence=0)
     return scene, facts
 
 
@@ -468,12 +500,12 @@ async def test_real_cancelled_seed_cleanup_remains_owned_after_later_pass(
         result = await asyncio.wait_for(
             api.run_fleet_exporter(
                 saved,
-                controls(),
+                replace(controls(), observation_seconds=RECOVERY_OBSERVATION_SECONDS),
                 candidate_index=indices["vllm"],
                 config=api.FleetExporterConfig(port=0, poll_seconds=0.1, stale_after_seconds=10),
                 policy=api.FleetExporterRunPolicy(0.4, True),
             ),
-            5,
+            RECOVERY_SCENARIO_SECONDS,
         )
     except api.FleetExporterError as caught:
         error = caught
@@ -496,7 +528,7 @@ async def test_real_cancelled_seed_cleanup_remains_owned_after_later_pass(
 def test_cli_seed_cleanup_keeps_startup_and_default_protocol(
     native_fleet, monkeypatch, tmp_path, required, fail_close
 ):
-    scene, facts = native_seed(monkeypatch, fail_close)
+    scene, facts = native_seed(monkeypatch, fail_close, hold_recovery=required)
     saved, indices = native_fleet
     path = tmp_path / "saved.json"
     saved.save(path)
@@ -511,7 +543,7 @@ def test_cli_seed_cleanup_keeps_startup_and_default_protocol(
         "--interval",
         "0.01",
         "--observation-seconds",
-        "0.5",
+        str(RECOVERY_OBSERVATION_SECONDS),
         "--poll-seconds",
         "0.1",
         "--run-seconds",
