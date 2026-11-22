@@ -9,7 +9,7 @@ native fleet observation through a loopback Prometheus endpoint. Install the
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install "chimeraforge[exporter]==0.106.0"
+python -m pip install "chimeraforge[exporter]==0.106.1"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \

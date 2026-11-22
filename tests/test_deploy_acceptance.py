@@ -9,11 +9,15 @@ import sys
 import pytest
 
 from test_deploy import artifact, export
-from test_deploy_placement import native_two_gpu  # noqa: F401
-from test_deploy_fleets import native_fleet  # noqa: F401
+from test_deploy_placement import native_two_gpu as native_two_gpu_fixture
+from test_deploy_fleets import native_fleet as native_fleet_fixture
 from chimeraforge.planner.resolver import SOURCE_OLLAMA
 
 TOOL_TIMEOUT_S = 30
+
+
+native_two_gpu = native_two_gpu_fixture
+native_fleet = native_fleet_fixture
 
 
 def _missing_tool(message):

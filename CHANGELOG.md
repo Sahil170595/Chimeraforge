@@ -5,7 +5,15 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.109.0] - Unreleased
+## [0.106.1] - 2026-11-22
+
+### Fixes from independent review
+
+- Qualify only fleet observations committed by the monotonic deadline. A delayed caller wake-up cannot turn a later observation into an on-time pass.
+- Preserve literal dollar signs in systemd executable paths. Refuse directory forms and executable quotes that systemd rejects.
+- Compare every requested benchmark candidate and omit TTFT percentages when measurements are missing or contain unavailable samples.
+- Keep the last usable catalog and exit nonzero when refresh finds no resolved models or cannot publish the replacement.
+- Refuse audit outputs that alias input evidence or each other, and render the requested outputs before writing either.
 
 ### Saved benchmark report consistency
 
