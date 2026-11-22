@@ -294,8 +294,17 @@ def format_comparison_table(rows: list[ComparisonRow], console: Console) -> None
 
 
 def format_comparison_json(rows: list[ComparisonRow]) -> str:
-    """Serialize comparison rows to JSON."""
-    return json.dumps([asdict(row) for row in rows], indent=2, allow_nan=False)
+    """Serialize flat rows with the established numeric absence markers."""
+    data = []
+    for row in rows:
+        item = asdict(row)
+        for side in ("baseline", "candidate"):
+            for metric, unavailable in (("ttft", -1.0), ("throughput", 0.0), ("duration", 0.0)):
+                field = f"{side}_{metric}"
+                if item[field] is None:
+                    item[field] = unavailable
+        data.append(item)
+    return json.dumps(data, indent=2, allow_nan=False)
 
 
 def format_candidate_groups_json(baseline: Path, comparisons: list[CandidateComparison]) -> str:

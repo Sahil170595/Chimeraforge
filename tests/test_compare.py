@@ -371,10 +371,12 @@ class TestCLICompare:
             50,
             20,
         ]
-        assert flat_rows == [row for candidate in candidates for row in candidate["rows"]]
+        expected_flat = [dict(row) for candidate in candidates for row in candidate["rows"]]
+        expected_flat[0]["candidate_ttft"] = -1.0
+        assert flat_rows == expected_flat
         single = runner.invoke(app, [*command, str(first), "--json"])
         assert single.exit_code == 0, single.output
-        assert json.loads(single.stdout) == candidates[0]["rows"]
+        assert json.loads(single.stdout) == expected_flat[:1]
         single_group = runner.invoke(app, [*command, str(first), "--grouped-json"])
         assert single_group.exit_code == 0, single_group.output
         assert json.loads(single_group.stdout)["candidates"] == [candidates[0]]
