@@ -9,7 +9,7 @@ native fleet observation through a loopback Prometheus endpoint. Install the
 Uvicorn 0.54.0, declared directly in that extra; no Prometheus client is needed.
 
 ```bash
-python -m pip install "chimeraforge[exporter]==0.106.0"
+python -m pip install "chimeraforge[exporter]==0.106.1"
 chimeraforge monitor-fleet-exporter --from-plan fleet-plan.json \
   --candidate-index "$FLEET_INDEX" \
   --endpoint replica-a=http://127.0.0.1:8101/metrics \
@@ -100,7 +100,10 @@ The expected population comes from original admission, not the seed template or
 the latest observed row count. No raw fresh report is retained in the entry.
 Initial, unavailable and stopped templates are not real observations.
 
-Qualification requires the timeout boundary, a real publication, exact original
+Qualification requires an observation committed to the cache by the monotonic
+cutoff, including time spent assembling its output. A publication committed
+after the cutoff retains its observed native code and yields qualification exit 4.
+Eligible entries use age at the cutoff. Qualification also requires exact original
 coverage and `0 <= raw monotonic age < stale_after_seconds`. Equality at the TTL,
 clock regression or non-finite age cannot pass. The existing public snapshot's
 age clamping, fields, Prometheus bytes and readiness contract are unchanged.

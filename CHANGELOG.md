@@ -13,6 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validate Ollama discovery responses before resolving or publishing the requested catalog.
 - Report complete, partial, or failed refreshes as one JSON document. Failed refreshes return exit `1`.
 
+## [0.106.1] - 2026-11-22
+
+### Fixes from independent review
+
+- Qualify only fleet observations committed by the monotonic deadline. A delayed caller wake-up cannot turn a later observation into an on-time pass.
+- Preserve literal dollar signs in systemd executable paths. Refuse directory forms and executable quotes that systemd rejects.
+- Compare every requested benchmark candidate and omit TTFT percentages when measurements are missing or contain unavailable samples.
+- Keep the last usable catalog and exit nonzero when a source returns an invalid model list, refresh finds no resolved models, or the replacement cannot be published.
+- Refuse audit outputs that alias input evidence or each other, and render the requested outputs before writing either.
+
+### Saved benchmark report consistency
+
+- Validate, count, and render the same loaded benchmark snapshot in the CLI. The SDK also binds a generated report to the files it consumed.
+- Reject report destinations that alias benchmark inputs, including files collected through `--results-dir`, and replace standalone reports atomically.
+
 ## [0.106.0] - 2026-11-20
 
 ### Finite exporter final-observation requirement

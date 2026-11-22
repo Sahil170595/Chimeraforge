@@ -214,6 +214,19 @@ class TestGenerateReport:
 
 
 class TestSaveReport:
+    def test_saved_sdk_report_protects_its_consumed_results(self, tmp_path: Path):
+        from dataclasses import replace
+
+        from chimeraforge.report.generator import generate_report, save_report
+
+        source = tmp_path / "bench.json"
+        _write_bench_json(source, [_make_result()])
+        original = source.read_bytes()
+        report = replace(generate_report([source]), title="A revised report")
+        with pytest.raises(ValueError, match="input"):
+            save_report(report, source)
+        assert source.read_bytes() == original
+
     def test_save_and_read(self, tmp_path: Path):
         from chimeraforge.report.generator import Report, save_report
 
@@ -282,6 +295,53 @@ class TestFormatReportRich:
 
 
 class TestCLIReport:
+    def test_validation_and_json_metadata_use_one_snapshot(self, tmp_path: Path, monkeypatch):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        source = (tmp_path / "bench.json").resolve()
+        _write_bench_json(source, [_make_result()])
+        reads = 0
+        read = Path.read_text
+
+        def read_result(path, *args, **kwargs):
+            nonlocal reads
+            if path == source:
+                reads += 1
+                if reads > 1:
+                    return "[]"
+            return read(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "read_text", read_result)
+        result = CliRunner().invoke(app, ["report", "--results-files", str(source), "--json"])
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout)["n_results"] == reads == 1
+
+    @pytest.mark.parametrize("selector", ["explicit", "directory", "hardlink"])
+    def test_cli_protects_every_consumed_benchmark_file(self, tmp_path: Path, selector: str):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        source = tmp_path / "bench.json"
+        _write_bench_json(source, [_make_result()])
+        original = source.read_bytes()
+        output = source
+        inputs = ["--results-files", str(source)]
+        if selector == "directory":
+            inputs = ["--results-dir", str(tmp_path)]
+        if selector == "hardlink":
+            output = tmp_path / "linked-report.md"
+            try:
+                output.hardlink_to(source)
+            except OSError:
+                pytest.skip("test filesystem does not support hard links")
+        result = CliRunner().invoke(app, ["report", *inputs, "--output", str(output)])
+        assert result.exit_code == 1
+        assert "accepted input" in result.output
+        assert source.read_bytes() == original and output.read_bytes() == original
+
     @staticmethod
     def _strip_ansi(text: str) -> str:
         import re
@@ -316,6 +376,7 @@ class TestCLIReport:
         f = tmp_path / "bench.json"
         _write_bench_json(f, [_make_result()])
         out = tmp_path / "report.md"
+        out.write_text("previous report", encoding="utf-8")
 
         runner = CliRunner()
         result = runner.invoke(
@@ -329,7 +390,7 @@ class TestCLIReport:
             ],
         )
         assert result.exit_code == 0
-        assert out.exists()
+        assert "## Summary" in out.read_text(encoding="utf-8")
 
     def test_report_html_format(self, tmp_path: Path):
         from typer.testing import CliRunner
