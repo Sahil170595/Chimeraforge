@@ -8,10 +8,10 @@ inline CSS (no external dependencies or template engines).
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from rich.console import Console
@@ -53,6 +53,14 @@ class Report:
     content: str
     timestamp: str
     n_results: int
+    _protected_paths: InitVar[tuple[Path, ...]] = ()
+
+    def __post_init__(self, _protected_paths: tuple[Path, ...]) -> None:
+        object.__setattr__(self, "_protected_paths", _protected_paths)
+
+    @property
+    def _input_paths(self) -> tuple[Path, ...]:
+        return cast(tuple[Path, ...], object.__getattribute__(self, "_protected_paths"))
 
 
 # ---------------------------------------------------------------------------
@@ -84,6 +92,12 @@ def load_results(paths: list[Path]) -> list[dict]:
         elif isinstance(data, dict):
             results.append(data)
     return results
+
+
+def _load_report_inputs(paths: list[Path]) -> tuple[list[dict], tuple[Path, ...]]:
+    declared = [path.absolute() for path in paths]
+    resolved = [path.resolve() for path in declared]
+    return load_results(resolved), tuple(dict.fromkeys([*declared, *resolved]))
 
 
 # ---------------------------------------------------------------------------
@@ -596,11 +610,14 @@ def generate_report(
     Returns:
         A ``Report`` dataclass containing the rendered content.
     """
-    if config is None:
-        config = ReportConfig()
+    results, inputs = _load_report_inputs(result_paths)
+    return _render_loaded_report(results, config if config is not None else ReportConfig(), inputs)
 
-    results = load_results(result_paths)
 
+def _render_loaded_report(
+    results: list[dict], config: ReportConfig, inputs: tuple[Path, ...]
+) -> Report:
+    """Render the exact results already admitted by the caller."""
     if config.format == "html":
         content = generate_html(results, config)
     else:
@@ -612,11 +629,12 @@ def generate_report(
         content=content,
         timestamp=datetime.now(timezone.utc).isoformat(),
         n_results=len(results),
+        _protected_paths=inputs,
     )
 
 
 def save_report(report: Report, output_path: Path) -> Path:
-    """Write a report to a file.
+    """Replace a report file atomically while protecting any consumed inputs.
 
     Creates parent directories if they do not exist.
 
@@ -627,9 +645,16 @@ def save_report(report: Report, output_path: Path) -> Path:
     Returns:
         The resolved output path.
     """
+    from chimeraforge.api import PlanError
+    from chimeraforge.bench.fleet_gate_output import _write
+    from chimeraforge.plan_study import protect_output
+
     output_path = output_path.resolve()
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(report.content, encoding="utf-8")
+    protect_output(output_path, report._input_paths)
+    try:
+        _write(output_path, report.content.encode("utf-8"))
+    except PlanError as exc:
+        raise OSError("could not save benchmark report") from exc
     return output_path
 
 
