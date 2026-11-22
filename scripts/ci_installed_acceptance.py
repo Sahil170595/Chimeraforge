@@ -117,8 +117,11 @@ def accept_compare(cwd: Path, env: dict) -> None:
     assert [group["rows"][0]["delta_throughput_pct"] for group in groups] == [25.0, -50.0]
     assert [group["rows"][0]["delta_ttft_pct"] for group in groups] == [None, 100.0]
     assert isinstance(flat, list)
-    assert flat == [row for group in groups for row in group["rows"]]
-    assert json.loads(run_cli([*common, str(first), "--json"], cwd, env)) == groups[0]["rows"]
+    expected_flat = [dict(row) for group in groups for row in group["rows"]]
+    assert expected_flat[0]["candidate_ttft"] is None
+    expected_flat[0]["candidate_ttft"] = -1.0
+    assert flat == expected_flat
+    assert json.loads(run_cli([*common, str(first), "--json"], cwd, env)) == expected_flat[:1]
 
 
 def main(argv: list[str] | None = None) -> int:
