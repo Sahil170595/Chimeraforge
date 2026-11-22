@@ -5,6 +5,11 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.106.2] - 2026-11-22
+
+- Synchronize the native exporter cleanup test with a real published observation before starting the finite deadline. This stabilizes hosted Windows validation.
+- Ship the exporter, systemd, benchmark, catalog, and output protection fixes listed under 0.106.1. The 0.106.1 GitHub tag was created, and its PyPI publication stopped at hosted validation.
+
 ## [0.106.1] - 2026-11-22
 
 ### Fixes from independent review
