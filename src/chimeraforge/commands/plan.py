@@ -548,6 +548,8 @@ def plan(
     # 0 means "model an unchunked prefill", which is the pre-P8.3 behaviour and
     # must stay reachable; None is what the engine reads as off.
     chunk_budget = max_num_batched_tokens or None
+    if fleet and save:
+        _fail("--save does not yet support heterogeneous fleets")
     # One override set describes one card, and a fleet is a mix of GPU types:
     # applying the same figures to each type would fabricate specs, and dropping
     # them would plan hardware the user did not describe.
@@ -811,8 +813,6 @@ def plan(
                 )
         result = run_plan(**asdict(plan_request))
         if save:
-            if fleet:
-                _fail("--save does not yet support heterogeneous fleets")
             from chimeraforge.api import snapshot
 
             snapshot(plan_request, result).save(save)

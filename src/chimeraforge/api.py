@@ -104,7 +104,7 @@ from chimeraforge.plan_bundle import PlanBundle
 from chimeraforge.plan_study import PlanScenario, PlanStudy, StudyFeasibilityPolicy
 from chimeraforge.prediction_score import PredictionScorePolicy, PredictionScorecard
 from chimeraforge.prediction_bundle import PredictionBundle
-from chimeraforge.planner.engine import Candidate
+from chimeraforge.planner.engine import Candidate, _validate_lora_options
 from chimeraforge.planner.hardware import GPU_OVERRIDE_FIELDS
 from chimeraforge.planner.resolver import ModelSpec, ResolverError
 from chimeraforge.planner.service import PlanResult, run_plan, validate_plan_inputs
@@ -489,6 +489,10 @@ class PlanRequest:
             value = values[name]
             if value is not None and value <= 0:
                 raise PlanError(f"{name} must be positive")
+        try:
+            _validate_lora_options(self.lora_adapters, self.lora_rank, self.lora_target)
+        except ValueError as exc:
+            raise PlanError(str(exc)) from exc
         if self.think_time_s is not None and self.think_time_s < 0:
             raise PlanError("think_time_s must be non-negative")
         if (self.think_time_s is None) != (self.session_turns is None):

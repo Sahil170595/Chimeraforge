@@ -49,6 +49,39 @@ class TestCLIPlan:
         assert summary.exit_code == structured.exit_code == 1
         assert "finite" in summary.output and "finite" in json.loads(structured.stdout)["error"]
 
+    @pytest.mark.parametrize(
+        ("options", "message"),
+        [
+            (["--lora-adapters", "1", "--lora-target", "bogus"], "unknown lora_target"),
+            (["--lora-adapters", "100000", "--lora-rank", "16"], "adapter ceiling"),
+            (["--lora-adapters", "1", "--lora-rank", "100000"], "lora_rank must be between"),
+            (
+                ["--fleet", "H100 80GB,RTX 4090 24GB", "--save", "unused.json"],
+                "heterogeneous fleets",
+            ),
+        ],
+    )
+    def test_invalid_plan_options_refuse_before_measurement(self, monkeypatch, options, message):
+        from typer.testing import CliRunner
+
+        from chimeraforge import measure
+        from chimeraforge.cli import app
+        from chimeraforge.planner import service
+
+        async def unexpected_measurement(*args, **kwargs):
+            pytest.fail("planner began measurement before rejecting invalid options")
+
+        def unexpected_search(**kwargs):
+            pytest.fail("planner began search before rejecting invalid options")
+
+        monkeypatch.setattr(measure, "measure_model", unexpected_measurement)
+        monkeypatch.setattr(service, "run_plan", unexpected_search)
+        result = CliRunner().invoke(
+            app, ["plan", "--model", "llama3.2-3b", "--measure", "--no-network", *options, "--json"]
+        )
+        assert result.exit_code == 1
+        assert message in json.loads(result.stdout)["error"]
+
     def test_valid_measurement_still_runs_before_search_and_has_clean_json(self, monkeypatch):
         from types import SimpleNamespace
 
