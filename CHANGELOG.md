@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Qualify only fleet observations committed by the monotonic deadline. A delayed caller wake-up cannot turn a later observation into an on-time pass.
 - Preserve literal dollar signs in systemd executable paths. Refuse directory forms and executable quotes that systemd rejects.
 - Compare every requested benchmark candidate and omit TTFT percentages when measurements are missing or contain unavailable samples.
-- Keep the last usable catalog and exit nonzero when refresh finds no resolved models or cannot publish the replacement.
+- Keep the last usable catalog and exit nonzero when a source returns an invalid model list, refresh finds no resolved models, or the replacement cannot be published.
 - Refuse audit outputs that alias input evidence or each other, and render the requested outputs before writing either.
 
 ### Saved benchmark report consistency
