@@ -100,7 +100,11 @@ def _image(value: str | None) -> str:
 
 def _executable(value: str | None) -> str:
     path = _safe_text(value, "executable")
-    if not path.startswith("/") or "\\" in path:
+    if (
+        not path.startswith("/")
+        or any(char in path for char in ("\\", "'", '"'))
+        or path.rsplit("/", 1)[-1] in ("", ".", "..")
+    ):
         raise DeploymentError(
             "executable must be the installed engine/interpreter's absolute POSIX path"
         )
@@ -403,9 +407,10 @@ def _ollama_env(candidate: Candidate, inputs: dict, host: str) -> dict[str, str]
     return env
 
 
-def _systemd_arg(value: str) -> str:
-    # systemd parses quoting, then expands specifiers (%) and variables ($).
-    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%").replace("$", "$$")
+def _systemd_arg(value: str, *, expand_variables: bool = False) -> str:
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%")
+    if expand_variables:
+        escaped = escaped.replace("$", "$$")
     return '"' + escaped + '"'
 
 
@@ -418,6 +423,9 @@ def _systemd_content(
     declaration: bool = False,
 ) -> str:
     source = "Serving declaration" if declaration else "Saved plan"
+    # The executable path is resolved before systemd expands command variables.
+    expand_variables = "$" not in argv[0]
+    exec_prefix = "" if expand_variables else ":"
     return (
         f"# {source} {fingerprint}\n[Unit]\n"
         f"Description=ChimeraForge {backend} inference\n"
@@ -426,7 +434,8 @@ def _systemd_content(
             f"Environment={_systemd_arg(key + '=' + value)}\n" for key, value in environment.items()
         )
         + "ExecStart="
-        + " ".join(_systemd_arg(value) for value in argv)
+        + exec_prefix
+        + " ".join(_systemd_arg(value, expand_variables=expand_variables) for value in argv)
         + "\nRestart=on-failure\n\n[Install]\nWantedBy=default.target\n"
     )
 

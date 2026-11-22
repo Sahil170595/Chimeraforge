@@ -11,6 +11,7 @@ import logging
 import math
 from pathlib import Path
 import threading
+import time
 from types import MappingProxyType
 from typing import Any, TYPE_CHECKING
 
@@ -428,12 +429,15 @@ class _RunBoundary:
 async def _await_run_boundary(
     running: FleetExporter, run_seconds: float, stop: asyncio.Event
 ) -> _RunBoundary:
+    cutoff = time.monotonic() + run_seconds
     deadline = False
     try:
         await asyncio.wait_for(stop.wait(), run_seconds)
     except asyncio.TimeoutError:
         deadline = True
-    return _RunBoundary(deadline, run_seconds, running._cache._capture())
+    return _RunBoundary(
+        deadline, run_seconds, running._cache._capture(cutoff=cutoff if deadline else None)
+    )
 
 
 def _finish_run(
@@ -467,6 +471,7 @@ def _finish_run(
     qualified_code = (
         observed_code
         if boundary.deadline_reached
+        and captured.in_time
         and snapshot.sequence > 0
         and state == "fresh"
         and valid_age
