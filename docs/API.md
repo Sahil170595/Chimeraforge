@@ -454,7 +454,7 @@ report = generate_report([Path("results/bench.json")], config)
 save_report(report, Path("report.html"))
 ```
 
-Since 0.106.1, a generated report protects the benchmark files it consumed. `save_report` replaces a distinct report file atomically.
+Since 0.106.2, a generated report protects the benchmark files it consumed. `save_report` replaces a distinct report file atomically.
 
 ### Key types
 

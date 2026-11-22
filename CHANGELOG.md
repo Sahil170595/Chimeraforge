@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compare every requested candidate independently. `--json` returns all matched rows as a flat array in candidate file order. `--grouped-json` returns per-candidate rows and both sides' unmatched configuration keys.
 - Reject duplicate configurations within an input. Report unavailable metric values and deltas without counting them in aggregate changes.
 
+## [0.106.2] - 2026-11-22
+
+- Synchronize the native exporter cleanup test with a real published observation before starting the finite deadline. This stabilizes hosted Windows validation.
+- Ship the exporter, systemd, benchmark, catalog, and output protection fixes listed under 0.106.1. The 0.106.1 GitHub tag was created, and its PyPI publication stopped at hosted validation.
+
 ## [0.106.1] - 2026-11-22
 
 ### Fixes from independent review
