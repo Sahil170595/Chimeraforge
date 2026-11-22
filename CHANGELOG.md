@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require the full SHA-256 fingerprint when one is supplied. Include the full fingerprint in the Markdown audit.
 - Protect the matrix, measurements, and planner corpus from all audit outputs. Validate both destinations and render all requested documents before separately atomic replacement.
 
+## [0.106.2] - 2026-11-22
+
+- Synchronize the native exporter cleanup test with a real published observation before starting the finite deadline. This stabilizes hosted Windows validation.
+- Ship the exporter, systemd, benchmark, catalog, and output protection fixes listed under 0.106.1. The 0.106.1 GitHub tag was created, and its PyPI publication stopped at hosted validation.
+
 ## [0.106.1] - 2026-11-22
 
 ### Fixes from independent review
