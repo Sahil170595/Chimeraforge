@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Independent benchmark comparisons
 
-- Compare every requested candidate file independently and keep both sides' unmatched configuration keys. Multi-candidate JSON groups rows by input file, and single-candidate JSON keeps the existing row array.
+- Compare every requested candidate independently. `--json` returns all matched rows as a flat array in candidate file order. `--grouped-json` returns per-candidate rows and both sides' unmatched configuration keys.
 - Reject duplicate configurations within an input. Report unavailable metric values and deltas without counting them in aggregate changes.
 
 ## [0.106.0] - 2026-11-20

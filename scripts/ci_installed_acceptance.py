@@ -108,14 +108,17 @@ def accept_compare(cwd: Path, env: dict) -> None:
             },
         }
         path.write_text(json.dumps([row]), encoding="utf-8")
-    common = ["compare", "--json", "--baseline", str(baseline), "--candidate"]
-    document = json.loads(run_cli([*common, f"{first},{second}"], cwd, env))
+    common = ["compare", "--baseline", str(baseline), "--candidate"]
+    flat = json.loads(run_cli([*common, f"{first},{second}", "--json"], cwd, env))
+    document = json.loads(run_cli([*common, f"{first},{second}", "--grouped-json"], cwd, env))
     assert document["schema_version"] == 1 and document["baseline"] == str(baseline)
     groups = document["candidates"]
     assert [group["candidate"] for group in groups] == [str(first), str(second)]
     assert [group["rows"][0]["delta_throughput_pct"] for group in groups] == [25.0, -50.0]
     assert [group["rows"][0]["delta_ttft_pct"] for group in groups] == [None, 100.0]
-    assert json.loads(run_cli([*common, str(first)], cwd, env)) == groups[0]["rows"]
+    assert isinstance(flat, list)
+    assert flat == [row for group in groups for row in group["rows"]]
+    assert json.loads(run_cli([*common, str(first), "--json"], cwd, env)) == groups[0]["rows"]
 
 
 def main(argv: list[str] | None = None) -> int:

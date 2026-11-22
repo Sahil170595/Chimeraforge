@@ -24,13 +24,18 @@ def compare(
     output_json: bool = typer.Option(
         False,
         "--json",
-        help="Output as JSON.",
+        help="Output matched rows as a flat JSON array.",
     ),
     verbose: bool = typer.Option(
         False,
         "--verbose",
         "-v",
         help="Enable debug logging.",
+    ),
+    grouped_json: bool = typer.Option(
+        False,
+        "--grouped-json",
+        help="Output JSON grouped by candidate, including unmatched configurations.",
     ),
 ) -> None:
     """Compare benchmark results between runs."""
@@ -49,6 +54,10 @@ def compare(
         level=logging.DEBUG if verbose else logging.WARNING,
         format="%(asctime)s %(name)s %(levelname)s  %(message)s",
     )
+
+    if output_json and grouped_json:
+        typer.echo("Error: --json and --grouped-json are mutually exclusive.", err=True)
+        raise typer.Exit(code=1)
 
     baseline_path = Path(baseline)
     if not baseline_path.is_file():
@@ -69,12 +78,11 @@ def compare(
         typer.echo(f"Error: failed to read result file(s): {exc}", err=True)
         raise typer.Exit(code=1)
 
+    if grouped_json:
+        typer.echo(format_candidate_groups_json(baseline_path, comparisons))
+        return
     if output_json:
-        typer.echo(
-            format_comparison_json(comparisons[0].rows)
-            if len(comparisons) == 1
-            else format_candidate_groups_json(baseline_path, comparisons)
-        )
+        typer.echo(format_comparison_json([row for group in comparisons for row in group.rows]))
         return
 
     for group in comparisons:

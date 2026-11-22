@@ -336,9 +336,16 @@ class TestCLICompare:
         _write_bench_json(no_match, [candidate_only])
         runner = CliRunner()
         command = ["compare", "--baseline", str(base), "--candidate"]
-        result = runner.invoke(app, [*command, f"{first},{second},{no_match}", "--json"])
+        arguments = [*command, f"{first},{second},{no_match}"]
+        flat = runner.invoke(app, [*arguments, "--json"])
+        assert flat.exit_code == 0, flat.output
+        flat_rows = json.loads(flat.stdout)
+        assert isinstance(flat_rows, list)
+        assert [row["candidate_throughput"] for row in flat_rows] == [50.0, 20.0]
+
+        result = runner.invoke(app, [*arguments, "--grouped-json"])
         assert result.exit_code == 0, result.output
-        report = json.loads(result.output)
+        report = json.loads(result.stdout)
         assert report["schema_version"] == 1 and report["baseline"] == str(base)
         candidates = report["candidates"]
         assert [value["candidate"] for value in candidates] == [
@@ -364,8 +371,20 @@ class TestCLICompare:
             50,
             20,
         ]
+        assert flat_rows == [row for candidate in candidates for row in candidate["rows"]]
         single = runner.invoke(app, [*command, str(first), "--json"])
-        assert json.loads(single.output) == candidates[0]["rows"]
+        assert single.exit_code == 0, single.output
+        assert json.loads(single.stdout) == candidates[0]["rows"]
+        single_group = runner.invoke(app, [*command, str(first), "--grouped-json"])
+        assert single_group.exit_code == 0, single_group.output
+        assert json.loads(single_group.stdout)["candidates"] == [candidates[0]]
+        no_rows = runner.invoke(app, [*command, str(no_match), "--json"])
+        assert no_rows.exit_code == 0, no_rows.output
+        assert json.loads(no_rows.stdout) == []
+
+        conflicting = runner.invoke(app, [*arguments, "--json", "--grouped-json"])
+        assert conflicting.exit_code == 1
+        assert not conflicting.stdout and "mutually exclusive" in conflicting.stderr
 
     @pytest.mark.parametrize("side", ["baseline", "candidate"])
     def test_duplicate_configuration_is_rejected(self, tmp_path: Path, side: str):

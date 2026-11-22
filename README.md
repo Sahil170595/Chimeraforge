@@ -1270,7 +1270,7 @@ chimeraforge compare --baseline run1.json --candidate run2.json,run3.json --json
 
 Matches configurations by model, backend, quantization, workload, and context length. The 0.107.0 candidate compares each candidate file independently in the specified order and rejects duplicate configurations within a file. Unavailable metrics appear as `n/a` in the terminal and `null` in JSON. This includes native summaries that mixed an unavailable sample into their mean. Each total uses only configurations with a defined delta for that metric.
 
-With one candidate, `--json` returns the existing row array. In 0.107.0, multiple candidates return a document with `schema_version: 1`, the `baseline` path, and an ordered `candidates` array. Each entry includes its `candidate` path, matched `rows`, and the `baseline_only` and `candidate_only` configuration keys.
+`--json` returns a flat array of matched rows in candidate file order. Use `--grouped-json` for a document with `schema_version: 1`, the `baseline` path, and an ordered `candidates` array. Each entry includes its `candidate` path, matched `rows`, and the `baseline_only` and `candidate_only` configuration keys.
 
 ### `refit` -- update planner coefficients
 
