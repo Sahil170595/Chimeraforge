@@ -389,16 +389,26 @@ class TestCLICompare:
         assert not conflicting.stdout and "mutually exclusive" in conflicting.stderr
 
     @pytest.mark.parametrize(
-        "throughput,missing,expected",
-        [(45, False, 0), (44, False, 3), (44, True, 3), (45, True, 4), (-1, False, 4)],
+        "baseline,throughput,limit,missing,expected",
+        [
+            (50, 45, "10", False, 0),
+            (50, 44, "10", False, 3),
+            (50, 44, "10", True, 3),
+            (50, 45, "10", True, 4),
+            (50, -1, "10", False, 4),
+            (100, 45, "55", False, 0),
+            (100, 44.99999999999999, "55", False, 3),
+        ],
     )
-    def test_throughput_gate_retains_grouped_report(self, tmp_path, throughput, missing, expected):
+    def test_throughput_gate_retains_grouped_report(
+        self, tmp_path, baseline, throughput, limit, missing, expected
+    ):
         from typer.testing import CliRunner
 
         from chimeraforge.cli import app
 
         base, cand = tmp_path / "base.json", tmp_path / "cand.json"
-        rows = [_make_result(throughput_mean=50)]
+        rows = [_make_result(throughput_mean=baseline)]
         if missing:
             rows.append(_make_result(model="missing"))
         _write_bench_json(base, rows)
@@ -415,7 +425,7 @@ class TestCLICompare:
                 str(cand),
                 "--grouped-json",
                 "--max-throughput-regression-pct",
-                "10",
+                limit,
             ],
         )
         assert result.exit_code == expected, result.output

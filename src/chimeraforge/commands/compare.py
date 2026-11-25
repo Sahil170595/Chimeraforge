@@ -49,6 +49,7 @@ def compare(
     """Compare benchmark results between runs."""
     import logging
     import math
+    from fractions import Fraction
     from pathlib import Path
 
     from chimeraforge.compare.comparator import (
@@ -113,11 +114,18 @@ def compare(
 
     if max_throughput_regression_pct is None:
         return
-    deltas = [row.delta_throughput_pct for group in comparisons for row in group.rows]
-    if any(delta is not None and delta < -max_throughput_regression_pct for delta in deltas):
-        typer.echo(f"Throughput loss exceeded {max_throughput_regression_pct:g}%.", err=True)
-        raise typer.Exit(code=THROUGHPUT_REGRESSION)
-    if any(not group.rows or group.baseline_only for group in comparisons) or None in deltas:
+    # Compare the measured decimal values so binary rounding in the displayed
+    # delta cannot turn a loss exactly at the limit into a breach.
+    minimum_ratio = 1 - Fraction(str(max_throughput_regression_pct)) / 100
+    incomplete = any(not group.rows or group.baseline_only for group in comparisons)
+    for row in (row for group in comparisons for row in group.rows):
+        base, measured = row.baseline_throughput, row.candidate_throughput
+        if row.delta_throughput_pct is None or base is None or measured is None:
+            incomplete = True
+        elif Fraction(str(measured)) < Fraction(str(base)) * minimum_ratio:
+            typer.echo(f"Throughput loss exceeded {max_throughput_regression_pct:g}%.", err=True)
+            raise typer.Exit(code=THROUGHPUT_REGRESSION)
+    if incomplete:
         typer.echo(
             "The throughput gate needs usable measurements for every baseline configuration.",
             err=True,
