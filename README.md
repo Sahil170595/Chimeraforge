@@ -680,6 +680,12 @@ Scores the planner's own predictions by provenance class, so "estimated" carries
 
 Chimeraforge 0.108.0 requires the full 64-character SHA-256 digest for `--expect-fingerprint` and includes it in the Markdown audit. The requested JSON and Markdown files must be distinct from one another and from the matrix, measurements, and planner corpus. Both documents are rendered before publication, and each file is replaced atomically.
 
+CI can set a minimum number of cells contributing to the scorecard. Each eligible cell counts once, even when it produces several metrics. Skipped and underspecified cells are excluded. Below the minimum, the command still emits the full audit and exits `4`. The threshold controls scorecard coverage. The scorecard continues to report sample size and error per group.
+
+```bash
+chimeraforge validate --matrix matrix.json --measurements captured.json --min-scored-cells 5 --output audit.json
+```
+
 Measurements are sourced records, not bare numbers. Each cell states:
 
 - who measured it: `own-rig-measured` or `third-party-measured`, which are separate scorecard rows and never averaged together;

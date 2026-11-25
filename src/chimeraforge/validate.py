@@ -491,6 +491,16 @@ class CellOutcome:
     unscored: dict[str, str] = field(default_factory=dict)
     measurement: MeasuredCell | None = None
 
+    @property
+    def scorecard_eligible(self) -> bool:
+        return (
+            not self.skipped
+            and not self.underspecified
+            and self.provenance_class in CLASS_ORDER
+            and (self.evidence is None or self.evidence in EVIDENCE_CLASSES)
+            and any(metric in self.errors for metric in METRICS)
+        )
+
     def to_dict(self) -> dict:
         cell = asdict(self.cell)
         cell["spec"] = self.cell.spec_dict
@@ -632,6 +642,7 @@ def score(outcomes: list[CellOutcome], bands: dict[str, float] | None = None) ->
     and listed in the report instead).
     """
     bands = bands or {}
+    comparable = [outcome for outcome in outcomes if outcome.scorecard_eligible]
     evidences = list(EVIDENCE_ORDER)
     if any(o.evidence is None for o in outcomes):
         evidences.append(None)  # outcomes built without a sourced measurement
@@ -641,12 +652,8 @@ def score(outcomes: list[CellOutcome], bands: dict[str, float] | None = None) ->
             for metric in METRICS:
                 errs = [
                     (o.key, o.errors[metric])
-                    for o in outcomes
-                    if o.evidence == evidence
-                    and o.provenance_class == cls
-                    and not o.skipped
-                    and not o.underspecified
-                    and metric in o.errors
+                    for o in comparable
+                    if o.evidence == evidence and o.provenance_class == cls and metric in o.errors
                 ]
                 if not errs:
                     continue
@@ -702,6 +709,11 @@ class Audit:
     @property
     def underspecified(self) -> list[CellOutcome]:
         return [o for o in self.outcomes if o.underspecified and not o.skipped]
+
+    @property
+    def scored_cell_count(self) -> int:
+        """Count registered cells that contribute to at least one scorecard row."""
+        return sum(outcome.scorecard_eligible for outcome in self.outcomes)
 
     def to_dict(self) -> dict:
         return {

@@ -367,6 +367,61 @@ class TestCli:
         data = json.loads(out.read_text(encoding="utf-8"))
         assert data["cells"][0]["skipped"]
 
+    @pytest.mark.parametrize(("minimum", "expected_exit"), [(1, 0), (2, 4)])
+    def test_minimum_scored_cells_counts_each_eligible_cell_once(
+        self, tmp_path, minimum, expected_exit
+    ):
+        matrix, capture, output, report = (
+            tmp_path / name for name in ("matrix.json", "capture.json", "audit.json", "audit.md")
+        )
+        cell = {"model": "llama3.2-1b", "quant": "FP16", "backend": "ollama"}
+        matrix.write_text(
+            json.dumps(
+                {
+                    "hardware": "RTX 4080 12GB",
+                    "registered_at": "2026-08-19",
+                    "cells": [
+                        cell,
+                        {**cell, "context_length": 4096},
+                        {**cell, "context_length": 8192},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        measured = "llama3.2-1b|FP16|ollama|c2048|p512|o128|b1"
+        underspecified = measured.replace("c2048", "c4096")
+        captured = json.loads(_sourced({measured: 100.0, underspecified: 100.0}))
+        for entry in captured["cells"].values():
+            entry["metrics"].append({"definition": "ttft_ms", "value": 100.0})
+        captured["cells"][underspecified]["underspecified"] = True
+        capture.write_text(json.dumps(captured), encoding="utf-8")
+
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--json",
+            "--output",
+            str(output),
+            "--report",
+            str(report),
+            "--min-scored-cells",
+            str(minimum),
+        )
+
+        assert result.exit_code == expected_exit, result.output
+        audit = json.loads(result.stdout)
+        assert audit == json.loads(output.read_text(encoding="utf-8"))
+        assert audit["matrix_fingerprint"] in report.read_text(encoding="utf-8")
+        assert len(audit["scorecard"]) == 2
+        assert len(audit["cells"]) == 3
+        assert sum(cell["underspecified"] for cell in audit["cells"]) == 1
+        assert sum(bool(cell["skipped"]) for cell in audit["cells"]) == 1
+        if expected_exit == 4:
+            assert "scored 1 cell(s), requires at least 2" in result.stderr
+
     def test_writes_a_markdown_report(self, tmp_path):
         m = tmp_path / "matrix.json"
         m.write_text(
