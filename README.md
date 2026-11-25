@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/chimeraforge.svg)](https://pypi.org/project/chimeraforge/)
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Sahil170595/Chimeraforge MCP server](https://glama.ai/mcp/servers/Sahil170595/Chimeraforge/badges/score.svg)](https://glama.ai/mcp/servers/Sahil170595/Chimeraforge)
 
 <!-- mcp-name: io.github.Sahil170595/chimeraforge -->
 
