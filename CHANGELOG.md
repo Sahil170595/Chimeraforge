@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.108.0] - 2026-11-25
+
+### Prediction audit evidence
+
+- Require the full SHA-256 fingerprint when one is supplied. Include the full fingerprint in the Markdown audit.
+- Protect the matrix, measurements, and planner corpus from all audit outputs. Validate both destinations and render all requested documents before separately atomic replacement.
+
 ## [0.107.0] - 2026-11-25
 
 ### Independent benchmark comparisons

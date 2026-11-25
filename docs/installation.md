@@ -1,6 +1,6 @@
 # Installation Guide
 
-Install **0.107.0** with `pip install "chimeraforge==0.107.0"`.
+Install **0.108.0** with `pip install "chimeraforge==0.108.0"`.
 
 Complete installation instructions for Chimeraforge, the benchmarking-only
 breakout from Banterhearts.

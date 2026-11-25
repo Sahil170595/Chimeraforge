@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.107.0 compares every requested benchmark candidate and adds grouped JSON for per-candidate results and unmatched configurations.
+**Release scope.** Chimeraforge 0.108.0 requires full prediction audit fingerprints and protects evidence files from output aliases.
 
 ```bash
-pip install "chimeraforge[mcp]==0.107.0"
+pip install "chimeraforge[mcp]==0.108.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -676,6 +676,8 @@ chimeraforge validate --matrix matrix.json --measurements captured.json
 
 Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent). Pass that hash back with `--expect-fingerprint <hash>` and the command fails unless the matrix still hashes to it, so a matrix edited after seeing results cannot be passed off as the one that was registered -- pre-registration, not post-hoc selection. Without the flag the fingerprint is recomputed from whatever matrix was loaded and only printed, which proves nothing on its own. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
 
+Chimeraforge 0.108.0 requires the full 64-character SHA-256 digest for `--expect-fingerprint` and includes it in the Markdown audit. The requested JSON and Markdown files must be distinct from one another and from the matrix, measurements, and planner corpus. Both documents are rendered before publication, and each file is replaced atomically.
+
 Measurements are sourced records, not bare numbers. Each cell states:
 
 - who measured it: `own-rig-measured` or `third-party-measured`, which are separate scorecard rows and never averaged together;
@@ -713,7 +715,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.107.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.108.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -893,7 +895,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.107.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.108.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

@@ -8,6 +8,7 @@ per-provenance-class error scorecard.
 from __future__ import annotations
 
 import json as json_mod
+import re
 from pathlib import Path
 
 import typer
@@ -59,7 +60,7 @@ def validate(
         None,
         "--expect-fingerprint",
         metavar="HASH",
-        help="Fail unless the matrix hashes to this value. Without it the "
+        help="Require the full 64-character SHA-256 fingerprint. Without it the "
         "fingerprint is recomputed from whatever matrix was loaded and merely "
         "printed, so editing the matrix after seeing results yields a report that "
         "matches itself perfectly. Pass the hash recorded at pre-registration to "
@@ -119,14 +120,12 @@ def validate(
     except ValidationError as exc:
         _fail(str(exc))
 
-    if expect_fingerprint:
-        # The point of pre-registration: the hash is checked against what was
-        # committed BEFORE any result was seen. Recomputing it from the loaded
-        # matrix and printing it proves only that the file hashes to its own hash,
-        # so editing a cell after seeing results produced a self-consistent report.
-        actual = matrix.fingerprint()
+    if expect_fingerprint is not None:
         want = expect_fingerprint.strip().lower()
-        if not actual.lower().startswith(want):
+        if re.fullmatch(r"[0-9a-f]{64}", want) is None:
+            _fail("expected matrix fingerprint must be a full SHA-256 hex digest")
+        actual = matrix.fingerprint()
+        if actual != want:
             _fail(
                 f"matrix fingerprint {actual[:16]} does not match the expected "
                 f"{want}: this is not the matrix that was pre-registered."
