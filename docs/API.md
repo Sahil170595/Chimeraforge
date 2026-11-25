@@ -400,7 +400,7 @@ rows = compare_results(base, [Path("results/run2.json")])
 print(format_comparison_json(rows))
 ```
 
-The 0.107.0 candidate adds `compare_candidates(base, paths)`. Each returned `CandidateComparison` holds the candidate path, its matched `rows`, and the unmatched `baseline_only` and `candidate_only` keys. `compare_results` returns the matched rows in candidate-file order. Unavailable observations and undefined deltas are `None`.
+Chimeraforge 0.107.0 adds `compare_candidates(base, paths)`. Each returned `CandidateComparison` holds the candidate path, its matched `rows`, and the unmatched `baseline_only` and `candidate_only` keys. `compare_results` returns the matched rows in candidate-file order. Unavailable observations and undefined deltas are `None`.
 
 ### Key types
 
