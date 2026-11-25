@@ -290,6 +290,23 @@ def _size_class_hint() -> str:
     )
 
 
+def _validate_lora_options(lora_adapters: int, lora_rank: int, lora_target: str) -> None:
+    """Check adapter options independently of model and hardware resolution."""
+    if lora_adapters < 0:
+        raise ValueError("lora_adapters must be >= 0")
+    if lora_adapters > MAX_LORA_ADAPTERS:
+        raise ValueError(
+            f"lora_adapters={lora_adapters} exceeds the {MAX_LORA_ADAPTERS}-adapter "
+            "ceiling the serving engines support per batch"
+        )
+    if lora_adapters and not 1 <= lora_rank <= MAX_LORA_RANK:
+        raise ValueError(f"lora_rank must be between 1 and {MAX_LORA_RANK}")
+    if lora_adapters and lora_target not in LORA_TARGETS:
+        raise ValueError(
+            f"unknown lora_target {lora_target!r}; use one of: {', '.join(sorted(LORA_TARGETS))}"
+        )
+
+
 def enumerate_candidates(
     models: PlannerModels,
     target_models: list[str],
@@ -406,19 +423,7 @@ def enumerate_candidates(
     batch_mode = mode == PLAN_MODE_BATCH
     if batch_mode and (ttft_slo or tpot_slo):
         raise ValueError(BATCH_LATENCY_REFUSAL)
-    if lora_adapters < 0:
-        raise ValueError("lora_adapters must be >= 0")
-    if lora_adapters > MAX_LORA_ADAPTERS:
-        raise ValueError(
-            f"lora_adapters={lora_adapters} exceeds the {MAX_LORA_ADAPTERS}-adapter "
-            "ceiling the serving engines support per batch"
-        )
-    if lora_adapters and not 1 <= lora_rank <= MAX_LORA_RANK:
-        raise ValueError(f"lora_rank must be between 1 and {MAX_LORA_RANK}")
-    if lora_adapters and lora_target not in LORA_TARGETS:
-        raise ValueError(
-            f"unknown lora_target {lora_target!r}; use one of: {', '.join(sorted(LORA_TARGETS))}"
-        )
+    _validate_lora_options(lora_adapters, lora_rank, lora_target)
     specs = specs or {}
     # Overrides and `auto` go through the resolver; a bare name still falls to the
     # dataset lookup below, so the no-override path is byte-identical.

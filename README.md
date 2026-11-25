@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.110.0 publishes catalog refreshes atomically and reports complete, partial, or failed source outcomes.
+**Release scope.** Chimeraforge 0.111.0 validates planner requests before measurement, model resolution, or search across the CLI, SDK, and MCP.
 
 ```bash
-pip install "chimeraforge[mcp]==0.110.0"
+pip install "chimeraforge[mcp]==0.111.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -244,6 +244,8 @@ chimeraforge plan --model-size 3b --kv-quant q4 --pareto                       #
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --launch          # + the serve command to actually run it
 chimeraforge plan --model-size 3b --workload agent --safety-target 0.85 --json
 ```
+
+Chimeraforge 0.111.0 applies the same `PlanRequest` validation to terminal plans, JSON plans, saved plans, and MCP calls. Invalid request values such as `nan` or `inf` fail before measurement, model resolution, or search.
 
 - Plans **any** model: registry size class, HF repo (`org/name`), Ollama tag, or manual overrides (`--params-b/--n-layers/...`).
 - Searches (model x quantization x backend x N-replicas x batch/GPU) through a 5-gate pipeline: VRAM -> quality -> safety (opt-in) -> latency -> budget.
@@ -715,7 +717,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.110.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.111.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -895,7 +897,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.110.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.111.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
