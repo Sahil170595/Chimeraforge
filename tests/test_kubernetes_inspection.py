@@ -110,7 +110,7 @@ def protocol(monkeypatch, native_plans, tmp_path):
     return scenario
 
 
-async def inspect_fixture(native_plans, tmp_path, **kwargs):
+async def inspect_fixture(native_plans, tmp_path, *, timeout_s=30, **kwargs):
     saved, index, options = original_intent(native_plans)
     config = tmp_path / "private-config-canary"
     config.write_text("private-config-canary", encoding="utf-8")
@@ -122,7 +122,7 @@ async def inspect_fixture(native_plans, tmp_path, **kwargs):
         kubernetes=options,
         kubeconfig=config,
         context="private-context-canary",
-        timeout_s=5,
+        timeout_s=timeout_s,
         **kwargs,
     )
 
@@ -172,7 +172,11 @@ async def test_public_inspection_native_integer_width_boundary(
         for field in ("updatedReplicas", "replicas", "availableReplicas"):
             observed["status"][field] = value
     result = await inspect_fixture(native_plans, tmp_path)
-    assert result.exit_code == (4 if overflow else 0), result.to_dict()
+    assert result.exit_code == (4 if overflow else 0), (
+        result._data["budget"],
+        result._data["cleanup"],
+        result.resources[0]["rollout"],
+    )
     assert result.resources[0]["rollout"]["state"] == ("unknown" if overflow else "complete")
     assert len(result.resources) == 6
     assert result._data["cleanup"]["owned_processes"] == 11
@@ -800,7 +804,7 @@ async def test_controlled_clock_separates_observation_and_cleanup_budgets(
 
     monkeypatch.setattr(inspection, "compare_intent", complete_response)
     monkeypatch.setattr(process.ProcessOwner, "_close_child", close)
-    result = await inspect_fixture(native_plans, tmp_path)
+    result = await inspect_fixture(native_plans, tmp_path, timeout_s=5)
     assert compared == 6 and all(row["intent"]["state"] == "match" for row in result.resources)
     assert result._data["cleanup"]["state"] == "completed"
     assert result.exit_code == (4 if late_observation else 0)
