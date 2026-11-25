@@ -570,6 +570,8 @@ See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernet
 
 ### `deploy-verify` -- check offline declaration drift
 
+Use `--out verification.json` to save the same redacted receipt that `--json` prints. Match and drift results can both be saved. The destination must be distinct from the saved plan, declaration, and any required companion. Invalid input or an unavailable destination exits `1`.
+
 Since 0.100.0, use `--format systemd --executable /absolute/engine`
 to compare exact native unit bytes against the original saved plan and independently
 retained model/GPU intent. See [systemd verification](docs/deployment-verification.md#systemd-units).
