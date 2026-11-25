@@ -546,6 +546,9 @@ def accept_contribution_replay(client: httpx.Client, cwd: Path, env: dict, cpu_b
 
 def accept_runtime(client: httpx.Client, cwd: Path, env: dict, version: str) -> dict:
     """Exercise the installed product using measurements made by the real backend."""
+    from chimeraforge.planner.discovery import fetch_ollama_tags
+
+    assert MODEL_NAME in fetch_ollama_tags(str(client.base_url))
     results = cwd / "results"
     benchmark_stdout = run_cli(
         [

@@ -956,7 +956,7 @@ def format_markdown(audit: Audit) -> str:
         "",
         f"- **Hardware:** {audit.hardware}",
         f"- **Matrix registered:** {audit.registered_at}",
-        f"- **Matrix fingerprint:** `{audit.fingerprint[:16]}`",
+        f"- **Matrix fingerprint:** `{audit.fingerprint}`",
         f"- **Generated:** {audit.generated_at}",
         f"- **Cells:** {len(audit.outcomes)} ({len(audit.skipped)} skipped, "
         f"{len(audit.underspecified)} underspecified)",

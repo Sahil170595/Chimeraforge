@@ -49,6 +49,7 @@ def catalog(
     from chimeraforge.planner.resolver import ResolverError
 
     errors: list[tuple[str, str]] = []
+    build_status = None
     if build:
         try:
             with err_console.status("Building catalog (resolving models)..."):
@@ -58,50 +59,47 @@ def catalog(
                     ollama_url=ollama_url,
                     hf_token=hf_token,
                 )
-        except CatalogBuildError as exc:
-            specs, errors = {}, [("catalog", str(exc))]
-        except ResolverError:
-            specs, errors = {}, [("catalog", "catalog source discovery failed")]
-        if not specs and not errors:
-            errors = [("catalog", "no models were resolved")]
+        except (CatalogBuildError, ResolverError) as exc:
+            message = (
+                str(exc)
+                if isinstance(exc, CatalogBuildError)
+                else "catalog source discovery failed"
+            )
+            specs, errors = {}, [("catalog", message)]
+        if not specs:
+            build_status = "failed"
+            errors = errors or [("catalog", "no models were resolved")]
+        else:
+            build_status = "partial" if errors else "complete"
     else:
         specs = load_catalog()
-        if not specs:
-            # Under --json the empty state still has to BE json. This printed prose to
-            # stdout and exited 0, so a caller got success plus an unparseable body: the
-            # emptiness was real, and unreadable by the thing that asked for data.
-            if output_json:
-                console.print(
-                    json_mod.dumps({"models": {}, "errors": []}, indent=2),
-                    highlight=False,
-                    soft_wrap=True,
-                )
-                err_console.print(
-                    "Catalog is empty. Run `chimeraforge catalog --build` to populate it."
-                )
-            else:
-                console.print(
-                    "[yellow]Catalog is empty.[/] Run [bold]chimeraforge catalog --build[/] "
-                    "to populate it."
-                )
-            raise typer.Exit(code=0)
 
     if output_json:
-        out = {
+        out: dict[str, object] = {
             "models": {k: v.to_dict() for k, v in specs.items()},
             "errors": [{"id": i, "error": m} for i, m in errors],
         }
+        if build_status is not None:
+            out["status"] = build_status
         typer.echo(json_mod.dumps(out, indent=2))
-    if build and not specs:
-        if not output_json:
-            err_console.print(f"Catalog refresh failed. {errors[0][1]}", markup=False)
-        raise typer.Exit(code=1)
-    if output_json:
+        if build_status == "failed":
+            raise typer.Exit(code=1)
+        if not specs:
+            err_console.print(
+                "Catalog is empty. Run `chimeraforge catalog --build` to populate it."
+            )
         return
-    if build:
+
+    if build_status == "failed":
+        err_console.print(f"Catalog refresh failed. {errors[0][1]}", markup=False)
+        raise typer.Exit(code=1)
+    if not specs:
         console.print(
-            f"[green]Built catalog:[/] {len(specs)} models resolved, {len(errors)} failed."
+            "[yellow]Catalog is empty.[/] Run [bold]chimeraforge catalog --build[/] to populate it."
         )
+        return
+    if build_status is not None:
+        console.print(f"Catalog refresh {build_status}. Published {len(specs)} resolved models.")
 
     table = Table(title=f"Model catalog ({len(specs)} models)")
     table.add_column("Model")

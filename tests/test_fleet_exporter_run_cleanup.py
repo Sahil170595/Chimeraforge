@@ -18,6 +18,8 @@ from test_fleet_monitor import native_fleet as native_fleet
 from test_fleet_exporter_state import Scene, changed, controls
 from test_fleet_monitor_transport import Transport
 
+NORMAL_CLEANUP_SECONDS = 1.0
+SHORT_CLEANUP_SECONDS = 0.1
 RECOVERY_OBSERVATION_SECONDS = 3.0
 RECOVERY_SCENARIO_SECONDS = 10.0
 
@@ -86,7 +88,9 @@ def assert_native_shutdown(scene, reports, handles, fault):
     running = handles[0]
     tail = reports[-1]
     assert tail.cancelled and tail.exit_code == 4
-    assert tail.cleanup["state"] == ("completed" if fault == "completed" else "incomplete")
+    assert tail.cleanup["state"] == ("completed" if fault == "completed" else "incomplete"), (
+        tail.cleanup
+    )
     assert tail.cleanup["close_errors"] == (3 if fault == "close-error" else 0)
     assert tail.cleanup["allowance_exceeded"] is (fault == "allowance")
     assert tail.cleanup["resources_closed"] is (fault != "close-error")
@@ -107,11 +111,12 @@ async def test_real_native_tail_cleanup_is_authoritative_after_captured_pass(
     scene, reports, handles, boundaries = native_shutdown(monkeypatch, fault)
     saved, indices = native_fleet
     result, error = None, None
+    cleanup_seconds = SHORT_CLEANUP_SECONDS if fault == "allowance" else NORMAL_CLEANUP_SECONDS
     try:
         result = await asyncio.wait_for(
             api.run_fleet_exporter(
                 saved,
-                replace(controls(), cleanup_seconds=0.1),
+                replace(controls(), cleanup_seconds=cleanup_seconds),
                 candidate_index=indices["vllm"],
                 config=api.FleetExporterConfig(port=0, poll_seconds=0.01, stale_after_seconds=10),
                 policy=api.FleetExporterRunPolicy(0.4, True),
@@ -143,6 +148,7 @@ def test_cli_native_cleanup_failure_preserves_default_and_fails_selected(
     saved, indices = native_fleet
     path = tmp_path / "saved.json"
     saved.save(path)
+    cleanup_seconds = SHORT_CLEANUP_SECONDS if fault == "allowance" else NORMAL_CLEANUP_SECONDS
     args = [
         "monitor-fleet-exporter",
         "--from-plan",
@@ -156,7 +162,7 @@ def test_cli_native_cleanup_failure_preserves_default_and_fails_selected(
         "--observation-seconds",
         "0.5",
         "--cleanup-seconds",
-        "0.1",
+        str(cleanup_seconds),
         "--poll-seconds",
         "0.01",
         "--run-seconds",

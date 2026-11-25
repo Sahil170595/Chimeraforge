@@ -24,7 +24,7 @@ def compare(
     output_json: bool = typer.Option(
         False,
         "--json",
-        help="Output as JSON.",
+        help="Output matched rows as a flat JSON array.",
     ),
     verbose: bool = typer.Option(
         False,
@@ -32,13 +32,19 @@ def compare(
         "-v",
         help="Enable debug logging.",
     ),
+    grouped_json: bool = typer.Option(
+        False,
+        "--grouped-json",
+        help="Output JSON grouped by candidate, including unmatched configurations.",
+    ),
 ) -> None:
     """Compare benchmark results between runs."""
     import logging
     from pathlib import Path
 
     from chimeraforge.compare.comparator import (
-        compare_results,
+        compare_candidates,
+        format_candidate_groups_json,
         format_comparison_json,
         format_comparison_summary,
         format_comparison_table,
@@ -48,6 +54,10 @@ def compare(
         level=logging.DEBUG if verbose else logging.WARNING,
         format="%(asctime)s %(name)s %(levelname)s  %(message)s",
     )
+
+    if output_json and grouped_json:
+        typer.echo("Error: --json and --grouped-json are mutually exclusive.", err=True)
+        raise typer.Exit(code=1)
 
     baseline_path = Path(baseline)
     if not baseline_path.is_file():
@@ -63,15 +73,24 @@ def compare(
         candidate_paths.append(p)
 
     try:
-        rows = compare_results(baseline_path, candidate_paths)
-    except (FileNotFoundError, ValueError) as exc:  # ValueError covers JSONDecodeError
-        console.print(f"[red]Error:[/] failed to read result file(s): {exc}")
+        comparisons = compare_candidates(baseline_path, candidate_paths)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"Error: failed to read result file(s): {exc}", err=True)
         raise typer.Exit(code=1)
 
+    if grouped_json:
+        typer.echo(format_candidate_groups_json(baseline_path, comparisons))
+        return
     if output_json:
-        # highlight=False + soft_wrap: valid JSON for `--json | jq` (Rich otherwise
-        # reflows long values at width 79 when piped and corrupts them).
-        console.print(format_comparison_json(rows), highlight=False, soft_wrap=True)
-    else:
-        format_comparison_table(rows, console)
-        format_comparison_summary(rows, console)
+        typer.echo(format_comparison_json([row for group in comparisons for row in group.rows]))
+        return
+
+    for group in comparisons:
+        console.print(f"Candidate: {group.candidate}", markup=False)
+        format_comparison_table(group.rows, console)
+        format_comparison_summary(group.rows, console)
+        if group.baseline_only or group.candidate_only:
+            console.print(
+                f"Baseline-only configurations: {len(group.baseline_only)}. "
+                f"Candidate-only configurations: {len(group.candidate_only)}."
+            )

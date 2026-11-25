@@ -203,6 +203,28 @@ class TestPreRegistrationIsARealGate:
         r = self._run("--matrix", str(m), "--measurements", str(cap), "--expect-fingerprint", fp)
         assert r.exit_code == 0, r.output
 
+    @pytest.mark.parametrize("supplied", ["", "   ", "prefix"])
+    def test_a_supplied_fingerprint_must_be_complete(self, tmp_path, supplied):
+        from chimeraforge.validate import Matrix
+
+        matrix = self._matrix(tmp_path)
+        capture = tmp_path / "capture.json"
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        value = Matrix.load(matrix).fingerprint()[:12] if supplied == "prefix" else supplied
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--expect-fingerprint",
+            value,
+            "--json",
+        )
+        assert result.exit_code == 1
+        assert "full SHA-256" in json.loads(result.output)["error"]
+
     @pytest.mark.parametrize(
         "role",
         ["matrix", "capture", "capture_hardlink", "corpus", "other_output", "missing_parent"],
@@ -279,6 +301,36 @@ class TestPreRegistrationIsARealGate:
         assert result.exit_code == 1
         assert "output" in json.loads(result.output)["error"]
         assert prior.read_bytes() == b"previous audit" and not markdown.exists()
+
+    def test_both_outputs_keep_the_full_matrix_fingerprint(self, tmp_path):
+        from chimeraforge.validate import Matrix
+
+        matrix = self._matrix(tmp_path)
+        capture, audit, markdown = (
+            tmp_path / name for name in ("capture.json", "audit.json", "audit.md")
+        )
+        capture.write_text(
+            '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+        )
+        digest = Matrix.load(matrix).fingerprint()
+        result = self._run(
+            "--matrix",
+            str(matrix),
+            "--measurements",
+            str(capture),
+            "--expect-fingerprint",
+            digest,
+            "--output",
+            str(audit),
+            "--report",
+            str(markdown),
+            "--json",
+        )
+        assert result.exit_code == 0, result.output
+        document = json.loads(audit.read_text(encoding="utf-8"))
+        assert json.loads(result.stdout) == document
+        assert document["matrix_fingerprint"] == digest
+        assert len(document["cells"]) == 1 and digest in markdown.read_text(encoding="utf-8")
 
     def test_output_cannot_replace_a_directory_link_used_by_the_matrix(self, tmp_path):
         matrix_root = tmp_path / "source"
