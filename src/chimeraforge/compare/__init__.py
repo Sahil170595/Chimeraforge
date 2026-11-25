@@ -1,7 +1,9 @@
 """Compare - diff benchmark result files side by side."""
 
 from chimeraforge.compare.comparator import (
+    CandidateComparison,
     ComparisonRow,
+    compare_candidates,
     compare_results,
     format_comparison_json,
     format_comparison_summary,
@@ -12,7 +14,9 @@ from chimeraforge.compare.comparator import (
 )
 
 __all__ = [
+    "CandidateComparison",
     "ComparisonRow",
+    "compare_candidates",
     "compare_results",
     "format_comparison_json",
     "format_comparison_summary",

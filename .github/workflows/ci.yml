@@ -66,7 +66,8 @@ jobs:
   test:
     name: test (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && matrix.python-version == '3.11' && 18 || 15 }}
+    # Windows setup and native deployment checks share the full-suite budget.
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 20 || 15 }}
     strategy:
       fail-fast: false
       matrix:
