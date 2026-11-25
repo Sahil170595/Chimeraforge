@@ -926,6 +926,8 @@ Persists resolved specs so `suggest --source catalog` ranks a known-good set ful
 
 Chimeraforge 0.110.0 publishes successful refreshes atomically. A partial refresh publishes the resolved models and lists unresolved identifiers. A total resolution failure or a failed write exits `1` and preserves the previous catalog. `catalog --build --json` sends one JSON document to stdout with a `status` of `complete`, `partial`, or `failed`.
 
+With `catalog --build --require-complete`, every requested model must resolve before the index is replaced. An incomplete refresh exits `1`, leaves the prior index in place, and reports the unresolved identifiers. Use `--json` to collect the same failure as one JSON document.
+
 ### `safety` -- live refusal screen
 
 ```bash
