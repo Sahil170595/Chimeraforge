@@ -4,6 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/chimeraforge.svg)](https://pypi.org/project/chimeraforge/)
 [![CI](https://github.com/Sahil170595/Chimeraforge/actions/workflows/ci.yml/badge.svg)](https://github.com/Sahil170595/Chimeraforge/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Sahil170595/Chimeraforge MCP server](https://glama.ai/mcp/servers/Sahil170595/Chimeraforge/badges/score.svg)](https://glama.ai/mcp/servers/Sahil170595/Chimeraforge)
 
 <!-- mcp-name: io.github.Sahil170595/chimeraforge -->
 
@@ -87,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.106.2 fixes finite exporter deadlines, systemd executable rendering, benchmark comparisons, catalog refresh and audit and report output protection.
+**Release scope.** Chimeraforge 0.110.0 publishes catalog refreshes atomically and reports complete, partial, or failed source outcomes.
 
 ```bash
-pip install "chimeraforge[mcp]==0.106.2"
+pip install "chimeraforge[mcp]==0.110.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -675,6 +676,8 @@ chimeraforge validate --matrix matrix.json --measurements captured.json
 
 Scores the planner's own predictions by provenance class, so "estimated" carries a number instead of a vibe. The config matrix is **fingerprinted into the audit** (SHA-256, order-independent). Pass that hash back with `--expect-fingerprint <hash>` and the command fails unless the matrix still hashes to it, so a matrix edited after seeing results cannot be passed off as the one that was registered -- pre-registration, not post-hoc selection. Without the flag the fingerprint is recomputed from whatever matrix was loaded and only printed, which proves nothing on its own. Every cell is published, the worst case survives aggregation rather than being averaged away, and a class with too few cells is labeled underpowered instead of quoted as a rate.
 
+Chimeraforge 0.108.0 requires the full 64-character SHA-256 digest for `--expect-fingerprint` and includes it in the Markdown audit. The requested JSON and Markdown files must be distinct from one another and from the matrix, measurements, and planner corpus. Both documents are rendered before publication, and each file is replaced atomically.
+
 Measurements are sourced records, not bare numbers. Each cell states:
 
 - who measured it: `own-rig-measured` or `third-party-measured`, which are separate scorecard rows and never averaged together;
@@ -712,7 +715,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.106.2"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.110.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -892,7 +895,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.106.2"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.110.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -919,7 +922,7 @@ chimeraforge catalog                 # list the cached catalog
 
 Persists resolved specs so `suggest --source catalog` ranks a known-good set fully offline.
 
-The 0.110.0 candidate publishes successful refreshes atomically. A partial refresh publishes the resolved models and lists unresolved identifiers. A total resolution failure or a failed write exits `1` and preserves the previous catalog. `catalog --build --json` sends one JSON document to stdout with a `status` of `complete`, `partial`, or `failed`.
+Chimeraforge 0.110.0 publishes successful refreshes atomically. A partial refresh publishes the resolved models and lists unresolved identifiers. A total resolution failure or a failed write exits `1` and preserves the previous catalog. `catalog --build --json` sends one JSON document to stdout with a `status` of `complete`, `partial`, or `failed`.
 
 ### `safety` -- live refusal screen
 
@@ -1270,7 +1273,9 @@ Metrics: exact match, ROUGE-L (LCS fallback), BERTScore, coherence -> composite 
 chimeraforge compare --baseline run1.json --candidate run2.json,run3.json --json
 ```
 
-Matches configs by (model, backend, quant, workload, context_length); computes throughput/TTFT/duration deltas with an aggregate improvement/regression summary.
+Matches configurations by model, backend, quantization, workload, and context length. Chimeraforge 0.107.0 compares each candidate file independently in the specified order and rejects duplicate configurations within a file. Unavailable metrics appear as `n/a` in the terminal and `null` in grouped JSON. Flat JSON retains the existing numeric absence markers. This includes native summaries that mixed an unavailable sample into their mean. Each total uses only configurations with a defined delta for that metric.
+
+`--json` returns a flat array of matched rows in candidate file order. Use `--grouped-json` for a document with `schema_version: 1`, the `baseline` path, and an ordered `candidates` array. Each entry includes its `candidate` path, matched `rows`, and the `baseline_only` and `candidate_only` configuration keys.
 
 ### `refit` -- update planner coefficients
 

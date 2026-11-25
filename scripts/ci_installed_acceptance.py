@@ -55,6 +55,61 @@ def assert_installed_modules(checkout: str | Path) -> dict[str, object]:
     return {"count": len(names), "modules": sorted(names)}
 
 
+def accept_validation_audit(cwd: Path, env: dict) -> None:
+    """Exercise full fingerprint and output admission through the installed CLI."""
+    from chimeraforge.validate import Matrix
+
+    matrix, capture, audit, markdown = (
+        cwd / name
+        for name in (
+            "audit-matrix.json",
+            "audit-capture.json",
+            "audit-output.json",
+            "audit-report.md",
+        )
+    )
+    matrix.write_text(
+        json.dumps(
+            {
+                "registered_at": "2026-11-01",
+                "hardware": "RTX 4080 12GB",
+                "cells": [{"model": "llama3.2-3b", "backend": "ollama", "quant": "FP16"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    capture.write_text(
+        '{"schema_version":2,"hardware":"RTX 4080 12GB","cells":{}}', encoding="utf-8"
+    )
+    digest = Matrix.load(matrix).fingerprint()
+    original = matrix.read_bytes(), capture.read_bytes()
+    common = [
+        "validate",
+        "--matrix",
+        str(matrix),
+        "--measurements",
+        str(capture),
+        "--output",
+        str(audit),
+        "--json",
+    ]
+    too_short = json.loads(run_cli([*common, "--expect-fingerprint", digest[:16]], cwd, env, 1))
+    assert "full SHA-256" in too_short["error"] and not audit.exists()
+    alias = json.loads(
+        run_cli([*common, "--expect-fingerprint", digest, "--report", str(capture)], cwd, env, 1)
+    )
+    assert "audit output" in alias["error"] and not audit.exists()
+    report = json.loads(
+        run_cli([*common, "--expect-fingerprint", digest, "--report", str(markdown)], cwd, env)
+    )
+    assert json.loads(audit.read_text(encoding="utf-8")) == report
+    assert report["matrix_fingerprint"] == digest and len(report["cells"]) == 1
+    assert digest in markdown.read_text(encoding="utf-8") and original == (
+        matrix.read_bytes(),
+        capture.read_bytes(),
+    )
+
+
 def run_cli(
     arguments: list[str],
     cwd: Path,
@@ -144,6 +199,43 @@ def accept_catalog_refresh(cwd: Path, env: dict) -> None:
     assert ranked["suggestions"][0]["model"] == model
 
 
+def accept_compare(cwd: Path, env: dict) -> None:
+    """Exercise the installed comparison with overlapping candidate files."""
+    baseline, first, second = (
+        cwd / name for name in ("baseline.json", "candidate-a.json", "candidate-b.json")
+    )
+    for path, throughput, ttft, minimum in (
+        (baseline, 40, 100, 100),
+        (first, 50, 49.5, -1),
+        (second, 20, 200, 200),
+    ):
+        row = {
+            "model": "ci/compare",
+            "backend": "vllm",
+            "aggregate": {
+                "count": 2,
+                "throughput_tps": {"mean": throughput},
+                "ttft_ms": {"mean": ttft, "min": minimum},
+                "total_duration_ms": {"mean": 500},
+            },
+        }
+        path.write_text(json.dumps([row]), encoding="utf-8")
+    common = ["compare", "--baseline", str(baseline), "--candidate"]
+    flat = json.loads(run_cli([*common, f"{first},{second}", "--json"], cwd, env))
+    document = json.loads(run_cli([*common, f"{first},{second}", "--grouped-json"], cwd, env))
+    assert document["schema_version"] == 1 and document["baseline"] == str(baseline)
+    groups = document["candidates"]
+    assert [group["candidate"] for group in groups] == [str(first), str(second)]
+    assert [group["rows"][0]["delta_throughput_pct"] for group in groups] == [25.0, -50.0]
+    assert [group["rows"][0]["delta_ttft_pct"] for group in groups] == [None, 100.0]
+    assert isinstance(flat, list)
+    expected_flat = [dict(row) for group in groups for row in group["rows"]]
+    assert expected_flat[0]["candidate_ttft"] is None
+    expected_flat[0]["candidate_ttft"] = -1.0
+    assert flat == expected_flat
+    assert json.loads(run_cli([*common, str(first), "--json"], cwd, env)) == expected_flat[:1]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expect-version", required=True)
@@ -179,6 +271,7 @@ def main(argv: list[str] | None = None) -> int:
         assert installed["version"] == installed["distribution_version"] == args.expect_version
         assert all(installed["resources"].values()), "empty bundled data resource"
         assert args.expect_version in run_cli(["--version"], cwd, env)
+        accept_compare(cwd, env)
         assert "RTX 4080" in run_cli(["plan", "--list-hardware"], cwd, env)
         accept_catalog_refresh(cwd, env)
         common = ["--hardware", "RTX 4080 12GB", "--request-rate", "0.01", "--no-network", "--json"]
@@ -195,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
         saved = load_plan(snapshot_path)
         assert saved.to_dict()["result"]["candidates"] == saved_candidates
         assert public_plan(PlanRequest(allow_network=False)).candidate().provenance
+        accept_validation_audit(cwd, env)
         manual = json.loads(
             run_cli(
                 [
