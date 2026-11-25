@@ -142,6 +142,63 @@ def run_cli(
     return result.stdout
 
 
+def accept_catalog_refresh(cwd: Path, env: dict) -> None:
+    """Verify that installed catalog readers use the index after a failed refresh."""
+    from unittest.mock import patch
+
+    from chimeraforge.planner import discovery
+    from chimeraforge.planner.resolver import ModelSpec
+
+    cache = cwd / "catalog-cache"
+    index = cache / "catalog.json"
+    model = "ci/catalog-model"
+    spec = ModelSpec(
+        name=model,
+        params_b=1.5,
+        n_layers=24,
+        n_kv_heads=8,
+        d_head=64,
+        family="mistral",
+        source="manual",
+    )
+    options = dict(env, CHIMERAFORGE_CACHE=str(cache))
+    with (
+        patch.object(discovery, "_catalog_path", return_value=index),
+        patch.object(discovery, "load_seed_catalog", return_value=[model]),
+        patch.object(
+            discovery,
+            "resolve_many",
+            side_effect=[({model: spec}, []), ({}, [(model, "fixture outage")])],
+        ) as resolve,
+    ):
+        assert discovery.build_catalog() == ({model: spec}, [])
+        before = index.read_bytes()
+        assert discovery.build_catalog() == ({}, [(model, "fixture outage")])
+        assert resolve.call_count == 2 and index.read_bytes() == before
+    listing = json.loads(run_cli(["catalog", "--json"], cwd, options))
+    assert listing["models"] == {model: spec.to_dict()}
+    ranked = json.loads(
+        run_cli(
+            [
+                "suggest",
+                "--source",
+                "catalog",
+                "--quality-target",
+                "0",
+                "--request-rate",
+                "0.01",
+                "--budget",
+                "1000",
+                "--json",
+            ],
+            cwd,
+            options,
+        )
+    )
+    assert ranked["considered"] == ranked["fit"] == 1
+    assert ranked["suggestions"][0]["model"] == model
+
+
 def accept_compare(cwd: Path, env: dict) -> None:
     """Exercise the installed comparison with overlapping candidate files."""
     baseline, first, second = (
@@ -216,6 +273,7 @@ def main(argv: list[str] | None = None) -> int:
         assert args.expect_version in run_cli(["--version"], cwd, env)
         accept_compare(cwd, env)
         assert "RTX 4080" in run_cli(["plan", "--list-hardware"], cwd, env)
+        accept_catalog_refresh(cwd, env)
         common = ["--hardware", "RTX 4080 12GB", "--request-rate", "0.01", "--no-network", "--json"]
         registered = json.loads(run_cli(["plan", "--model-size", "3b", *common], cwd, env))
         assert (

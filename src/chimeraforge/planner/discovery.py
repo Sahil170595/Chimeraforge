@@ -36,7 +36,7 @@ DEFAULT_HF_LIMIT = 8
 
 
 class CatalogBuildError(RuntimeError):
-    """A resolved catalog could not be published."""
+    """A resolved catalog could not be published to the local cache."""
 
 
 # -- Network discovery -------------------------------------------------
@@ -202,8 +202,9 @@ def build_catalog(
 ) -> tuple[dict[str, ModelSpec], list[tuple[str, str]]]:
     """Resolve the catalog's models (seed +/- installed Ollama) and persist them.
 
-    Returns (resolved specs, errors). An empty result leaves the previous
-    index available to offline readers. Failed publication raises CatalogBuildError.
+    Returns (resolved specs, errors). Publishes a nonempty result atomically for
+    offline readers. An empty refresh retains the previous index. A failed
+    publication raises CatalogBuildError.
     """
     ids: list[str] = []
     if include_seed:

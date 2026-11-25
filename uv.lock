@@ -604,7 +604,7 @@ wheels = [
 
 [[package]]
 name = "chimeraforge"
-version = "0.108.0"
+version = "0.110.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
