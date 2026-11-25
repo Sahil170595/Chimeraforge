@@ -388,6 +388,62 @@ class TestCLICompare:
         assert conflicting.exit_code == 1
         assert not conflicting.stdout and "mutually exclusive" in conflicting.stderr
 
+    @pytest.mark.parametrize(
+        "throughput,missing,expected",
+        [(45, False, 0), (44, False, 3), (44, True, 3), (45, True, 4), (-1, False, 4)],
+    )
+    def test_throughput_gate_retains_grouped_report(self, tmp_path, throughput, missing, expected):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        base, cand = tmp_path / "base.json", tmp_path / "cand.json"
+        rows = [_make_result(throughput_mean=50)]
+        if missing:
+            rows.append(_make_result(model="missing"))
+        _write_bench_json(base, rows)
+        _write_bench_json(
+            cand, [_make_result(throughput_mean=throughput), _make_result(model="new")]
+        )
+        result = CliRunner().invoke(
+            app,
+            [
+                "compare",
+                "--baseline",
+                str(base),
+                "--candidate",
+                str(cand),
+                "--grouped-json",
+                "--max-throughput-regression-pct",
+                "10",
+            ],
+        )
+        assert result.exit_code == expected, result.output
+        report = json.loads(result.stdout)
+        assert len(report["candidates"][0]["rows"]) == 1
+        assert report["candidates"][0]["candidate_only"]
+        assert bool(result.stderr) == (expected != 0)
+
+    def test_nonfinite_throughput_gate_is_rejected_before_inputs(self):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        result = CliRunner().invoke(
+            app,
+            [
+                "compare",
+                "--baseline",
+                "absent",
+                "--candidate",
+                "absent",
+                "--max-throughput-regression-pct",
+                "nan",
+            ],
+        )
+        assert result.exit_code == 1
+        assert "finite percentage" in result.stderr
+
     @pytest.mark.parametrize("side", ["baseline", "candidate"])
     def test_duplicate_configuration_is_rejected(self, tmp_path: Path, side: str):
         from typer.testing import CliRunner

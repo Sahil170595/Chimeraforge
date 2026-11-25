@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.113.0] - Unreleased
+
+### Benchmark throughput regression gate
+
+- Allow compare to enforce a throughput loss budget independently for every candidate while retaining its JSON output.
+
 ## [0.111.0] - 2026-11-25
 
 ### Planner request validation

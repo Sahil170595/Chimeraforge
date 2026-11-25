@@ -1279,6 +1279,8 @@ Matches configurations by model, backend, quantization, workload, and context le
 
 `--json` returns a flat array of matched rows in candidate file order. Use `--grouped-json` for a document with `schema_version: 1`, the `baseline` path, and an ordered `candidates` array. Each entry includes its `candidate` path, matched `rows`, and the `baseline_only` and `candidate_only` configuration keys.
 
+Add `--max-throughput-regression-pct 10` to gate every candidate against the baseline. Exit `3` means a known throughput loss exceeded the limit. Exit `4` means a baseline configuration was missing or lacked a usable throughput delta. A known regression takes precedence. Candidate-only configurations are allowed, and comparison output is still emitted.
+
 ### `refit` -- update planner coefficients
 
 ```bash
