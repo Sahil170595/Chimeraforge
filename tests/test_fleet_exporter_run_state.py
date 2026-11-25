@@ -34,6 +34,24 @@ def watch(monkeypatch):
     return handles, ready
 
 
+def capture_first_native_zero(monkeypatch):
+    native_boundary = fleet_exporter._await_run_boundary
+    boundaries = []
+
+    async def boundary(running, seconds, stop):
+        # Exercise qualification of the published report regardless of fixture scheduling.
+        first = await changed(running)
+        assert first.native_exit_code == 0
+        result = await native_boundary(running, seconds, stop)
+        assert result.deadline_reached and result.observation.in_time
+        assert result.observation.snapshot.sequence == first.sequence
+        boundaries.append(result)
+        return result
+
+    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary)
+    return boundaries
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("mode,code", [("mismatch", 5), ("missing", 4)])
 async def test_fresh_readiness_does_not_qualify_native_nonpass(
@@ -181,6 +199,7 @@ async def test_native_zero_with_wrong_population_or_binding_is_four(
         return report
 
     monkeypatch.setattr(fleet_exporter, "monitor_fleet", altered)
+    capture_first_native_zero(monkeypatch)
     result = await api.run_fleet_exporter(
         saved,
         controls(),
@@ -269,15 +288,7 @@ async def test_clean_external_stop_is_four_even_after_pass(native_fleet, monkeyp
 async def test_real_late_failure_after_pass_overrides_join_flags(native_fleet, monkeypatch, fault):
     Scene(monkeypatch)
     handles, _ = watch(monkeypatch)
-    boundaries = []
-    native_boundary = fleet_exporter._await_run_boundary
-
-    async def boundary(*args):
-        result = await native_boundary(*args)
-        boundaries.append(result)
-        return result
-
-    monkeypatch.setattr(fleet_exporter, "_await_run_boundary", boundary)
+    boundaries = capture_first_native_zero(monkeypatch)
     name = "_poll" if fault == "worker" else "_serve"
     native = getattr(fleet_exporter.FleetExporter, name)
 
