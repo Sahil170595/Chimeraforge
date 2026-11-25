@@ -87,6 +87,43 @@ def run_cli(
     return result.stdout
 
 
+def accept_compare(cwd: Path, env: dict) -> None:
+    """Exercise the installed comparison with overlapping candidate files."""
+    baseline, first, second = (
+        cwd / name for name in ("baseline.json", "candidate-a.json", "candidate-b.json")
+    )
+    for path, throughput, ttft, minimum in (
+        (baseline, 40, 100, 100),
+        (first, 50, 49.5, -1),
+        (second, 20, 200, 200),
+    ):
+        row = {
+            "model": "ci/compare",
+            "backend": "vllm",
+            "aggregate": {
+                "count": 2,
+                "throughput_tps": {"mean": throughput},
+                "ttft_ms": {"mean": ttft, "min": minimum},
+                "total_duration_ms": {"mean": 500},
+            },
+        }
+        path.write_text(json.dumps([row]), encoding="utf-8")
+    common = ["compare", "--baseline", str(baseline), "--candidate"]
+    flat = json.loads(run_cli([*common, f"{first},{second}", "--json"], cwd, env))
+    document = json.loads(run_cli([*common, f"{first},{second}", "--grouped-json"], cwd, env))
+    assert document["schema_version"] == 1 and document["baseline"] == str(baseline)
+    groups = document["candidates"]
+    assert [group["candidate"] for group in groups] == [str(first), str(second)]
+    assert [group["rows"][0]["delta_throughput_pct"] for group in groups] == [25.0, -50.0]
+    assert [group["rows"][0]["delta_ttft_pct"] for group in groups] == [None, 100.0]
+    assert isinstance(flat, list)
+    expected_flat = [dict(row) for group in groups for row in group["rows"]]
+    assert expected_flat[0]["candidate_ttft"] is None
+    expected_flat[0]["candidate_ttft"] = -1.0
+    assert flat == expected_flat
+    assert json.loads(run_cli([*common, str(first), "--json"], cwd, env)) == expected_flat[:1]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expect-version", required=True)
@@ -122,6 +159,7 @@ def main(argv: list[str] | None = None) -> int:
         assert installed["version"] == installed["distribution_version"] == args.expect_version
         assert all(installed["resources"].values()), "empty bundled data resource"
         assert args.expect_version in run_cli(["--version"], cwd, env)
+        accept_compare(cwd, env)
         assert "RTX 4080" in run_cli(["plan", "--list-hardware"], cwd, env)
         common = ["--hardware", "RTX 4080 12GB", "--request-rate", "0.01", "--no-network", "--json"]
         registered = json.loads(run_cli(["plan", "--model-size", "3b", *common], cwd, env))

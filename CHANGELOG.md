@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.107.0] - 2026-11-25
+
+### Independent benchmark comparisons
+
+- Compare every requested candidate independently. `--json` returns all matched rows as a flat array in candidate file order. `--grouped-json` returns per-candidate rows and both sides' unmatched configuration keys.
+- Reject duplicate configurations within an input. Report unavailable metric values and deltas without counting them in aggregate changes.
+
 ## [0.106.2] - 2026-11-22
 
 - Synchronize the native exporter cleanup test with a real published observation before starting the finite deadline. This stabilizes hosted Windows validation.
