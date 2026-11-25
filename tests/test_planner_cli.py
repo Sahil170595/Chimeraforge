@@ -13,6 +13,40 @@ from chimeraforge.planner.engine import Candidate, enumerate_candidates
 
 
 class TestCLIPlan:
+    def test_check_request_uses_validation_without_starting_a_plan(self, monkeypatch, tmp_path):
+        from typer.testing import CliRunner
+
+        from chimeraforge import measure
+        from chimeraforge.cli import app
+        from chimeraforge.planner import service
+
+        def unexpected(*args, **kwargs):
+            pytest.fail("request preflight started live planning work")
+
+        monkeypatch.setattr(measure, "measure_model", unexpected)
+        monkeypatch.setattr(service, "run_plan", unexpected)
+        saved = tmp_path / "untouched.json"
+        args = [
+            "plan",
+            "--model",
+            "fixture/off-registry",
+            "--hardware",
+            "auto",
+            "--measure",
+            "--save",
+            str(saved),
+            "--check-request",
+            "--json",
+        ]
+        runner = CliRunner()
+        valid = runner.invoke(app, args)
+        assert valid.exit_code == 0, valid.output
+        assert json.loads(valid.stdout) == {"kind": "planning_request", "status": "valid"}
+        invalid = runner.invoke(app, [*args, "--request-rate", "nan"])
+        assert invalid.exit_code == 1
+        assert "finite" in json.loads(invalid.stdout)["error"]
+        assert not saved.exists()
+
     @pytest.mark.parametrize("measure_first", [False, True])
     @pytest.mark.parametrize(
         ("option", "value"),

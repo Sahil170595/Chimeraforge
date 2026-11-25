@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.115.0] - Unreleased
+
+### Planning request preflight
+
+- Validate CLI planning inputs and return a request status before live measurement, hardware probing, search, or artifact publication.
+
 ## [0.111.0] - 2026-11-25
 
 ### Planner request validation

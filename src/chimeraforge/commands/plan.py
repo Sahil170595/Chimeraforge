@@ -442,6 +442,9 @@ def plan(
         "-v",
         help="Enable debug logging.",
     ),
+    check_request: bool = typer.Option(
+        False, "--check-request", help="Validate the planning request before measurement or search."
+    ),
 ) -> None:
     """Recommend optimal LLM deployment configuration.
 
@@ -466,6 +469,11 @@ def plan(
         level=logging.DEBUG if verbose else logging.WARNING,
         format="%(asctime)s %(name)s %(levelname)s  %(message)s",
     )
+
+    if check_request and (list_hardware or list_models):
+        raise typer.BadParameter(
+            "cannot be combined with listing modes", param_hint="--check-request"
+        )
 
     # These two honour --json. `--list-hardware` is the only way to discover a valid
     # --hardware value, so it is the listing an automated caller most needs to read; it
@@ -791,6 +799,12 @@ def plan(
             plan_request.validate()
         except ValueError as exc:
             _fail(escape(str(exc)))
+        if check_request:
+            if output_json:
+                typer.echo(json_mod.dumps({"kind": "planning_request", "status": "valid"}))
+            else:
+                console.print("Planning request is valid.")
+            raise typer.Exit()
         if measure_first and model:
             import asyncio
 

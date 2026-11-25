@@ -235,6 +235,8 @@ Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_su
 
 ### `plan` -- predictive capacity planner
 
+Use `plan --check-request --json` with the intended planning arguments to validate the request before live measurement, hardware probing, or search. The check reads a supplied workload profile and returns a request status. A full planning run resolves the model and hardware, checks deployment feasibility, and writes requested artifacts.
+
 ```bash
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
 chimeraforge plan --model Qwen/Qwen2.5-7B-Instruct --hardware "RTX 4090 24GB"   # any HF repo
