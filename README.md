@@ -235,7 +235,7 @@ Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_su
 
 ### `weightspace`
 
-Verify a local weight-space artifact with `chimeraforge weightspace verify MANIFEST`. The installed Python library reads the same versioned manifest and checks every file against its declared size and digest. [Library and wire format](docs/weightspace.md)
+Verify a local weight-space artifact with `chimeraforge weightspace verify MANIFEST`. Use `weightspace footprint MANIFEST` to estimate transfer, staging and target tensor bytes, including shared-base cache savings. The installed Python library reads the same versioned manifest and checks every file against its declared size and digest. [Library and wire format](docs/weightspace.md)
 
 ### `plan` -- predictive capacity planner
 
