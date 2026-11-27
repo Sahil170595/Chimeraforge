@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.112.0 can require every requested model to resolve before replacing the catalog.
+**Release scope.** Chimeraforge 0.113.0 can enforce a throughput regression budget on benchmark comparisons.
 
 ```bash
-pip install "chimeraforge[mcp]==0.112.0"
+pip install "chimeraforge[mcp]==0.113.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -717,7 +717,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.112.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.113.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -897,7 +897,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.112.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.113.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -1280,6 +1280,8 @@ chimeraforge compare --baseline run1.json --candidate run2.json,run3.json --json
 Matches configurations by model, backend, quantization, workload, and context length. Chimeraforge 0.107.0 compares each candidate file independently in the specified order and rejects duplicate configurations within a file. Unavailable metrics appear as `n/a` in the terminal and `null` in grouped JSON. Flat JSON retains the existing numeric absence markers. This includes native summaries that mixed an unavailable sample into their mean. Each total uses only configurations with a defined delta for that metric.
 
 `--json` returns a flat array of matched rows in candidate file order. Use `--grouped-json` for a document with `schema_version: 1`, the `baseline` path, and an ordered `candidates` array. Each entry includes its `candidate` path, matched `rows`, and the `baseline_only` and `candidate_only` configuration keys.
+
+Add `--max-throughput-regression-pct 10` to gate every candidate against the baseline. Exit `3` means a known throughput loss exceeded the limit. Exit `4` means a baseline configuration was missing or lacked a usable throughput delta. A known regression takes precedence. Candidate-only configurations are allowed, and comparison output is still emitted.
 
 ### `refit` -- update planner coefficients
 
