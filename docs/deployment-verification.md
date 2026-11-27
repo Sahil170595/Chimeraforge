@@ -12,6 +12,8 @@ one-agent candidate or reconstructs expected options from the file being checked
 Since 0.100.0, explicit systemd verification also compares exact native
 unit bytes with independent intent, as described below.
 
+Use `--out verification.json` to save the same redacted receipt that `--json` prints. Match and drift results can both be saved. The destination must be distinct from the saved plan, declaration, and any required companion. Invalid input or an unavailable destination exits `1`.
+
 ## Systemd units
 
 Keep the original plan, selected candidate, model override and ordered GPU IDs

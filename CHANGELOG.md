@@ -5,11 +5,29 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.115.0] - Unreleased
+## [0.115.0] - 2026-11-27
 
 ### Planning request preflight
 
 - Validate CLI planning inputs and return a request status before live measurement, hardware probing, search, or artifact publication.
+
+## [0.114.0] - 2026-11-26
+
+### Saved deployment verification receipts
+
+- Save value-redacted match or drift receipts atomically, with protection for the saved plan, declaration, and companion inputs.
+
+## [0.113.0] - 2026-11-26
+
+### Benchmark throughput regression gate
+
+- Allow compare to enforce a throughput loss budget independently for every candidate while retaining its JSON output.
+
+## [0.112.0] - 2026-11-26
+
+### Complete catalog refresh policy
+
+- Add an opt-in complete refresh policy for the CLI and SDK. Keep the existing catalog when any requested model cannot be resolved.
 
 ## [0.111.0] - 2026-11-25
 

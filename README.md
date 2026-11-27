@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.111.0 validates planner requests before measurement, model resolution, or search across the CLI, SDK, and MCP.
+**Release scope.** Chimeraforge 0.115.0 validates planning requests on demand before model resolution, hardware probing or search.
 
 ```bash
-pip install "chimeraforge[mcp]==0.111.0"
+pip install "chimeraforge[mcp]==0.115.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -572,6 +572,8 @@ See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernet
 
 ### `deploy-verify` -- check offline declaration drift
 
+Use `--out verification.json` to save the same redacted receipt that `--json` prints. Match and drift results can both be saved. The destination must be distinct from the saved plan, declaration, and any required companion. Invalid input or an unavailable destination exits `1`.
+
 Since 0.100.0, use `--format systemd --executable /absolute/engine`
 to compare exact native unit bytes against the original saved plan and independently
 retained model/GPU intent. See [systemd verification](docs/deployment-verification.md#systemd-units).
@@ -719,7 +721,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.111.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.115.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -899,7 +901,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.111.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.115.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -927,6 +929,8 @@ chimeraforge catalog                 # list the cached catalog
 Persists resolved specs so `suggest --source catalog` ranks a known-good set fully offline.
 
 Chimeraforge 0.110.0 publishes successful refreshes atomically. A partial refresh publishes the resolved models and lists unresolved identifiers. A total resolution failure or a failed write exits `1` and preserves the previous catalog. `catalog --build --json` sends one JSON document to stdout with a `status` of `complete`, `partial`, or `failed`.
+
+With `catalog --build --require-complete`, every requested model must resolve before the index is replaced. An incomplete refresh exits `1`, leaves the prior index in place, and reports the unresolved identifiers. Use `--json` to collect the same failure as one JSON document.
 
 ### `safety` -- live refusal screen
 
@@ -1280,6 +1284,8 @@ chimeraforge compare --baseline run1.json --candidate run2.json,run3.json --json
 Matches configurations by model, backend, quantization, workload, and context length. Chimeraforge 0.107.0 compares each candidate file independently in the specified order and rejects duplicate configurations within a file. Unavailable metrics appear as `n/a` in the terminal and `null` in grouped JSON. Flat JSON retains the existing numeric absence markers. This includes native summaries that mixed an unavailable sample into their mean. Each total uses only configurations with a defined delta for that metric.
 
 `--json` returns a flat array of matched rows in candidate file order. Use `--grouped-json` for a document with `schema_version: 1`, the `baseline` path, and an ordered `candidates` array. Each entry includes its `candidate` path, matched `rows`, and the `baseline_only` and `candidate_only` configuration keys.
+
+Add `--max-throughput-regression-pct 10` to gate every candidate against the baseline. Exit `3` means a known throughput loss exceeded the limit. Exit `4` means a baseline configuration was missing or lacked a usable throughput delta. A known regression takes precedence. Candidate-only configurations are allowed, and comparison output is still emitted.
 
 ### `refit` -- update planner coefficients
 
