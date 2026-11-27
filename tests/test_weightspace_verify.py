@@ -29,6 +29,11 @@ def test_public_verify_and_cli(bundle):
     path = bundle / "manifest.json"
     result = verify_bundle(path, bundle).to_dict()
     assert result["status"] == "verified"
+    assert (
+        result["manifest_sha256"]
+        == "eac47a46e1d99281b5d7bc3e52f7005c424b386a1d3982e2e7dc8b975a058cb0"
+    )
+    assert path.read_bytes() == (EXAMPLE / "manifest.json").read_bytes()
     assert result["manifest_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
     assert len(result["files"]) == 2
     delta = next(f for f in result["files"] if f["role"] == "payload")

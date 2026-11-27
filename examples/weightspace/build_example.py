@@ -60,7 +60,9 @@ def build(root):
         "tensors": tensors,
         "metadata": {"unchanged": ["bias"]},
     }
-    (root / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (root / "manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 if __name__ == "__main__":
