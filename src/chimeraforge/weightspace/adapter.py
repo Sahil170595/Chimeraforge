@@ -75,6 +75,21 @@ def admit_adapter(
         raise ManifestError("adapter declares a different base repository or immutable revision")
     if config.get("peft_type") != "LORA" or config.get("bias", "none") != "none":
         raise ManifestError("expected ordinary bias-free PEFT LoRA")
+    for variant in (
+        "arrow_config",
+        "velora_config",
+        "monteclora_config",
+        "kasa_config",
+        "alora_invocation_tokens",
+    ):
+        if config.get(variant) is not None:
+            raise ManifestError(f"unsupported LoRA variant: {variant}")
+    initialization = config.get("init_lora_weights", True)
+    if type(initialization) is not bool and initialization != "gaussian":
+        raise ManifestError("unsupported LoRA initialization or variant")
+    dropout = config.get("lora_dropout", 0.0)
+    if type(dropout) not in (int, float) or not 0 <= dropout <= 1:
+        raise ManifestError("LoRA dropout must be a number between zero and one")
     for setting in (
         "fan_in_fan_out",
         "use_rslora",
@@ -93,6 +108,7 @@ def admit_adapter(
         "trainable_token_indices",
         "use_qalora",
         "use_bdlora",
+        "ensure_weight_tying",
     ):
         value = config.get(setting)
         if value is not None and value is not False and value != {} and value != []:
