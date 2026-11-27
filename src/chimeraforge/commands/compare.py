@@ -7,6 +7,9 @@ from rich.console import Console
 
 console = Console()
 
+THROUGHPUT_REGRESSION = 3
+THROUGHPUT_EVIDENCE_INCOMPLETE = 4
+
 
 def compare(
     baseline: str = typer.Option(
@@ -37,9 +40,16 @@ def compare(
         "--grouped-json",
         help="Output JSON grouped by candidate, including unmatched configurations.",
     ),
+    max_throughput_regression_pct: float | None = typer.Option(
+        None,
+        "--max-throughput-regression-pct",
+        help="Fail if any baseline configuration loses more than this percentage of throughput.",
+    ),
 ) -> None:
     """Compare benchmark results between runs."""
     import logging
+    import math
+    from fractions import Fraction
     from pathlib import Path
 
     from chimeraforge.compare.comparator import (
@@ -57,6 +67,15 @@ def compare(
 
     if output_json and grouped_json:
         typer.echo("Error: --json and --grouped-json are mutually exclusive.", err=True)
+        raise typer.Exit(code=1)
+
+    if max_throughput_regression_pct is not None and not (
+        math.isfinite(max_throughput_regression_pct) and 0 <= max_throughput_regression_pct <= 100
+    ):
+        typer.echo(
+            "Error: throughput regression limit must be a finite percentage from 0 to 100.",
+            err=True,
+        )
         raise typer.Exit(code=1)
 
     baseline_path = Path(baseline)
@@ -80,17 +99,35 @@ def compare(
 
     if grouped_json:
         typer.echo(format_candidate_groups_json(baseline_path, comparisons))
-        return
-    if output_json:
+    elif output_json:
         typer.echo(format_comparison_json([row for group in comparisons for row in group.rows]))
-        return
+    else:
+        for group in comparisons:
+            console.print(f"Candidate: {group.candidate}", markup=False)
+            format_comparison_table(group.rows, console)
+            format_comparison_summary(group.rows, console)
+            if group.baseline_only or group.candidate_only:
+                console.print(
+                    f"Baseline-only configurations: {len(group.baseline_only)}. "
+                    f"Candidate-only configurations: {len(group.candidate_only)}."
+                )
 
-    for group in comparisons:
-        console.print(f"Candidate: {group.candidate}", markup=False)
-        format_comparison_table(group.rows, console)
-        format_comparison_summary(group.rows, console)
-        if group.baseline_only or group.candidate_only:
-            console.print(
-                f"Baseline-only configurations: {len(group.baseline_only)}. "
-                f"Candidate-only configurations: {len(group.candidate_only)}."
-            )
+    if max_throughput_regression_pct is None:
+        return
+    # Compare the measured decimal values so binary rounding in the displayed
+    # delta cannot turn a loss exactly at the limit into a breach.
+    minimum_ratio = 1 - Fraction(str(max_throughput_regression_pct)) / 100
+    incomplete = any(not group.rows or group.baseline_only for group in comparisons)
+    for row in (row for group in comparisons for row in group.rows):
+        base, measured = row.baseline_throughput, row.candidate_throughput
+        if row.delta_throughput_pct is None or base is None or measured is None:
+            incomplete = True
+        elif Fraction(str(measured)) < Fraction(str(base)) * minimum_ratio:
+            typer.echo(f"Throughput loss exceeded {max_throughput_regression_pct:g}%.", err=True)
+            raise typer.Exit(code=THROUGHPUT_REGRESSION)
+    if incomplete:
+        typer.echo(
+            "The throughput gate needs usable measurements for every baseline configuration.",
+            err=True,
+        )
+        raise typer.Exit(code=THROUGHPUT_EVIDENCE_INCOMPLETE)
