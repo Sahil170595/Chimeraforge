@@ -20,6 +20,8 @@ include server.json
 include glama.json
 recursive-include scripts *.py *.ps1 *.json
 recursive-include examples *.json
+include examples/weightspace/build_example.py examples/weightspace/build_recipient.py
+include examples/weightspace/base.safetensors examples/weightspace/delta.safetensors
 # The published third-party audit: test_validation_corpus and test_accuracy
 # re-derive it from these files.
 recursive-include corpora *.json *.md

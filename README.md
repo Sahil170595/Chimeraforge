@@ -40,7 +40,7 @@ checks a saved plan against a supplied NVIDIA CSV without a local GPU query.
 
 Give it a model -- a size class, a Hugging Face repo, an Ollama tag, or manual overrides for an unreleased model -- and it searches the (model x quantization x backend x GPU count x tensor/pipeline parallelism) space against VRAM, quality, latency, cost, energy, and an opt-in safety gate, then hands back the cheapest config that meets your SLO.
 
-**34 commands, one tool:** `plan` - `check` - `bundle` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
+**35 commands, one tool:** `plan` - `check` - `bundle` - `weightspace` - `study` - `serving` - `deploy` - `deploy-verify` - `deploy-inspect` - `inventory-check` - `suggest` - `measure` - `workload` - `monitor` - `monitor-fleet` - `monitor-fleet-exporter` - `validate` - `doctor` - `contribute` - `catalog` - `safety` - `bench` - `trace` - `trace-fleet` - `trace-fleet-campaign` - `trace-campaign` - `trace-envelope` - `score` - `gate` - `eval` - `compare` - `refit` - `report` - `mcp` - `serve`.
 
 The empirical corpus traces to Technical Reports TR108-TR137 (~204,000 real measurements on consumer GPUs). See the [CHANGELOG](CHANGELOG.md) for the full feature history.
 
@@ -232,6 +232,10 @@ Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_su
 ---
 
 ## Commands
+
+### `weightspace`
+
+Verify a local weight-space artifact with `chimeraforge weightspace verify MANIFEST`. Use `weightspace footprint MANIFEST` to estimate transfer, staging and target tensor bytes, including shared-base cache savings. With `chimeraforge[weightspace]`, `weightspace admit-adapter` checks an ordinary PEFT LoRA adapter against a pinned local base. Use `weightspace stage MANIFEST DESTINATION` to create a verified offline runtime directory. Run `weightspace verify-recipient MANIFEST --text "example"` to check an independently executable linear classifier and its ordered labels. The installed Python library reads the same versioned manifest and checks every file against its declared size and digest. [Library and wire format](docs/weightspace.md)
 
 ### `plan` -- predictive capacity planner
 

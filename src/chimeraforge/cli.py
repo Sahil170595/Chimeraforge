@@ -34,6 +34,7 @@ from chimeraforge.commands.measure import measure
 from chimeraforge.commands.plan import plan
 from chimeraforge.commands.refit import refit
 from chimeraforge.commands.report import report
+from chimeraforge.commands.weightspace import weightspace_app
 from chimeraforge.commands.workload import workload
 from chimeraforge.commands.safety import safety
 from chimeraforge.commands.score import score
@@ -81,6 +82,7 @@ def main(
 app.command()(plan)
 app.command()(check)
 app.add_typer(bundle_app, name="bundle")
+app.add_typer(weightspace_app, name="weightspace")
 app.command()(study)
 app.command()(deploy)
 app.command("deploy-verify")(deploy_verify)
