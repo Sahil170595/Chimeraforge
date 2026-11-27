@@ -44,8 +44,12 @@ def deploy_verify(
         None, "--node-selector", help="Expected Kubernetes key=value; repeat."
     ),
     output_json: bool = typer.Option(False, "--json", help="Print a value-redacted JSON receipt."),
+    out: Path | None = typer.Option(None, "--out", help="Save the value-redacted JSON receipt."),
 ) -> None:
     """Compare current-renderer declarations; no interpolation, Docker or GPU calls."""
+    from chimeraforge.api import PlanError
+    from chimeraforge.bench.fleet_gate_output import _write
+    from chimeraforge.commands._trace_output import preflight_trace_output
     from chimeraforge.commands.deploy import _kubernetes_options, _replica_groups
     from chimeraforge.deploy import DeploymentError
     from chimeraforge.deployment_verify import (
@@ -53,8 +57,13 @@ def deploy_verify(
         verify_deployment,
         verify_systemd_deployment,
     )
+    from chimeraforge.plan_study import protect_output
 
     try:
+        if out is not None:
+            out = out.absolute()
+            protect_output(out, (plan, config))
+            preflight_trace_output(out)
         if format == "systemd":
             if executable is None or any(
                 value is not None
@@ -97,7 +106,12 @@ def deploy_verify(
                 replica_gpu_devices=_replica_groups(replica_devices),
                 replica_host_ports=replica_port,
             )
-    except (DeploymentVerificationError, DeploymentError) as exc:
+        receipt = json.dumps(result.to_dict())
+        if out is not None:
+            companions = tuple(config.parent / item.name for item in result.companions)
+            protect_output(out, (plan, config, *companions))
+            _write(out, (receipt + "\n").encode("utf-8"))
+    except (DeploymentVerificationError, DeploymentError, PlanError, OSError, RuntimeError) as exc:
         if output_json:
             typer.echo(
                 json.dumps(
@@ -112,7 +126,7 @@ def deploy_verify(
             typer.echo("Invalid deployment verification input.")
         raise typer.Exit(1) from exc
     if output_json:
-        typer.echo(json.dumps(result.to_dict()))
+        typer.echo(receipt)
     else:
         typer.echo(f"Deployment {result.status}: {result.change_count} changes.")
     raise typer.Exit(result.exit_code)

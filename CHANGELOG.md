@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.114.0] - 2026-11-26
+
+### Saved deployment verification receipts
+
+- Save value-redacted match or drift receipts atomically, with protection for the saved plan, declaration, and companion inputs.
+
 ## [0.113.0] - 2026-11-26
 
 ### Benchmark throughput regression gate

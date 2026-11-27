@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.113.0 can enforce a throughput regression budget on benchmark comparisons.
+**Release scope.** Chimeraforge 0.114.0 can save redacted deployment verification receipts and protect their inputs from output aliases.
 
 ```bash
-pip install "chimeraforge[mcp]==0.113.0"
+pip install "chimeraforge[mcp]==0.114.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -570,6 +570,8 @@ See [complete Kubernetes examples, bounds and hosted proof limits](docs/kubernet
 
 ### `deploy-verify` -- check offline declaration drift
 
+Use `--out verification.json` to save the same redacted receipt that `--json` prints. Match and drift results can both be saved. The destination must be distinct from the saved plan, declaration, and any required companion. Invalid input or an unavailable destination exits `1`.
+
 Since 0.100.0, use `--format systemd --executable /absolute/engine`
 to compare exact native unit bytes against the original saved plan and independently
 retained model/GPU intent. See [systemd verification](docs/deployment-verification.md#systemd-units).
@@ -717,7 +719,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.113.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.114.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -897,7 +899,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.113.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.114.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

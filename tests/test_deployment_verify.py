@@ -471,6 +471,52 @@ def test_cli_has_match_drift_invalid_outcomes_and_sanitized_json(tmp_path):
     assert source.read_bytes() == before[source.name]
 
 
+def test_cli_saves_match_and_drift_receipts_without_replacing_the_inputs(tmp_path):
+    saved = artifact(
+        backend="ollama",
+        source=SOURCE_OLLAMA,
+        model="ollama:llama3.1:8b",
+        quant="Q4_K_M",
+        native_quant="Q4_K_M",
+    )
+    saved, config, intent = written(tmp_path, saved)
+    plan = tmp_path / "plan.json"
+    saved.save(plan)
+    companion = tmp_path / "Modelfile"
+    receipt = tmp_path / "receipt.json"
+    args = [
+        "deploy-verify",
+        "--plan",
+        str(plan),
+        "--config",
+        str(config),
+        "--image",
+        intent["image"],
+        "--json",
+        "--out",
+    ]
+    for protected in (plan, config, companion):
+        before = protected.read_bytes()
+        refused = CliRunner().invoke(app, [*args, str(protected)])
+        assert refused.exit_code == 1
+        assert json.loads(refused.stdout)["status"] == "invalid"
+        assert protected.read_bytes() == before
+
+    match = CliRunner().invoke(app, [*args, str(receipt)])
+    assert match.exit_code == 0, match.output
+    assert json.loads(receipt.read_bytes()) == json.loads(match.stdout)
+    companion.write_text(CANARY)
+    drift = CliRunner().invoke(app, [*args, str(receipt)])
+    assert drift.exit_code == 5, drift.output
+    assert CANARY not in receipt.read_text(encoding="utf-8")
+    assert json.loads(receipt.read_bytes()) == json.loads(drift.stdout)
+    before = receipt.read_bytes()
+    config.write_text("{")
+    invalid = CliRunner().invoke(app, [*args, str(receipt)])
+    assert invalid.exit_code == 1
+    assert receipt.read_bytes() == before
+
+
 def test_cli_preserves_native_typer_usage_exit_two():
     result = CliRunner().invoke(app, ["deploy-verify", "--candidate-index", "not-an-integer"])
     assert result.exit_code == 2
