@@ -5,6 +5,13 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.117.0] - Unreleased
+
+### Offline weight-space verification
+
+- Verify the declared sizes and SHA-256 of local weight-space files from the new Python library and CLI.
+- Accept a separately pinned manifest and report physical verification independently of logical tensor declarations.
+
 ## [0.116.0] - 2026-11-27
 
 ### Minimum audit coverage
