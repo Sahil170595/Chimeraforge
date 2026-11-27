@@ -17,11 +17,11 @@ def write_json(path, value):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def sample(root):
+def sample(root, matrix=((1.0, 0.0), (2.0, -1.0)), bias=(0.5, -0.5)):
     root.mkdir()
     weights = {
-        "weight": np.array([[1.0, 0.0], [2.0, -1.0]], dtype="<f4"),
-        "bias": np.array([0.5, -0.5], dtype="<f4"),
+        "weight": np.array(matrix, dtype="<f4"),
+        "bias": np.array(bias, dtype="<f4"),
     }
     records = [
         dict(
@@ -117,3 +117,10 @@ def test_refuses_mismatched_recipient(tmp_path, change):
     write_json(path, m)
     with pytest.raises(ManifestError):
         verify_recipient(path, "alpha")
+
+
+def test_f32_rounding_precedes_bias_and_class_selection(tmp_path):
+    manifest = sample(tmp_path / "source", matrix=[[2**24, 1], [0, 0]], bias=[-(2**24), 0.5])
+    prediction = verify_recipient(manifest, "alpha beta")
+    assert prediction.logits == (0.0, 0.5)
+    assert (prediction.class_index, prediction.label) == (1, "second")
