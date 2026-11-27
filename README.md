@@ -235,7 +235,7 @@ Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_su
 
 ### `weightspace`
 
-Verify a local weight-space artifact with `chimeraforge weightspace verify MANIFEST`. Use `weightspace footprint MANIFEST` to estimate transfer, staging and target tensor bytes, including shared-base cache savings. With `chimeraforge[weightspace]`, `weightspace admit-adapter` checks an ordinary PEFT LoRA adapter against a pinned local base. Use `weightspace stage MANIFEST DESTINATION` to create a verified offline runtime directory. The installed Python library reads the same versioned manifest and checks every file against its declared size and digest. [Library and wire format](docs/weightspace.md)
+Verify a local weight-space artifact with `chimeraforge weightspace verify MANIFEST`. Use `weightspace footprint MANIFEST` to estimate transfer, staging and target tensor bytes, including shared-base cache savings. With `chimeraforge[weightspace]`, `weightspace admit-adapter` checks an ordinary PEFT LoRA adapter against a pinned local base. Use `weightspace stage MANIFEST DESTINATION` to create a verified offline runtime directory. Run `weightspace verify-recipient MANIFEST --text "example"` to check an independently executable linear classifier and its ordered labels. The installed Python library reads the same versioned manifest and checks every file against its declared size and digest. [Library and wire format](docs/weightspace.md)
 
 ### `plan` -- predictive capacity planner
 

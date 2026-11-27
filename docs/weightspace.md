@@ -56,3 +56,16 @@ The hosted CPU test saves a real PEFT adapter, reads it back through PEFT, and c
 `chimeraforge weightspace stage MANIFEST DESTINATION` verifies the input, copies the declared load and inference files into a new generation, and checks the bytes actually copied. Build-only donors and decode-only inputs are omitted. Stage a materialized recipient or a base plus adapter. A decode-only artifact needs an already materialized target before staging, even when it also declares a runtime config or tokenizer. The command returns an absolute generation directory, the source manifest digest, the staged manifest digest and the staged filenames.
 
 The Python entry point is `stage_bundle(manifest, destination, root=None, expected_sha256=None)`. Use `current_bundle(destination)` to obtain the exact verified staged manifest. A generation contains only its runtime files and `manifest.json`. Keep the destination dedicated to this deployment. The stage operation atomically replaces a small `current.json` pointer after all copies have succeeded. Concurrent writers may select different complete generations; previously returned generation paths remain usable. Existing content-addressed generations are verified before reuse. Move the returned directory to another machine to load it offline.
+
+## Execute a standalone recipient
+
+Install `chimeraforge[weightspace]`. Generate the tiny arithmetic example and run a raw string through the installed worker.
+
+```console
+python examples/weightspace/build_recipient.py ./small-classifier
+chimeraforge weightspace verify-recipient ./small-classifier/manifest.json --text "Alpha beta ALPHA alpha"
+```
+
+The same Python operation is `verify_recipient(manifest, text, root=None, expected_sha256=None)`. It stages a fresh runtime closure, checks the logical target and recipient commitments, and starts an isolated CPU process whose working directory contains only weights, transform, labels and the staged manifest. The example returns logits [3.5, 4.5], class index 1 and label `second`. The receipt records physical component bytes and worker resident memory sampled after prediction. RSS includes Python and loaded libraries; this one observation describes the named process and workload.
+
+The supported codec is `linear-recipient-v1` with `exact: true` and empty parameters. Three files with the roles `recipient`, `transform` and `labels` form its runtime closure. Store finite F32 SafeTensors named `weight` (classes by features) and `bias` (classes). The UTF-8 transform object has `schema: "word-count-v1"`, boolean `lowercase` and an ordered array `vocabulary` of unique tokens. Lowercase before Unicode whitespace splitting when requested, count exact vocabulary tokens, and ignore unknown tokens. The labels object has `schema: "ordered-labels-v1"` and an ordered `labels` array of unique strings. The predicted index is the first maximum of `weight @ counts + bias`. Bind the two JSON file hashes in `identities.transform` and `identities.classes`, and bind both `identities.recipient` and `identities.target` to the canonical sorted tensor records described above.

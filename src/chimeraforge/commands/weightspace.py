@@ -14,7 +14,7 @@ from chimeraforge.weightspace import (
     verify_bundle,
 )
 
-from chimeraforge.weightspace import stage_bundle
+from chimeraforge.weightspace import stage_bundle, verify_recipient as predict_recipient
 
 weightspace_app = typer.Typer(help="Inspect local weight-space artifacts.", no_args_is_help=True)
 
@@ -87,6 +87,22 @@ def stage(
     """Stage the local runtime closure and atomically select the verified generation."""
     try:
         result = stage_bundle(manifest, destination, root, expected_sha256=expected_sha256)
+    except ManifestError as exc:
+        typer.echo(json.dumps({"status": "invalid", "error": str(exc)}))
+        raise typer.Exit(1) from exc
+    typer.echo(json.dumps(result.to_dict()))
+
+
+@weightspace_app.command()
+def verify_recipient(
+    manifest: Path,
+    text: str = typer.Option(...),
+    root: Path | None = typer.Option(None),
+    expected_sha256: str | None = typer.Option(None),
+) -> None:
+    """Run a standalone linear recipient on raw text in a fresh CPU worker."""
+    try:
+        result = predict_recipient(manifest, text, root, expected_sha256=expected_sha256)
     except ManifestError as exc:
         typer.echo(json.dumps({"status": "invalid", "error": str(exc)}))
         raise typer.Exit(1) from exc

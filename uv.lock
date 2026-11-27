@@ -604,7 +604,7 @@ wheels = [
 
 [[package]]
 name = "chimeraforge"
-version = "0.120.0"
+version = "0.121.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -622,6 +622,7 @@ all = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "platformdirs" },
+    { name = "psutil" },
     { name = "pynvml" },
     { name = "safetensors" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -676,6 +677,7 @@ sign = [
 weightspace = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "psutil" },
     { name = "safetensors" },
 ]
 
@@ -704,6 +706,7 @@ requires-dist = [
     { name = "platformdirs", marker = "extra == 'bench'", specifier = ">=4.0,<5.0" },
     { name = "platformdirs", marker = "extra == 'refit'", specifier = ">=4.0,<5.0" },
     { name = "psutil", marker = "extra == 'dev'", specifier = ">=5.9" },
+    { name = "psutil", marker = "extra == 'weightspace'", specifier = ">=5.9,<8" },
     { name = "pynvml", marker = "extra == 'bench'", specifier = ">=11.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4,<10.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21,<2.0" },

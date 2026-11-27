@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chimeraforge"
-version = "0.120.0"
+version = "0.121.0"
 description = "LLM deployment optimizer (performance, cost, and safety) — backed by ~204,000 real measurements on consumer GPUs"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -46,7 +46,7 @@ Changelog = "https://github.com/Sahil170595/Chimeraforge/blob/main/CHANGELOG.md"
 Issues = "https://github.com/Sahil170595/Chimeraforge/issues"
 
 [project.optional-dependencies]
-weightspace = ["numpy>=1.24,<3", "safetensors>=0.7,<0.9"]
+weightspace = ["numpy>=1.24,<3", "safetensors>=0.7,<0.9", "psutil>=5.9,<8"]
 bench = ["platformdirs>=4.0,<5.0", "pynvml>=11.0"]
 exporter = ["starlette==1.7.0", "uvicorn==0.54.0"]
 # The patched file-lock release requires Python 3.11 or later.

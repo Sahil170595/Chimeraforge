@@ -326,6 +326,35 @@ def main(argv: list[str] | None = None) -> int:
             check=True,
         )
         assert json.loads(checked.stdout) == receipt.to_dict()
+        # The public example generator uses its adjacent standard-library fixture builder.
+        recipient_dir = cwd / "linear-recipient"
+        subprocess.run(
+            [sys.executable, str(builder.with_name("build_recipient.py")), str(recipient_dir)],
+            cwd=cwd,
+            check=True,
+        )
+        prediction = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-m",
+                "chimeraforge",
+                "weightspace",
+                "verify-recipient",
+                str(recipient_dir / "manifest.json"),
+                "--text",
+                "Alpha beta ALPHA alpha",
+            ],
+            cwd=cwd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=CLI_TIMEOUT_SECONDS,
+            check=True,
+        )
+        outcome = json.loads(prediction.stdout)
+        assert outcome["logits"] == [3.5, 4.5] and outcome["label"] == "second"
+        assert outcome["worker_rss_bytes"] > 0
         accept_validation_audit(cwd, env)
         manual = json.loads(
             run_cli(
