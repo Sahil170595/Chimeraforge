@@ -29,6 +29,11 @@ def catalog(
     ),
     output_json: bool = typer.Option(False, "--json", help="Output as JSON."),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable debug logging."),
+    require_complete: bool = typer.Option(
+        False,
+        "--require-complete",
+        help="Keep the cached index unless all requested models resolve.",
+    ),
 ) -> None:
     """Show the local model catalog, or rebuild it with --build.
 
@@ -48,6 +53,9 @@ def catalog(
     from chimeraforge.planner.discovery import CatalogBuildError, build_catalog, load_catalog
     from chimeraforge.planner.resolver import ResolverError
 
+    if require_complete and not build:
+        raise typer.BadParameter("requires --build", param_hint="--require-complete")
+
     errors: list[tuple[str, str]] = []
     build_status = None
     if build:
@@ -58,6 +66,7 @@ def catalog(
                     include_ollama=include_ollama,
                     ollama_url=ollama_url,
                     hf_token=hf_token,
+                    require_complete=require_complete,
                 )
         except (CatalogBuildError, ResolverError) as exc:
             message = (

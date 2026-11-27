@@ -199,12 +199,14 @@ def build_catalog(
     include_ollama: bool = False,
     ollama_url: str | None = None,
     hf_token: str | None = None,
+    require_complete: bool = False,
 ) -> tuple[dict[str, ModelSpec], list[tuple[str, str]]]:
     """Resolve the catalog's models (seed +/- installed Ollama) and persist them.
 
     Returns (resolved specs, errors). Publishes a nonempty result atomically for
-    offline readers. An empty refresh retains the previous index. A failed
-    publication raises CatalogBuildError.
+    offline readers. An empty refresh retains the previous index. With
+    require_complete, a refresh with unresolved identifiers returns the errors
+    and leaves the previous index in place. A failed write raises CatalogBuildError.
     """
     ids: list[str] = []
     if include_seed:
@@ -215,6 +217,8 @@ def build_catalog(
     ids = list(dict.fromkeys(ids))
 
     specs, errors = resolve_many(ids, ollama_url=ollama_url, hf_token=hf_token)
+    if require_complete and errors:
+        return {}, errors
     if specs:
         _write_catalog(specs)
     return specs, errors

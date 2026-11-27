@@ -285,9 +285,19 @@ class TestCommandsOffline:
         )
         assert discovery.fetch_ollama_tags() == []
 
-    @pytest.mark.parametrize("outcome", ["complete", "partial", "outage", "write_failure"])
+    @pytest.mark.parametrize(
+        "outcome,require_complete",
+        [
+            ("complete", False),
+            ("partial", False),
+            ("outage", False),
+            ("write_failure", False),
+            ("complete", True),
+            ("partial", True),
+        ],
+    )
     def test_catalog_refresh_reports_publication_and_has_one_json_document(
-        self, tmp_path, monkeypatch, outcome
+        self, tmp_path, monkeypatch, outcome, require_complete
     ):
         from typer.testing import CliRunner
 
@@ -323,8 +333,11 @@ class TestCommandsOffline:
 
             monkeypatch.setattr(Path, "replace", refuse)
 
-        result = CliRunner().invoke(app, ["catalog", "--build", "--json"])
-        failed = outcome in {"outage", "write_failure"}
+        flags = ["--require-complete"] if require_complete else []
+        result = CliRunner().invoke(app, ["catalog", "--build", "--json", *flags])
+        failed = outcome in {"outage", "write_failure"} or (
+            require_complete and outcome == "partial"
+        )
         assert result.exit_code == (1 if failed else 0), result.output
         report = json.loads(result.stdout)
         assert report["status"] == ("failed" if failed else outcome)
@@ -335,6 +348,15 @@ class TestCommandsOffline:
             assert set(report["models"]) == set(known) and load_catalog() == known
             assert [row["id"] for row in report["errors"]] == [model for model, _ in errors]
         assert not list(tmp_path.glob("*.tmp"))
+
+    def test_complete_catalog_policy_requires_build(self):
+        from typer.testing import CliRunner
+
+        from chimeraforge.cli import app
+
+        result = CliRunner().invoke(app, ["catalog", "--require-complete"])
+        assert result.exit_code == 2
+        assert "requires --build" in _strip_ansi(result.output)
 
     def test_catalog_help(self):
         from typer.testing import CliRunner

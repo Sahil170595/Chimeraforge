@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.111.0 validates planner requests before measurement, model resolution, or search across the CLI, SDK, and MCP.
+**Release scope.** Chimeraforge 0.113.0 can enforce a throughput regression budget on benchmark comparisons.
 
 ```bash
-pip install "chimeraforge[mcp]==0.111.0"
+pip install "chimeraforge[mcp]==0.113.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -717,7 +717,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.111.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.113.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -897,7 +897,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.111.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.113.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
@@ -925,6 +925,8 @@ chimeraforge catalog                 # list the cached catalog
 Persists resolved specs so `suggest --source catalog` ranks a known-good set fully offline.
 
 Chimeraforge 0.110.0 publishes successful refreshes atomically. A partial refresh publishes the resolved models and lists unresolved identifiers. A total resolution failure or a failed write exits `1` and preserves the previous catalog. `catalog --build --json` sends one JSON document to stdout with a `status` of `complete`, `partial`, or `failed`.
+
+With `catalog --build --require-complete`, every requested model must resolve before the index is replaced. An incomplete refresh exits `1`, leaves the prior index in place, and reports the unresolved identifiers. Use `--json` to collect the same failure as one JSON document.
 
 ### `safety` -- live refusal screen
 
