@@ -101,3 +101,21 @@ def test_cannot_stage_a_decode_only_model_or_reuse_unrelated_directory(tmp_path)
     src.write_text(json.dumps(m))
     with pytest.raises(ManifestError, match="runtime"):
         stage_bundle(src, tmp_path / "new")
+
+
+@pytest.mark.parametrize("extra", ["stale.txt", "unsigned", "empty/nested"])
+def test_rejects_extra_entries_in_published_generation(tmp_path, extra):
+    source_path = source(tmp_path / "source")
+    store = tmp_path / "store"
+    root = Path(stage_bundle(source_path, store).directory)
+    member = root / extra
+    if extra.endswith(".txt"):
+        member.write_bytes(b"operator data")
+    else:
+        member.mkdir(parents=True)
+    pointer = (store / "current.json").read_bytes()
+    with pytest.raises(ManifestError, match="unexpected"):
+        current_bundle(store)
+    with pytest.raises(ManifestError, match="unexpected"):
+        stage_bundle(source_path, store)
+    assert member.exists() and (store / "current.json").read_bytes() == pointer

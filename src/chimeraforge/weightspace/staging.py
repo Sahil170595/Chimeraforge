@@ -60,6 +60,21 @@ def _pointer(directory: Path) -> str:
     return _digest(record.get("manifest_sha256"), "stage pointer")
 
 
+def _verify_generation(manifest: Path, digest: str) -> None:
+    bundle = verify_bundle(manifest, expected_sha256=digest)
+    directory = manifest.parent
+    contents: dict[Path, set[str]] = {directory: {"manifest.json"}}
+    for item in bundle.files:
+        parent = directory
+        for part in item.path.split("/"):
+            contents.setdefault(parent, set()).add(part)
+            parent = parent / part
+    for parent, expected in contents.items():
+        _directory(parent)
+        if {p.name for p in parent.iterdir()} != expected:
+            raise ManifestError("unexpected or missing entries in staged generation")
+
+
 def current_bundle(destination: str | Path) -> Path:
     """Return the verified manifest in the generation selected by the stage pointer."""
     directory = Path(destination)
@@ -67,7 +82,7 @@ def current_bundle(destination: str | Path) -> Path:
         _directory(directory)
         digest = _pointer(directory)
         manifest = _member(directory, f"{GENERATIONS}/{digest}/manifest.json")
-        verify_bundle(manifest, expected_sha256=digest)
+        _verify_generation(manifest, digest)
         return manifest
     except OSError as exc:
         raise ManifestError("cannot resolve the current staged generation") from exc
@@ -147,7 +162,7 @@ def stage_bundle(
                 for item in members:
                     _copy_verified(src, new / item.path, item)
                 (new / "manifest.json").write_bytes(body)
-                verify_bundle(new / "manifest.json", expected_sha256=digest)
+                _verify_generation(new / "manifest.json", digest)
                 try:
                     new.rename(published)
                 except OSError:
@@ -155,7 +170,7 @@ def stage_bundle(
                         raise
             # An existing generation may belong to a concurrent writer.
             finished = _member(directory, f"{GENERATIONS}/{digest}/manifest.json")
-            verify_bundle(finished, expected_sha256=digest)
+            _verify_generation(finished, digest)
             pointer = {"schema": STAGE_SCHEMA, "manifest_sha256": digest}
             temp_pointer = tempdir / "pointer.json"
             temp_pointer.write_bytes(json.dumps(pointer).encode())
