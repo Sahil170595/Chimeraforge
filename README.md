@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.115.0 validates planning requests on demand before model resolution, hardware probing or search.
+**Release scope.** Chimeraforge 0.116.0 can require a minimum number of scored cells in a prediction audit.
 
 ```bash
-pip install "chimeraforge[mcp]==0.115.0"
+pip install "chimeraforge[mcp]==0.116.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -684,6 +684,12 @@ Scores the planner's own predictions by provenance class, so "estimated" carries
 
 Chimeraforge 0.108.0 requires the full 64-character SHA-256 digest for `--expect-fingerprint` and includes it in the Markdown audit. The requested JSON and Markdown files must be distinct from one another and from the matrix, measurements, and planner corpus. Both documents are rendered before publication, and each file is replaced atomically.
 
+CI can set a minimum number of cells contributing to the scorecard. Each eligible cell counts once, even when it produces several metrics. Skipped and underspecified cells are excluded. Below the minimum, the command still emits the full audit and exits `4`. The threshold controls scorecard coverage. The scorecard continues to report sample size and error per group.
+
+```bash
+chimeraforge validate --matrix matrix.json --measurements captured.json --min-scored-cells 5 --output audit.json
+```
+
 Measurements are sourced records, not bare numbers. Each cell states:
 
 - who measured it: `own-rig-measured` or `third-party-measured`, which are separate scorecard rows and never averaged together;
@@ -721,7 +727,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.115.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.116.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -901,7 +907,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.115.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.116.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash

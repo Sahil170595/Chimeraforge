@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.116.0] - 2026-11-27
+
+### Minimum audit coverage
+
+- Add an optional floor for cells contributing to the prediction scorecard while retaining the full audit on insufficient coverage.
+
 ## [0.115.0] - 2026-11-27
 
 ### Planning request preflight

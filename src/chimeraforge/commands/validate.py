@@ -66,6 +66,13 @@ def validate(
         "matches itself perfectly. Pass the hash recorded at pre-registration to "
         "make it a real gate.",
     ),
+    min_scored_cells: int | None = typer.Option(
+        None,
+        "--min-scored-cells",
+        min=1,
+        help="Require this many distinct cells to contribute to the scorecard. "
+        "Exit 4 below the minimum and still emit the audit.",
+    ),
     output_json: bool = typer.Option(
         False,
         "--json",
@@ -200,9 +207,18 @@ def validate(
 
     if output_json:
         typer.echo(audit_json)
-        return
+    else:
+        _print_table(audit)
 
-    _print_table(audit)
+    if min_scored_cells is not None:
+        scored = audit.scored_cell_count
+        if scored < min_scored_cells:
+            typer.echo(
+                f"Audit coverage is insufficient: scored {scored} cell(s), "
+                f"requires at least {min_scored_cells}.",
+                err=True,
+            )
+            raise typer.Exit(code=4)
 
 
 def _admit_output_paths(destinations: list[Path], protected: list[str]) -> list[Path]:
