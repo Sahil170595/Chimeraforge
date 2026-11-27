@@ -119,3 +119,18 @@ def test_rejects_extra_entries_in_published_generation(tmp_path, extra):
     with pytest.raises(ManifestError, match="unexpected"):
         stage_bundle(source_path, store)
     assert member.exists() and (store / "current.json").read_bytes() == pointer
+
+
+def test_metadata_companion_cannot_turn_a_delta_into_a_runnable_model(tmp_path):
+    store = tmp_path / "store"
+    src = source(tmp_path / "src")
+    previous = stage_bundle(src, store)
+    m = json.loads(src.read_bytes())
+    m["codec"]["id"] = "xor-bytes-v1"
+    for member in m["files"]:
+        if member["role"] == "recipient":
+            member.update(role="payload", phases=["decode"])
+    src.write_text(json.dumps(m))
+    with pytest.raises(ManifestError, match="weights"):
+        stage_bundle(src, store)
+    assert current_bundle(store).parent == Path(previous.directory)

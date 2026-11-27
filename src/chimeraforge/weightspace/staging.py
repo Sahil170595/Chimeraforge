@@ -141,6 +141,11 @@ def stage_bundle(
     members = [item for item in verified.files if {"load", "inference"}.intersection(item.phases)]
     if not members:
         raise ManifestError("no runtime files to stage; materialize the target first")
+    roles = {item.role for item in members}
+    if "recipient" not in roles and not {"base", "adapter"} <= roles:
+        raise ManifestError(
+            "runtime weights require a materialized recipient or a base plus adapter"
+        )
     if any(item.path.split("/")[0].casefold() == "manifest.json" for item in members):
         raise ManifestError("runtime file collides with staged manifest.json")
     body = _runtime_manifest(verified, members)
