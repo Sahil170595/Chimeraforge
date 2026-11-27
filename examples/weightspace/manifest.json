@@ -1,0 +1,56 @@
+{
+  "schema": "weightspace-manifest/v1",
+  "codec": {
+    "id": "xor-bytes-v1",
+    "exact": true,
+    "parameters": {}
+  },
+  "identities": {
+    "base": "ebae7e8bea733b74d038a25ebb716de9cb6b7aac2ff9040fe595118fdf56ac40",
+    "target": "17e5898dcb3c653f4a23e220337910d1353cf179c1cb88fd88fcdd9e385ae97d"
+  },
+  "files": [
+    {
+      "path": "base.safetensors",
+      "role": "base",
+      "phases": [
+        "decode"
+      ],
+      "size_bytes": 152,
+      "sha256": "b13147368c131f562ad32d7390a5a7ca03bf31831bd948fdb6edc7cc3853b57f"
+    },
+    {
+      "path": "delta.safetensors",
+      "role": "payload",
+      "phases": [
+        "decode"
+      ],
+      "size_bytes": 88,
+      "sha256": "174c39321b58d063defa58d3ce2a3b4f1c0af2fdfc209bffc63c6d62663ac250"
+    }
+  ],
+  "tensors": [
+    {
+      "name": "bias",
+      "dtype": "F32",
+      "shape": [
+        2
+      ],
+      "sha256": "deea3b24add66f9c401d38a758eb5cb664db0596a3113b5ceaf8c5e774faa321"
+    },
+    {
+      "name": "weight",
+      "dtype": "F32",
+      "shape": [
+        2,
+        2
+      ],
+      "sha256": "04837d177d01fc14e6fce367d3aea3422d71ae5e29c6f57789eed77884cf91f2"
+    }
+  ],
+  "metadata": {
+    "unchanged": [
+      "bias"
+    ]
+  }
+}
