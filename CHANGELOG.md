@@ -5,6 +5,12 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.112.0] - 2026-11-26
+
+### Complete catalog refresh policy
+
+- Add an opt-in complete refresh policy for the CLI and SDK. Keep the existing catalog when any requested model cannot be resolved.
+
 ## [0.111.0] - 2026-11-25
 
 ### Planner request validation
