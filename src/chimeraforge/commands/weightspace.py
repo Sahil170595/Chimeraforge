@@ -7,7 +7,12 @@ from pathlib import Path
 
 import typer
 
-from chimeraforge.weightspace import ManifestError, estimate_footprint, verify_bundle
+from chimeraforge.weightspace import (
+    ManifestError,
+    admit_adapter as check_adapter,
+    estimate_footprint,
+    verify_bundle,
+)
 
 weightspace_app = typer.Typer(help="Inspect local weight-space artifacts.", no_args_is_help=True)
 
@@ -40,6 +45,29 @@ def footprint(
     try:
         result = estimate_footprint(
             manifest, root, expected_sha256=expected_sha256, cached_sha256=cached_sha256 or ()
+        )
+    except ManifestError as exc:
+        typer.echo(json.dumps({"status": "invalid", "error": str(exc)}))
+        raise typer.Exit(1) from exc
+    typer.echo(json.dumps(result.to_dict()))
+
+
+@weightspace_app.command()
+def admit_adapter(
+    base: Path,
+    adapter_dir: Path,
+    base_repo: str = typer.Option(...),
+    base_revision: str = typer.Option(...),
+    base_sha256: str = typer.Option(...),
+) -> None:
+    """Admit a standard linear LoRA pair against immutable local base weights."""
+    try:
+        result = check_adapter(
+            base,
+            adapter_dir,
+            base_repo=base_repo,
+            base_revision=base_revision,
+            base_sha256=base_sha256,
         )
     except ManifestError as exc:
         typer.echo(json.dumps({"status": "invalid", "error": str(exc)}))
