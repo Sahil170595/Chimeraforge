@@ -88,10 +88,10 @@ pip install "chimeraforge[all]"       # everything
 
 Python 3.11+ (since 0.82.0; the patched filelock dependency requires it). The core install covers the planner and network-facing commands (`httpx` is a core dep). Registry planning and the local catalog work offline; HF/Ollama resolution or discovery needs explicit network access. `bench` / `measure` / `safety` need a running backend (Ollama, vLLM, TGI, or SGLang; `safety` supports Ollama only). Windows / macOS / Linux.
 
-**Release scope.** Chimeraforge 0.114.0 can save redacted deployment verification receipts and protect their inputs from output aliases.
+**Release scope.** Chimeraforge 0.115.0 validates planning requests on demand before model resolution, hardware probing or search.
 
 ```bash
-pip install "chimeraforge[mcp]==0.114.0"
+pip install "chimeraforge[mcp]==0.115.0"
 ```
 
 **Inventory arithmetic (since 0.77.0):** `inventory-check` and async `api.check_inventory` check all original ordered GPU selectors and reported-free memory against a saved per-GPU batch-one baseline. Every result keeps `deployment_ready: null`; MIG status and UUIDs do not establish physical independence, allocation or runtime fit. See the [complete inventory contract](docs/inventory-check.md).
@@ -234,6 +234,8 @@ Exposes five tools: `chimeraforge_plan` (the full gate search), `chimeraforge_su
 ## Commands
 
 ### `plan` -- predictive capacity planner
+
+Use `plan --check-request --json` with the intended planning arguments to validate the request before live measurement, hardware probing, or search. The check reads a supplied workload profile and returns a request status. A full planning run resolves the model and hardware, checks deployment feasibility, and writes requested artifacts.
 
 ```bash
 chimeraforge plan --model-size 8b --hardware "RTX 4090 24GB" --request-rate 2.0
@@ -719,7 +721,7 @@ for an explicit finite run. Its receipt qualifies the captured original-populati
 observation after cleanup; default clean exit remains a lifecycle result.
 
 Chimeraforge 0.92.0 adds a loopback service with one sequential native window
-per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.114.0"`.
+per poll. Install it with `python -m pip install "chimeraforge[exporter]==0.115.0"`.
 Since 0.99.0, the same loopback listener adds GET/HEAD `/readyz`
 for cache freshness, separately from native fleet qualification. See
 [readiness responses](docs/fleet-exporter.md#cache-readiness).
@@ -899,7 +901,7 @@ inputs or be written into quarantine; their endpoint URLs omit credentials/query
 
 #### Signed v2 contributions and private replay (since 0.65.0)
 
-Install the optional signing extra: `pip install "chimeraforge[sign]==0.114.0"`.
+Install the optional signing extra: `pip install "chimeraforge[sign]==0.115.0"`.
 Use a current saved PlanBenchmark receipt and your Ed25519 key files:
 
 ```bash
