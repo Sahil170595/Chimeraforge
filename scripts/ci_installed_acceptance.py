@@ -308,6 +308,24 @@ def main(argv: list[str] | None = None) -> int:
         saved = load_plan(snapshot_path)
         assert saved.to_dict()["result"]["candidates"] == saved_candidates
         assert public_plan(PlanRequest(allow_network=False)).candidate().provenance
+        from chimeraforge.weightspace import verify_bundle
+
+        builder = Path(args.checkout).resolve() / "examples" / "weightspace" / "build_example.py"
+        bundle_root = cwd / "weightspace-example"
+        subprocess.run([sys.executable, "-I", str(builder), str(bundle_root)], cwd=cwd, check=True)
+        manifest = bundle_root / "manifest.json"
+        receipt = verify_bundle(manifest)
+        assert receipt.files[1].size_bytes == 88
+        checked = subprocess.run(
+            [sys.executable, "-I", "-m", "chimeraforge", "weightspace", "verify", str(manifest)],
+            cwd=cwd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=CLI_TIMEOUT_SECONDS,
+            check=True,
+        )
+        assert json.loads(checked.stdout) == receipt.to_dict()
         accept_validation_audit(cwd, env)
         manual = json.loads(
             run_cli(
