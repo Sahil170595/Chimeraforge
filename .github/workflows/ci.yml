@@ -286,6 +286,16 @@ jobs:
           version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
           "$UV_PROJECT_ENVIRONMENT/bin/python" scripts/ci_cpu_serving.py --expect-version "$version" --checkout "$GITHUB_WORKSPACE"
 
+      - name: Admit and reload a real local PEFT adapter on CPU
+        env:
+          HF_HUB_OFFLINE: "1"
+        run: |
+          py="$RUNNER_TEMP/chimeraforge-peft/bin/python"
+          uv venv --python 3.12 "$RUNNER_TEMP/chimeraforge-peft"
+          uv pip install --python "$py" dist/*.whl 'peft==0.22.0' 'transformers==5.24.1' 'safetensors==0.8.0' \
+            'torch @ https://download-r2.pytorch.org/whl/cpu/torch-2.15.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl#sha256=0955c7e3446326293f48af18fad67872fa31dee5a36a87690eb9e5be8b465be3'
+          "$py" -I scripts/ci_weightspace_peft.py
+
   kubernetes-admission:
     needs: build
     runs-on: ubuntu-latest

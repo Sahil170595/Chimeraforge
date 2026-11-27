@@ -3,3 +3,7 @@ validation/2026-10-09-cli-readme/** -text
 
 # Exact captured native 0.86 bytes, including its Windows serialization newlines.
 tests/fixtures/inventory/legacy086-qwen-b8.json -text whitespace=trailing-space,space-before-tab,cr-at-eol
+
+# Byte-pinned, hand-verifiable weight-space conformance vector.
+examples/weightspace/manifest.json text eol=lf
+examples/weightspace/*.safetensors binary

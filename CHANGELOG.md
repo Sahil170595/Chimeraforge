@@ -5,6 +5,31 @@ All notable changes to ChimeraForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.120.0] - Unreleased
+
+### Atomic offline runtime staging
+
+- Copy only the verified runtime closure into an immutable local generation and select it with an atomic pointer replacement.
+
+## [0.119.0] - Unreleased
+
+### PEFT adapter admission
+
+- Check ordinary LoRA adapters against the declared immutable base, actual SafeTensors headers and every targeted linear layer.
+
+## [0.118.0] - Unreleased
+
+### Weight-space footprint estimates
+
+- Estimate cold and cached transfer bytes, local storage, decoded weights, auxiliary residency and staging from a verified manifest.
+
+## [0.117.0] - Unreleased
+
+### Offline weight-space verification
+
+- Verify the declared sizes and SHA-256 of local weight-space files from the new Python library and CLI.
+- Accept a separately pinned manifest and report physical verification independently of logical tensor declarations.
+
 ## [0.116.0] - 2026-11-27
 
 ### Minimum audit coverage
